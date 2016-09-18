@@ -1,0 +1,90 @@
+Changes from 0.3.3-43 to 0.3.4.1-44 [13-July-2016]
+
+* Admnistrative release, no changes except for dates.
+
+Changes from 0.3.3-41 to 0.3.4-43 [07-June-2016]
+
+* Fixed images not saved as jpegs when scaling is set to anything other than autoscale in batchGenerateCI and batchGenerateCI2IFC
+* Added independent scaling. Works like matched scaling but maintains the zero point. Is the new recommended default for generating a single base iamge.
+
+Changes from 0.3.3-40 to 0.3.3-41 [27-May-2016]
+
+* Fixed reference to packageVersion which produced a note in CRAN check.
+
+Changes from 0.3.2-39 to 0.3.3-40 [4-Apr-2016]
+
+* Added Gabor noise option. Generate stimuli with generateStimuli2IFC(..., noise_type='gabor'). Almost all functions have been affected in refactoring. 
+* Added option to specify number of spatial scales
+* Changed output of autoscale: scaling factor is no longer part of the list of classification images that is returned
+* Bugfix: When using pre 0.3.0 Rdata file, the paramater matrix will now be truncated to the appropriate numbers of parameters
+
+Changes from 0.3.2-37 to 0.3.2.1-39 [8-Oct-2015]
+
+* Bugfix: NA's in by parameter of batchGenerateCI2IFC() get ignored instead of making R crash. Thank you Elze Ufkes for reporting this bug!
+
+Changes from 0.3.2-37 to 0.3.2-38 [25-Aug-2015]
+
+* Bugfix: target path error message for generateCI2IFC()
+
+Changes from 0.3.2-34 to 0.3.2-37 [20-Jul-2015]
+
+* Added import and importFrom statements to function to comply with new R version package requirements
+* Updated DESCRIPTION to be slighlty more informative
+
+Changes from 0.3.1-33 to 0.3.2-34 [18-Jul-2015]
+
+* Changed progressbar to dplyr progress bar, no longer dependent on tcltk (so no more dependency on xquartz on OS X). Also adds time estimation.
+
+Changes from 0.3.1-30 to 0.3.1-33 [19-Mar-2015]
+
+* Fixed targetci bug (should be empty list by default instead of boolean) in computeCumulativeCICorrelation
+* Removed examples in generateNoiseImage to deal with R-Forge's imposed memory limits
+
+Changes from 0.3.1-30 to 0.3.1-31 [19-Mar-2015]
+
+* Added computeCumulativeCICorrelation. Computes cumulative trial CIs correlations with final/target CI. Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
+* Bugfix in generateCINoise: added possibility of just one stimulus/response
+* Added label parameter to batchGenerateCI, which adds custom identifiable labels to jpegs
+* Added targetpath parameter to CI generation functions, so CIs will not by default be placed in working directory, but in ./cis subdirectory
+* By default, no longer saves unscaled classification images. Added parameter saveunscaledjpeg to switch functionality
+* Suppressed warning messages if directory for stimulus or ci output already exists.
+
+Changes from 0.3.0-29 to 0.3.1-30 [18-Mar-2015]
+
+* Added batchGenerateCI to deal with data from any reverse correlation task that does not use inverse noise. This function can be used for a 1IFC, 2IFC with independently generated stimuli, 3IFC, etc. 
+* Renamed generateCI2IFC to generateCI and moved it to rcicr.R as it is a general function, and not just for 2IFC reverse correlation tasks
+* Created genreateCI2IFC wrapper function (wraps generateCI) for backwards compatibility
+* Renamed old generateCI to generateCINoise to differentiate between generateCI and generateCINoise
+* Updated title and description of rcicr for CRAN
+
+Changes from 0.2.6-28 to 0.3.0-29 [23-Jan-2015]
+
+* Bugfix in generateNoisePattern: sinIdx counted from 0-4091 instead of 1-4092. This means one single sinus in a sinusoid patch in the highest spatial frequency in one of the corners of stimuli and one single sinus in a sinusoid patch in the lowest spatial frequency was fixed in contrast. You can use version 0.3.0 to perform your analysis of data collected with stimuli generated pre 0.3.0. It will conduct the analysis as pre 0.3.0 versions of rcicr would have done. Stimuli generated with version 0.3.0 and up do not have this problem and will automatically be analyzed correctly.
+* Reduced memory load in by removing redundant random contrasts generated for each stimulus (4096 => 4092). This does not affect anything else.
+
+Changes from 0.2.5-26 to 0.2.6-28 [18-Dec-2014]
+
+* Added feedback to user when base image label was not found in .rdata file
+* Reduced processing and memory load of generateCI2IFC when stimuli are presented multiple times or CIs are computed for multiple subjects
+
+Changes from 0.2.5-25 to 0.2.5-26 [14-Nov-2014]
+
+* Added .Rprofile to package root to prevent cyclic depency check error.
+
+Changes from Version 0.2.4-24 to 0.2.5-25 [20-Oct-2014]
+
+* Updated batchGenerateCI2IFC function to create jpegs with appropriate filenames.
+* Updated batchGenerateCI2IFC function so that only autoscaled images are written.
+* Bugfix in batchGenerateCI2IFC function: numeric values for the 'by' column no longer raise errors.
+
+Changes from Version 0.2.3-23 to 0.2.4-24 [29-Sep-2014]
+
+* Added default contrast maximization of base images (and argument for generateStimuli2IFC to switch it off)
+
+Changes from Version 0.2.3-22 to 0.2.3-23 [29-Aug-2014]
+
+* Added visual feedback for batchGenerateCI2IFC function.
+
+Changes from Version 0.2.2-20 to 0.2.3-22 [29-Aug-2014]
+
+* Added batchGenerateCI2IFC function to batch generate classification images for multiple subjects or conditions.

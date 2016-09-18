@@ -1,0 +1,15 @@
+citHeader("To cite package 'rcicr' in publications use:")
+
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
+vers <- paste("R package version", meta$Version)
+
+citEntry(entry="Manual",
+         title = "rcicr: Reverse correlation image classification toolbox",
+         author = personList(as.person("Ron Dotsch") ),
+         year = year,
+         note = vers,
+         textVersion =
+         paste("Ron Dotsch (",
+               year,
+               "). rcicr: Reverse correlation image classification toolbox. ",
+               vers, ".", sep=""))
