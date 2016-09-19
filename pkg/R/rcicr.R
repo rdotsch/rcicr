@@ -103,7 +103,7 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
         }
         
         # Repeat to fill scale
-        patches[,,co] <- matlab::repmat(p, scale, scale)
+        patches[,,co] <- matlab::repmat(p, scale)
         
         # Create index matrix
         for (col in 1:scale) {
