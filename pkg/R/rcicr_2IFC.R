@@ -3,7 +3,7 @@
 #' Generate stimuli for 2 images forced choice reverse correlation task. 
 #' 
 #' Will save the stimuli as
-#' jpeg's to a folder, including .Rdata file needed for analysis of data after data collection. This
+#' JPEGs to a folder, including .Rdata file needed for analysis of data after data collection. This
 #' .Rdata file contains the parameters that were used to generate each stimulus.
 #' 
 #' @export
@@ -25,7 +25,7 @@
 #' @return Nothing, everything is saved to files. 
 generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25) {
   
-  # Initalize #
+  # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
   dir.create(stimulus_path, recursive=T, showWarnings = F)
   set.seed(seed)
