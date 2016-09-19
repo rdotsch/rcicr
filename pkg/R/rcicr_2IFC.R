@@ -26,7 +26,7 @@
 generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25) {
   
   # Initialize #
-  p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
+  p <- generateNoisePattern(img_size, noise_type, nscales, sigma)
   dir.create(stimulus_path, recursive=T, showWarnings = F)
   set.seed(seed)
   
