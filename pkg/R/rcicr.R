@@ -80,8 +80,7 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
   patches = matlab::zeros(c(img_size, img_size, nrPatches))
   patchIdx = matlab::zeros(c(img_size, img_size, nrPatches))
   
-  # counters
-  
+  # Counters
   if (pre_0.3.0) {
     co = 0 # patch layer counter
     idx = 0 # contrast index counter
@@ -109,7 +108,7 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
         for (col in 1:scale) {
           for (row in 1:scale) {
             
-            # insert absolute index for later contrast weighting
+            # Insert absolute index for later contrast weighting
             patchIdx[(size * (row-1) + 1) : (size * row), (size * (col-1) + 1) : (size * col), co] = idx
             
             # Update contrast counter
