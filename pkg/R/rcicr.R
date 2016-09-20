@@ -76,7 +76,7 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
   # Number of patch layers needed
   nrPatches = length(scales) * length(orientations) * length(phases)
   
-  # Pre allocate memory
+  # Preallocate memory
   patches = matlab::zeros(c(img_size, img_size, nrPatches))
   patchIdx = matlab::zeros(c(img_size, img_size, nrPatches))
   
