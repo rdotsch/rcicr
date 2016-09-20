@@ -37,9 +37,15 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # Read base face
     img <- jpeg::readJPEG(base_face_files[[base_face]])    
     
-    # Change base face to grey scale if necessary
+    # Change base face to greyscale if necessary
     if (length(dim(img)) == 3) {
-      img <- apply(img, c(1, 2), mean)
+
+      if (identical(img[,,1], img[,,2], img[,,3]) == T)) {
+        img <- img[,,1]
+      } else {
+        img <- apply(img, c(1, 2), mean)
+      }
+
     }
     
     # Adjust size of base face
