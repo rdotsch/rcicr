@@ -140,12 +140,15 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
 #' #noise <- generateNoiseImage(params, p)
 generateNoiseImage <- function(params, p) {
   
+  # Abort stimulus generation if number of params doesn't equal number of patches
+  if (length(params) != max(p$patchIdx)) {
+    stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
+  }
+
   if ('sinusoids' %in% names(p)) {
     # Pre 0.3.3 noise pattern, rename for appropriate use
     p <- list(patches=p$sinusoids, patchIdx=p$sinIdx, noise_type='sinusoid')
   }
-  
-  # TODO: Insert user friendly warning if number of params does not equal number of patches
   
   noise <- apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean)
   return(noise)
