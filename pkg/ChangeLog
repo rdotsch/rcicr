@@ -1,4 +1,9 @@
-Changes from 0.3.3-43 to 0.3.4.1-44 [13-July-2016]
+Changes from 0.3.4.1-44 to 0.3.4.2-45 [22-September-2016]
+
+* Various small and inconsequential readability improvements
+* Added check to verify that number of stimuli parameters and number of patches are the same
+
+Changes from 0.3.4-43 to 0.3.4.1-44 [13-July-2016]
 
 * Admnistrative release, no changes except for dates.
 
