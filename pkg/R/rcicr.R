@@ -76,12 +76,11 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
   # Number of patch layers needed
   nrPatches = length(scales) * length(orientations) * length(phases)
   
-  # Pre allocate memory
+  # Preallocate memory
   patches = matlab::zeros(c(img_size, img_size, nrPatches))
   patchIdx = matlab::zeros(c(img_size, img_size, nrPatches))
   
-  # counters
-  
+  # Counters
   if (pre_0.3.0) {
     co = 0 # patch layer counter
     idx = 0 # contrast index counter
@@ -103,13 +102,13 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
         }
         
         # Repeat to fill scale
-        patches[,,co] <- matlab::repmat(p, scale, scale)
+        patches[,,co] <- matlab::repmat(p, scale)
         
         # Create index matrix
         for (col in 1:scale) {
           for (row in 1:scale) {
             
-            # insert absolute index for later contrast weighting
+            # Insert absolute index for later contrast weighting
             patchIdx[(size * (row-1) + 1) : (size * row), (size * (col-1) + 1) : (size * col), co] = idx
             
             # Update contrast counter
@@ -141,12 +140,15 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
 #' #noise <- generateNoiseImage(params, p)
 generateNoiseImage <- function(params, p) {
   
+  # Abort stimulus generation if number of params doesn't equal number of patches
+  if (length(params) != max(p$patchIdx)) {
+    stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
+  }
+
   if ('sinusoids' %in% names(p)) {
     # Pre 0.3.3 noise pattern, rename for appropriate use
     p <- list(patches=p$sinusoids, patchIdx=p$sinIdx, noise_type='sinusoid')
   }
-  
-  # TODO: Insert user friendly warning if number of params does not equal number of patches
   
   noise <- apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean)
   return(noise)

@@ -37,7 +37,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # Read base face
     img <- jpeg::readJPEG(base_face_files[[base_face]])    
     
-    # Change base face to grey scale if necessary
+    # Change base face to greyscale if necessary
     if (length(dim(img)) == 3) {
       img <- apply(img, c(1, 2), mean)
     }
@@ -116,10 +116,10 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       stimulus <- ((-stimuli[,,trial] + 0.3) / 0.6)
       
       # add base face
-      stimulus <- (stimulus + base_faces[[base_face]]) / 2
+      combined <- (stimulus + base_faces[[base_face]]) / 2
       
       # write to file
-      jpeg::writeJPEG(stimulus, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.jpg", trial), sep="_"), sep='/'), quality = 1.0)
+      jpeg::writeJPEG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.jpg", trial), sep="_"), sep='/'), quality = 1.0)
     }
   }
   
