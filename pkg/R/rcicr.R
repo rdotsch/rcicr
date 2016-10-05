@@ -59,7 +59,7 @@ generateGabor <- function(img_size, cycles, angle, phase, sigma, contrast) {
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25)
 #' @param pre_0.3.0 Boolean specifying whether the noise pattern should be created in a way compatible with older versions of rcicr (< 0.3.0). If you are starting a new project, you should keep this at the default setting (FALSE). There is no reason to set this to TRUE, with the sole exception to recreate behavior of rcicr prior to version 0.3.0.  
-#' @return List with two elements: the 3D noise matrix with size \code{img_size}, and and indexing
+#' @return List with two elements: the 3D noise matrix with size \code{img_size}, and an indexing
 #' matrix with the same size to easily change contrasts.
 #' @examples
 #' generateNoisePattern(256)
@@ -159,7 +159,7 @@ generateNoiseImage <- function(params, p) {
 #' 
 #' @export
 #' @param stimuli Matrix with one row per trial, each row containing the 4092 parameters for the original stimulus
-#' @param responses Vector containing the response to each trial (1 if participant selected original , -1 if participant selected inverted;
+#' @param responses Vector containing the response to each trial (1 if participant selected original, -1 if participant selected inverted;
 #' this can be changed into a scale)
 #' @param p 3D patch matrix (generated using \code{generateNoisePattern()})
 #' @return The classification image as pixel matrix
@@ -177,15 +177,15 @@ generateCINoise <- function(stimuli, responses, p) {
   return(generateNoiseImage(params, p))
 }
 
-#' Determines optimal scaling constant for a list of ci's
+#' Determines optimal scaling constant for a list of CIs
 #' 
 #' @export
 #' @import matlab
 #' @import jpeg
-#' @param cis List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to jpegs, als the base image (\code{$base})
-#' @param saveasjpegs Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as jpegs (using the key of the list as name)
-#' @param targetpath Optional string specifying path to save jpegs to (default: ./cis)
-#' @return List of scaled noise patterns and determind scaling factor
+#' @param cis List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to JPEGs, also the base image (\code{$base})
+#' @param saveasjpegs Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as JPEGs (using the key of the list as name)
+#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis)
+#' @return List of scaled noise patterns and determined scaling factor
 autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
   
   # Get range of each ci
@@ -207,7 +207,7 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
   for (ciname in names(cis)) {
     cis[[ciname]]$scaled <-  (cis[[ciname]]$ci + constant) / (2*constant)
     
-    # Combine and save to jpeg if necessary
+    # Combine and save to JPEG if necessary
     if (saveasjpegs) {
       ci <- (cis[[ciname]]$scaled + cis[[ciname]]$base) / 2
       
@@ -225,9 +225,9 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' 
 #' Generate classification image for for any reverse correlation task. 
 #' 
-#' This funcions saves the classification image as jpeg to a folder and returns the CI. Your choice of scaling
+#' This function saves the classification image as JPEG to a folder and returns the CI. Your choice of scaling
 #' matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
-#' the range of the base image pixels. This scaling is non linear and depends on the range of both base image
+#' the range of the base image pixels. This scaling is nonlinear and depends on the range of both base image
 #' and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
 #' have not changed base image at all before scaling may change the base image after scaling and vice versa). It is
 #' however the quick and dirty way to see how the CI noise affects the base image.
@@ -235,7 +235,7 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' For more control, use \code{'constant'} scaling, where the scaling is independent of 
 #' the base image and noise range, but where the choice of constant is arbitrary (provided by the user with t
 #' the \code{constant} parameter). The noise is then scale as follows: \code{scaled <- (ci + constant) / (2*constant)}.
-#' Note that pixels can take intensity values between 0 and 1 If your scaled noise exceeds those values,
+#' Note that pixels can take intensity values between 0 and 1. If your scaled noise exceeds those values,
 #' a warning will be given. You should pick a higher constant (but do so consistently for different classification images
 #' that you want to compare). The higher the constant, the less visible the noise will be in the resulting image.
 #' 
@@ -249,9 +249,9 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as jpeg image
-#' @param targetpath Optional string specifying path to save jpegs to (default: ./cis)
-#' @param filename Optional string to specify a file name for the jpeg image
+#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image
+#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis)
+#' @param filename Optional string to specify a file name for the JPEG image
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default)
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'})
@@ -370,7 +370,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
 #' 
 #' Generate classification image for any reverse correlation task that displays independently generated alternatives. 
 #' 
-#' This funcions saves the classification images by participant or condition as jpeg to a folder and returns the CIs.
+#' This function saves the classification images by participant or condition as JPEG to a folder and returns the CIs.
 #' 
 #' @export
 #' @import dplyr
@@ -380,9 +380,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
 #' @param responses String specifying column name in data frame that contains the responses coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as jpeg image
-#' @param targetpath Optional string specifying path to save jpegs to (default: ./cis)
-#' @param label Optional string to insert in file names of jepgs to make them easier to identify 
+#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image
+#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis)
+#' @param label Optional string to insert in file names of JPEGs to make them easier to identify 
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant},  \code{independent} or \code{autoscale} (default)
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'})
@@ -407,7 +407,7 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
     # Get subset of data 
     unitdata <- data[data[,by] == unit, ]
     
-    # Specify filename for CI jpeg
+    # Specify filename for CI JPEG
     if (label == '') {
       filename <- paste0(baseimage, '_', by, '_', unitdata[1,by])
     } else {

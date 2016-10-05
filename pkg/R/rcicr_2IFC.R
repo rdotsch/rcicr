@@ -11,7 +11,7 @@
 #' @import dplyr
 #' @import jpeg
 #' @importFrom stats runif
-#' @param base_face_files List containing base face file names (jpegs) used as base images for stimuli
+#' @param base_face_files List containing base face file names (JPEGs) used as base images for stimuli
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise)
 #' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed)
 #' @param stimulus_path Path to save stimuli and .Rdata file to
@@ -135,7 +135,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 #' 
 #' Generate classification image for 2 images forced choice reverse correlation task.  This function exists for backwards compatibility. You can also just use \code{generateCI()}, which this function wraps.
 #' 
-#' This funcions saves the classification image as jpeg to a folder and returns the CI. Your choice of scaling
+#' This funcions saves the classification image as JPEG to a folder and returns the CI. Your choice of scaling
 #' matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 #' the range of the base image pixels. This scaling is non linear and depends on the range of both base image
 #' and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
@@ -157,9 +157,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as jpeg image
-#' @param filename Optional string to specify a file name for the jpeg image
-#' @param targetpath Optional string specifying path to save jpegs to (default: ./cis)
+#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image
+#' @param filename Optional string to specify a file name for the JPEG image
+#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis)
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default)
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'})
@@ -177,7 +177,7 @@ generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE
 #' 
 #' Generate classification image for 2 images forced choice reverse correlation task. 
 #' 
-#' This funcions saves the classification images by participant or condition as jpeg to a folder and returns the CIs.
+#' This funcions saves the classification images by participant or condition as JPEG to a folder and returns the CIs.
 #' 
 #' @export
 #' @import dplyr
@@ -187,9 +187,9 @@ generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE
 #' @param responses String specifying column name in data frame that contains the responses coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as jpeg image
-#' @param targetpath Optional string specifying path to save jpegs to (default: ./cis)
-#' @param label Optional string to insert in file names of jepgs to make them easier to identify 
+#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image
+#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis)
+#' @param label Optional string to insert in file names of JPEGs to make them easier to identify 
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, \code{independent}, or \code{autoscale} (default)
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'})
@@ -219,7 +219,7 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     # Get subset of data 
     unitdata <- data[data[,by] == unit, ]
     
-    # Specify filename for CI jpeg
+    # Specify filename for CI JPEG
     if (label == '') {
       filename <- paste0(baseimage, '_', by, '_', unitdata[1,by])
     } else {
