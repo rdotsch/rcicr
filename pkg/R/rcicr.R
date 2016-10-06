@@ -510,5 +510,66 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   return(correlations)
 }
 
+
+
+#' Generates Z-map
+#'
+#' Generates Z-map for a given classification image.
+#'
+#' This function saves the Z-map (superimposed on the scaled classification image) to a folder.
+#'
+#' @export
+#' @import spatstat
+#' @param cilist A list object (as returned by generateCI) containing at least the "ci" and "combined" element.
+#' @param sigma Optional number specifying the level of smoothing applied in calculating the z-map (default: 10).
+#' @param threshold Optional number specifying the threshold absolute z-score value used in calculating the z-map (default: 3).
+#' @param directional Optional boolean specifying whether different colors should be used for negative and positive z-scores (default: F).
+#' @param targetpath Optional string specifying path to save JPEGs to (default: ./zmaps).
+#' @param saveasjpeg Optional boolean specifying whether to write the Z-map to a JPEG image (default: TRUE).
+#' @return Array representing an RGB image.
+generateZmap <- function(cilist, sigma = 10, threshold = 3, directional = F, saveasjpeg = T, targetpath = './zmaps') {
+  # Generate Z-map
+  zmap <- as.matrix(blur(as.im(cilist$ci), sigma = sigma))
+  zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
+  zmap[zmap > -threshold & zmap < threshold] <- 0
+
+  # Normalize
+  zmap_normalized <- zmap/max(abs(zmap))
+
+  # Write as JPEG
+  if (saveasjpeg) {
+    # Import classification image
+    img <- rep(cilist$combined, 3)
+    dim(img) <- c(512, 512, 3)
+    print(range(zmap_normalized))
+    print(median(zmap_normalized))
+    # Add Z-map
+    # Zero out the pixels with z-scores above threshold
+    img[,,1][zmap_normalized != 0] <- 0
+    img[,,2][zmap_normalized != 0] <- 0
+    img[,,3][zmap_normalized != 0] <- 0
+    if (directional == T) {
+      print('hello')
+      # Add absolute values of positive normalized z-scores to red channel and
+      # negative normalized z-scores to blue channel
+      img[,,1][zmap_normalized > 0] <- zmap_normalized[zmap_normalized > 0]
+      img[,,3][zmap_normalized < 0] <- abs(zmap_normalized[zmap_normalized < 0])
+    } else {
+      print('else')
+      zmap_normalized <- abs(zmap_normalized)
+      img[,,1][zmap_normalized != 0] <- zmap_normalized[zmap_normalized != 0]
+    }
+
+    dir.create(targetpath, recursive=T, showWarnings = F)
+
+    # Write
+    png::writePNG(img, paste0(targetpath, '/', 'zmap.png'))
+  }
+
+  # Return Z-map
+  return(zmap)
+}
+
+
 # Suppress checking notes for variables loaded at runtime from .RData files
 if(getRversion() >= "2.15.1")  utils::globalVariables(c("p", "s", "base_faces", "stimuli_params"))
