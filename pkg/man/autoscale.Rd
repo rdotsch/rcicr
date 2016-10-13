@@ -2,21 +2,21 @@
 % Please edit documentation in R/rcicr.R
 \name{autoscale}
 \alias{autoscale}
-\title{Determines optimal scaling constant for a list of ci's}
+\title{Determines optimal scaling constant for a list of CIs}
 \usage{
 autoscale(cis, saveasjpegs = TRUE, targetpath = "./cis")
 }
 \arguments{
-\item{cis}{List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to jpegs, als the base image (\code{$base})}
+\item{cis}{List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to JPEGs, also the base image (\code{$base}).}
 
-\item{saveasjpegs}{Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as jpegs (using the key of the list as name)}
+\item{saveasjpegs}{Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as JPEGs (using the key of the list as name).}
 
-\item{targetpath}{Optional string specifying path to save jpegs to (default: ./cis)}
+\item{targetpath}{Optional string specifying path to save JPEGs to (default: ./cis).}
 }
 \value{
-List of scaled noise patterns and determind scaling factor
+List of scaled noise patterns and determined scaling factor.
 }
 \description{
-Determines optimal scaling constant for a list of ci's
+Determines optimal scaling constant for a list of CIs
 }
 
