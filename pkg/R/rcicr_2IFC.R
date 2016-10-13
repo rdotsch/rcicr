@@ -10,6 +10,8 @@
 #' @import matlab
 #' @import dplyr
 #' @import jpeg
+#' @import foreach
+#' @import doParallel
 #' @importFrom stats runif
 #' @param base_face_files List containing base face file names (JPEGs) used as base images for stimuli.
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
@@ -22,8 +24,9 @@
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
+#' @param ncores Number of CPU cores to use (default: detectCores()).
 #' @return Nothing, everything is saved to files.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25) {
+generateStimuli2IFC_mc <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=detectCores()) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
@@ -88,7 +91,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   stimuli <- matlab::zeros(img_size, img_size, n_trials)
 
-  for (trial in 1:n_trials) {
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl)
+
+  ls <- foreach(trial = 1:n_trials, .packages = 'rcicr') %dopar% {
+  # for (trial in 1:n_trials) {
     pb$tick()$print()
 
     if (use_same_parameters) {
@@ -122,7 +129,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       jpeg::writeJPEG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.jpg", trial), sep="_"), sep='/'), quality = 1.0)
     }
   }
-
+  stopCluster(cl)
   pb$stop()
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
