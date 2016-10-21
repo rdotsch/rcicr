@@ -165,7 +165,7 @@ generateNoiseImage <- function(params, p) {
 #' @return The classification image as pixel matrix.
 generateCINoise <- function(stimuli, responses, p) {
 
-  weighted <- responses * stimuli
+  weighted <- stimuli * responses
 
   # Only aggregate if more than one stimulus/response row
   if(is.null(dim(weighted))) {
