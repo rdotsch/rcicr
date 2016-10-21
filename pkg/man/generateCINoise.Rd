@@ -7,15 +7,15 @@
 generateCINoise(stimuli, responses, p)
 }
 \arguments{
-\item{stimuli}{Matrix with one row per trial, each row containing the 4092 parameters for the original stimulus.}
+\item{stimuli}{Matrix with one row per trial, each row containing the 4092 parameters for the original stimulus}
 
-\item{responses}{Vector containing the response to each trial (1 if participant selected original, -1 if participant selected inverted;
-this can be changed into a scale).}
+\item{responses}{Vector containing the response to each trial (1 if participant selected original , -1 if participant selected inverted;
+this can be changed into a scale)}
 
-\item{p}{3D patch matrix (generated using \code{generateNoisePattern()}).}
+\item{p}{3D patch matrix (generated using \code{generateNoisePattern()})}
 }
 \value{
-The classification image as pixel matrix.
+The classification image as pixel matrix
 }
 \description{
 Generate classification image noise pattern based on set of stimuli (matrix: trials, parameters), responses (vector), and sinusoid

@@ -7,22 +7,22 @@
 generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
   stimulus_path = "./stimuli", label = "rcic", use_same_parameters = TRUE,
   seed = 1, maximize_baseimage_contrast = TRUE, noise_type = "sinusoid",
-  nscales = 5, sigma = 25, ncores = detectCores())
+  nscales = 5, sigma = 25)
 }
 \arguments{
-\item{base_face_files}{List containing base face file names (JPEGs) used as base images for stimuli.}
+\item{base_face_files}{List containing base face file names (jpegs) used as base images for stimuli}
 
-\item{n_trials}{Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).}
+\item{n_trials}{Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise)}
 
-\item{img_size}{Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).}
+\item{img_size}{Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed)}
 
-\item{stimulus_path}{Path to save stimuli and .Rdata file to.}
+\item{stimulus_path}{Path to save stimuli and .Rdata file to}
 
-\item{label}{Label to prepend to each file for your convenience.}
+\item{label}{Label to prepend to each file for your convenience}
 
-\item{use_same_parameters}{Boolean specifying whether for each base image, the same set of parameters is used, or unique set is created for each base image.}
+\item{use_same_parameters}{Boolean specifying whether for each base image, the same set of parameters is used, or unique set is created for each base image}
 
-\item{seed}{Integer seeding the random number generator (for reproducibility).}
+\item{seed}{Integer seeding the random number generator (for reproducibility)}
 
 \item{maximize_baseimage_contrast}{Boolean specifying wheter the pixel values of the base image should be rescaled to maximize its contrast.}
 
@@ -30,9 +30,7 @@ generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
 
 \item{nscales}{Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.}
 
-\item{sigma}{Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).}
-
-\item{ncores}{Number of CPU cores to use (default: detectCores()).}
+\item{sigma}{Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25)}
 }
 \value{
 Nothing, everything is saved to files.
@@ -42,7 +40,7 @@ Generate stimuli for 2 images forced choice reverse correlation task.
 }
 \details{
 Will save the stimuli as
-JPEGs to a folder, including .Rdata file needed for analysis of data after data collection. This
+jpeg's to a folder, including .Rdata file needed for analysis of data after data collection. This
 .Rdata file contains the parameters that were used to generate each stimulus.
 }
 
