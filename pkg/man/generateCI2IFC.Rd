@@ -9,7 +9,7 @@ generateCI2IFC(stimuli, responses, baseimage, rdata, saveasjpeg = TRUE,
   scaling = "independent", constant = 0.1)
 }
 \arguments{
-\item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli}
+\item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}
 
 \item{responses}{Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.}
 
@@ -17,26 +17,26 @@ generateCI2IFC(stimuli, responses, baseimage, rdata, saveasjpeg = TRUE,
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveasjpeg}{Boolean stating whether to additionally save the CI as jpeg image}
+\item{saveasjpeg}{Boolean stating whether to additionally save the CI as JPEG image.}
 
-\item{filename}{Optional string to specify a file name for the jpeg image}
+\item{filename}{Optional string to specify a file name for the JPEG image.}
 
-\item{targetpath}{Optional string specifying path to save jpegs to (default: ./cis)}
+\item{targetpath}{Optional string specifying path to save JPEGs to (default: ./cis).}
 
-\item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed}
+\item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
-\item{scaling}{Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default)}
+\item{scaling}{Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).}
 
-\item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'})}
+\item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
 }
 \value{
-List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined
+List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
 }
 \description{
 Generate classification image for 2 images forced choice reverse correlation task.  This function exists for backwards compatibility. You can also just use \code{generateCI()}, which this function wraps.
 }
 \details{
-This funcions saves the classification image as jpeg to a folder and returns the CI. Your choice of scaling
+This funcions saves the classification image as JPEG to a folder and returns the CI. Your choice of scaling
 matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 the range of the base image pixels. This scaling is non linear and depends on the range of both base image
 and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would

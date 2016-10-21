@@ -7,15 +7,15 @@
 generateSinusoid(img_size, cycles, angle, phase, contrast)
 }
 \arguments{
-\item{img_size}{Integer specifying size of sinusoid patch in number of pixels}
+\item{img_size}{Integer specifying size of sinusoid patch in number of pixels.}
 
-\item{cycles}{Integer specifying number of cycles sinusoid should span}
+\item{cycles}{Integer specifying number of cycles sinusoid should span.}
 
-\item{angle}{Value specifying the angle (rotation) of the sinusoid}
+\item{angle}{Value specifying the angle (rotation) of the sinusoid.}
 
-\item{phase}{Value specifying phase of sinusoid}
+\item{phase}{Value specifying phase of sinusoid.}
 
-\item{contrast}{Value between -1.0 and 1.0 specifying contrast of sinusoid}
+\item{contrast}{Value between -1.0 and 1.0 specifying contrast of sinusoid.}
 }
 \value{
 The sinusoid image with size \code{img_size}.
