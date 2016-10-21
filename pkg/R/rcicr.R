@@ -519,15 +519,19 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
 #' This function saves the Z-map (superimposed on the scaled classification image) to a folder.
 #'
 #' @export
-#' @import spatstat
+#' @import parallel
+#' @import doParallel
+#' @import png
+#' @importFrom spatstat blur as.im
 #' @param cilist A list object (as returned by generateCI) containing at least the "ci" and "combined" element.
+#' @param img_size Integer specifying size of the stimuli used in number of pixels.
 #' @param sigma Optional number specifying the level of smoothing applied in calculating the z-map (default: 10).
 #' @param threshold Optional number specifying the threshold absolute z-score value used in calculating the z-map (default: 3).
 #' @param directional Optional boolean specifying whether different colors should be used for negative and positive z-scores (default: F).
 #' @param targetpath Optional string specifying path to save JPEGs to (default: ./zmaps).
 #' @param saveasjpeg Optional boolean specifying whether to write the Z-map to a JPEG image (default: TRUE).
 #' @return Array representing an RGB image.
-generateZmap <- function(cilist, sigma = 10, threshold = 3, directional = F, saveasjpeg = T, targetpath = './zmaps') {
+generateZmap <- function(cilist, img_size = 512, sigma = 10, threshold = 3, directional = F, saveasjpeg = T, targetpath = './zmaps') {
   # Generate Z-map
   zmap <- as.matrix(blur(as.im(cilist$ci), sigma = sigma))
   zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
@@ -541,8 +545,6 @@ generateZmap <- function(cilist, sigma = 10, threshold = 3, directional = F, sav
     # Import classification image
     img <- rep(cilist$combined, 3)
     dim(img) <- c(512, 512, 3)
-    print(range(zmap_normalized))
-    print(median(zmap_normalized))
     # Add Z-map
     # Zero out the pixels with z-scores above threshold
     img[,,1][zmap_normalized != 0] <- 0
@@ -563,7 +565,7 @@ generateZmap <- function(cilist, sigma = 10, threshold = 3, directional = F, sav
     dir.create(targetpath, recursive=T, showWarnings = F)
 
     # Write
-    png::writePNG(img, paste0(targetpath, '/', 'zmap.png'))
+    writePNG(img, paste0(targetpath, '/', 'zmap.png'))
   }
 
   # Return Z-map
