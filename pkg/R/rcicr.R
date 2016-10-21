@@ -244,7 +244,12 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #'
 #' @export
 #' @import jpeg
-#' @importFrom stats aggregate
+#' @import parallel
+#' @import doParallel
+#' @import foreach
+#' @importFrom stats aggregate t.test
+#' @importFrom spatstat blur as.im
+#' @importFrom grDevices png dev.off
 #' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
@@ -255,8 +260,14 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
+#' @param zmap Boolean specifying whether a z-map should be created (default: TRUE).
+#' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{dotsch}, \code{mangini}, or \code{ethier}.
+#' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
+#' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
+#' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
+#' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1) {
+generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = T, zmapmethod = 'dotsch', sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
@@ -362,8 +373,55 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
 
   }
 
+  # Compute Z-map
+  if(zmap) {
+    
+    if(zmapmethod == 'simple') {
+      # Blur CI
+      zmap <- as.matrix(blur(as.im(ci), sigma = sigma))
+      
+      # Create z-map
+      zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
+      
+      # Apply threshold
+      zmap[zmap > -threshold & zmap < threshold] <- 0
+    }
+    
+    if(zmapmethod == 'dotsch') {
+      # Weigh the stimulus parameters of each trial using the given responses
+      weightedparameters <- stimuli_params$gender_neutral * responses
+      
+      # Get number of observations
+      n_observations <- length(responses)
+      
+      # Create cluster for parallel processing
+      cl <- makeCluster(n_cores)
+      registerDoParallel(cl)
+      
+      # For each weighted stimulus, construct the resulting noise pattern
+      noiseimages <- foreach(obs = 1:n_observations, .combine = 'c',
+                             .packages = 'rcicr') %dopar% {
+                               generateNoiseImage(weightedparameters[obs, ], p)
+                             }
+      stopCluster(cl)
+      dim(noiseimages) <- c(img_size, img_size, n_observations)
+      
+      # Apply a T-test to each pixel and register t and p
+      pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
+      tmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['statistic']))
+      
+      # Plot
+      png('pmap.png', width = img_size, height = img_size)
+      grid::grid.raster((pmap-min(pmap))/max(pmap-min(pmap)))
+      dev.off()
+      png('tmap.png', width = img_size, height = img_size)
+      grid::grid.raster((tmap-min(tmap))/max(tmap-min(tmap)))
+      dev.off()
+    }
+  }
+  
   # Return list
-  return(list(ci=ci, scaled=scaled, base=base, combined=combined))
+  return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
 }
 
 #' Generates multiple classification images by participant or condition
