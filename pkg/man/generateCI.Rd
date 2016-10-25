@@ -33,7 +33,7 @@ generateCI(stimuli, responses, baseimage, rdata, saveasjpeg = TRUE,
 
 \item{zmap}{Boolean specifying whether a z-map should be created (default: TRUE).}
 
-\item{zmapmethod}{String specifying the method to create the z-map. Can be: \code{quick}, \code{dotsch} (default), \code{mangini}, or \code{ethier}.}
+\item{zmapmethod}{String specifying the method to create the z-map. Can be: \code{quick} (default), \code{dotsch}, \code{mangini}, or \code{ethier}.}
 
 \item{sigma}{Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).}
 

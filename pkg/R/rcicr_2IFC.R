@@ -87,16 +87,15 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   }
 
   # Generate stimuli #
-  pb <- dplyr::progress_estimated(n_trials)
+  pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
 
   stimuli <- matlab::zeros(img_size, img_size, n_trials)
 
-  cl <- makeCluster(ncores)
+  cl <- makeCluster(ncores, outfile = '')
   registerDoParallel(cl)
 
-  ls <- foreach(trial = 1:n_trials, .packages = 'rcicr') %dopar% {
-  # for (trial in 1:n_trials) {
-    pb$tick()$print()
+  foreach(trial = 1:n_trials, .packages = 'rcicr') %dopar% {
+    setTxtProgressBar(pb, trial)
 
     if (use_same_parameters) {
       # compute noise pattern, can be used for all base faces
@@ -130,7 +129,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     }
   }
   stopCluster(cl)
-  pb$stop()
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   generator_version <- '0.3.3'

@@ -375,29 +375,29 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
 
   # Compute Z-map
   if(zmap) {
-    
+
     if(zmapmethod == 'simple') {
       # Blur CI
       zmap <- as.matrix(blur(as.im(ci), sigma = sigma))
-      
+
       # Create z-map
       zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
-      
+
       # Apply threshold
       zmap[zmap > -threshold & zmap < threshold] <- 0
     }
-    
+
     if(zmapmethod == 'dotsch') {
       # Weigh the stimulus parameters of each trial using the given responses
       weightedparameters <- stimuli_params$gender_neutral * responses
-      
+
       # Get number of observations
       n_observations <- length(responses)
-      
+
       # Create cluster for parallel processing
       cl <- makeCluster(n_cores)
       registerDoParallel(cl)
-      
+
       # For each weighted stimulus, construct the resulting noise pattern
       noiseimages <- foreach(obs = 1:n_observations, .combine = 'c',
                              .packages = 'rcicr') %dopar% {
@@ -405,11 +405,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
                              }
       stopCluster(cl)
       dim(noiseimages) <- c(img_size, img_size, n_observations)
-      
+
       # Apply a T-test to each pixel and register t and p
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
       tmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['statistic']))
-      
+
       # Plot
       png('pmap.png', width = img_size, height = img_size)
       grid::grid.raster((pmap-min(pmap))/max(pmap-min(pmap)))
@@ -419,9 +419,25 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
       dev.off()
     }
   }
-  
+
   # Return list
   return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
+}
+
+#' Generates a Z-map
+#'
+#' Generates a Z-map given a matrix of z-scores that maps onto a specified base image.
+#'
+#' This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
+#'
+#' @export
+#' @import dplyr
+#' @param zmap A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.
+#' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
+#' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
+#' @param targetpath String specifying path to save the Z-map PNG to.
+#' @return Nothing. It writes a Z-map image.
+generateZmap <- function(zmap, baseimage, rdata) {
 }
 
 #' Generates multiple classification images by participant or condition
