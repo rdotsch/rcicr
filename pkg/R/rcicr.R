@@ -409,6 +409,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
       # Apply a T-test to each pixel and register t and p
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
       tmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['statistic']))
+      mmap <- apply(noiseimages, c(1,2), function(x) mean(x))
+      zmap <- apply(noiseimages, c(1,2), function(x) (0 - mean(x)) / sd(x))
 
       # Plot
       png('pmap.png', width = img_size, height = img_size)
