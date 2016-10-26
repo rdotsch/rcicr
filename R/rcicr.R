@@ -247,7 +247,7 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @import parallel
 #' @import doParallel
 #' @import foreach
-#' @importFrom stats aggregate t.test
+#' @importFrom stats aggregate t.test qnorm
 #' @importFrom spatstat blur as.im
 #' @importFrom grDevices png dev.off
 #' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
@@ -399,7 +399,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
       cl <- makeCluster(n_cores)
       registerDoParallel(cl)
 
-      # For each weighted stimulus, construct the resulting noise pattern
+      # For each weighted stimulus, construct the complementary noise pattern
       noiseimages <- foreach(obs = 1:n_observations, .combine = 'c',
                              .packages = 'rcicr') %dopar% {
                                generateNoiseImage(weightedparameters[obs, ], p)
@@ -407,9 +407,15 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
       stopCluster(cl)
       dim(noiseimages) <- c(img_size, img_size, n_observations)
 
-      # Apply a T-test to each pixel and register t and p
+      # Get p value and mean for each pixel
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
-      tmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['statistic']))
+      mmap <- apply(noiseimages, c(1,2), mean)
+
+      # Create Z-map
+      zmap <- sign(mmap) * abs(qnorm(pmap/2))
+
+      # Apply threshold
+      zmap[abs(zmap) < threshold] <- NA
     }
 
     # Pass zmap object to generateZmap for plotting
