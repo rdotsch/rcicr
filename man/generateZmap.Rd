@@ -4,16 +4,27 @@
 \alias{generateZmap}
 \title{Generates a Z-map}
 \usage{
-generateZmap(zmap, bgimage, targetpath = "zmaps", ...)
+generateZmap(zmap, bgimage, name, sigma, threshold, targetpath = "zmaps",
+  size = 512, decoration = F, ...)
 }
 \arguments{
 \item{zmap}{A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.}
 
 \item{bgimage}{A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI.}
 
+\item{name}{The name of this Z-map (usually the name of the base image).}
+
+\item{sigma}{The sigma of the smoothing that was applied to the CI to create the Z-map.}
+
+\item{threshold}{The threshold Z-score that was applied to the Z-map.}
+
 \item{targetpath}{String specifying path to save the Z-map PNG to.}
 
-\item{...}{Additional arguments to be passed to raster::plot.}
+\item{size}{Integer specifying the width and height of the PNG image (default: 512).}
+
+\item{decoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
+
+\item{...}{Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.}
 }
 \value{
 Nothing. It writes a Z-map image.

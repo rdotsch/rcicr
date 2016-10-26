@@ -7,7 +7,7 @@
 generateCI(stimuli, responses, baseimage, rdata, saveaspng = TRUE,
   filename = "", targetpath = "./cis", antiCI = FALSE,
   scaling = "independent", constant = 0.1, zmap = T,
-  zmapmethod = "quick", sigma = 3, threshold = 3,
+  zmapmethod = "quick", zmapdecoration = T, sigma = 3, threshold = 3,
   zmaptargetpath = "./zmaps", n_cores = detectCores())
 }
 \arguments{
@@ -34,6 +34,8 @@ generateCI(stimuli, responses, baseimage, rdata, saveaspng = TRUE,
 \item{zmap}{Boolean specifying whether a z-map should be created (default: TRUE).}
 
 \item{zmapmethod}{String specifying the method to create the z-map. Can be: \code{quick} (default), \code{dotsch}, \code{mangini}, or \code{ethier}.}
+
+\item{zmapdecoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
 
 \item{sigma}{Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).}
 
