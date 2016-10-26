@@ -268,7 +268,7 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = T, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
+generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
@@ -395,13 +395,16 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
       # Get number of observations
       n_observations <- length(responses)
 
+      # Initialize progress bar
+      pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
+
       # Create cluster for parallel processing
-      cl <- makeCluster(n_cores)
+      cl <- makeCluster(n_cores, outfile = '')
       registerDoParallel(cl)
 
       # For each weighted stimulus, construct the complementary noise pattern
-      noiseimages <- foreach(obs = 1:n_observations, .combine = 'c',
-                             .packages = 'rcicr') %dopar% {
+      noiseimages <- foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
+                               setTxtProgressBar(pb, obs)
                                generateNoiseImage(weightedparameters[obs, ], p)
                              }
       stopCluster(cl)
