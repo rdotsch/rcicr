@@ -3,13 +3,14 @@
 #' Generate stimuli for 2 images forced choice reverse correlation task.
 #'
 #' Will save the stimuli as
-#' JPEGs to a folder, including .Rdata file needed for analysis of data after data collection. This
+#' PNGs to a folder, including .Rdata file needed for analysis of data after data collection. This
 #' .Rdata file contains the parameters that were used to generate each stimulus.
 #'
 #' @export
 #' @import matlab
 #' @import dplyr
 #' @import jpeg
+#' @import png
 #' @import foreach
 #' @import doParallel
 #' @importFrom stats runif
@@ -117,7 +118,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       combined <- (stimulus + base_faces[[base_face]]) / 2
 
       # write to file
-      jpeg::writeJPEG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.jpg", trial), sep="_"), sep='/'), quality = 1.0)
+      png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
 
       # compute inverted stimulus
       stimulus <- ((-stimuli[,,trial] + 0.3) / 0.6)
@@ -126,7 +127,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       combined <- (stimulus + base_faces[[base_face]]) / 2
 
       # write to file
-      jpeg::writeJPEG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.jpg", trial), sep="_"), sep='/'), quality = 1.0)
+      png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
     }
   }
   stopCluster(cl)
@@ -141,7 +142,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 #'
 #' Generate classification image for 2 images forced choice reverse correlation task.  This function exists for backwards compatibility. You can also just use \code{generateCI()}, which this function wraps.
 #'
-#' This funcions saves the classification image as JPEG to a folder and returns the CI. Your choice of scaling
+#' This function saves the classification image as PNG to a folder and returns the CI. Your choice of scaling
 #' matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 #' the range of the base image pixels. This scaling is non linear and depends on the range of both base image
 #' and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
@@ -163,17 +164,17 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image.
-#' @param filename Optional string to specify a file name for the JPEG image.
-#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis).
+#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param filename Optional string to specify a file name for the PNG image.
+#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, filename='', targetpath="./cis", antiCI=FALSE, scaling='independent', constant=0.1) {
+generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, filename='', targetpath="./cis", antiCI=FALSE, scaling='independent', constant=0.1) {
 
   # For backwards compatibility
-  return(generateCI(stimuli, responses, baseimage, rdata, saveasjpeg, filename, targetpath, antiCI, scaling, constant))
+  return(generateCI(stimuli, responses, baseimage, rdata, saveaspng, filename, targetpath, antiCI, scaling, constant))
 
 }
 
@@ -183,7 +184,7 @@ generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE
 #'
 #' Generate classification image for 2 images forced choice reverse correlation task.
 #'
-#' This funcions saves the classification images by participant or condition as JPEG to a folder and returns the CIs.
+#' This funcions saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 #'
 #' @export
 #' @import dplyr
@@ -193,14 +194,14 @@ generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE
 #' @param responses String specifying column name in data frame that contains the responses coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image.
-#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis).
-#' @param label Optional string to insert in file names of JPEGs to make them easier to identify.
+#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param targetpath Optional string specifying path to save PNGGs to (default: ./cis).
+#' @param label Optional string to insert in file names of PNGGs to make them easier to identify.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, \code{independent}, or \code{autoscale} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @return List of classification image data structures (which are themselves lists of pixel matrix of classification noise only, scaled classification noise only, base image only and combined).
-batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, targetpath='./cis', antiCI=FALSE, scaling='autoscale', constant=0.1, label='') {
+batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, saveaspng=TRUE, targetpath='./cis', antiCI=FALSE, scaling='autoscale', constant=0.1, label='') {
 
   if (scaling == 'autoscale') {
     doAutoscale <- TRUE
@@ -225,7 +226,7 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     # Get subset of data
     unitdata <- data[data[,by] == unit, ]
 
-    # Specify filename for CI JPEG
+    # Specify filename for CI PNG
     if (label == '') {
       filename <- paste0(baseimage, '_', by, '_', unitdata[1,by])
     } else {
@@ -233,11 +234,11 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
-    cis[[filename]] <- generateCI2IFC(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, saveasjpeg, paste0(filename, '.jpg'), targetpath, antiCI, scaling, constant)
+    cis[[filename]] <- generateCI2IFC(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, saveaspng, paste0(filename, '.png'), targetpath, antiCI, scaling, constant)
   }
 
   if (doAutoscale) {
-    cis <- autoscale(cis, saveasjpegs=saveasjpeg, targetpath=targetpath)
+    cis <- autoscale(cis, saveaspngs=saveaspng, targetpath=targetpath)
   }
 
   pb$stop()

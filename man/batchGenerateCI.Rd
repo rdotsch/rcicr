@@ -5,7 +5,7 @@
 \title{Generates multiple classification images by participant or condition}
 \usage{
 batchGenerateCI(data, by, stimuli, responses, baseimage, rdata,
-  saveasjpeg = TRUE, targetpath = "./cis", label = "", antiCI = FALSE,
+  saveaspng = TRUE, targetpath = "./cis", label = "", antiCI = FALSE,
   scaling = "autoscale", constant = 0.1)
 }
 \arguments{
@@ -21,11 +21,11 @@ batchGenerateCI(data, by, stimuli, responses, baseimage, rdata,
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveasjpeg}{Boolean stating whether to additionally save the CI as JPEG image.}
+\item{saveaspng}{Boolean stating whether to additionally save the CI as PNG image.}
 
-\item{targetpath}{Optional string specifying path to save JPEGs to (default: ./cis).}
+\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
 
-\item{label}{Optional string to insert in file names of JPEGs to make them easier to identify.}
+\item{label}{Optional string to insert in file names of PNGs to make them easier to identify.}
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
@@ -40,6 +40,6 @@ List of classification image data structures (which are themselves lists of pixe
 Generate classification image for any reverse correlation task that displays independently generated alternatives.
 }
 \details{
-This function saves the classification images by participant or condition as JPEG to a folder and returns the CIs.
+This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 }
 

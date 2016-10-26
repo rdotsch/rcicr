@@ -5,7 +5,7 @@
 \title{Generates multiple 2IFC classification images by participant or condition}
 \usage{
 batchGenerateCI2IFC(data, by, stimuli, responses, baseimage, rdata,
-  saveasjpeg = TRUE, targetpath = "./cis", antiCI = FALSE,
+  saveaspng = TRUE, targetpath = "./cis", antiCI = FALSE,
   scaling = "autoscale", constant = 0.1, label = "")
 }
 \arguments{
@@ -21,9 +21,9 @@ batchGenerateCI2IFC(data, by, stimuli, responses, baseimage, rdata,
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveasjpeg}{Boolean stating whether to additionally save the CI as JPEG image.}
+\item{saveaspng}{Boolean stating whether to additionally save the CI as PNG image.}
 
-\item{targetpath}{Optional string specifying path to save JPEGs to (default: ./cis).}
+\item{targetpath}{Optional string specifying path to save PNGGs to (default: ./cis).}
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
@@ -31,7 +31,7 @@ batchGenerateCI2IFC(data, by, stimuli, responses, baseimage, rdata,
 
 \item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
 
-\item{label}{Optional string to insert in file names of JPEGs to make them easier to identify.}
+\item{label}{Optional string to insert in file names of PNGGs to make them easier to identify.}
 }
 \value{
 List of classification image data structures (which are themselves lists of pixel matrix of classification noise only, scaled classification noise only, base image only and combined).
@@ -40,6 +40,6 @@ List of classification image data structures (which are themselves lists of pixe
 Generate classification image for 2 images forced choice reverse correlation task.
 }
 \details{
-This funcions saves the classification images by participant or condition as JPEG to a folder and returns the CIs.
+This funcions saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 }
 

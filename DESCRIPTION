@@ -14,8 +14,8 @@ License: GPL-2
 Imports:
     matlab,
     aspace,
-    jpeg,
     png,
+    jpeg,
     dplyr,
     scales,
     utils,

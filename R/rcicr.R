@@ -181,12 +181,12 @@ generateCINoise <- function(stimuli, responses, p) {
 #'
 #' @export
 #' @import matlab
-#' @import jpeg
-#' @param cis List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to JPEGs, also the base image (\code{$base}).
-#' @param saveasjpegs Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as JPEGs (using the key of the list as name).
-#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis).
+#' @import png
+#' @param cis List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to PNGs, also the base image (\code{$base}).
+#' @param saveaspngs Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as PNGs (using the key of the list as name).
+#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @return List of scaled noise patterns and determined scaling factor.
-autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
+autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 
   # Get range of each ci
   ranges <- matlab::zeros(length(names(cis)), 2)
@@ -207,13 +207,13 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
   for (ciname in names(cis)) {
     cis[[ciname]]$scaled <-  (cis[[ciname]]$ci + constant) / (2*constant)
 
-    # Combine and save to JPEG if necessary
-    if (saveasjpegs) {
+    # Combine and save to PNG if necessary
+    if (saveaspngs) {
       ci <- (cis[[ciname]]$scaled + cis[[ciname]]$base) / 2
 
       dir.create(targetpath, recursive=T, showWarnings = F)
 
-      jpeg::writeJPEG(ci, paste0(targetpath, '/', ciname, '_autoscaled.jpg'), quality=1.0)
+      png::writePNG(ci, paste0(targetpath, '/', ciname, '_autoscaled.png'))
     }
 
   }
@@ -225,7 +225,7 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #'
 #' Generate classification image for for any reverse correlation task.
 #'
-#' This function saves the classification image as JPEG to a folder and returns the CI. Your choice of scaling
+#' This function saves the classification image as PNG to a folder and returns the CI. Your choice of scaling
 #' matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 #' the range of the base image pixels. This scaling is nonlinear and depends on the range of both base image
 #' and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
@@ -243,7 +243,7 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' classification images. This can be automatized using the \code{autoscale} function.
 #'
 #' @export
-#' @import jpeg
+#' @import png
 #' @import parallel
 #' @import doParallel
 #' @import foreach
@@ -254,9 +254,9 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image.
-#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis).
-#' @param filename Optional string to specify a file name for the JPEG image.
+#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
+#' @param filename Optional string to specify a file name for the PNG image.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
@@ -267,7 +267,7 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = T, zmapmethod = 'quick', sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
+generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = T, zmapmethod = 'quick', sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
@@ -356,9 +356,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
   combined <- (scaled + base) / 2
 
   # Save to file
-  if (saveasjpeg) {
+  if (saveaspng) {
     if (filename == '') {
-      filename <- paste0(baseimage, '.jpg')
+      filename <- paste0(baseimage, '.png')
     }
 
     if (antiCI) {
@@ -369,7 +369,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
 
     dir.create(targetpath, recursive = T, showWarnings = F)
 
-    jpeg::writeJPEG(combined, paste0(targetpath, '/', filename))
+    png::writePNG(combined, paste0(targetpath, '/', filename))
 
   }
 
@@ -451,7 +451,7 @@ generateZmap <- function(zmap, bgimage, targetpath = 'zmaps', ...) {
 #'
 #' Generate classification image for any reverse correlation task that displays independently generated alternatives.
 #'
-#' This function saves the classification images by participant or condition as JPEG to a folder and returns the CIs.
+#' This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 #'
 #' @export
 #' @import dplyr
@@ -461,14 +461,14 @@ generateZmap <- function(zmap, bgimage, targetpath = 'zmaps', ...) {
 #' @param responses String specifying column name in data frame that contains the responses coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveasjpeg Boolean stating whether to additionally save the CI as JPEG image.
-#' @param targetpath Optional string specifying path to save JPEGs to (default: ./cis).
-#' @param label Optional string to insert in file names of JPEGs to make them easier to identify.
+#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
+#' @param label Optional string to insert in file names of PNGs to make them easier to identify.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant},  \code{independent} or \code{autoscale} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @return List of classification image data structures (which are themselves lists of pixel matrix of classification noise only, scaled classification noise only, base image only and combined).
-batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, targetpath='./cis', label='', antiCI=FALSE, scaling='autoscale', constant=0.1) {
+batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, saveaspng=TRUE, targetpath='./cis', label='', antiCI=FALSE, scaling='autoscale', constant=0.1) {
 
   if (scaling == 'autoscale') {
     doAutoscale <- TRUE
@@ -488,7 +488,7 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
     # Get subset of data
     unitdata <- data[data[,by] == unit, ]
 
-    # Specify filename for CI JPEG
+    # Specify filename for CI PNG
     if (label == '') {
       filename <- paste0(baseimage, '_', by, '_', unitdata[1,by])
     } else {
@@ -496,11 +496,11 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
-    cis[[filename]] <- generateCI(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, saveasjpeg, paste0(filename, '.jpg'), targetpath, antiCI, scaling, constant)
+    cis[[filename]] <- generateCI(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, saveaspng, paste0(filename, '.png'), targetpath, antiCI, scaling, constant)
   }
 
   if (doAutoscale) {
-    cis <- autoscale(cis, saveasjpegs=saveasjpeg, targetpath=targetpath)
+    cis <- autoscale(cis, saveaspngs=saveaspng, targetpath=targetpath)
   }
 
   pb$stop()

@@ -4,7 +4,7 @@
 \alias{generateCI2IFC}
 \title{Generates 2IFC classification image}
 \usage{
-generateCI2IFC(stimuli, responses, baseimage, rdata, saveasjpeg = TRUE,
+generateCI2IFC(stimuli, responses, baseimage, rdata, saveaspng = TRUE,
   filename = "", targetpath = "./cis", antiCI = FALSE,
   scaling = "independent", constant = 0.1)
 }
@@ -17,11 +17,11 @@ generateCI2IFC(stimuli, responses, baseimage, rdata, saveasjpeg = TRUE,
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveasjpeg}{Boolean stating whether to additionally save the CI as JPEG image.}
+\item{saveaspng}{Boolean stating whether to additionally save the CI as PNG image.}
 
-\item{filename}{Optional string to specify a file name for the JPEG image.}
+\item{filename}{Optional string to specify a file name for the PNG image.}
 
-\item{targetpath}{Optional string specifying path to save JPEGs to (default: ./cis).}
+\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
@@ -36,7 +36,7 @@ List of pixel matrix of classification noise only, scaled classification noise o
 Generate classification image for 2 images forced choice reverse correlation task.  This function exists for backwards compatibility. You can also just use \code{generateCI()}, which this function wraps.
 }
 \details{
-This funcions saves the classification image as JPEG to a folder and returns the CI. Your choice of scaling
+This function saves the classification image as PNG to a folder and returns the CI. Your choice of scaling
 matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 the range of the base image pixels. This scaling is non linear and depends on the range of both base image
 and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
