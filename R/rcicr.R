@@ -267,7 +267,7 @@ autoscale <- function(cis, saveasjpegs=TRUE, targetpath='./cis') {
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = T, zmapmethod = 'dotsch', sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
+generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = T, zmapmethod = 'quick', sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
@@ -367,7 +367,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
       filename <- paste0('ci_', filename)
     }
 
-    dir.create(targetpath, recursive=T, showWarnings = F)
+    dir.create(targetpath, recursive = T, showWarnings = F)
 
     jpeg::writeJPEG(combined, paste0(targetpath, '/', filename))
 
@@ -376,7 +376,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
   # Compute Z-map
   if(zmap) {
 
-    if(zmapmethod == 'simple') {
+    if(zmapmethod == 'quick') {
       # Blur CI
       zmap <- as.matrix(blur(as.im(ci), sigma = sigma))
 
@@ -384,7 +384,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
       zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
 
       # Apply threshold
-      zmap[zmap > -threshold & zmap < threshold] <- 0
+      zmap[zmap > -threshold & zmap < threshold] <- NA
     }
 
     if(zmapmethod == 'dotsch') {
@@ -409,17 +409,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
       # Apply a T-test to each pixel and register t and p
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
       tmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['statistic']))
-      mmap <- apply(noiseimages, c(1,2), function(x) mean(x))
-      zmap <- apply(noiseimages, c(1,2), function(x) (0 - mean(x)) / sd(x))
-
-      # Plot
-      png('pmap.png', width = img_size, height = img_size)
-      grid::grid.raster((pmap-min(pmap))/max(pmap-min(pmap)))
-      dev.off()
-      png('tmap.png', width = img_size, height = img_size)
-      grid::grid.raster((tmap-min(tmap))/max(tmap-min(tmap)))
-      dev.off()
     }
+
+    # Pass zmap object to generateZmap for plotting
+    generateZmap(zmap, combined)
+
   }
 
   # Return list
@@ -434,12 +428,23 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveasjpeg=TRUE, fi
 #'
 #' @export
 #' @import dplyr
+#' @importFrom raster raster plot
+#' @importFrom grDevices png
+#' @importFrom graphics rasterImage
 #' @param zmap A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.
-#' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
-#' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
+#' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI.
 #' @param targetpath String specifying path to save the Z-map PNG to.
+#' @param ... Additional arguments to be passed to raster::plot.
 #' @return Nothing. It writes a Z-map image.
-generateZmap <- function(zmap, baseimage, rdata) {
+generateZmap <- function(zmap, bgimage, targetpath = 'zmaps', ...) {
+
+  dir.create(targetpath, recursive = T, showWarnings = F)
+
+  png(filename = paste0(targetpath, '/', 'zmap.png'), width = 512, height = 512)
+  raster::plot(raster(zmap), axes = F, box = F, ...)
+  rasterImage(bgimage, 0, 0, 1, 1)
+  raster::plot(raster(zmap), add = T, ...)
+  dev.off()
 }
 
 #' Generates multiple classification images by participant or condition
@@ -585,69 +590,6 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   # Return correlations
   return(correlations)
 }
-
-
-
-#' Generates Z-map
-#'
-#' Generates Z-map for a given classification image.
-#'
-#' This function saves the Z-map (superimposed on the scaled classification image) to a folder.
-#'
-#' @export
-#' @import parallel
-#' @import doParallel
-#' @import png
-#' @importFrom spatstat blur as.im
-#' @param cilist A list object (as returned by generateCI) containing at least the "ci" and "combined" element.
-#' @param img_size Integer specifying size of the stimuli used in number of pixels.
-#' @param sigma Optional number specifying the level of smoothing applied in calculating the z-map (default: 10).
-#' @param threshold Optional number specifying the threshold absolute z-score value used in calculating the z-map (default: 3).
-#' @param directional Optional boolean specifying whether different colors should be used for negative and positive z-scores (default: F).
-#' @param targetpath Optional string specifying path to save JPEGs to (default: ./zmaps).
-#' @param saveasjpeg Optional boolean specifying whether to write the Z-map to a JPEG image (default: TRUE).
-#' @return Array representing an RGB image.
-generateZmap <- function(cilist, img_size = 512, sigma = 10, threshold = 3, directional = F, saveasjpeg = T, targetpath = './zmaps') {
-  # Generate Z-map
-  zmap <- as.matrix(blur(as.im(cilist$ci), sigma = sigma))
-  zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
-  zmap[zmap > -threshold & zmap < threshold] <- 0
-
-  # Normalize
-  zmap_normalized <- zmap/max(abs(zmap))
-
-  # Write as JPEG
-  if (saveasjpeg) {
-    # Import classification image
-    img <- rep(cilist$combined, 3)
-    dim(img) <- c(512, 512, 3)
-    # Add Z-map
-    # Zero out the pixels with z-scores above threshold
-    img[,,1][zmap_normalized != 0] <- 0
-    img[,,2][zmap_normalized != 0] <- 0
-    img[,,3][zmap_normalized != 0] <- 0
-    if (directional == T) {
-      print('hello')
-      # Add absolute values of positive normalized z-scores to red channel and
-      # negative normalized z-scores to blue channel
-      img[,,1][zmap_normalized > 0] <- zmap_normalized[zmap_normalized > 0]
-      img[,,3][zmap_normalized < 0] <- abs(zmap_normalized[zmap_normalized < 0])
-    } else {
-      print('else')
-      zmap_normalized <- abs(zmap_normalized)
-      img[,,1][zmap_normalized != 0] <- zmap_normalized[zmap_normalized != 0]
-    }
-
-    dir.create(targetpath, recursive=T, showWarnings = F)
-
-    # Write
-    writePNG(img, paste0(targetpath, '/', 'zmap.png'))
-  }
-
-  # Return Z-map
-  return(zmap)
-}
-
 
 # Suppress checking notes for variables loaded at runtime from .RData files
 if(getRversion() >= "2.15.1")  utils::globalVariables(c("p", "s", "base_faces", "stimuli_params"))

@@ -13,6 +13,7 @@
 #' @import foreach
 #' @import doParallel
 #' @importFrom stats runif
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param base_face_files List containing base face file names (JPEGs) used as base images for stimuli.
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
 #' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).

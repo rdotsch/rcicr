@@ -4,48 +4,24 @@
 \alias{generateZmap}
 \title{Generates a Z-map}
 \usage{
-generateZmap(cilist, img_size = 512, sigma = 10, threshold = 3,
-  directional = F, saveasjpeg = T, targetpath = "./zmaps")
-
-generateZmap(cilist, img_size = 512, sigma = 10, threshold = 3,
-  directional = F, saveasjpeg = T, targetpath = "./zmaps")
+generateZmap(zmap, bgimage, targetpath = "zmaps", ...)
 }
 \arguments{
-\item{cilist}{A list object (as returned by generateCI) containing at least the "ci" and "combined" element.}
+\item{zmap}{A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.}
 
-\item{img_size}{Integer specifying size of the stimuli used in number of pixels.}
-
-\item{sigma}{Optional number specifying the level of smoothing applied in calculating the z-map (default: 10).}
-
-\item{threshold}{Optional number specifying the threshold absolute z-score value used in calculating the z-map (default: 3).}
-
-\item{directional}{Optional boolean specifying whether different colors should be used for negative and positive z-scores (default: F).}
-
-\item{saveasjpeg}{Optional boolean specifying whether to write the Z-map to a JPEG image (default: TRUE).}
+\item{bgimage}{A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI.}
 
 \item{targetpath}{String specifying path to save the Z-map PNG to.}
 
-\item{zmap}{A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.}
-
-\item{baseimage}{String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.}
-
-\item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
-
-\item{targetpath}{Optional string specifying path to save JPEGs to (default: ./zmaps).}
+\item{...}{Additional arguments to be passed to raster::plot.}
 }
 \value{
 Nothing. It writes a Z-map image.
-
-Array representing an RGB image.
 }
 \description{
 Generates a Z-map given a matrix of z-scores that maps onto a specified base image.
-
-Generates Z-map for a given classification image.
 }
 \details{
 This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
-
-This function saves the Z-map (superimposed on the scaled classification image) to a folder.
 }
 

@@ -7,7 +7,7 @@
 generateCI(stimuli, responses, baseimage, rdata, saveasjpeg = TRUE,
   filename = "", targetpath = "./cis", antiCI = FALSE,
   scaling = "independent", constant = 0.1, zmap = T,
-  zmapmethod = "dotsch", sigma = 3, threshold = 3,
+  zmapmethod = "quick", sigma = 3, threshold = 3,
   zmaptargetpath = "./zmaps", n_cores = detectCores())
 }
 \arguments{

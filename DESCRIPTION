@@ -22,5 +22,6 @@ Imports:
     parallel,
     doParallel,
     foreach,
-    spatstat
+    spatstat,
+    raster
 RoxygenNote: 5.0.1
