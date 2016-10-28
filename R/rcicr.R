@@ -440,7 +440,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
 #' @importFrom grDevices png
 #' @importFrom graphics rasterImage par plot.new plot.window
 #' @param zmap A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.
-#' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI.
+#' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI. If not this argument is not given, only the Z-map will be drawn.
 #' @param name The name of this Z-map (usually the name of the base image).
 #' @param sigma The sigma of the smoothing that was applied to the CI to create the Z-map.
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
@@ -449,7 +449,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
 #' @param decoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
-generateZmap <- function(zmap, bgimage, name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = F, ...) {
+generateZmap <- function(zmap, bgimage = '', name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = T, ...) {
 
   dir.create(targetpath, recursive = T, showWarnings = F)
 
@@ -458,9 +458,11 @@ generateZmap <- function(zmap, bgimage, name, sigma, threshold, targetpath = 'zm
 
   png(filename = paste0(targetpath, '/zmap_', name, '.png'), width = size, height = size)
   if (decoration) {
-    raster::plot(raster(zmap), axes = F, box = F, main = paste0('Z-map of ', name),
+    raster::plot(raster(zmap), axes = F, box = isTRUE(bgimage == ''), main = paste0('Z-map of ', name),
                  xlab = paste0('sigma = ', sigma, ', threshold = ', threshold), ...)
-    rasterImage(bgimage, 0, 0, 1, 1)
+    if (bgimage != '') {
+      rasterImage(bgimage, 0, 0, 1, 1)
+    }
     raster::plot(raster(zmap), add = T, ...)
   }
   if (!decoration) {
@@ -468,7 +470,9 @@ generateZmap <- function(zmap, bgimage, name, sigma, threshold, targetpath = 'zm
     par(mar = c(0, 0, 0, 0))
     plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = 'i', yaxs = 'i')
 
-    rasterImage(bgimage, 0, 0, 1, 1)
+    if (bgimage != '') {
+      rasterImage(bgimage, 0, 0, 1, 1)
+    }
     raster::plot(raster(zmap), add = T, legend = F)
   }
   dev.off()
