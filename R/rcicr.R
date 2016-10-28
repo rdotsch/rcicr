@@ -451,28 +451,45 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
 #' @return Nothing. It writes a Z-map image.
 generateZmap <- function(zmap, bgimage = '', name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = T, ...) {
 
+  # Create target directory
   dir.create(targetpath, recursive = T, showWarnings = F)
 
   # Apply threshold
   zmap[abs(zmap) < threshold] <- NA
 
+  # Plot
   png(filename = paste0(targetpath, '/zmap_', name, '.png'), width = size, height = size)
+
+  # With decoration
   if (decoration) {
-    raster::plot(raster(zmap), axes = F, box = isTRUE(bgimage == ''), main = paste0('Z-map of ', name),
+    # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
+    raster::plot(raster(zmap), axes = F, box = F, main = paste0('Z-map of ', name),
                  xlab = paste0('sigma = ', sigma, ', threshold = ', threshold), ...)
-    if (bgimage != '') {
+    # Add bgimage (if specified) and superimpose Z-map on top of it
+    if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
+      raster::plot(raster(zmap), add = T, ...)
     }
-    raster::plot(raster(zmap), add = T, ...)
+    # If no bgimage was specified, draw a boundary box around the Z-map
+    if (identical(bgimage, '')) {
+      box <- matrix(NA, nrow(zmap) + 1, ncol(zmap) + 1)
+      box[c(1, nrow(zmap) + 1), ] <- 0
+      box[, c(1, ncol(zmap) + 1)] <- 0
+      rasterImage(box, 0, 0, 1, 1)
+    }
+  # Without decoration
   }
   if (!decoration) {
+    # Initialize plot without margins
     plot.new()
     par(mar = c(0, 0, 0, 0))
     plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = 'i', yaxs = 'i')
 
+    # If specified, add bgimage
     if (bgimage != '') {
       rasterImage(bgimage, 0, 0, 1, 1)
     }
+    # Add Z-map
     raster::plot(raster(zmap), add = T, legend = F)
   }
   dev.off()
