@@ -416,8 +416,6 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
       # Create Z-map
       zmap <- sign(ci) * abs(qnorm(pmap/2))
 
-      # Apply threshold
-      zmap[abs(zmap) < threshold] <- NA
     }
 
     # Pass zmap object to generateZmap for plotting
@@ -445,7 +443,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
 #' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI.
 #' @param name The name of this Z-map (usually the name of the base image).
 #' @param sigma The sigma of the smoothing that was applied to the CI to create the Z-map.
-#' @param threshold The threshold Z-score that was applied to the Z-map.
+#' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
 #' @param targetpath String specifying path to save the Z-map PNG to.
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
 #' @param decoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
@@ -454,6 +452,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
 generateZmap <- function(zmap, bgimage, name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = F, ...) {
 
   dir.create(targetpath, recursive = T, showWarnings = F)
+
+  # Apply threshold
+  zmap[abs(zmap) < threshold] <- NA
 
   png(filename = paste0(targetpath, '/zmap_', name, '.png'), width = size, height = size)
   if (decoration) {
