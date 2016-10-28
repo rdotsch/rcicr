@@ -254,7 +254,8 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param saveaspng Optional Boolean stating whether to additionally save the CI as PNG image.
+#' @param participants Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.
 #' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param filename Optional string to specify a file name for the PNG image.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
@@ -268,7 +269,7 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
+generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
@@ -298,13 +299,14 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
     stop(paste0('File specified in rdata argument did not contain any reference to base image label: ', baseimage, ' (NOTE: file contains references to the following base image label(s): ', paste(names(base_faces), collapse=', '), ')'))
   }
 
-
-  # Average responses for each presented stimulus (in case stimuli have been presented multiple times,
-  # or group-wise classification images are being calculated, in order to reduce memory and processing
-  # load)
-  aggregated <- aggregate(responses, by=list(stimuli=stimuli), FUN=mean)
-  responses <- aggregated$x
-  stimuli <- aggregated$stimuli
+  if (all(is.na(participants))) {
+    # Average responses for each presented stimulus (in case stimuli have been presented multiple times,
+    # or group-wise classification images are being calculated, in order to reduce memory and processing
+    # load)
+    aggregated <- aggregate(responses, by=list(stimuli=stimuli), FUN=mean)
+    responses <- aggregated$x
+    stimuli <- aggregated$stimuli
+  }
 
   # Retrieve parameters of actually presented stimuli (this will work with non-consecutive stims as well)
   params <- stimuli_params[[baseimage]][stimuli,]
@@ -324,7 +326,37 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
   if (antiCI) {
     params = -params
   }
-  ci <- generateCINoise(params, responses, p)
+
+  if (all(is.na(participants))) {
+
+    # Compute one CI in one single step based on all data
+    ci <- generateCINoise(params, responses, p)
+
+  } else {
+
+    # First CI by participant, than average across participants
+    pids <- as.numeric(factor(participants))
+    npids <- length(unique(pids))
+
+    # Initialize progress bar
+    pb <- txtProgressBar(min = 1, max = npids, style = 3)
+
+    # Create cluster for parallel processing
+    cl <- makeCluster(n_cores, outfile = '')
+    registerDoParallel(cl)
+
+    # For each weighted stimulus, construct the complementary noise pattern
+    pid.cis <- foreach(obs = 1:npids, .combine = 'c', .packages = 'rcicr') %dopar% {
+      setTxtProgressBar(pb, obs)
+      pid.rows <- pids == obs
+      generateCINoise(params[pid.rows,], responses[pid.rows], p)
+    }
+    stopCluster(cl)
+    dim(pid.cis) <- c(img_size, img_size, npids)
+
+    # Average across participants for final ci
+    ci <- apply(pid.cis, c(1,2), mean)
+  }
 
   # Scale
   if (scaling == 'none') {
