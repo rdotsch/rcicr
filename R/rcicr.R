@@ -322,7 +322,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     params <- params[, 1:4092]
   }
 
-  # Compute classification image
+  # Compute classification image #
   if (antiCI) {
     params = -params
   }
@@ -334,7 +334,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 
   } else {
 
-    # First CI by participant, than average across participants
+    # First CI by participant, then average across participants
     pids <- as.numeric(factor(participants))
     npids <- length(unique(pids))
 
@@ -354,7 +354,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     stopCluster(cl)
     dim(pid.cis) <- c(img_size, img_size, npids)
 
-    # Average across participants for final ci
+    # Average across participants for final CI
     ci <- apply(pid.cis, c(1,2), mean)
   }
 
@@ -421,26 +421,33 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     }
 
     if(zmapmethod == 't.test') {
-      # Weigh the stimulus parameters of each trial using the given responses
-      weightedparameters <- stimuli_params$gender_neutral * responses
 
-      # Get number of observations
-      n_observations <- length(responses)
+      # Compute one CI in one single step based on all data
+      if (all(is.na(participants))) {
+        # Weigh the stimulus parameters of each trial using the given responses
+        weightedparameters <- params * responses
 
-      # Initialize progress bar
-      pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
+        # Get number of observations
+        n_observations <- length(responses)
 
-      # Create cluster for parallel processing
-      cl <- makeCluster(n_cores, outfile = '')
-      registerDoParallel(cl)
+        # Initialize progress bar
+        pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
 
-      # For each weighted stimulus, construct the complementary noise pattern
-      noiseimages <- foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
-                               setTxtProgressBar(pb, obs)
-                               generateNoiseImage(weightedparameters[obs, ], p)
-                             }
-      stopCluster(cl)
-      dim(noiseimages) <- c(img_size, img_size, n_observations)
+        # Create cluster for parallel processing
+        cl <- makeCluster(n_cores, outfile = '')
+        registerDoParallel(cl)
+
+        # For each weighted stimulus, construct the complementary noise pattern
+        noiseimages <- foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
+                                 setTxtProgressBar(pb, obs)
+                                 generateNoiseImage(weightedparameters[obs, ], p)
+                               }
+        stopCluster(cl)
+        dim(noiseimages) <- c(img_size, img_size, n_observations)
+
+      } else {
+        noiseimages <- pid.cis
+      }
 
       # Get p value for each pixel
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
