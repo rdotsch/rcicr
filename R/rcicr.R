@@ -261,7 +261,7 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @param zmap Boolean specifying whether a z-map should be created (default: TRUE).
-#' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{dotsch}, \code{mangini}, or \code{ethier}.
+#' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.
 #' @param zmapdecoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
@@ -388,7 +388,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
       zmap[zmap > -threshold & zmap < threshold] <- NA
     }
 
-    if(zmapmethod == 'dotsch') {
+    if(zmapmethod == 't.test') {
       # Weigh the stimulus parameters of each trial using the given responses
       weightedparameters <- stimuli_params$gender_neutral * responses
 
@@ -410,12 +410,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
       stopCluster(cl)
       dim(noiseimages) <- c(img_size, img_size, n_observations)
 
-      # Get p value and mean for each pixel
+      # Get p value for each pixel
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
-      mmap <- apply(noiseimages, c(1,2), mean)
 
       # Create Z-map
-      zmap <- sign(mmap) * abs(qnorm(pmap/2))
+      zmap <- sign(ci) * abs(qnorm(pmap/2))
 
       # Apply threshold
       zmap[abs(zmap) < threshold] <- NA
