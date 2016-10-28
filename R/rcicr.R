@@ -262,7 +262,7 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @param zmap Boolean specifying whether a z-map should be created (default: TRUE).
-#' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{dotsch}, \code{mangini}, or \code{ethier}.
+#' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.
 #' @param zmapdecoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
@@ -420,7 +420,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
       zmap[zmap > -threshold & zmap < threshold] <- NA
     }
 
-    if(zmapmethod == 'dotsch') {
+    if(zmapmethod == 't.test') {
       # Weigh the stimulus parameters of each trial using the given responses
       weightedparameters <- stimuli_params$gender_neutral * responses
 
@@ -442,15 +442,12 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
       stopCluster(cl)
       dim(noiseimages) <- c(img_size, img_size, n_observations)
 
-      # Get p value and mean for each pixel
+      # Get p value for each pixel
       pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
-      mmap <- apply(noiseimages, c(1,2), mean)
 
       # Create Z-map
-      zmap <- sign(mmap) * abs(qnorm(pmap/2))
+      zmap <- sign(ci) * abs(qnorm(pmap/2))
 
-      # Apply threshold
-      zmap[abs(zmap) < threshold] <- NA
     }
 
     # Pass zmap object to generateZmap for plotting
@@ -467,6 +464,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 #' Generates a Z-map given a matrix of z-scores that maps onto a specified base image.
 #'
 #' This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
+#' Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
 #'
 #' @export
 #' @import dplyr
@@ -474,32 +472,56 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 #' @importFrom grDevices png
 #' @importFrom graphics rasterImage par plot.new plot.window
 #' @param zmap A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.
-#' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI.
+#' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI. If not this argument is not given, only the Z-map will be drawn.
 #' @param name The name of this Z-map (usually the name of the base image).
 #' @param sigma The sigma of the smoothing that was applied to the CI to create the Z-map.
-#' @param threshold The threshold Z-score that was applied to the Z-map.
+#' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
 #' @param targetpath String specifying path to save the Z-map PNG to.
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
 #' @param decoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
-generateZmap <- function(zmap, bgimage, name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = F, ...) {
+generateZmap <- function(zmap, bgimage = '', name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = T, ...) {
 
+  # Create target directory
   dir.create(targetpath, recursive = T, showWarnings = F)
 
+  # Apply threshold
+  zmap[abs(zmap) < threshold] <- NA
+
+  # Plot
   png(filename = paste0(targetpath, '/zmap_', name, '.png'), width = size, height = size)
+
+  # With decoration
   if (decoration) {
+    # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
     raster::plot(raster(zmap), axes = F, box = F, main = paste0('Z-map of ', name),
                  xlab = paste0('sigma = ', sigma, ', threshold = ', threshold), ...)
-    rasterImage(bgimage, 0, 0, 1, 1)
-    raster::plot(raster(zmap), add = T, ...)
+    # Add bgimage (if specified) and superimpose Z-map on top of it
+    if (!(identical(bgimage, ''))) {
+      rasterImage(bgimage, 0, 0, 1, 1)
+      raster::plot(raster(zmap), add = T, ...)
+    }
+    # If no bgimage was specified, draw a boundary box around the Z-map
+    if (identical(bgimage, '')) {
+      box <- matrix(NA, nrow(zmap) + 1, ncol(zmap) + 1)
+      box[c(1, nrow(zmap) + 1), ] <- 0
+      box[, c(1, ncol(zmap) + 1)] <- 0
+      rasterImage(box, 0, 0, 1, 1)
+    }
+  # Without decoration
   }
   if (!decoration) {
+    # Initialize plot without margins
     plot.new()
     par(mar = c(0, 0, 0, 0))
     plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = 'i', yaxs = 'i')
 
-    rasterImage(bgimage, 0, 0, 1, 1)
+    # If specified, add bgimage
+    if (bgimage != '') {
+      rasterImage(bgimage, 0, 0, 1, 1)
+    }
+    # Add Z-map
     raster::plot(raster(zmap), add = T, legend = F)
   }
   dev.off()
