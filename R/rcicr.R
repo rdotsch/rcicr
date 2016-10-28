@@ -434,6 +434,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, fil
 #' Generates a Z-map given a matrix of z-scores that maps onto a specified base image.
 #'
 #' This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
+#' Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
 #'
 #' @export
 #' @import dplyr
