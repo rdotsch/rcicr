@@ -466,7 +466,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 
   # Return list
-  if (zmapbool = T) {
+  if (zmapbool == T) {
     return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
   } else {
     return(list(ci=ci, scaled=scaled, base=base, combined=combined))
