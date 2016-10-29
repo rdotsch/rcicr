@@ -271,6 +271,9 @@ autoscale <- function(cis, saveaspngs=TRUE, targetpath='./cis') {
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
 generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
+  # Rename zmap to zmapbool so we can use zmap for the actual zmap
+  zmapbool <- zmap
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
@@ -463,7 +466,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 
   # Return list
-  return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
+  if (zmapbool = T) {
+    return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
+  } else {
+    return(list(ci=ci, scaled=scaled, base=base, combined=combined))
+  }
 }
 
 #' Generates a Z-map
