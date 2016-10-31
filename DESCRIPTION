@@ -23,5 +23,6 @@ Imports:
     doParallel,
     foreach,
     spatstat,
-    raster
+    raster,
+    viridis
 RoxygenNote: 5.0.1

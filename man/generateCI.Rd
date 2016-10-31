@@ -4,8 +4,8 @@
 \alias{generateCI}
 \title{Generates classification image}
 \usage{
-generateCI(stimuli, responses, baseimage, rdata, saveaspng = TRUE,
-  filename = "", targetpath = "./cis", antiCI = FALSE,
+generateCI(stimuli, responses, baseimage, rdata, participants = NA,
+  saveaspng = TRUE, filename = "", targetpath = "./cis", antiCI = FALSE,
   scaling = "independent", constant = 0.1, zmap = F,
   zmapmethod = "quick", zmapdecoration = T, sigma = 3, threshold = 3,
   zmaptargetpath = "./zmaps", n_cores = detectCores())
@@ -19,7 +19,9 @@ generateCI(stimuli, responses, baseimage, rdata, saveaspng = TRUE,
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveaspng}{Boolean stating whether to additionally save the CI as PNG image.}
+\item{participants}{Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.}
+
+\item{saveaspng}{Optional Boolean stating whether to additionally save the CI as PNG image.}
 
 \item{filename}{Optional string to specify a file name for the PNG image.}
 

@@ -461,7 +461,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     }
 
     # Pass zmap object to generateZmap for plotting
-    generateZmap(zmap = zmap, bgimage = combined, name = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
+    plotZmap(zmap = zmap, bgimage = combined, name = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
 
   }
 
@@ -473,15 +473,16 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 }
 
-#' Generates a Z-map
+#' Plots a Z-map
 #'
-#' Generates a Z-map given a matrix of z-scores that maps onto a specified base image.
+#' Plots a Z-map given a matrix of z-scores that maps onto a specified base image.
 #'
 #' This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
 #' Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
 #'
 #' @export
 #' @import dplyr
+#' @import viridis
 #' @importFrom raster raster plot
 #' @importFrom grDevices png
 #' @importFrom graphics rasterImage par plot.new plot.window
@@ -495,7 +496,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 #' @param decoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
-generateZmap <- function(zmap, bgimage = '', name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = T, ...) {
+plotZmap <- function(zmap, bgimage = '', name, sigma, threshold, targetpath = 'zmaps', size = 512, decoration = T, ...) {
 
   # Create target directory
   dir.create(targetpath, recursive = T, showWarnings = F)
@@ -510,7 +511,8 @@ generateZmap <- function(zmap, bgimage = '', name, sigma, threshold, targetpath 
   if (decoration) {
     # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
     raster::plot(raster(zmap), axes = F, box = F, main = paste0('Z-map of ', name),
-                 xlab = paste0('sigma = ', sigma, ', threshold = ', threshold), ...)
+                 xlab = paste0('sigma = ', sigma, ', threshold = ', threshold),
+                 col = viridis(100), ...)
     # Add bgimage (if specified) and superimpose Z-map on top of it
     if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
