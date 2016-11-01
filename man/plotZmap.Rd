@@ -4,25 +4,27 @@
 \alias{plotZmap}
 \title{Plots a Z-map}
 \usage{
-plotZmap(zmap, bgimage = "", name, sigma, threshold, targetpath = "zmaps",
-  size = 512, decoration = T, ...)
+plotZmap(zmap, bgimage = "", sigma, threshold = 3, mask, decoration = T,
+  targetpath = "zmaps", filename = "zmap", size = 512, ...)
 }
 \arguments{
 \item{zmap}{A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.}
 
 \item{bgimage}{A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI. If not this argument is not given, only the Z-map will be drawn.}
 
-\item{name}{The name of this Z-map (usually the name of the base image).}
-
 \item{sigma}{The sigma of the smoothing that was applied to the CI to create the Z-map.}
 
 \item{threshold}{Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.}
 
-\item{targetpath}{String specifying path to save the Z-map PNG to.}
-
-\item{size}{Integer specifying the width and height of the PNG image (default: 512).}
+\item{mask}{Optional. A boolean matrix with the same dimensions as zmap. If a cell evaluates to TRUE, the corresponding zmap pixel will be masked. Can also be the filename (as a string) of a black and white PNG image to be converted to a matrix (black = masked).}
 
 \item{decoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
+
+\item{targetpath}{String specifying path to save the Z-map PNG to.}
+
+\item{filename}{Optional string to specify a file name for the Z-map PNG.}
+
+\item{size}{Integer specifying the width and height of the PNG image (default: 512).}
 
 \item{...}{Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.}
 }
