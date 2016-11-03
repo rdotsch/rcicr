@@ -321,8 +321,15 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 
   # Check whether number of parameters are 4096 (this was the case in older versions of rcicr)
   # and should be truncated to 4092 to work well in this new version
-  if (ncol(params) == 4096) {
-    params <- params[, 1:4092]
+  if (!is.vector(params)) {
+    if (ncol(params) == 4096) {
+      params <- params[, 1:4092]
+    }
+  } else {
+    # In case we only have a single trial as input
+    if (length(params) == 4092) {
+      params <- params[1:4092]
+    }
   }
 
   # Compute classification image #
