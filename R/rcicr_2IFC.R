@@ -15,7 +15,7 @@
 #' @import doParallel
 #' @importFrom stats runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
-#' @param base_face_files List containing base face file names (JPEGs) used as base images for stimuli.
+#' @param base_face_files List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
 #' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).
 #' @param stimulus_path Path to save stimuli and .Rdata file to.
@@ -40,7 +40,15 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   for (base_face in names(base_face_files)) {
     # Read base face
-    img <- jpeg::readJPEG(base_face_files[[base_face]])
+    fname <- base_face_files[[base_face]]
+    if (grepl('png|PNG', fname)) {
+      img <- png::readPNG(fname)
+    } else if (grepl('jpeg|JPEG|jpg|JPG', fname)) {
+      img <- jpeg::readJPEG(fname)
+    } else {
+      stop(paste0('Error in reading base image file ',
+                  fname, ': must be a PNG or JPEG file.'))
+    }
 
     # Change base face to greyscale if necessary
     if (length(dim(img)) == 3) {
