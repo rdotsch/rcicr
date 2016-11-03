@@ -13,7 +13,7 @@
 #' @import png
 #' @import foreach
 #' @import doParallel
-#' @importFrom stats runif
+#' @importFrom stats setNames runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param base_face_files List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
@@ -104,7 +104,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   cl <- makeCluster(ncores, outfile = '')
   registerDoParallel(cl)
 
-  foreach(trial = 1:n_trials, .packages = 'rcicr') %dopar% {
+  stims <- foreach(trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(x, as.character(1:n_trials))) %dopar% {
     setTxtProgressBar(pb, trial)
 
     if (use_same_parameters) {
@@ -136,6 +136,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
       # write to file
       png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+
+      # Return CI
+      return(stimuli[,,trial])
     }
   }
   stopCluster(cl)
@@ -144,6 +147,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   generator_version <- '0.3.3'
   save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
 
+  # Return CIs
+  return(stims)
 }
 
 #' Generates 2IFC classification image
