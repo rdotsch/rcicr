@@ -449,8 +449,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 
         # For each weighted stimulus, construct the complementary noise pattern
         noiseimages <- foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
-                                 setTxtProgressBar(pb, obs)
                                  generateNoiseImage(weightedparameters[obs, ], p)
+                                 # Update progress bar
+                                 setTxtProgressBar(pb, obs)
                                }
         stopCluster(cl)
         dim(noiseimages) <- c(img_size, img_size, n_observations)

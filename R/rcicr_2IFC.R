@@ -105,8 +105,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   registerDoParallel(cl)
 
   stims <- foreach(trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(x, as.character(1:n_trials))) %dopar% {
-    setTxtProgressBar(pb, trial)
-
     if (use_same_parameters) {
       # compute noise pattern, can be used for all base faces
       stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
@@ -140,6 +138,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       # Return CI
       return(stimuli[,,trial])
     }
+    # Update progress bar
+    setTxtProgressBar(pb, trial)
   }
   stopCluster(cl)
 
