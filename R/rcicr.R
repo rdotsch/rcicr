@@ -171,7 +171,8 @@ generateCINoise <- function(stimuli, responses, p) {
   if(is.null(dim(weighted))) {
     params <- weighted
   } else{
-    params <- colMeans(weighted)
+    # Compute mean and return to original variance
+    params <- colMeans(weighted) * sqrt(length(responses))
   }
 
   return(generateNoiseImage(params, p))
@@ -364,8 +365,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     stopCluster(cl)
     dim(pid.cis) <- c(img_size, img_size, npids)
 
-    # Average across participants for final CI
-    ci <- apply(pid.cis, c(1,2), mean)
+    # Average across participants for final CI and return to original variance
+    ci <- apply(pid.cis, c(1,2), mean) * sqrt(npids)
   }
 
   # Scale
@@ -469,7 +470,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     }
 
     # Pass zmap object to plotZmap for plotting
-    plotZmap(zmap = zmap, bgimage = combined, filename = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
+    #plotZmap(zmap = zmap, bgimage = combined, filename = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
 
   }
 
