@@ -7,7 +7,7 @@
 generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
   stimulus_path = "./stimuli", label = "rcic", use_same_parameters = TRUE,
   seed = 1, maximize_baseimage_contrast = TRUE, noise_type = "sinusoid",
-  nscales = 5, sigma = 25, ncores = detectCores())
+  nscales = 5, sigma = 25, ncores = detectCores(), returnAsList = FALSE)
 }
 \arguments{
 \item{base_face_files}{List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.}
@@ -33,6 +33,8 @@ generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
 \item{sigma}{Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).}
 
 \item{ncores}{Number of CPU cores to use (default: detectCores()).}
+
+\item{returnAsList}{Boolean specifying whether to return a list of the CIs that were generated (default: FALSE).}
 }
 \value{
 Nothing, everything is saved to files.
