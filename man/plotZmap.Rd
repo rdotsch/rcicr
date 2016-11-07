@@ -4,8 +4,9 @@
 \alias{plotZmap}
 \title{Plots a Z-map}
 \usage{
-plotZmap(zmap, bgimage = "", sigma, threshold = 3, mask, decoration = T,
-  targetpath = "zmaps", filename = "zmap", size = 512, ...)
+plotZmap(zmap, bgimage = "", sigma, threshold = 3, mask = NULL,
+  decoration = T, targetpath = "zmaps", filename = "zmap", size = 512,
+  ...)
 }
 \arguments{
 \item{zmap}{A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.}

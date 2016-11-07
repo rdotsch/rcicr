@@ -418,7 +418,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 
   # Compute Z-map
-  if(zmap) {
+  if(zmapbool) {
 
     if(zmapmethod == 'quick') {
       # Blur CI
@@ -470,7 +470,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     }
 
     # Pass zmap object to plotZmap for plotting
-    #plotZmap(zmap = zmap, bgimage = combined, filename = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
+    plotZmap(zmap = zmap, bgimage = combined, filename = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
 
   }
 
@@ -506,13 +506,13 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
 #' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
-plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask, decoration = T, targetpath = 'zmaps', filename = 'zmap', size = 512, ...) {
+plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = T, targetpath = 'zmaps', filename = 'zmap', size = 512, ...) {
 
   # Create target directory
   dir.create(targetpath, recursive = T, showWarnings = F)
 
   # If a mask is specified, import and check it
-  if (exists('mask')) {
+  if (!(is.null(mask))) {
     # Read in the mask from a PNG image if specified
     if (!is.matrix(mask)) {
       mask <- png::readPNG(mask)
