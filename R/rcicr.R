@@ -331,7 +331,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 
   # Compute classification image #
-  if (antiCI) {
+  if (antiCI==TRUE) {
     params = -params
   }
 
@@ -637,7 +637,18 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
-    cis[[filename]] <- generateCI(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, saveaspng, paste0(filename, '.png'), targetpath, antiCI, scaling, constant)
+    cis[[filename]] <- generateCI(
+        stimuli=unitdata[,stimuli],
+        responses=unitdata[,responses],
+        baseimage=baseimage,
+        rdata=rdata,
+        saveaspng=saveaspng,
+        filename=paste0(filename, '.png'),
+        targetpath=targetpath,
+        antiCI=antiCI,
+        scaling=scaling,
+        constant=constant,
+        participants=NA)
   }
 
   if (doAutoscale) {
