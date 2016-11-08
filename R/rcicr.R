@@ -1,6 +1,3 @@
-# Script by Ron Dotsch, based on Matlab code by Oliver Langner and Python code by Ron Dotsch
-# r.dotsch@psych.ru.nl
-
 #' Generate single sinusoid patch
 #'
 #' @export
