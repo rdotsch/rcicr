@@ -169,7 +169,7 @@ generateCINoise <- function(stimuli, responses, p) {
     params <- weighted
   } else{
     # Compute mean and return to original variance
-    params <- colMeans(weighted) * sqrt(length(responses))
+    params <- colMeans(weighted) #* sqrt(length(responses))
   }
 
   return(generateNoiseImage(params, p))
@@ -363,7 +363,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     dim(pid.cis) <- c(img_size, img_size, npids)
 
     # Average across participants for final CI and return to original variance
-    ci <- apply(pid.cis, c(1,2), mean) * sqrt(npids)
+    ci <- apply(pid.cis, c(1,2), mean) #* sqrt(npids)
   }
 
   # Scale
