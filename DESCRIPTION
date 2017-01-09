@@ -2,8 +2,8 @@ Package: rcicr
 Type: Package
 Title: Reverse-Correlation Image-Classification Toolbox
 Version: 0.4.0
-Date: 2016-10-21
-URL: http://ron.dotsch.org/rcicr
+Date: 2017-01-09
+URL: http://www.rondotsch.nl/rcicr
 Authors@R: c(
   person("Ron", "Dotsch", email="r.dotsch@uu.nl", role=c("aut", "cre")),
   person("Jelmer", "Zondergeld", email="j.j.zondergeld@uu.nl", role="aut"))
