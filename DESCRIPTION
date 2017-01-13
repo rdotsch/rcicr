@@ -26,5 +26,9 @@ Imports:
     raster,
     viridis,
     iterators,
-    polyclip
+    polyclip,
+    goftest,
+    deldir,
+    abind,
+    tensor
 RoxygenNote: 5.0.1
