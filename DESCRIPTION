@@ -24,5 +24,6 @@ Imports:
     foreach,
     spatstat,
     raster,
-    viridis
+    viridis,
+    iterators
 RoxygenNote: 5.0.1

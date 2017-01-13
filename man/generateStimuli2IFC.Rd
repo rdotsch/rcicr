@@ -34,10 +34,10 @@ generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
 
 \item{ncores}{Number of CPU cores to use (default: detectCores()).}
 
-\item{returnAsList}{Boolean specifying whether to return a list of the CIs that were generated (default: FALSE).}
+\item{returnAsList}{Boolean specifying whether to return a list of the raw noise of the stimuli that were generated (default: FALSE).}
 }
 \value{
-Nothing, everything is saved to files.
+Nothing, everything is saved to files, unless returnAsList are set to TRUE.
 }
 \description{
 Generate stimuli for 2 images forced choice reverse correlation task.
