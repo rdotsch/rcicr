@@ -7,7 +7,8 @@
 generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
   stimulus_path = "./stimuli", label = "rcic", use_same_parameters = TRUE,
   seed = 1, maximize_baseimage_contrast = TRUE, noise_type = "sinusoid",
-  nscales = 5, sigma = 25, ncores = detectCores(), returnAsList = FALSE)
+  nscales = 5, sigma = 25, ncores = parallel::detectCores(),
+  returnAsList = FALSE)
 }
 \arguments{
 \item{base_face_files}{List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.}

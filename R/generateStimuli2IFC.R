@@ -29,7 +29,7 @@
 #' @param ncores Number of CPU cores to use (default: detectCores()).
 #' @param returnAsList Boolean specifying whether to return a list of the raw noise of the stimuli that were generated (default: FALSE).
 #' @return Nothing, everything is saved to files, unless returnAsList are set to TRUE.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=detectCores(), returnAsList=FALSE) {
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), returnAsList=FALSE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
@@ -38,6 +38,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   stimuli_params <- list()
   base_faces <- list()
+
+  if (!is.list(base_face_files)) {
+    write("Please provide base face file name as named list, e.g. base_face_files=list(aName='baseface.jpg')", stderr())
+    stop()
+  }
 
   for (base_face in names(base_face_files)) {
     # Read base face
@@ -102,10 +107,10 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   stimuli <- matlab::zeros(img_size, img_size, n_trials)
 
-  cl <- makeCluster(ncores, outfile = '')
-  registerDoParallel(cl)
+  cl <- parallel::makeCluster(ncores, outfile = '')
+  doParallel::registerDoParallel(cl)
 
-  stims <- foreach(trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(x, as.character(1:n_trials))) %dopar% {
+  stims <- foreach::foreach(trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(x, as.character(1:n_trials))) %dopar% {
     if (use_same_parameters) {
       # compute noise pattern, can be used for all base faces
       stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
@@ -144,7 +149,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # Update progress bar
     setTxtProgressBar(pb, trial)
   }
-  stopCluster(cl)
+  parallel::stopCluster(cl)
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   generator_version <- '0.3.3'

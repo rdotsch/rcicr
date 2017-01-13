@@ -46,7 +46,7 @@
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
+generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = parallel::detectCores()) {
 
   # Rename zmap to zmapbool so we can use zmap for the actual zmap
   zmapbool <- zmap
@@ -134,16 +134,16 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     pb <- txtProgressBar(min = 1, max = npids, style = 3)
 
     # Create cluster for parallel processing
-    cl <- makeCluster(n_cores, outfile = '')
-    registerDoParallel(cl)
+    cl <- parallel::makeCluster(n_cores, outfile = '')
+    doParallel::registerDoParallel(cl)
 
     # For each weighted stimulus, construct the complementary noise pattern
-    pid.cis <- foreach(obs = 1:npids, .combine = 'c', .packages = 'rcicr') %dopar% {
+    pid.cis <- foreach::foreach(obs = 1:npids, .combine = 'c', .packages = 'rcicr') %dopar% {
       setTxtProgressBar(pb, obs)
       pid.rows <- pids == obs
       generateCINoise(params[pid.rows,], responses[pid.rows], p)
     }
-    stopCluster(cl)
+    parallel::stopCluster(cl)
     dim(pid.cis) <- c(img_size, img_size, npids)
 
     # Average across participants for final CI and return to original variance
@@ -226,16 +226,16 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
         pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
 
         # Create cluster for parallel processing
-        cl <- makeCluster(n_cores, outfile = '')
-        registerDoParallel(cl)
+        cl <- parallel::makeCluster(n_cores, outfile = '')
+        doParallel::registerDoParallel(cl)
 
         # For each weighted stimulus, construct the complementary noise pattern
-        noiseimages <- foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
+        noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
           generateNoiseImage(weightedparameters[obs, ], p)
           # Update progress bar
           setTxtProgressBar(pb, obs)
         }
-        stopCluster(cl)
+        parallel::stopCluster(cl)
         dim(noiseimages) <- c(img_size, img_size, n_observations)
 
       } else {

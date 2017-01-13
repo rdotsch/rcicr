@@ -8,7 +8,7 @@ generateCI(stimuli, responses, baseimage, rdata, participants = NA,
   saveaspng = TRUE, filename = "", targetpath = "./cis", antiCI = FALSE,
   scaling = "independent", constant = 0.1, zmap = F,
   zmapmethod = "quick", zmapdecoration = T, sigma = 3, threshold = 3,
-  zmaptargetpath = "./zmaps", n_cores = detectCores())
+  zmaptargetpath = "./zmaps", n_cores = parallel::detectCores())
 }
 \arguments{
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}

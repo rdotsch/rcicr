@@ -30,5 +30,13 @@ Imports:
     goftest,
     deldir,
     abind,
-    tensor
+    tensor,
+    DBI,
+    assertthat,
+    tibble,
+    munsell,
+    plyr,
+    ggplot2,
+    gridExtra,
+    sp
 RoxygenNote: 5.0.1
