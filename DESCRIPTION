@@ -25,5 +25,6 @@ Imports:
     spatstat,
     raster,
     viridis,
-    iterators
+    iterators,
+    polyclip
 RoxygenNote: 5.0.1
