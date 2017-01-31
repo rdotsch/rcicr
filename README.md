@@ -16,4 +16,4 @@ To use the development version, do as follows:
 ## Caution!! ##
 Please do keep in mind that although we try not to break things on the development branch, it *is* the development branch and hence there may be problems, errors and issues we haven't discovered yet. If you do run into these, we would of course appreciate if you'd let us know (just file an issue).
 
-Most importantly: **We do not recommend that you use the development version for analysis meant for publication**. Please wait until we make a new version available on CRAN for that. 
+Most importantly: **We do not recommend that you use the development version for analyses meant for publication**. Please wait until we make a new version available on CRAN for that. 
