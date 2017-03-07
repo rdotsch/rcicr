@@ -6,7 +6,7 @@
 #' matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 #' the range of the base image pixels. This scaling is nonlinear and depends on the range of both base image
 #' and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
-#' have not changed base image at all before scaling may change the base image after scaling and vice versa). It is
+#' not have changed the base image at all before scaling may change the base image after scaling and vice versa). It is
 #' however the quick and dirty way to see how the CI noise affects the base image.
 #'
 #' For more control, use \code{'constant'} scaling, where the scaling is independent of

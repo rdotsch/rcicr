@@ -20,7 +20,7 @@
 #' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).
 #' @param stimulus_path Path to save stimuli and .Rdata file to.
 #' @param label Label to prepend to each file for your convenience.
-#' @param use_same_parameters Boolean specifying whether for each base image, the same set of parameters is used, or unique set is created for each base image.
+#' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
 #' @param seed Integer seeding the random number generator (for reproducibility).
 #' @param maximize_baseimage_contrast Boolean specifying wheter the pixel values of the base image should be rescaled to maximize its contrast.
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
