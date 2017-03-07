@@ -38,7 +38,8 @@
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
-#' @param zmap Boolean specifying whether a z-map should be created (default: TRUE).
+#' @param mask Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked).
+#' @param zmap Boolean specifying whether a z-map should be created (default: FALSE).
 #' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.
 #' @param zmapdecoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
@@ -46,7 +47,7 @@
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = parallel::detectCores()) {
+generateCI <- function(mask=NA, stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores()) {
 
   # Rename zmap to zmapbool so we can use zmap for the actual zmap
   zmapbool <- zmap
@@ -150,24 +151,71 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     ci <- apply(pid.cis, c(1,2), mean) #* sqrt(npids)
   }
 
+
+
+  # Mask #
+
+  # Check if a mask has been set
+  if (!is.na(mask)) {
+    # If mask argument is a string, treat it as a path to a bitmap and try to read it into a matrix
+    # If mask is a matrix, use it as is
+    # Else, throw error
+    if (typeof(mask) == 'character') {
+      mask_matrix <- png::readPNG(mask)
+
+      # Check if the PNG uses a greyscale color palette
+      if (length(dim(mask_matrix)) != 2) {
+        # If the PNG uses the full color palette but the image itself is totally greyscale, read it in anyway
+        # Thanks https://stackoverflow.com/a/30850654
+        if (all(sapply(list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3]), FUN = identical, mask_matrix[,,1]))) {
+          mask_matrix <- mask_matrix[,,1]
+        }
+        # Else, throw error
+        stop('This PNG is not encoded with a greyscale color palette and could not be converted to this encoding either. In other words, this is not a greyscale image.')
+      }
+    } else if (typeof(mask) == 'double' && length(dim(mask)) == 2) {
+      mask_matrix <- mask
+    } else {
+      stop('The mask argument is neither a string nor a matrix!')
+    }
+
+    # Check if mask is of the same size as the stimuli (i.e. img_size)
+    if (!all(dim(mask_matrix) == 512)) {
+      stop(paste0('Mask is not of the same dimensions as the stimuli! (stimulus dimensions: ', img_size, ' x ', img_size, '; mask dimensions: ', dim(mask_matrix)[2], ' by ', dim(mask_matrix)[1], ').'))
+    }
+
+    # Check if the mask is binary
+    if (length(mask_matrix) != sum(mask_matrix %in% c(0, 1))) {
+      stop('This mask contains values other than 0 or 1!')
+    }
+
+    # Convert mask to boolean matrix (black == 0 == masked)
+    mask <- mask_matrix == 0
+
+    # Apply the mask to the CI. This replaces all the masked pixels with NA
+    ci[mask] <- NA
+  }
+
+
+
   # Scale
   if (scaling == 'none') {
     scaled <- ci
   } else if (scaling == 'constant') {
     scaled <- (ci + constant) / (2*constant)
-    if (max(scaled) > 1.0 | min(scaled) < 0) {
+    if (max(scaled[!is.na(scaled)]) > 1.0 | min(scaled[!is.na(scaled)]) < 0) {
       warning('Chosen constant value for constant scaling made noise of classification image exceed possible intensity range of pixels (<0 or >1). Choose a lower value, or clipping will occur.')
     }
   } else if (scaling == 'matched') {
-    scaled <- min(base) + ((max(base) - min(base)) * (ci - min(ci)) / (max(ci) - min(ci)))
+    scaled <- min(base) + ((max(base) - min(base)) * (ci - min(ci[!is.na(ci)])) / (max(ci[!is.na(ci)]) - min(ci[!is.na(ci)])))
 
   } else if (scaling == "independent") {
 
     # Determine the lowest possible scaling factor constant
-    if (abs(range(ci)[1]) > abs(range(ci)[2])) {
-      constant <- abs(range(ci)[1])
+    if (abs(range(ci[!is.na(ci)])[1]) > abs(range(ci[!is.na(ci)])[2])) {
+      constant <- abs(range(ci[!is.na(ci)])[1])
     }  else {
-      constant <- abs(range(ci)[2])
+      constant <- abs(range(ci[!is.na(ci)])[2])
     }
 
     scaled <- (ci + constant) / (2*constant)
