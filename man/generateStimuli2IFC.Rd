@@ -21,7 +21,7 @@ generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
 
 \item{label}{Label to prepend to each file for your convenience.}
 
-\item{use_same_parameters}{Boolean specifying whether for each base image, the same set of parameters is used, or unique set is created for each base image.}
+\item{use_same_parameters}{Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).}
 
 \item{seed}{Integer seeding the random number generator (for reproducibility).}
 

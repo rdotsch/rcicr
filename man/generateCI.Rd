@@ -4,13 +4,16 @@
 \alias{generateCI}
 \title{Generates classification image}
 \usage{
-generateCI(stimuli, responses, baseimage, rdata, participants = NA,
-  saveaspng = TRUE, filename = "", targetpath = "./cis", antiCI = FALSE,
-  scaling = "independent", constant = 0.1, zmap = F,
-  zmapmethod = "quick", zmapdecoration = T, sigma = 3, threshold = 3,
-  zmaptargetpath = "./zmaps", n_cores = parallel::detectCores())
+generateCI(mask = NA, stimuli, responses, baseimage, rdata,
+  participants = NA, saveaspng = TRUE, filename = "",
+  targetpath = "./cis", antiCI = FALSE, scaling = "independent",
+  constant = 0.1, zmap = F, zmapmethod = "quick", zmapdecoration = T,
+  sigma = 3, threshold = 3, zmaptargetpath = "./zmaps",
+  n_cores = detectCores())
 }
 \arguments{
+\item{mask}{Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked).}
+
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}
 
 \item{responses}{Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.}
@@ -33,7 +36,7 @@ generateCI(stimuli, responses, baseimage, rdata, participants = NA,
 
 \item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
 
-\item{zmap}{Boolean specifying whether a z-map should be created (default: TRUE).}
+\item{zmap}{Boolean specifying whether a z-map should be created (default: FALSE).}
 
 \item{zmapmethod}{String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.}
 
@@ -58,7 +61,7 @@ This function saves the classification image as PNG to a folder and returns the 
 matters. The default is \code{'matched'}, and will match the range of the intensity of the pixels to
 the range of the base image pixels. This scaling is nonlinear and depends on the range of both base image
 and noise pattern. It is truly suboptimal, because it shifts the 0 point of the noise (that is, pixels that would
-have not changed base image at all before scaling may change the base image after scaling and vice versa). It is
+not have changed the base image at all before scaling may change the base image after scaling and vice versa). It is
 however the quick and dirty way to see how the CI noise affects the base image.
 
 For more control, use \code{'constant'} scaling, where the scaling is independent of
