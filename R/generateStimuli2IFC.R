@@ -27,9 +27,9 @@
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
 #' @param ncores Number of CPU cores to use (default: detectCores()).
-#' @param returnAsList Boolean specifying whether to return a list of the raw noise of the stimuli that were generated (default: FALSE).
-#' @return Nothing, everything is saved to files, unless returnAsList are set to TRUE.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), returnAsList=FALSE) {
+#' @param returnAsDataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns are stimuli, rows are vectorized pixels
+#' @return Nothing, everything is saved to files, unless returnAsList or returnAsMatrix are set to TRUE.
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), returnAsDataframe=FALSE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
@@ -102,15 +102,16 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   }
 
-  # Generate stimuli #
+  # Generate stimuli
   pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
 
   stimuli <- matlab::zeros(img_size, img_size, n_trials)
 
-  cl <- parallel::makeCluster(ncores, outfile = '')
+  cl <- parallel::makeCluster(ncores, outfile = "")
   doParallel::registerDoParallel(cl)
 
-  stims <- foreach::foreach(trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(x, as.character(1:n_trials))) %dopar% {
+  stims <- foreach::foreach(
+    trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE) %dopar% {
     if (use_same_parameters) {
       # compute noise pattern, can be used for all base faces
       stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
@@ -142,10 +143,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
 
       # Return CI
-      if (returnAsList) {
-        return(stimuli[,,trial])
+      if (returnAsDataframe) {
+        return(as.vector(stimuli[,,trial]))
       }
     }
+
     # Update progress bar
     setTxtProgressBar(pb, trial)
   }
@@ -153,10 +155,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   generator_version <- '0.3.3'
+
   save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
 
   # Return CIs
-  if (returnAsList) {
+  if (returnAsDataframe) {
     return(stims)
   }
 }

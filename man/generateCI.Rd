@@ -4,16 +4,13 @@
 \alias{generateCI}
 \title{Generates classification image}
 \usage{
-generateCI(mask = NA, stimuli, responses, baseimage, rdata,
-  participants = NA, saveaspng = TRUE, filename = "",
-  targetpath = "./cis", antiCI = FALSE, scaling = "independent",
-  constant = 0.1, zmap = F, zmapmethod = "quick", zmapdecoration = T,
-  sigma = 3, threshold = 3, zmaptargetpath = "./zmaps",
-  n_cores = detectCores())
+generateCI(stimuli, responses, baseimage, rdata, participants = NA,
+  saveaspng = TRUE, filename = "", targetpath = "./cis", antiCI = FALSE,
+  scaling = "independent", constant = 0.1, zmap = F,
+  zmapmethod = "quick", zmapdecoration = T, sigma = 3, threshold = 3,
+  zmaptargetpath = "./zmaps", n_cores = detectCores(), mask = NA)
 }
 \arguments{
-\item{mask}{Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked).}
-
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}
 
 \item{responses}{Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.}
@@ -49,6 +46,8 @@ generateCI(mask = NA, stimuli, responses, baseimage, rdata,
 \item{zmaptargetpath}{Optional string specifying path to save z-map PNGs to (default: ./zmaps).}
 
 \item{n_cores}{Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).}
+
+\item{mask}{Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked). Default: NA.}
 }
 \value{
 List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
