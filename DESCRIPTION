@@ -21,6 +21,7 @@ Imports:
     utils,
     parallel,
     doParallel,
+    doSNOW,
     foreach,
     spatstat,
     raster,

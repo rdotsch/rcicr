@@ -12,7 +12,7 @@
 #' @import jpeg
 #' @import png
 #' @import foreach
-#' @import doParallel
+#' @import doSNOW
 #' @importFrom stats setNames runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param base_face_files List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.
@@ -104,53 +104,59 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   # Generate stimuli
   pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
+  update_progress <- function(n) setTxtProgressBar(pb, n)
 
   stimuli <- matlab::zeros(img_size, img_size, n_trials)
 
   cl <- parallel::makeCluster(ncores, outfile = "")
-  doParallel::registerDoParallel(cl)
+  doSNOW::registerDoSNOW(cl)
 
   stims <- foreach::foreach(
-    trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE) %dopar% {
-    if (use_same_parameters) {
-      # compute noise pattern, can be used for all base faces
-      stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
-    }
+    trial = 1:n_trials,
+    .packages = 'rcicr',
+    .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)),
+    .combine = 'cbind',
+    .multicombine = TRUE,
+    .options.snow = list(progress = update_progress)) %dopar% {
 
-    for (base_face in names(base_faces)) {
-      if (!use_same_parameters) {
-        # compute noise pattern unique to this base face
+      if (use_same_parameters) {
+        # compute noise pattern, can be used for all base faces
         stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
       }
 
-      # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
-      # for yourself with simulateNoiseIntensities())
-      stimulus <- ((stimuli[,,trial] + 0.3) / 0.6)
+      for (base_face in names(base_faces)) {
+        if (!use_same_parameters) {
+          # compute noise pattern unique to this base face
+          stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
+        }
 
-      # add base face
-      combined <- (stimulus + base_faces[[base_face]]) / 2
+        # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
+        # for yourself with simulateNoiseIntensities())
+        stimulus <- ((stimuli[,,trial] + 0.3) / 0.6)
 
-      # write to file
-      png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
+        # add base face
+        combined <- (stimulus + base_faces[[base_face]]) / 2
 
-      # compute inverted stimulus
-      stimulus <- ((-stimuli[,,trial] + 0.3) / 0.6)
+        # write to file
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
 
-      # add base face
-      combined <- (stimulus + base_faces[[base_face]]) / 2
+        # compute inverted stimulus
+        stimulus <- ((-stimuli[,,trial] + 0.3) / 0.6)
 
-      # write to file
-      png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+        # add base face
+        combined <- (stimulus + base_faces[[base_face]]) / 2
 
-      # Return CI
-      if (returnAsDataframe) {
-        return(as.vector(stimuli[,,trial]))
+        # write to file
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+
+        # Return CI
+        if (returnAsDataframe) {
+          return(as.vector(stimuli[,,trial]))
+        }
       }
     }
 
-    # Update progress bar
-    setTxtProgressBar(pb, trial)
-  }
+  close(pb)
   parallel::stopCluster(cl)
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
