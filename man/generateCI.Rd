@@ -73,4 +73,3 @@ that you want to compare). The higher the constant, the less visible the noise w
 When creating multiple classification images a good strategy is to find the lowest constant that works for all
 classification images. This can be automatized using the \code{autoscale} function.
 }
-

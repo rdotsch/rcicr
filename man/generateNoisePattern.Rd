@@ -28,4 +28,3 @@ Generate sinusoid noise pattern
 \examples{
 generateNoisePattern(256)
 }
-

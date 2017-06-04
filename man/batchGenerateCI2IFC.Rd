@@ -42,4 +42,3 @@ Generate classification image for 2 images forced choice reverse correlation tas
 \details{
 This funcions saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 }
-

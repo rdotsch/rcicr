@@ -48,4 +48,3 @@ Will save the stimuli as
 PNGs to a folder, including .Rdata file needed for analysis of data after data collection. This
 .Rdata file contains the parameters that were used to generate each stimulus.
 }
-

@@ -20,4 +20,3 @@ The classification image as pixel matrix.
 \description{
 Generate classification image noise pattern based on set of stimuli (matrix: trials, parameters), responses (vector), and sinusoid
 }
-
