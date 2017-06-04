@@ -46,14 +46,15 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   for (base_face in names(base_face_files)) {
     # Read base face
-    fname <- base_face_files[[base_face]]
-    if (grepl('png|PNG', fname)) {
-      img <- png::readPNG(fname)
-    } else if (grepl('jpeg|JPEG|jpg|JPG', fname)) {
-      img <- jpeg::readJPEG(fname)
+    filename <- base_face_files[[base_face]]
+    if (grepl('png|PNG', filename)) {
+      img <- png::readPNG(filename)
+    } else if (grepl('jpeg|JPEG|jpg|JPG', filename)) {
+      img <- jpeg::readJPEG(filename)
     } else {
       stop(paste0('Error in reading base image file ',
-                  fname, ': must be a PNG or JPEG file.'))
+                  filename, ': must be a PNG or JPEG file.'))
+    }
     }
 
     # Change base face to greyscale if necessary
