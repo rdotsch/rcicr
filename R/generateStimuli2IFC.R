@@ -27,9 +27,9 @@
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
 #' @param ncores Number of CPU cores to use (default: detectCores()).
-#' @param returnAsDataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
-#' @return Nothing, everything is saved to files, unless returnAsDataframe is set to TRUE.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), returnAsDataframe=FALSE) {
+#' @param return_as_dataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
+#' @return Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), return_as_dataframe=FALSE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
@@ -143,7 +143,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
 
       # Return CI
-      if (returnAsDataframe) {
+      if (return_as_dataframe) {
         return(as.vector(stimuli[,,trial]))
       }
     }
@@ -159,7 +159,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
 
   # Return CIs
-  if (returnAsDataframe) {
+  if (return_as_dataframe) {
     return(stims)
   }
 }
