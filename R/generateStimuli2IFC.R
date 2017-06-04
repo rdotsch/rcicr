@@ -26,10 +26,10 @@
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
-#' @param ncores Number of CPU cores to use (default: detectCores()).
+#' @param ncores Number of CPU cores to use (default: detectCores()-1).
 #' @param returnAsDataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
 #' @return Nothing, everything is saved to files, unless returnAsDataframe is set to TRUE.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), returnAsDataframe=FALSE) {
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores()-1, returnAsDataframe=FALSE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
