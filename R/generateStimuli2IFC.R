@@ -55,6 +55,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       stop(paste0('Error in reading base image file ',
                   filename, ': must be a PNG or JPEG file.'))
     }
+
+    # Check if base face is square. If not, throw an error
+    if (dim(img)[1] != dim(img)[2]) {
+      stop(paste0('Base face is not square! It\'s ', dim(img)[1], ' by ',
+                  dim(img)[2], ' pixels. Please use a square base face.'))
     }
 
     # Change base face to greyscale if necessary
