@@ -22,4 +22,3 @@ Generate single noise image based on parameter vector
 #s <- generateNoisePattern(img_size=256)
 #noise <- generateNoiseImage(params, p)
 }
-

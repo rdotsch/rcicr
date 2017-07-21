@@ -7,8 +7,8 @@
 generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
   stimulus_path = "./stimuli", label = "rcic", use_same_parameters = TRUE,
   seed = 1, maximize_baseimage_contrast = TRUE, noise_type = "sinusoid",
-  nscales = 5, sigma = 25, ncores = parallel::detectCores(),
-  returnAsDataframe = FALSE, save_as_png = TRUE)
+  nscales = 5, sigma = 25, ncores = parallel::detectCores()-1,
+  return_as_dataframe = FALSE, save_as_png = TRUE)
 }
 \arguments{
 \item{base_face_files}{List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.}
@@ -35,11 +35,11 @@ generateStimuli2IFC(base_face_files, n_trials = 770, img_size = 512,
 
 \item{ncores}{Number of CPU cores to use (default: detectCores()).}
 
-\item{returnAsDataframe}{Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns are stimuli, rows are vectorized pixels}
+\item{return_as_dataframe}{Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.}
 \item{save_as_png}{Boolean specifying whether to write the stimuli as images to disk (default: TRUE).}
 }
 \value{
-Nothing, everything is saved to files, unless returnAsList or returnAsMatrix are set to TRUE.
+Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
 }
 \description{
 Generate stimuli for 2 images forced choice reverse correlation task.
@@ -49,4 +49,3 @@ Will save the stimuli as
 PNGs to a folder, including .Rdata file needed for analysis of data after data collection. This
 .Rdata file contains the parameters that were used to generate each stimulus.
 }
-

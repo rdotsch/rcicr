@@ -29,4 +29,3 @@ Computes cumulative trial CIs correlations with final/target CI.
 \details{
 Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
 }
-

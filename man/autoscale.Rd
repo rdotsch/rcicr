@@ -19,4 +19,3 @@ List of scaled noise patterns and determined scaling factor.
 \description{
 Determines optimal scaling constant for a list of CIs
 }
-

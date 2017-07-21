@@ -42,4 +42,3 @@ Generate classification image for any reverse correlation task that displays ind
 \details{
 This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 }
-

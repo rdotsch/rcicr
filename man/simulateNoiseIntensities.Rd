@@ -17,4 +17,3 @@ Matrix with range of noise intensities for each replication
 \description{
 Simulate pixel intensity range for noise
 }
-

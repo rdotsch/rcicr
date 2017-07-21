@@ -26,4 +26,3 @@ Generate single sinusoid patch
 \examples{
 generateSinusoid(512, 2, 90, pi/2, 1.0)
 }
-
