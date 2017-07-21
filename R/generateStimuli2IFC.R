@@ -26,10 +26,11 @@
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
-#' @param ncores Number of CPU cores to use (default: detectCores()).
+#' @param ncores Number of CPU cores to use (default: detectCores()-1).
 #' @param return_as_dataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
+#' @param save_as_png Boolean specifying whether to write the stimuli as images to disk (default: TRUE).
 #' @return Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores(), return_as_dataframe=FALSE) {
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores()-1, return_as_dataframe=FALSE, save_as_png=TRUE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
@@ -46,14 +47,20 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   for (base_face in names(base_face_files)) {
     # Read base face
-    fname <- base_face_files[[base_face]]
-    if (grepl('png|PNG', fname)) {
-      img <- png::readPNG(fname)
-    } else if (grepl('jpeg|JPEG|jpg|JPG', fname)) {
-      img <- jpeg::readJPEG(fname)
+    filename <- base_face_files[[base_face]]
+    if (grepl('png|PNG', filename)) {
+      img <- png::readPNG(filename)
+    } else if (grepl('jpeg|JPEG|jpg|JPG', filename)) {
+      img <- jpeg::readJPEG(filename)
     } else {
       stop(paste0('Error in reading base image file ',
-                  fname, ': must be a PNG or JPEG file.'))
+                  filename, ': must be a PNG or JPEG file.'))
+    }
+
+    # Check if base face is square. If not, throw an error
+    if (dim(img)[1] != dim(img)[2]) {
+      stop(paste0('Base face is not square! It\'s ', dim(img)[1], ' by ',
+                  dim(img)[2], ' pixels. Please use a square base face.'))
     }
 
     # Change base face to greyscale if necessary
@@ -131,7 +138,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       combined <- (stimulus + base_faces[[base_face]]) / 2
 
       # write to file
-      png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
+      if (save_as_png) {
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
+      }
 
       # compute inverted stimulus
       stimulus <- ((-stimuli[,,trial] + 0.3) / 0.6)
@@ -140,7 +149,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       combined <- (stimulus + base_faces[[base_face]]) / 2
 
       # write to file
-      png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+      if (save_as_png) {
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+      }
 
       # Return CI
       if (return_as_dataframe) {
