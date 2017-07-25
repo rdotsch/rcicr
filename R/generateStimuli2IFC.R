@@ -29,8 +29,9 @@
 #' @param ncores Number of CPU cores to use (default: detectCores()-1).
 #' @param return_as_dataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
 #' @param save_as_png Boolean specifying whether to write the stimuli as images to disk (default: TRUE).
+#' @param save_rdata Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classifciation images. This function argument exists primarily for internal rcicr use.
 #' @return Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores()-1, return_as_dataframe=FALSE, save_as_png=TRUE) {
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores()-1, return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
@@ -167,7 +168,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   generator_version <- '0.4.0'
 
-  save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
+  if (save_rdata) {
+    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
+  }
 
   # Return CIs
   if (return_as_dataframe) {
