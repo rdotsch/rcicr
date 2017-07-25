@@ -12,8 +12,8 @@ Toolbox with functions to generate stimuli and analyze data of reverse correlati
 \tabular{ll}{
 Package: \tab rcicr\cr
 Type: \tab Package\cr
-Version: \tab 0.3.2\cr
-Date: \tab 2015-03-18\cr
+Version: \tab 0.4.0\cr
+Date: \tab 2017-07-25\cr
 License: \tab GPL-2\cr
 }
 \bold{Generating stimuli}
