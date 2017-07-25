@@ -12,14 +12,6 @@
 
 generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
 
-
-  # Example code:
-
-  # generateReferenceDistribution(rdata, iter=10000)
-  # computeInfoVal(ci_object, rdata)
-  # computeInfoVal(ci_list, rdata)
-
-
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
@@ -29,6 +21,10 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
+
+  if (iter < 10000) {
+    warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
+  }
 
   # Initialize progressbar
   pb <- progress_estimated(iter)
@@ -52,8 +48,6 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
   # Save reference norms to rdata file
   write("\nSaving simulated reference distribution to rdata file...", stdout())
   rm(stimuli, responses, selected, pb)
-  save.image(rdata)
-
-  write("Done.", stdout())
+  save(list=ls(all.names=TRUE), file=rdata, envir=environment())
 
 }

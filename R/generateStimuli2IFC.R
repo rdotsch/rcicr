@@ -2,9 +2,8 @@
 #'
 #' Generate stimuli for 2 images forced choice reverse correlation task.
 #'
-#' Will save the stimuli as
-#' PNGs to a folder, including .Rdata file needed for analysis of data after data collection. This
-#' .Rdata file contains the parameters that were used to generate each stimulus.
+#' Will save the stimuli as #' PNGs to a folder, including .Rdata file needed for analysis of data
+#' after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
 #'
 #' @export
 #' @import matlab

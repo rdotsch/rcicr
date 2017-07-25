@@ -31,7 +31,7 @@
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveaspng Optional Boolean stating whether to additionally save the CI as PNG image.
+#' @param save_as_png Optional Boolean stating whether to additionally save the CI as PNG image.
 #' @param participants Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.
 #' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param filename Optional string to specify a file name for the PNG image.
@@ -47,7 +47,7 @@
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, saveaspng=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores(), mask=NA) {
+generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, save_as_png=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores(), mask=NA) {
 
   # Rename zmap to zmapbool so we can use zmap for the actual zmap
   zmapbool <- zmap
@@ -229,7 +229,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   combined <- (scaled + base) / 2
 
   # Save to file
-  if (saveaspng) {
+  if (save_as_png) {
     if (filename == '') {
       filename <- paste0(baseimage, '.png')
     }
