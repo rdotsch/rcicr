@@ -165,7 +165,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   parallel::stopCluster(cl)
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
-  generator_version <- '0.3.3'
+  generator_version <- '0.4.0'
 
   save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
 
