@@ -38,16 +38,16 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
       # Generate random responses for this iteration
       responses <- (purrr::rbernoulli(n_trials, p=0.5) * 2) - 1
 
-      # Get selected images
-      selected <- stimuli * rep(responses, rep(nrow(stimuli), length(responses)))
+      # Compute classication image for this iteration
+      ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
 
-      # Compute classification image norm for this iteration
-      reference_norms[i] <- norm(matrix(rowMeans(selected)))
+      # Save norm for this iteration
+      reference_norms[i] <- norm(ci)
   }
 
   # Save reference norms to rdata file
   write("\nSaving simulated reference distribution to rdata file...", stdout())
-  rm(stimuli, responses, selected, pb)
+  rm(stimuli, responses, pb)
   save(list=ls(all.names=TRUE), file=rdata, envir=environment())
 
 }

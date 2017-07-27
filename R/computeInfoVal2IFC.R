@@ -39,7 +39,7 @@ computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FAL
   load(rdata)
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
-  if (!force_gen_ref_dist) {
+  if (!force_gen_ref_dist & !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
     # Pre-computed reference distribution table (TODO: read from external file)
     ref_lookup <- tribble(
