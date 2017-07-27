@@ -4,12 +4,16 @@
 \alias{computeInfoVal2IFC}
 \title{Computes Informational Value}
 \usage{
-computeInfoVal2IFC(ci, rdata)
+computeInfoVal2IFC(ci, rdata, iter = 10000, force_gen_ref_dist = FALSE)
 }
 \arguments{
 \item{ci}{A classification image object (list-type) as returned by generateCI}
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli and possibly its corresponding reference distribution generated with generateReferenceDistribution().}
+
+\item{iter}{Number of iterations for the simulation of the reference distribution (only used if reference distribution is not already pre-generated and present in rdata file)}
+
+\item{force_gen_ref_dist}{Boolean specifying whether to override the default behavior to use pre-computed values for the reference distribution for specific task parameters and instead force to recompute the reference distribution (default: FALSE).}
 }
 \value{
 Informational value (z-score)
@@ -24,8 +28,12 @@ possible to use a cut-off such as z = 1.96 to select classification images with 
 signal under alpha = 0.05.
 
 Informational Value is computed by simulating random responding under identical task parameters to
-an empirical dataset. The metric quantifies how unlikely it is to observe these data under the
-null-hypothesis that there is no signal (i.e., that there is only random responding).
+an empirical dataset (called the reference distribution). The metric quantifies how unlikely it is
+to observe these data under the null-hypothesis that there is no signal (i.e., that there is only random responding).
+
+The simulation to compute the reference distribution takes a long time, and is only run locally when
+pre-computed values for the reference distribution matching the stimulus set in the .Rdata file have
+not been supplied by the rcicr package.
 
 For more information see Brinkman, Goffin, Aarts, van Haren, & Dotsch (in prep).
 }
