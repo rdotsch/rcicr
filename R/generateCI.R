@@ -31,7 +31,7 @@
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param save_as_png Optional Boolean stating whether to additionally save the CI as PNG image.
+#' @param save_as_png Optional boolean stating whether to additionally save the CI as PNG image.
 #' @param participants Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.
 #' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param filename Optional string to specify a file name for the PNG image.
@@ -127,7 +127,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
 
   } else {
 
-    # First CI by participant, then average across participants
+    # First generate a CI for each participant, then average across participants
     pids <- as.numeric(factor(participants))
     npids <- length(unique(pids))
 
@@ -138,9 +138,13 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     cl <- parallel::makeCluster(n_cores, outfile = '')
     doParallel::registerDoParallel(cl)
 
-    # For each weighted stimulus, construct the complementary noise pattern
+    # For each weighted stimulus, construct the noise pattern
     pid.cis <- foreach::foreach(obs = 1:npids, .combine = 'c', .packages = 'rcicr') %dopar% {
+
+      # Update progress bar
       setTxtProgressBar(pb, obs)
+
+      # TODO: eh.. I forgot what this does. Find out and add explanatory comment
       pid.rows <- pids == obs
       generateCINoise(params[pid.rows,], responses[pid.rows], p)
     }
