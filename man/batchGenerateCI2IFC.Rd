@@ -5,7 +5,7 @@
 \title{Generates multiple 2IFC classification images by participant or condition}
 \usage{
 batchGenerateCI2IFC(data, by, stimuli, responses, baseimage, rdata,
-  saveaspng = TRUE, targetpath = "./cis", antiCI = FALSE,
+  save_as_png = TRUE, targetpath = "./cis", antiCI = FALSE,
   scaling = "autoscale", constant = 0.1, label = "")
 }
 \arguments{
@@ -21,7 +21,7 @@ batchGenerateCI2IFC(data, by, stimuli, responses, baseimage, rdata,
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveaspng}{Boolean stating whether to additionally save the CI as PNG image.}
+\item{save_as_png}{Boolean stating whether to additionally save the CI as PNG image.}
 
 \item{targetpath}{Optional string specifying path to save PNGGs to (default: ./cis).}
 

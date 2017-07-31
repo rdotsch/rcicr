@@ -1,3 +1,15 @@
+Changes from 0.3.4.2 to 0.4.0
+
+* You can now compute informational value for a classification image
+* You can now compute z-maps for a classification image (experimental)
+* Parallel processing in generating stimuli
+* generateCI now partitions data by participant if by argument is supplied
+* Bitmaps are now saved as losless png instead of jpg
+* Added arguments to make output to images optional
+* Added the possibility to have the pixel information of generated stimuli returned in matrix format
+* Added masking functionality
+* Moved rcicr development home to github (rdotsch/rcicr)
+
 Changes from 0.3.4.1-44 to 0.3.4.2-45 [22-September-2016]
 
 * Various small and inconsequential readability improvements
@@ -18,7 +30,7 @@ Changes from 0.3.3-40 to 0.3.3-41 [27-May-2016]
 
 Changes from 0.3.2-39 to 0.3.3-40 [4-Apr-2016]
 
-* Added Gabor noise option. Generate stimuli with generateStimuli2IFC(..., noise_type='gabor'). Almost all functions have been affected in refactoring. 
+* Added Gabor noise option. Generate stimuli with generateStimuli2IFC(..., noise_type='gabor'). Almost all functions have been affected in refactoring.
 * Added option to specify number of spatial scales
 * Changed output of autoscale: scaling factor is no longer part of the list of classification images that is returned
 * Bugfix: When using pre 0.3.0 Rdata file, the paramater matrix will now be truncated to the appropriate numbers of parameters
@@ -56,7 +68,7 @@ Changes from 0.3.1-30 to 0.3.1-31 [19-Mar-2015]
 
 Changes from 0.3.0-29 to 0.3.1-30 [18-Mar-2015]
 
-* Added batchGenerateCI to deal with data from any reverse correlation task that does not use inverse noise. This function can be used for a 1IFC, 2IFC with independently generated stimuli, 3IFC, etc. 
+* Added batchGenerateCI to deal with data from any reverse correlation task that does not use inverse noise. This function can be used for a 1IFC, 2IFC with independently generated stimuli, 3IFC, etc.
 * Renamed generateCI2IFC to generateCI and moved it to rcicr.R as it is a general function, and not just for 2IFC reverse correlation tasks
 * Created genreateCI2IFC wrapper function (wraps generateCI) for backwards compatibility
 * Renamed old generateCI to generateCINoise to differentiate between generateCI and generateCINoise

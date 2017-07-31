@@ -15,7 +15,7 @@ Imports:
     matlab,
     aspace,
     png,
-    jpeg,
+    jpeg,    
     dplyr,
     scales,
     utils,
@@ -38,5 +38,7 @@ Imports:
     plyr,
     ggplot2,
     gridExtra,
-    sp
+    sp,
+    purrr,
+    yesno
 RoxygenNote: 6.0.1

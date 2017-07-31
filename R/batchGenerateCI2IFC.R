@@ -12,14 +12,14 @@
 #' @param responses String specifying column name in data frame that contains the responses coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param save_as_png Boolean stating whether to additionally save the CI as PNG image.
 #' @param targetpath Optional string specifying path to save PNGGs to (default: ./cis).
 #' @param label Optional string to insert in file names of PNGGs to make them easier to identify.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, \code{independent}, or \code{autoscale} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @return List of classification image data structures (which are themselves lists of pixel matrix of classification noise only, scaled classification noise only, base image only and combined).
-batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, saveaspng=TRUE, targetpath='./cis', antiCI=FALSE, scaling='autoscale', constant=0.1, label='') {
+batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png=TRUE, targetpath='./cis', antiCI=FALSE, scaling='autoscale', constant=0.1, label='') {
 
   if (scaling == 'autoscale') {
     doAutoscale <- TRUE
@@ -52,11 +52,11 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
-    cis[[filename]] <- generateCI2IFC(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, saveaspng, paste0(filename, '.png'), targetpath, antiCI, scaling, constant)
+    cis[[filename]] <- generateCI2IFC(unitdata[,stimuli], unitdata[,responses], baseimage, rdata, save_as_png, paste0(filename, '.png'), targetpath, antiCI, scaling, constant)
   }
 
   if (doAutoscale) {
-    cis <- autoscale(cis, saveaspngs=saveaspng, targetpath=targetpath)
+    cis <- autoscale(cis, save_as_pngs=save_as_png, targetpath=targetpath)
   }
 
   pb$stop()
