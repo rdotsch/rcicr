@@ -90,7 +90,7 @@ computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FAL
     if (!exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
       # Reference norms not present in rdata file, re-generate
-      generateReferenceDistribution2IFC(rdata, iter=ref_iter)
+      generateReferenceDistribution2IFC(rdata, iter=iter)
 
       # Re-load rdata file
       load(rdata)
