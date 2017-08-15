@@ -5,10 +5,11 @@
 \title{Generates classification image}
 \usage{
 generateCI(stimuli, responses, baseimage, rdata, participants = NA,
-  save_as_png = TRUE, filename = "", targetpath = "./cis",
-  antiCI = FALSE, scaling = "independent", constant = 0.1, zmap = F,
-  zmapmethod = "quick", zmapdecoration = T, sigma = 3, threshold = 3,
-  zmaptargetpath = "./zmaps", n_cores = detectCores(), mask = NA)
+  save_individual_cis = FALSE, save_as_png = TRUE, filename = "",
+  targetpath = "./cis", antiCI = FALSE, scaling = "independent",
+  constant = 0.1, zmap = F, zmapmethod = "quick", zmapdecoration = T,
+  sigma = 3, threshold = 3, zmaptargetpath = "./zmaps",
+  n_cores = detectCores(), mask = NA)
 }
 \arguments{
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}
@@ -21,7 +22,9 @@ generateCI(stimuli, responses, baseimage, rdata, participants = NA,
 
 \item{participants}{Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.}
 
-\item{save_as_png}{Optional Boolean stating whether to additionally save the CI as PNG image.}
+\item{save_individual_cis}{Optional boolean specifying whether individual CIs should be save as PNG images when the \code{participants} parameter is used.}
+
+\item{save_as_png}{Optional boolean stating whether to additionally save the CI as PNG image.}
 
 \item{filename}{Optional string to specify a file name for the PNG image.}
 
