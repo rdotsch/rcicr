@@ -145,7 +145,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
       # Update progress bar
       setTxtProgressBar(pb, obs)
 
-      # TODO: eh.. I forgot what this does. Find out and add explanatory comment
+      # Select only the observations of the current participant
       pid.rows <- pids == obs
 
       # Construct the noise pattern
@@ -160,7 +160,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
         }
         scaled <- applyScaling(base, individual_ci, 'independent', constant)
         combined <- combine(scaled, base)
-        saveToImage(baseimage, combined, paste0('targetpath/individual_cis', filename, antiCI))
+        saveToImage(baseimage, combined, paste0(targetpath, '/individual_cis'), unique(participants)[obs], antiCI)
       }
 
       # Return the
@@ -333,17 +333,24 @@ combine <- function(scaled, base) {
 }
 
 saveToImage <- function(baseimage, combined, targetpath, filename, antiCI) {
+  # If no filename is specified, default to name of base image
   if (filename == '') {
-    filename <- paste0(baseimage, '.png')
+    filename <- paste0(baseimage)
   }
 
+  # Add ci/antici prefix to filename
   if (antiCI) {
     filename <- paste0('antici_', filename)
   } else {
     filename <- paste0('ci_', filename)
   }
 
+  # Add extension to filename
+  filename <- paste0(filename, '.png')
+
+  # Create output directory
   dir.create(targetpath, recursive = T, showWarnings = F)
 
+  # Write CI to image file
   png::writePNG(combined, paste0(targetpath, '/', filename))
 }
