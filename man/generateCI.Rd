@@ -7,9 +7,10 @@
 generateCI(stimuli, responses, baseimage, rdata, participants = NA,
   save_individual_cis = FALSE, save_as_png = TRUE, filename = "",
   targetpath = "./cis", antiCI = FALSE, scaling = "independent",
-  constant = 0.1, zmap = F, zmapmethod = "quick", zmapdecoration = T,
-  sigma = 3, threshold = 3, zmaptargetpath = "./zmaps",
-  n_cores = detectCores(), mask = NA)
+  scaling_constant = 0.1, individual_scaling = "independent",
+  individual_scaling_constant = 0.1, zmap = F, zmapmethod = "quick",
+  zmapdecoration = T, sigma = 3, threshold = 3,
+  zmaptargetpath = "./zmaps", n_cores = detectCores(), mask = NA)
 }
 \arguments{
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}
@@ -34,7 +35,11 @@ generateCI(stimuli, responses, baseimage, rdata, participants = NA,
 
 \item{scaling}{Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).}
 
-\item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
+\item{scaling_constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
+
+\item{individual_scaling}{Optional string specifying scaling method for individual CIs: \code{none}, \code{constant}, \code{independent} (default).}
+
+\item{individual_scaling_constant}{Optional number specifying the value used as constant scaling factor for the noise of individual CIs (only works for \code{individual_scaling='constant'}).}
 
 \item{zmap}{Boolean specifying whether a z-map should be created (default: FALSE).}
 
