@@ -57,7 +57,7 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
       targetpath=targetpath,
       antiCI=antiCI,
       scaling=scaling,
-      constant=constant,
+      scaling_constant=constant,
       participants=NA)
   }
 
