@@ -37,8 +37,8 @@
 #' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param filename Optional string to specify a file name for the PNG image.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
-#' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
-#' @param scaling_constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
+#' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.
+#' @param scaling_constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.
 #' @param individual_scaling Optional string specifying scaling method for individual CIs: \code{none}, \code{constant}, \code{independent} (default).
 #' @param individual_scaling_constant Optional number specifying the value used as constant scaling factor for the noise of individual CIs (only works for \code{individual_scaling='constant'}).
 #' @param mask Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked). Default: NA.

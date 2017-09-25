@@ -33,9 +33,9 @@ generateCI(stimuli, responses, baseimage, rdata, participants = NA,
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
-\item{scaling}{Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).}
+\item{scaling}{Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.}
 
-\item{scaling_constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
+\item{scaling_constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.}
 
 \item{individual_scaling}{Optional string specifying scaling method for individual CIs: \code{none}, \code{constant}, \code{independent} (default).}
 
