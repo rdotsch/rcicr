@@ -143,8 +143,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   # If "participants" argument is not given, compute one CI based on all data
   if (all(is.na(participants))) {
     ci <- generateCINoise(params, responses, p)
-  # If it is given, create a CI for each particpant and a group CI by averaging
-  # across participants
+  # If it is given, create a CI for each participant and a group CI by
+  # averaging across participants
   } else {
 
     # First generate a CI for each participant, then average across participants
@@ -285,7 +285,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 # Output: masked CI (input CI, but masked pixels are NA)
 applyMask <- function(ci, mask) {
   # If mask argument is a string, treat it as a path to a bitmap and try to read
-  # it into a matrix. If it is a matrix, us that. Else, throw an error.
+  # it into a matrix. If it is a matrix, use it. Else, throw an error
   if (typeof(mask) == 'character') {
     mask_matrix <- png::readPNG(mask)
 
