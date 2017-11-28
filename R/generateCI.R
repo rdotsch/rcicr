@@ -37,8 +37,10 @@
 #' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param filename Optional string to specify a file name for the PNG image.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
-#' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
-#' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
+#' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.
+#' @param scaling_constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.
+#' @param individual_scaling Optional string specifying scaling method for individual CIs: \code{none}, \code{constant}, \code{independent} (default).
+#' @param individual_scaling_constant Optional number specifying the value used as constant scaling factor for the noise of individual CIs (only works for \code{individual_scaling='constant'}).
 #' @param mask Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked). Default: NA.
 #' @param zmap Boolean specifying whether a z-map should be created (default: FALSE).
 #' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.
@@ -46,31 +48,40 @@
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
-#' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()).
+#' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()-1).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, save_individual_cis=FALSE, save_as_png=TRUE, filename='', targetpath='./cis', antiCI=FALSE, scaling='independent', constant=0.1, zmap = F, zmapmethod = 'quick', zmapdecoration = T, sigma = 3, threshold = 3, zmaptargetpath = './zmaps', n_cores = detectCores(), mask=NA) {
 
-  # Rename zmap to zmapbool so we can use zmap for the actual zmap
-  zmapbool <- zmap
+# Main function -----------------------------------------------------------
+generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
+                       save_individual_cis=FALSE, save_as_png=TRUE, filename='',
+                       targetpath='./cis', antiCI=FALSE, scaling='independent',
+                       scaling_constant=0.1, individual_scaling='independent',
+                       individual_scaling_constant=0.1, zmap = F,
+                       zmapmethod = 'quick', zmapdecoration = T, sigma = 3,
+                       threshold = 3, zmaptargetpath = './zmaps',
+                       n_cores = detectCores()-1, mask=NA) {
+
+  # Preprocessing -----------------------------------------------------------
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
   # Check whether critical variables have been loaded
-  if (!exists('s', envir=environment(), inherits=FALSE) & !exists('p', envir=environment(), inherits=FALSE) ) {
-    stop('File specified in rdata argument did not contain s or p variable.')
+  if (!exists('s', envir=environment(), inherits=FALSE) &
+      !exists('p', envir=environment(), inherits=FALSE)) {
+    stop('File specified in rdata did not contain s or p variable.')
   }
 
   if (!exists('base_faces', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata argument did not contain base_faces variable.')
+    stop('File specified in rdata did not contain base_faces variable.')
   }
 
   if (!exists('stimuli_params', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata argument did not contain stimuli_params variable.')
+    stop('File specified in rdata did not contain stimuli_params variable.')
   }
 
   if (!exists('img_size', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata argument did not contain img_size variable.')
+    stop('File specified in rdata did not contain img_size variable.')
   }
 
 
@@ -83,19 +94,24 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   # Get base image
   base <- base_faces[[baseimage]]
   if (is.null(base)) {
-    stop(paste0('File specified in rdata argument did not contain any reference to base image label: ', baseimage, ' (NOTE: file contains references to the following base image label(s): ', paste(names(base_faces), collapse=', '), ')'))
+    # If no base face with the given name is found in Rdata file, throw error
+    stop(paste0('File specified in rdata argument did not contain any ',
+                'reference to base image label: ', baseimage, ' (NOTE: file ',
+                'contains references to the following base image label(s): ',
+                paste(names(base_faces), collapse=', '), ')'))
   }
 
   if (all(is.na(participants))) {
-    # Average responses for each presented stimulus (in case stimuli have been presented multiple times,
-    # or group-wise classification images are being calculated, in order to reduce memory and processing
-    # load)
+    # Average responses for each presented stimulus (in case stimuli have been
+    # presented multiple times, or group-wise classification images are being
+    # calculated, in order to reduce memory and processing load)
     aggregated <- aggregate(responses, by=list(stimuli=stimuli), FUN=mean)
     responses <- aggregated$x
     stimuli <- aggregated$stimuli
   }
 
-  # Retrieve parameters of actually presented stimuli (this will work with non-consecutive stims as well)
+  # Retrieve parameters of actually presented stimuli (this will work with
+  # non-consecutive stims as well)
   params <- stimuli_params[[baseimage]][stimuli,]
 
   # Check whether parameters were found in this .rdata file
@@ -103,8 +119,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     stop(paste0('No parameters found for base image: ', base))
   }
 
-  # Check whether number of parameters are 4096 (this was the case in older versions of rcicr)
-  # and should be truncated to 4092 to work well in this new version
+  # Check whether number of parameters are 4096 (this was the case in older
+  # versions of rcicr) and should be truncated to 4092 to work well in this new
+  # version
   if (!is.vector(params)) {
     if (ncol(params) == 4096) {
       params <- params[, 1:4092]
@@ -116,16 +133,18 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     }
   }
 
-  # Compute classification image #
+  # Generate CI(s) ----------------------------------------------------------
+
+  # Invert parameters if antiCI is to be generated
   if (antiCI==TRUE) {
     params = -params
   }
 
+  # If "participants" argument is not given, compute one CI based on all data
   if (all(is.na(participants))) {
-
-    # Compute one CI in one single step based on all data
     ci <- generateCINoise(params, responses, p)
-
+  # If it is given, create a CI for each participant and a group CI by
+  # averaging across participants
   } else {
 
     # First generate a CI for each participant, then average across participants
@@ -140,7 +159,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     doParallel::registerDoParallel(cl)
 
     # For each weighted stimulus, construct the noise pattern
-    pid.cis <- foreach::foreach(obs = 1:npids, .combine = 'c', .packages = 'rcicr') %dopar% {
+    pid.cis <- foreach::foreach(obs = 1:npids,
+                                .combine = 'c',
+                                .packages = 'rcicr') %dopar% {
 
       # Update progress bar
       setTxtProgressBar(pb, obs)
@@ -154,23 +175,25 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
       # Check if individual CIs should be saved. If so, generate and save them
       if (save_individual_cis) {
         if (!is.na(mask)) {
-          individual_ci <- apply(ci, mask)
+          individual_ci <- applyMask(ci, mask)
         } else {
           individual_ci <- ci
         }
-        scaled <- applyScaling(base, individual_ci, 'independent', constant)
+        scaled <- applyScaling(base, individual_ci, individual_scaling,
+                               individual_scaling_constant)
         combined <- combine(scaled, base)
-        saveToImage(baseimage, combined, paste0(targetpath, '/individual_cis'), unique(participants)[obs], antiCI)
+        saveToImage(baseimage, combined, paste0(targetpath, '/individual_cis'),
+                    unique(participants)[obs], antiCI)
       }
 
-      # Return the
+      # Return the CI
       return(ci)
     }
     parallel::stopCluster(cl)
     dim(pid.cis) <- c(img_size, img_size, npids)
 
     # Average across participants for final CI and return to original variance
-    ci <- apply(pid.cis, c(1,2), mean) #* sqrt(npids)
+    ci <- apply(pid.cis, c(1, 2), mean) #* sqrt(npids)
   }
 
   # Check if a mask has been set. If so, apply it to the CI
@@ -179,7 +202,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 
   # Apply scaling
-  scaled <- applyScaling(base, ci, scaling, constant)
+  scaled <- applyScaling(base, ci, scaling, scaling_constant)
 
   # Combine with base image
   combined <- combine(scaled, base)
@@ -189,7 +212,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
     saveToImage(baseimage, combined, targetpath, filename, antiCI)
   }
 
-  # Compute Z-map
+  # Rename zmap to zmapbool so we can use zmap for the actual zmap
+  zmapbool <- zmap
   if(zmapbool) {
 
     if(zmapmethod == 'quick') {
@@ -221,7 +245,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
         doParallel::registerDoParallel(cl)
 
         # For each weighted stimulus, construct the complementary noise pattern
-        noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c', .packages = 'rcicr') %dopar% {
+        noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c',
+                                        .packages = 'rcicr') %dopar% {
           generateNoiseImage(weightedparameters[obs, ], p)
           # Update progress bar
           setTxtProgressBar(pb, obs)
@@ -234,19 +259,18 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
       }
 
       # Get p value for each pixel
-      pmap <- apply(noiseimages, c(1,2), function(x) unlist(t.test(x)['p.value']))
+      pmap <- apply(noiseimages, 1:2, function(x) unlist(t.test(x)['p.value']))
 
       # Create Z-map
       zmap <- sign(ci) * abs(qnorm(pmap/2))
-
     }
-
     # Pass zmap object to plotZmap for plotting
-    plotZmap(zmap = zmap, bgimage = combined, filename = baseimage, sigma = sigma, threshold = threshold, size = img_size, decoration = zmapdecoration)
-
+    plotZmap(zmap = zmap, bgimage = combined, filename = baseimage,
+             sigma = sigma, threshold = threshold, size = img_size,
+             decoration = zmapdecoration)
   }
 
-  # Return list
+  # Return data
   if (zmapbool == T) {
     return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
   } else {
@@ -254,22 +278,31 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA, sa
   }
 }
 
+# Functions ---------------------------------------------------------------
+
+# Apply masking to a CI
+# Input: CI, mask (either a string or a matrix)
+# Output: masked CI (input CI, but masked pixels are NA)
 applyMask <- function(ci, mask) {
-  # If mask argument is a string, treat it as a path to a bitmap and try to read it into a matrix
-  # If mask is a matrix, use it as is
-  # Else, throw error
+  # If mask argument is a string, treat it as a path to a bitmap and try to read
+  # it into a matrix. If it is a matrix, use it. Else, throw an error
   if (typeof(mask) == 'character') {
     mask_matrix <- png::readPNG(mask)
 
     # Check if the PNG uses a greyscale color palette
     if (length(dim(mask_matrix)) != 2) {
-      # If the PNG uses the full color palette but the image itself is totally greyscale, read it in anyway
+      # If the PNG uses the RGB color palette but the image itself is totally
+      # greyscale (i.e. the red, green and blue color channels are identical),
+      # read it in anyway
       # Thanks https://stackoverflow.com/a/30850654
-      if (all(sapply(list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3]), FUN = identical, mask_matrix[,,1]))) {
+      rgb_channels <- list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3])
+      if (all(sapply(rgb_channels, FUN = identical, mask_matrix[,,1]))) {
         mask_matrix <- mask_matrix[,,1]
       }
       # Else, throw error
-      stop('This PNG is not encoded with a greyscale color palette and could not be converted to this encoding either. In other words, this is not a greyscale image.')
+      stop(paste0('This PNG is not encoded with a greyscale color palette and ',
+                  'could not be converted to this encoding either. In other ',
+                  'words, this is not a greyscale image.'))
     }
   } else if (typeof(mask) == 'double' && length(dim(mask)) == 2) {
     mask_matrix <- mask
@@ -279,7 +312,10 @@ applyMask <- function(ci, mask) {
 
   # Check if mask is of the same size as the stimuli (i.e. img_size)
   if (!all(dim(mask_matrix) == 512)) {
-    stop(paste0('Mask is not of the same dimensions as the stimuli! (stimulus dimensions: ', img_size, ' x ', img_size, '; mask dimensions: ', dim(mask_matrix)[2], ' by ', dim(mask_matrix)[1], ').'))
+    stop(paste0('Mask is not of the same dimensions as the stimuli! ',
+                '(stimulus dimensions: ', img_size, ' x ', img_size,
+                '; mask dimensions: ', dim(mask_matrix)[2],
+                ' by ', dim(mask_matrix)[1], ').'))
   }
 
   # Check if the mask is binary
@@ -297,17 +333,28 @@ applyMask <- function(ci, mask) {
   return(ci)
 }
 
+# Apply scaling to a CI
+# Input: base image, CI, scaling method, constant
+# Output: scaled CI
 applyScaling <- function(base, ci, scaling, constant) {
+  # No scaling
   if (scaling == 'none') {
     scaled <- ci
+  # Scaling with a constant scaling factor
   } else if (scaling == 'constant') {
     scaled <- (ci + constant) / (2*constant)
     if (max(scaled[!is.na(scaled)]) > 1.0 | min(scaled[!is.na(scaled)]) < 0) {
-      warning('Chosen constant value for constant scaling made noise of classification image exceed possible intensity range of pixels (<0 or >1). Choose a lower value, or clipping will occur.')
+      warning(paste0('Chosen constant value for constant scaling made noise ',
+                     'of classification image exceed possible intensity range ',
+                     'of pixels (<0 or >1). Choose a lower value, or clipping ',
+                     'will occur.'))
     }
+  # Scaling using 'matched' method
   } else if (scaling == 'matched') {
-    scaled <- min(base) + ((max(base) - min(base)) * (ci - min(ci[!is.na(ci)])) / (max(ci[!is.na(ci)]) - min(ci[!is.na(ci)])))
-
+    scaled <- min(base) +
+              ((max(base) - min(base)) * (ci - min(ci[!is.na(ci)])) /
+               (max(ci[!is.na(ci)]) - min(ci[!is.na(ci)])))
+  # Scaling with maximum scaling factor for the given CI
   } else if (scaling == "independent") {
 
     # Determine the lowest possible scaling factor constant
@@ -318,7 +365,7 @@ applyScaling <- function(base, ci, scaling, constant) {
     }
 
     scaled <- (ci + constant) / (2*constant)
-
+  # Print warning when scaling method name is not recognized
   } else {
     warning(paste0('Scaling method \'', scaling, '\' not found. Using none.'))
     scaled <- ci
@@ -328,10 +375,16 @@ applyScaling <- function(base, ci, scaling, constant) {
   return(scaled)
 }
 
+# Combine scaled CI with base image
+# Input: scaled CI, base image
+# Output: CI with base image
 combine <- function(scaled, base) {
   return((scaled + base) / 2)
 }
 
+# Save a CI to an image file
+# Input: base image name, combined CI, target path, filename, CI/antiCI boolean
+# Output: nothing (image is saved to file)
 saveToImage <- function(baseimage, combined, targetpath, filename, antiCI) {
   # If no filename is specified, default to name of base image
   if (filename == '') {
