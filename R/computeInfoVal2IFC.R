@@ -110,8 +110,9 @@ computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FAL
   }
 
   # Compute informational value metric
-  cinorm <- norm(matrix(ci$ci))
-  infoVal <- (cinorm - ref_median ) / ref_mad
+  cinorm <- norm(matrix(ci$ci), "f")
+  k <- 1.4826 # scaling factor
+  infoVal <- (cinorm - ref_median ) / (k * ref_mad)
 
   write( paste0("Informational value: z = ", infoVal, " (ci norm = ", cinorm,"; reference median = ", ref_median, "; MAD = ", ref_mad, "; iterations = ", ref_iter,  ")"), stdout() )
 
