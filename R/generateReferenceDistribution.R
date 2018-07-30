@@ -42,7 +42,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
       ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
 
       # Save norm for this iteration
-      reference_norms[i] <- norm(ci)
+      reference_norms[i] <- norm(ci, "f")
   }
 
   # Save reference norms to rdata file
