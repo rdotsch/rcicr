@@ -44,10 +44,10 @@ computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FAL
     # Pre-computed reference distribution table (TODO: read from external file)
     ref_lookup <- tribble(
       ~ref_seed, ~ref_img_size, ~ref_iter, ~ref_n_trials, ~ref_median,   ~ref_mad,
-      1,         512,           10000,     100,           1097.7394,     52.54232,
-      1,         512,           10000,     300,           634.0318,      30.51781,
-      1,         512,           10000,     500,           490.4709,      23.71276,
-      1,         512,           10000,     1000,          347.2960,      16.64761
+    #  1,         512,           10000,     100,           1097.7394,     52.54232,
+    #  1,         512,           10000,     300,           634.0318,      30.51781,
+    #  1,         512,           10000,     500,           490.4709,      23.71276,
+    #  1,         512,           10000,     1000,          347.2960,      16.64761
     )
 
     # Check whether we have a perfect match
@@ -110,8 +110,9 @@ computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FAL
   }
 
   # Compute informational value metric
-  cinorm <- norm(matrix(ci$ci))
-  infoVal <- (cinorm - ref_median ) / ref_mad
+  cinorm <- norm(matrix(ci$ci), "f")
+  k <- 1.4826 # scaling factor
+  infoVal <- (cinorm - ref_median ) / (k * ref_mad)
 
   write( paste0("Informational value: z = ", infoVal, " (ci norm = ", cinorm,"; reference median = ", ref_median, "; MAD = ", ref_mad, "; iterations = ", ref_iter,  ")"), stdout() )
 
