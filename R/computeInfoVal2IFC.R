@@ -28,7 +28,7 @@
 #' @param force_gen_ref_dist Boolean specifying whether to override the default behavior to use pre-computed values for the reference distribution for specific task parameters and instead force to recompute the reference distribution (default: FALSE).
 #' @return Informational value (z-score)
 
-computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FALSE) {
+computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE) {
 
   # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug
   ref_seed <- NA
@@ -110,9 +110,8 @@ computeInfoVal2IFC <- function(ci, rdata, iter = 10000, force_gen_ref_dist = FAL
   }
 
   # Compute informational value metric
-  cinorm <- norm(matrix(ci[["ci"]]), "f")
-  k <- 1.4826 # scaling factor
-  infoVal <- (cinorm - ref_median ) / (k * ref_mad)
+  cinorm <- norm(matrix(target_ci[["ci"]]), "f")
+  infoVal <- (cinorm - ref_median ) / (ref_mad)
 
   write( paste0("Informational value: z = ", infoVal, " (ci norm = ", cinorm,"; reference median = ", ref_median, "; MAD = ", ref_mad, "; iterations = ", ref_iter,  ")"), stdout() )
 
