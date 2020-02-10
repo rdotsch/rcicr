@@ -141,7 +141,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   }
 
   # If "participants" argument is not given, compute one CI based on all data
-  if (all(is.na(participants))) {
+  if (all(is.na(participants))|length(unique(as.numeric(factor(participants)==1)))) {
     ci <- generateCINoise(params, responses, p)
   # If it is given, create a CI for each participant and a group CI by
   # averaging across participants
@@ -230,7 +230,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     if(zmapmethod == 't.test') {
 
       # Compute one CI in one single step based on all data
-      if (all(is.na(participants))) {
+      if (all(is.na(participants))|!(length(unique(as.numeric(factor(participants)== 1))))) {
         # Weigh the stimulus parameters of each trial using the given responses
         weightedparameters <- params * responses
 
