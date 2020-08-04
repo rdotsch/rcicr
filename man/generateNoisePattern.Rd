@@ -4,8 +4,13 @@
 \alias{generateNoisePattern}
 \title{Generate sinusoid noise pattern}
 \usage{
-generateNoisePattern(img_size = 512, nscales = 5, noise_type = "sinusoid",
-  sigma = 25, pre_0.3.0 = FALSE)
+generateNoisePattern(
+  img_size = 512,
+  nscales = 5,
+  noise_type = "sinusoid",
+  sigma = 25,
+  pre_0.3.0 = FALSE
+)
 }
 \arguments{
 \item{img_size}{Integer specifying size of the noise pattern in number of pixels.}

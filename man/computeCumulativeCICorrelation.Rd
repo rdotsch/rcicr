@@ -4,8 +4,14 @@
 \alias{computeCumulativeCICorrelation}
 \title{Computes cumulative trial CIs correlations with final/target CI}
 \usage{
-computeCumulativeCICorrelation(stimuli, responses, baseimage, rdata,
-  targetci = list(), step = 1)
+computeCumulativeCICorrelation(
+  stimuli,
+  responses,
+  baseimage,
+  rdata,
+  targetci = list(),
+  step = 1
+)
 }
 \arguments{
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}

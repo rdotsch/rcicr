@@ -41,4 +41,4 @@ Imports:
     sp,
     purrr,
     yesno
-RoxygenNote: 6.0.1
+RoxygenNote: 7.1.0

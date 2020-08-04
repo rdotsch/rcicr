@@ -4,9 +4,20 @@
 \alias{batchGenerateCI}
 \title{Generates multiple classification images by participant or condition}
 \usage{
-batchGenerateCI(data, by, stimuli, responses, baseimage, rdata,
-  save_as_png = TRUE, targetpath = "./cis", label = "", antiCI = FALSE,
-  scaling = "autoscale", constant = 0.1)
+batchGenerateCI(
+  data,
+  by,
+  stimuli,
+  responses,
+  baseimage,
+  rdata,
+  save_as_png = TRUE,
+  targetpath = "./cis",
+  label = "",
+  antiCI = FALSE,
+  scaling = "autoscale",
+  constant = 0.1
+)
 }
 \arguments{
 \item{data}{Data frame}

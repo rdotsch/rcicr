@@ -4,9 +4,18 @@
 \alias{generateCI2IFC}
 \title{Generates 2IFC classification image}
 \usage{
-generateCI2IFC(stimuli, responses, baseimage, rdata, saveaspng = TRUE,
-  filename = "", targetpath = "./cis", antiCI = FALSE,
-  scaling = "independent", constant = 0.1)
+generateCI2IFC(
+  stimuli,
+  responses,
+  baseimage,
+  rdata,
+  saveaspng = TRUE,
+  filename = "",
+  targetpath = "./cis",
+  antiCI = FALSE,
+  scaling = "independent",
+  constant = 0.1
+)
 }
 \arguments{
 \item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}

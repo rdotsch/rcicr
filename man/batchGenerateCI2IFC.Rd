@@ -4,9 +4,20 @@
 \alias{batchGenerateCI2IFC}
 \title{Generates multiple 2IFC classification images by participant or condition}
 \usage{
-batchGenerateCI2IFC(data, by, stimuli, responses, baseimage, rdata,
-  save_as_png = TRUE, targetpath = "./cis", antiCI = FALSE,
-  scaling = "autoscale", constant = 0.1, label = "")
+batchGenerateCI2IFC(
+  data,
+  by,
+  stimuli,
+  responses,
+  baseimage,
+  rdata,
+  save_as_png = TRUE,
+  targetpath = "./cis",
+  antiCI = FALSE,
+  scaling = "autoscale",
+  constant = 0.1,
+  label = ""
+)
 }
 \arguments{
 \item{data}{Data frame}
