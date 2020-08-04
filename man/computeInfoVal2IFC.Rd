@@ -7,13 +7,13 @@
 computeInfoVal2IFC(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE)
 }
 \arguments{
+\item{target_ci}{A classification image object (list-type) as returned by generateCI}
+
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli and possibly its corresponding reference distribution generated with generateReferenceDistribution().}
 
 \item{iter}{Number of iterations for the simulation of the reference distribution (only used if reference distribution is not already pre-generated and present in rdata file)}
 
 \item{force_gen_ref_dist}{Boolean specifying whether to override the default behavior to use pre-computed values for the reference distribution for specific task parameters and instead force to recompute the reference distribution (default: FALSE).}
-
-\item{ci}{A classification image object (list-type) as returned by generateCI}
 }
 \value{
 Informational value (z-score)
