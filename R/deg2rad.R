@@ -1,6 +1,6 @@
 
 #' Convert angle in degrees to radians
-#'
+#' @export
 #' @param deg Angle in degrees
 #' @examples
 #' deg2rad(180)
