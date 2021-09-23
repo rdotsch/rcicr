@@ -1,7 +1,7 @@
 Package: rcicr
 Type: Package
 Title: Reverse-Correlation Image-Classification Toolbox
-Version: 0.4.0
+Version: 0.4.1
 Date: 2017-07-25
 URL: http://www.rondotsch.nl/rcicr
 Authors@R: c(
@@ -13,7 +13,6 @@ Description: Functions to generate stimuli and analyze data of reverse
 License: GPL-2
 Imports:
     matlab,
-    aspace,
     png,
     jpeg,    
     dplyr,
@@ -41,4 +40,4 @@ Imports:
     sp,
     purrr,
     yesno
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.2

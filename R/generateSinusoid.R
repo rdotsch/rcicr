@@ -1,7 +1,6 @@
 #' Generate single sinusoid patch
 #'
 #' @export
-#' @import aspace
 #' @import matlab
 #' @param img_size Integer specifying size of sinusoid patch in number of pixels.
 #' @param cycles Integer specifying number of cycles sinusoid should span.
@@ -14,7 +13,7 @@
 generateSinusoid <- function(img_size, cycles, angle, phase, contrast) {
 
   # Generates an image matrix containing a sinusoid, angle (in degrees) of 0 will give vertical, 90 horizontally oriented sinusoid
-  angle <- aspace::as_radians(angle)
+  angle <- deg2rad(angle)
   sinepatch = matlab::repmat(matlab::linspace(0, cycles, img_size), img_size, 1)
   sinusoid <- (sinepatch * cos(angle) + t(sinepatch) * sin(angle)) * 2 * pi
   sinusoid <- contrast * sin(sinusoid + phase)
