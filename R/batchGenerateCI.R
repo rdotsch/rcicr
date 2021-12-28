@@ -53,7 +53,7 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
       baseimage=baseimage,
       rdata=rdata,
       save_as_png=save_as_png,
-      filename=paste0(filename, '.png'),
+      filename=paste0(filename),
       targetpath=targetpath,
       antiCI=antiCI,
       scaling=scaling,

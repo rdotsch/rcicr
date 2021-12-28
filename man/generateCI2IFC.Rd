@@ -9,7 +9,7 @@ generateCI2IFC(
   responses,
   baseimage,
   rdata,
-  saveaspng = TRUE,
+  save_as_png = TRUE,
   filename = "",
   targetpath = "./cis",
   antiCI = FALSE,
@@ -26,7 +26,7 @@ generateCI2IFC(
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{saveaspng}{Boolean stating whether to additionally save the CI as PNG image.}
+\item{save_as_png}{Boolean stating whether to additionally save the CI as PNG image.}
 
 \item{filename}{Optional string to specify a file name for the PNG image.}
 

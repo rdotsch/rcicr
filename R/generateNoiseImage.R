@@ -12,7 +12,17 @@ generateNoiseImage <- function(params, p) {
 
   # Abort stimulus generation if number of params doesn't equal number of patches
   if (length(params) != max(p$patchIdx)) {
-    stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
+
+    if ((length(params) == max(p$patchIdx) + 1)& (min(p$patchIdx) == 0)) {
+      # Some versions of dependencies created patch indices starting with 0, latest dependencies
+      # start counting at 1. Fix this.
+
+      warning("Rdata patch indices start at 0, whereas parameters are used from position 1. Due to this mismatch, one sinusoid will not be shown in resulting CI.")
+
+    } else {
+      stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
+
+    }
   }
 
   if ('sinusoids' %in% names(p)) {

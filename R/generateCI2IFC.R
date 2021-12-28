@@ -24,16 +24,26 @@
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param saveaspng Boolean stating whether to additionally save the CI as PNG image.
+#' @param save_as_png Boolean stating whether to additionally save the CI as PNG image.
 #' @param filename Optional string to specify a file name for the PNG image.
 #' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
-generateCI2IFC <- function(stimuli, responses, baseimage, rdata, saveaspng=TRUE, filename='', targetpath="./cis", antiCI=FALSE, scaling='independent', constant=0.1) {
+generateCI2IFC <- function(stimuli, responses, baseimage, rdata, save_as_png=TRUE, filename='', targetpath="./cis", antiCI=FALSE, scaling='independent', constant=0.1) {
 
   # For backwards compatibility
-  return(generateCI(stimuli, responses, baseimage, rdata, saveaspng, filename, targetpath, antiCI, scaling, constant))
+  return(generateCI(
+    stimuli = stimuli,
+    responses = responses,
+    baseimage = baseimage,
+    rdata = rdata,
+    save_as_png = save_as_png,
+    filename = filename,
+    targetpath = targetpath,
+    antiCI = antiCI,
+    scaling = scaling,
+    scaling_constant = constant))
 
 }
