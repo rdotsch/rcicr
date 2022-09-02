@@ -1,3 +1,8 @@
+Changes 1.0 [02-Sep-2022]
+
+* Removed extdata, to reduce package size and speed up loading
+* Fixed viridis loading warning
+
 Changes from 0.3.4.2 to 0.4.0
 
 * You can now compute informational value for a classification image
@@ -105,3 +110,7 @@ Changes from Version 0.2.3-22 to 0.2.3-23 [29-Aug-2014]
 Changes from Version 0.2.2-20 to 0.2.3-22 [29-Aug-2014]
 
 * Added batchGenerateCI2IFC function to batch generate classification images for multiple subjects or conditions.
+
+
+
+

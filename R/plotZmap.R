@@ -7,7 +7,6 @@
 #'
 #' @export
 #' @import dplyr
-#' @import viridis
 #' @importFrom raster raster plot
 #' @importFrom grDevices png
 #' @importFrom graphics rasterImage par plot.new plot.window
@@ -76,7 +75,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
     raster::plot(raster(zmap), axes = F, box = F, main = paste0('Z-map of ', filename),
                  xlab = paste0('sigma = ', sigma, ', threshold = ', threshold),
-                 col = viridis(100), ...)
+                 col = viridis::viridis(100), ...)
     # Add bgimage (if specified) and superimpose Z-map on top of it
     if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
