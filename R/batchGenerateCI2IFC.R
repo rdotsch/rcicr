@@ -54,7 +54,7 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
     cis[[filename]] <- generateCI2IFC(
       stimuli = unitdata[,stimuli],
-      response = unitdata[,responses],
+      responses = unitdata[,responses],
       baseimage = baseimage,
       rdata = rdata,
       save_as_png = save_as_png,
