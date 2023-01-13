@@ -1,8 +1,8 @@
 Package: rcicr
 Type: Package
 Title: Reverse-Correlation Image-Classification Toolbox
-Version: 1.0.0
-Date: 2022-09-02
+Version: 1.0.1
+Date: 2023-01-13
 URL: https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/
 Authors@R: 
   person("Ron", "Dotsch", email="rdotsch@gmail.com", role=c("aut", "cre"))
@@ -21,7 +21,7 @@ Imports:
     parallel,
     doParallel,
     foreach,
-    spatstat.core,
+    spatstat.explore,
     spatstat.geom,
     raster,
     iterators,
@@ -40,4 +40,4 @@ Imports:
     sp,
     purrr,
     yesno
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3
