@@ -1,3 +1,7 @@
+Changes 1.0.1 [13-Jan-2023]
+
+* Replaced spatstat.core dependency (deprecated) with spatstat.explore
+
 Changes 1.0 [02-Sep-2022]
 
 * Removed extdata, to reduce package size and speed up loading
