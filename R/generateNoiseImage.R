@@ -30,7 +30,9 @@ generateNoiseImage <- function(params, p) {
     p <- list(patches=p$sinusoids, patchIdx=p$sinIdx, noise_type='sinusoid')
   }
 
-  noise <- apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean)
+  patch_indices <- p$patchIdx
+  patch_params <- array(params[patch_indices], dim(p$patches))
+  reshaped_matrix <- array(p$patches * patch_params, dim(p$patches))
+  noise <- array(rowMeans(reshaped_matrix), dim(p$patches)[1:2])
   return(noise)
-
 }
