@@ -4,7 +4,7 @@ Title: Reverse-Correlation Image-Classification Toolbox
 Version: 1.0.1
 Date: 2023-01-13
 URL: https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/
-Authors@R: 
+Authors@R:
   person("Ron", "Dotsch", email="rdotsch@gmail.com", role=c("aut", "cre"))
 Description: Functions to generate stimuli and analyze data of reverse
     correlation image classification experiments (psychophysical tasks aimed at
@@ -15,7 +15,7 @@ Depends:
 Imports:
     matlab,
     png,
-    jpeg,    
+    jpeg,
     dplyr,
     scales,
     viridis,
