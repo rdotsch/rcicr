@@ -1,15 +1,29 @@
 citHeader("To cite package 'rcicr' in publications use:")
 
-year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
+# Derive the year from metadata R fills in at build/install time. DESCRIPTION no
+# longer carries a hand-maintained Date field (it had gone stale at 2023-01-13),
+# and reading meta$Date unconditionally yielded character(0), so citations
+# rendered as "Ron Dotsch ()." with an empty year.
+year <- if (!is.null(meta$`Date/Publication`)) {
+  sub("-.*", "", meta$`Date/Publication`)
+} else if (!is.null(meta$Built)) {
+  sub(".*; *([0-9]{4})-.*", "\\1", meta$Built)
+} else {
+  format(Sys.Date(), "%Y")
+}
 vers <- paste("R package version", meta$Version)
 
-citEntry(entry="Manual",
-         title = "rcicr: Reverse correlation image classification toolbox",
-         author = personList(as.person("Ron Dotsch") ),
-         year = year,
-         note = vers,
-         textVersion =
-         paste("Ron Dotsch (",
-               year,
-               "). rcicr: Reverse correlation image classification toolbox. ",
-               vers, ".", sep=""))
+# citEntry()/personList() are deprecated in favour of bibentry()/person().
+bibentry(
+  bibtype = "Manual",
+  title   = "rcicr: Reverse correlation image classification toolbox",
+  author  = person("Ron", "Dotsch"),
+  year    = year,
+  note    = vers,
+  url     = "https://github.com/rdotsch/rcicr",
+  textVersion = paste0(
+    "Ron Dotsch (", year,
+    "). rcicr: Reverse correlation image classification toolbox. ",
+    vers, "."
+  )
+)

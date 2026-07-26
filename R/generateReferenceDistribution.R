@@ -5,7 +5,8 @@
 #' In order to compute the Informational Value metric. Saves its results in the supplied rdata file for later reuse.
 #'
 #' @export
-#' @importFrom purrr rbernoulli
+#' @importFrom stats runif
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
 #' @param ncores Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).
@@ -73,17 +74,22 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel
     warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
   }
 
-  # Initialize progressbar
-  pb <- progress_estimated(iter)
+  # Initialize progressbar (dplyr::progress_estimated() is deprecated)
+  pb <- txtProgressBar(min = 0, max = iter, style = 3)
 
   # Run simulation
   reference_norms <- vector(length = iter)
 
   for (i in 1:iter) {
-      pb$tick()$print()
+      setTxtProgressBar(pb, i)
 
-      # Generate random responses for this iteration
-      responses <- (purrr::rbernoulli(n_trials, p=0.5) * 2) - 1
+      # Generate random responses for this iteration.
+      # This is exactly what the deprecated purrr::rbernoulli(n, p) did
+      # internally. It is spelled out rather than swapped for rbinom() on
+      # purpose: rbinom() consumes the random stream differently, so it would
+      # silently change every reference distribution - and therefore every
+      # infoVal - computed from a given seed.
+      responses <- ((runif(n_trials) > 0.5) * 2) - 1
 
       # Compute classification image for this iteration
       ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
@@ -94,6 +100,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel
 
   # Save reference norms to rdata file
   write("\nSaving simulated reference distribution to rdata file...", stdout())
+  close(pb)
   rm(stimuli, responses, pb, iter, ci)
   save(list=ls(all.names=TRUE), file=rdata, envir=environment())
 

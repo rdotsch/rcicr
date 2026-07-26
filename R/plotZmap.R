@@ -6,7 +6,6 @@
 #' Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
 #'
 #' @export
-#' @import dplyr
 #' @importFrom raster raster plot
 #' @importFrom grDevices png
 #' @importFrom graphics rasterImage par plot.new plot.window
