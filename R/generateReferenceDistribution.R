@@ -42,8 +42,21 @@
 #' }
 generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel::detectCores()-1) {
 
+  # load() assigns straight into this function's frame, so any object stored in
+  # the .Rdata file silently overwrites an argument of the same name. This
+  # function re-saves its frame at the end, so files it has already written
+  # contain `rdata` (and, since ncores was added, `ncores`) - meaning a second
+  # call on the same file would ignore the ncores the caller passed and write
+  # back to the path recorded during the first call. Keep private copies and
+  # restore them after loading.
+  .args <- list(rdata = rdata, iter = iter, ncores = ncores)
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
+
+  rdata  <- .args$rdata
+  iter   <- .args$iter
+  ncores <- .args$ncores
 
   # Recover the noise-basis parameters used for the real stimuli. These were
   # not saved before this version, so .Rdata files written by older rcicr lack
@@ -101,7 +114,16 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel
   # Save reference norms to rdata file
   write("\nSaving simulated reference distribution to rdata file...", stdout())
   close(pb)
-  rm(stimuli, responses, pb, iter, ci)
-  save(list=ls(all.names=TRUE), file=rdata, envir=environment())
+
+  # Save everything that came from (or belongs in) the stimulus file, but none
+  # of this function's own arguments or scratch variables. Writing `rdata` and
+  # `ncores` back into the file is what causes the clobbering described at the
+  # top of this function, so they are excluded at the source rather than only
+  # worked around on read.
+  outfile <- rdata
+  internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
+                 "rdata", "iter", "ncores", "outfile", "internals")
+  save(list=setdiff(ls(all.names=TRUE), internals), file=outfile,
+       envir=environment())
 
 }

@@ -73,7 +73,15 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   ref_n_trials <- NA
 
   # Load parameter file (created when generating stimuli)
+  # load() assigns into this frame, so an .Rdata file written by an older
+  # generateReferenceDistribution2IFC() - which saved its own `rdata` argument
+  # into the file - would overwrite the path we were called with. This function
+  # still uses `rdata` further down (to regenerate and re-load), so it would
+  # then operate on whatever path that file happened to record. Restore ours.
+  .args <- list(rdata = rdata, iter = iter)
   load(rdata)
+  rdata <- .args$rdata
+  iter  <- .args$iter
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
   if (!force_gen_ref_dist & !exists("reference_norms", envir=environment(), inherits=FALSE)) {

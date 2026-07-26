@@ -33,6 +33,13 @@
 - `generateCI()` accepts a greyscale-encoded RGB PNG as a `mask`. The conversion worked,
   but the error for genuinely non-greyscale images was raised unconditionally afterwards,
   so every such mask was rejected anyway.
+- `generateReferenceDistribution2IFC()` no longer writes its own arguments into the
+  `.Rdata` file it updates. `load()` assigns straight into the calling function's frame,
+  so a stored `rdata` (or, newly, `ncores`) object overwrote the argument of the same name
+  on the next call — meaning a second call ignored the `ncores` you passed and wrote back
+  to the path recorded during the first call. `computeInfoVal2IFC()` additionally guards
+  against this when reading `.Rdata` files written by older versions, which still contain
+  the stale path.
 
 ## Performance and dependencies
 
@@ -112,6 +119,10 @@ obtained result changes:
 - **Pre-0.3.3 `.Rdata` files** using the `sinusoids`/`sinIdx` layout — the
   backward-compatibility path was unreachable and always errored.
 - **`simulateNoiseIntensities()`** — errored on every call.
+- **Arguments overwritten by `load()`** — only reachable if you renamed or moved an
+  `.Rdata` file between calls, in which case the old code either errored with
+  `cannot open the connection` or wrote the reference distribution back to the file's
+  former path. The `ncores` half affects speed only. No infoVal changes.
 
 ### Deliberately unchanged: the random number stream
 
