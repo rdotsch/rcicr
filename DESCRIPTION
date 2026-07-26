@@ -10,6 +10,7 @@ Description: Functions to generate stimuli and analyze data of reverse
     correlation image classification experiments (psychophysical tasks aimed at
     visualizing cognitive mental representations of faces).
 License: GPL-2
+Encoding: UTF-8
 Depends:
     R (>= 4.1)
 Imports:
@@ -47,4 +48,4 @@ Suggests:
     covr,
     withr
 Config/testthat/edition: 3
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

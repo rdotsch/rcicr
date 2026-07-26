@@ -21,6 +21,11 @@
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
 #' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
+#' @examples
+#' set.seed(1)
+#' zmap <- matrix(rnorm(64, sd = 5), 8, 8)
+#' plotZmap(zmap, sigma = 3, threshold = 3, decoration = FALSE,
+#'          targetpath = tempdir(), size = 200)
 plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = T, targetpath = 'zmaps', filename = 'zmap', size = 512, ...) {
 
   # Create target directory

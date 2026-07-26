@@ -12,11 +12,42 @@ generateReferenceDistribution2IFC(rdata, iter = 10000)
 \item{iter}{Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).}
 }
 \value{
-Nothing.
+Nothing. The reference distribution (\code{reference_norms}) is added to the supplied
+\code{rdata} file, so a later call to \code{\link{computeInfoVal2IFC}} using the same file can
+reuse it instead of re-simulating.
 }
 \description{
 Generates reference distribution of norms for a particular set of task parameters.
 }
 \details{
 In order to compute the Informational Value metric. Saves its results in the supplied rdata file for later reuse.
+}
+\examples{
+\donttest{
+# a synthetic square grayscale image stands in for a real base face photo
+base_face <- tempfile(fileext = ".png")
+png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
+
+stimulus_path <- tempdir()
+generateStimuli2IFC(
+  base_face_files = list(face = base_face),
+  n_trials = 6,
+  img_size = 32,
+  stimulus_path = stimulus_path,
+  seed = 1,
+  ncores = 1,
+  nscales = 1,
+  save_as_png = FALSE
+)
+rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TRUE)[1]
+
+# iter is kept tiny here for a fast example; in practice use iter >= 10000
+# (run from a temp working directory: generateReferenceDistribution2IFC()
+# internally re-generates stimuli via generateStimuli2IFC() without
+# forwarding a stimulus_path, so it always creates a ./stimuli directory
+# relative to the working directory)
+withr::with_dir(tempdir(), {
+  suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3))
+})
+}
 }
