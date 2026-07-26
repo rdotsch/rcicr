@@ -1,0 +1,6 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^\.claude$
+^CLAUDE\.md$
+^\.session-log\.md$
