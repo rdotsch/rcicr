@@ -291,6 +291,20 @@ an end-to-end smoke test. Gaps worth closing:
 ## P2 — Usability and maintainability
 
 ### 13. Modernize the R code itself
+- [ ] **[own review]** Version metadata is inconsistent and stale. `generateStimuli2IFC()`
+      hardcodes `generator_version <- '0.4.0'` (`R/generateStimuli2IFC.R:168`) into every
+      `.Rdata` file, while `generateNoisePattern()` writes the real
+      `utils::packageVersion('rcicr')`. So a file written today claims to come from 0.4.0
+      — useless for the provenance purpose the field exists for, and it undercuts the
+      `pre_0.3.0`-style compatibility checks that key off it. Covers issue
+      [#29](https://github.com/rdotsch/rcicr/issues/29). Replace the literal with
+      `utils::packageVersion('rcicr')`, but keep *reading* tolerant of old values.
+- [ ] **[own review]** The `matlab` package exports its own `sum()` with MATLAB semantics
+      (column sums for a matrix, not a single total), which masks `base::sum()` wherever
+      `@import matlab` is in effect — six files. Package code is currently safe (its only
+      two `sum()` calls are on vectors, where the two agree), but this is a silent trap
+      for future edits, and it already bit the test suite. Prefer `@importFrom matlab ...`
+      over `@import matlab`, importing only what is actually used.
 - [ ] Replace bare `T`/`F` with `TRUE`/`FALSE` (11 occurrences across `autoscale.R`,
       `generateCI.R`, `generateStimuli2IFC.R`, `plotZmap.R`). `T`/`F` are ordinary
       rebindable variables, so this is a genuine (if rare) correctness hazard.

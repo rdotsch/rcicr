@@ -1,8 +1,7 @@
 Package: rcicr
 Type: Package
 Title: Reverse-Correlation Image-Classification Toolbox
-Version: 1.0.1
-Date: 2023-01-13
+Version: 1.0.1.9000
 URL: https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/
 Authors@R:
   person("Ron", "Dotsch", email="rdotsch@gmail.com", role=c("aut", "cre"))
