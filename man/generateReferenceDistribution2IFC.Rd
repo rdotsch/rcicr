@@ -4,12 +4,18 @@
 \alias{generateReferenceDistribution2IFC}
 \title{Generates reference distribution}
 \usage{
-generateReferenceDistribution2IFC(rdata, iter = 10000)
+generateReferenceDistribution2IFC(
+  rdata,
+  iter = 10000,
+  ncores = parallel::detectCores() - 1
+)
 }
 \arguments{
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
 \item{iter}{Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).}
+
+\item{ncores}{Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).}
 }
 \value{
 Nothing.

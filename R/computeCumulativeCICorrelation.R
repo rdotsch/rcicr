@@ -16,6 +16,11 @@
 #' @return Vector containing correlation between cumulative CI and final/target CI.
 computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata, targetci=list(), step=1) {
 
+  # Coerce to plain vectors: tibble columns stay one-column tibbles rather than
+  # dropping to vectors (see the same handling in generateCI()).
+  stimuli <- unlist(stimuli, use.names = FALSE)
+  responses <- unlist(responses, use.names = FALSE)
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
 

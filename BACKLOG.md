@@ -61,6 +61,14 @@ is the general form of that problem.
 
 ## P0 — Correctness and availability
 
+> **Status: items 2–8 are FIXED** (see `NEWS.md` and
+> `tests/testthat/test-fixed-bugs.R`, which holds a regression test for each).
+> Item 1 (CRAN archival) remains open — it is a process/decision task, not a
+> code fix. The golden-master test `test-regression-baseline.R` stayed green
+> through every fix, which is the evidence that default-configuration results
+> are unchanged.
+
+
 ### 1. Package is archived on CRAN — `install.packages('rcicr')` does not work
 `rcicr` was **archived from CRAN on 2021-06-08**, reason: *"email to the maintainer was
 undeliverable"* ([CRAN page](https://cran.r-project.org/package=rcicr)). The last CRAN
@@ -81,7 +89,7 @@ This is the single highest-impact item: it affects every new user's first five m
       packages can be reinstated.
 - [ ] Either way, add a `NEWS.md` so users can see what changed between 0.3.4.1 and 1.0.1.
 
-### 2. `nscales` and `sigma` are not saved in the `.Rdata` file → silently wrong InfoVal
+### 2. `nscales` and `sigma` are not saved in the `.Rdata` file → silently wrong InfoVal  ✅ **FIXED**
 **Confirmed by reproduction.** Issue [#81](https://github.com/rdotsch/rcicr/issues/81).
 
 `generateStimuli2IFC()` saves `base_face_files, base_faces, img_size, label, n_trials,
@@ -102,7 +110,7 @@ null distribution.**
       that lacks the fields (backward compatibility, but not silent).
 - [ ] Regression test asserting the regenerated basis matches the original.
 
-### 3. `computeInfoVal2IFC(force_gen_ref_dist = TRUE)` silently does nothing
+### 3. `computeInfoVal2IFC(force_gen_ref_dist = TRUE)` silently does nothing  ✅ **FIXED**
 **Confirmed by reproduction.** Issue [#113](https://github.com/rdotsch/rcicr/issues/113).
 
 With a pre-existing `reference_norms` in the `.Rdata`, setting `force_gen_ref_dist = TRUE`
@@ -115,7 +123,7 @@ The user gets no error — they simply believe they forced a recomputation when 
 - [ ] Make `force_gen_ref_dist = TRUE` actually bypass the cached `reference_norms`.
 - [ ] Regression test.
 
-### 4. `generateCI()` / `generateCI2IFC()` break on tibbles
+### 4. `generateCI()` / `generateCI2IFC()` break on tibbles  ✅ **FIXED**
 **Confirmed by reproduction.** Issues [#70](https://github.com/rdotsch/rcicr/issues/70)
 and [#123](https://github.com/rdotsch/rcicr/issues/123) — the same root cause, reported
 seven years apart, which suggests it keeps catching people.
@@ -130,7 +138,7 @@ now the *normal* path for a modern user, and the error message gives no hint of 
 - [ ] Do the same in `batchGenerateCI()` / `computeCumulativeCICorrelation()`.
 - [ ] Tests covering `data.frame`, `tibble`, and bare-vector input.
 
-### 5. `simulateNoiseIntensities()` is dead on arrival
+### 5. `simulateNoiseIntensities()` is dead on arrival  ✅ **FIXED**
 **Confirmed by reproduction.** Errors 100% of the time with
 `object of type 'closure' is not subsettable`: it sizes its progress bar with
 `data[, by]`, but neither `data` nor `by` is a parameter of the function (copy-pasted
@@ -141,7 +149,7 @@ ignores its own `img_size` argument, hardcoding `generateNoisePattern(img_size =
 - [ ] It is currently pinned by a `\dontrun{}` example and a test documenting the failure —
       update both when fixed.
 
-### 6. The `mask` argument is completely unusable on R ≥ 4.2 **[verified] [own review]**
+### 6. The `mask` argument is completely unusable on R ≥ 4.2 **[verified] [own review]**  ✅ **FIXED**
 Not in the issue tracker. `generateCI()` branches on `if (!is.na(mask))` at
 `R/generateCI.R:178` and `:201`. When `mask` is a matrix — which is exactly what the
 documentation tells users to pass — `is.na(mask)` returns a *matrix* of logicals, so the
@@ -169,7 +177,7 @@ misreports the expected dimensions as `img_size`.
 - [ ] Consider defaulting `mask` to `NULL` rather than `NA` (a cleaner sentinel), keeping
       `NA` accepted for backward compatibility.
 
-### 7. `generateStimuli2IFC()` requires the base image to already be exactly `img_size` **[verified] [own review]**
+### 7. `generateStimuli2IFC()` requires the base image to already be exactly `img_size` **[verified] [own review]**  ✅ **FIXED**
 **Root cause of open issue [#124](https://github.com/rdotsch/rcicr/issues/124)**
 ("non-conformable arrays"), which has sat unexplained since 2024-09.
 
@@ -206,7 +214,7 @@ so it names neither the image nor the size mismatch — which is why it reads as
       Gate it behind an argument if silent resizing is considered too implicit.
 - [ ] Test covering a base image that doesn't match `img_size`.
 
-### 8. Legacy `sinusoids`/`sinIdx` `.Rdata` support is unreachable
+### 8. Legacy `sinusoids`/`sinIdx` `.Rdata` support is unreachable  ✅ **FIXED**
 `generateNoiseImage()` validates `length(params) != max(p$patchIdx)` **before** the block
 that renames pre-0.3.3 `sinusoids`/`sinIdx` to `patches`/`patchIdx`. So an old-style `p`
 hits `max(NULL)` → `-Inf` and always errors with "Stimulus generation aborted", despite

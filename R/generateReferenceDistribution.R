@@ -8,16 +8,35 @@
 #' @importFrom purrr rbernoulli
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
+#' @param ncores Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).
 #' @return Nothing.
 
-generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
+generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel::detectCores()-1) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
+  # Recover the noise-basis parameters used for the real stimuli. These were
+  # not saved before this version, so .Rdata files written by older rcicr lack
+  # them. Falling back to the defaults silently would rebuild the reference
+  # distribution on a *different* noise basis than participants actually saw,
+  # producing a wrong infoVal - so warn loudly rather than guessing quietly.
+  if (!exists('nscales', envir=environment(), inherits=FALSE)) {
+    nscales <- 5
+    warning(paste0('This .Rdata file was written by a version of rcicr that ',
+                   'did not save `nscales`, so the default (5) is assumed for ',
+                   'the reference distribution. If the stimuli were generated ',
+                   'with a different nscales, the resulting infoVal will be ',
+                   'wrong - regenerate the stimulus set with this version of ',
+                   'rcicr to fix this.'))
+  }
+  if (!exists('sigma', envir=environment(), inherits=FALSE)) {
+    sigma <- 25
+  }
+
   # Re-generate stimuli based on rdata parameters in matrix form
   write("Re-generating stimuli based on rdata file, please wait...", stdout())
-  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed=seed, noise_type=noise_type,ncores=parallel::detectCores()-1, return_as_dataframe=TRUE, save_as_png=FALSE, save_rdata=FALSE)
+  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed=seed, noise_type=noise_type, nscales=nscales, sigma=sigma, ncores=ncores, return_as_dataframe=TRUE, save_as_png=FALSE, save_rdata=FALSE)
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())

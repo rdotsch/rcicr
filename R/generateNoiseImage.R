@@ -10,6 +10,14 @@
 #' #noise <- generateNoiseImage(params, p)
 generateNoiseImage <- function(params, p) {
 
+  # Normalise a pre-0.3.3 noise pattern before anything reads p$patchIdx. This
+  # rename used to happen *after* the length check below, so an old-style p
+  # hit max(NULL) and always aborted - meaning the backward compatibility this
+  # code provides never actually worked.
+  if ('sinusoids' %in% names(p)) {
+    p <- list(patches=p$sinusoids, patchIdx=p$sinIdx, noise_type='sinusoid')
+  }
+
   # Abort stimulus generation if number of params doesn't equal number of patches
   if (length(params) != max(p$patchIdx)) {
 
@@ -23,11 +31,6 @@ generateNoiseImage <- function(params, p) {
       stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
 
     }
-  }
-
-  if ('sinusoids' %in% names(p)) {
-    # Pre 0.3.3 noise pattern, rename for appropriate use
-    p <- list(patches=p$sinusoids, patchIdx=p$sinIdx, noise_type='sinusoid')
   }
 
   noise <- apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean)

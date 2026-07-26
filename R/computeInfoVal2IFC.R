@@ -87,9 +87,13 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
   if (!exists("ref_median", envir=environment(), inherits=FALSE)) {
 
-    if (!exists("reference_norms", envir=environment(), inherits=FALSE)) {
+    # Regenerate when there is no cached distribution, or when the caller
+    # explicitly asked for one. force_gen_ref_dist previously only skipped the
+    # lookup-table branch above and never reached here, so it was silently
+    # ignored whenever reference_norms already existed in the .Rdata file.
+    if (force_gen_ref_dist | !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
-      # Reference norms not present in rdata file, re-generate
+      # Reference norms not present in rdata file (or regeneration forced)
       generateReferenceDistribution2IFC(rdata, iter=iter)
 
       # Re-load rdata file
