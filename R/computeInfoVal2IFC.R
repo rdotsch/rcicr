@@ -136,7 +136,11 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       # Re-load rdata file
       load(rdata)
 
-      write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.")
+      # NB: write() defaults to file = "data", so omitting stdout() here did
+      # not print this message - it silently created a file called "data" in
+      # the working directory. Every other write() in the package passes
+      # stdout(); this one was missed.
+      write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
 
     } else {
 

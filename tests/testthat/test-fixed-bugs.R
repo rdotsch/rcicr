@@ -126,6 +126,12 @@ test_that("simulateNoiseIntensities returns a matrix of noise intensity ranges",
   # but neither is a parameter of the function, so `data` resolves to
   # utils::data and it errors every time. It also ignores img_size, hardcoding
   # generateNoisePattern(img_size = 512).
+  # simulateNoiseIntensities() draws a boxplot as a side effect. Without an
+  # open device that writes an Rplots.pdf into the working directory, which
+  # R CMD check then flags as leftover detritus.
+  grDevices::pdf(file = file.path(withr::local_tempdir(), "plot.pdf"))
+  withr::defer(grDevices::dev.off())
+
   result <- simulateNoiseIntensities(nrep = 2, img_size = 32)
 
   expect_true(is.matrix(result))
