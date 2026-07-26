@@ -114,7 +114,3 @@ Changes from Version 0.2.3-22 to 0.2.3-23 [29-Aug-2014]
 Changes from Version 0.2.2-20 to 0.2.3-22 [29-Aug-2014]
 
 * Added batchGenerateCI2IFC function to batch generate classification images for multiple subjects or conditions.
-
-
-
-

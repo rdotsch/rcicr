@@ -18,7 +18,7 @@ License: \tab GPL-2\cr
 }
 \bold{Generating stimuli}
 
-Load the package with \code{library(rcicr)}. Then generate stimuli with: 
+Load the package with \code{library(rcicr)}. Then generate stimuli with:
 
 \code{generateStimuli2IFC(base_face_files, n_trials = 770)}
 
@@ -46,7 +46,7 @@ By default JPEGs of the classification images will be saved automatically. The r
 
 \bold{Computing CIs for many participants or conditions}
 
-Data analysis as described above can be automatized for a batch of participants or conditions using \code{batchGenerateCI2IFC}. Please see instructions for that function. 
+Data analysis as described above can be automatized for a batch of participants or conditions using \code{batchGenerateCI2IFC}. Please see instructions for that function.
 
 \bold{Note}
 
