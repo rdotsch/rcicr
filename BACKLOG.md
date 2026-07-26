@@ -4,6 +4,7 @@ A prioritized backlog for bringing `rcicr` to a modern, maintainable state **wit
 breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
+**Last updated:** 2026-07-26 — P0 items 2–8 fixed (v1.0.1.9000); see `NEWS.md`.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -39,23 +40,22 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 
 ## Suggested order of attack
 
-If only a few things get done, do these — they are small, high-impact, and all but the
-first are contained bug fixes:
+**All seven P0 code bugs (items 2–8) are fixed.** What remains, in the order I would
+take it:
 
-| # | Item | Why first | Size |
+| # | Item | Why | Size |
 |---|---|---|---|
-| 7 | Base image must already equal `img_size` | Blocks new users at step one; explains open issue #124 | S |
-| 6 | `mask` broken on R ≥ 4.2 | Documented feature, 100% broken on current R | S |
-| 4 | Tibble inputs fail | Tibbles are the modern default; reported twice, 7 years apart | S |
-| 2 | `nscales`/`sigma` missing from `.Rdata` | Silently corrupts a **published statistic** | M |
-| 3 | `force_gen_ref_dist` ignored | Silently ignores an explicit user instruction | S |
-| 1 | CRAN archived | Highest reach, but a process/decision task, not a code fix | M |
-| 9 | Drop 13 unused `Imports` | Trivial deletion; removes install-failure risk, unblocks CRAN | S |
-| 16 | Pointless 1.5 GB array per worker | One-line fix; likely resolves most of issue #12 | S |
+| 9 | Drop 13 unused `Imports` | Trivial deletion; removes install-failure risk and clears an `R CMD check` NOTE, which unblocks CRAN | S |
+| 16 | Pointless 1.5 GB array exported to every worker | Roughly a one-line fix; likely resolves most of issue #12 | S |
+| 10 | Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()` | Still work today, but warn on every run and will eventually break five functions at once | S |
+| 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
+| 11 | Cluster cleanup (`on.exit`), serial fallback | Partly done — `generateReferenceDistribution2IFC()` now takes `ncores`; cleanup and the `ncores == 1` fast path remain | M |
+| 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
 
-Items 2, 3, 6 and 7 all share a shape worth noting: **the package fails silently or
-misleadingly rather than telling the user what went wrong.** Item 14 (better errors)
-is the general form of that problem.
+Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
+package failed silently or misleadingly rather than telling the user what went wrong.**
+Item 13 (better errors) is the general form of that problem, and the fixes for 4 and 7
+have started on it.
 
 ---
 
@@ -87,7 +87,9 @@ This is the single highest-impact item: it affects every new user's first five m
       old `r.dotsch@uu.nl` address that was presumably the one that bounced. So the
       remaining work is clearing the `R CMD check` NOTEs below and resubmitting; archived
       packages can be reinstated.
-- [ ] Either way, add a `NEWS.md` so users can see what changed between 0.3.4.1 and 1.0.1.
+- [x] Either way, add a `NEWS.md` so users can see what changed between 0.3.4.1 and 1.0.1.
+      **Done** — `NEWS.md` now exists, including a "Reproducibility impact" section for
+      researchers with published or in-progress results.
 
 ### 2. `nscales` and `sigma` are not saved in the `.Rdata` file → silently wrong InfoVal  ✅ **FIXED**
 **Confirmed by reproduction.** Issue [#81](https://github.com/rdotsch/rcicr/issues/81).
@@ -104,11 +106,11 @@ distribution built from a `nscales = 5` basis (4092 parameters). **Anyone who us
 non-default `nscales` and reported an InfoVal has a number computed against the wrong
 null distribution.**
 
-- [ ] Save `nscales` and `sigma` in the `.Rdata` file.
-- [ ] Have `generateReferenceDistribution2IFC()` read and forward them.
-- [ ] Fall back to the old default *with a loud warning* when loading a pre-fix `.Rdata`
+- [x] Save `nscales` and `sigma` in the `.Rdata` file.
+- [x] Have `generateReferenceDistribution2IFC()` read and forward them.
+- [x] Fall back to the old default *with a loud warning* when loading a pre-fix `.Rdata`
       that lacks the fields (backward compatibility, but not silent).
-- [ ] Regression test asserting the regenerated basis matches the original.
+- [x] Regression test asserting the regenerated basis matches the original.
 
 ### 3. `computeInfoVal2IFC(force_gen_ref_dist = TRUE)` silently does nothing  ✅ **FIXED**
 **Confirmed by reproduction.** Issue [#113](https://github.com/rdotsch/rcicr/issues/113).
@@ -120,8 +122,8 @@ regeneration branch, because `reference_norms` still `exists()` after `load()`.
 
 The user gets no error — they simply believe they forced a recomputation when they did not.
 
-- [ ] Make `force_gen_ref_dist = TRUE` actually bypass the cached `reference_norms`.
-- [ ] Regression test.
+- [x] Make `force_gen_ref_dist = TRUE` actually bypass the cached `reference_norms`.
+- [x] Regression test.
 
 ### 4. `generateCI()` / `generateCI2IFC()` break on tibbles  ✅ **FIXED**
 **Confirmed by reproduction.** Issues [#70](https://github.com/rdotsch/rcicr/issues/70)
@@ -133,10 +135,10 @@ Passing tibble columns yields `arguments must have same length` from
 `df[, "col"]` drops to a vector. Since `readr`/`dplyr` return tibbles by default, this is
 now the *normal* path for a modern user, and the error message gives no hint of the cause.
 
-- [ ] Coerce inputs defensively at the top of `generateCI()`
+- [x] Coerce inputs defensively at the top of `generateCI()`
       (e.g. `stimuli <- unlist(stimuli, use.names = FALSE)`).
-- [ ] Do the same in `batchGenerateCI()` / `computeCumulativeCICorrelation()`.
-- [ ] Tests covering `data.frame`, `tibble`, and bare-vector input.
+- [x] Do the same in `batchGenerateCI()` / `computeCumulativeCICorrelation()`.
+- [x] Tests covering `data.frame`, `tibble`, and bare-vector input.
 
 ### 5. `simulateNoiseIntensities()` is dead on arrival  ✅ **FIXED**
 **Confirmed by reproduction.** Errors 100% of the time with
@@ -145,8 +147,8 @@ now the *normal* path for a modern user, and the error message gives no hint of 
 from `batchGenerateCI()`); `data` resolves to `utils::data`, the function object. It also
 ignores its own `img_size` argument, hardcoding `generateNoisePattern(img_size = 512)`.
 
-- [ ] Fix both bugs, or formally deprecate the function if it's no longer intended for use.
-- [ ] It is currently pinned by a `\dontrun{}` example and a test documenting the failure —
+- [x] Fix both bugs, or formally deprecate the function if it's no longer intended for use.
+- [x] It is currently pinned by a `\dontrun{}` example and a test documenting the failure —
       update both when fixed.
 
 ### 6. The `mask` argument is completely unusable on R ≥ 4.2 **[verified] [own review]**  ✅ **FIXED**
@@ -170,12 +172,15 @@ Behind it sits a **second** bug: `applyMask()` checks `!all(dim(mask_matrix) == 
 the `if`, any mask for a non-512px stimulus set is wrongly rejected, and the error message
 misreports the expected dimensions as `img_size`.
 
-- [ ] Replace both `if (!is.na(mask))` guards with a scalar test
+- [x] Replace both `if (!is.na(mask))` guards with a scalar test
       (e.g. `if (!identical(mask, NA))` or `!is.null(mask)`).
-- [ ] Replace the hardcoded `512` with `img_size`.
-- [ ] Tests covering a matrix mask and a PNG-file mask at a non-512 `img_size`.
+- [x] Replace the hardcoded `512` with `img_size`.
+- [x] Tests covering a matrix mask and a PNG-file mask at a non-512 `img_size`.
 - [ ] Consider defaulting `mask` to `NULL` rather than `NA` (a cleaner sentinel), keeping
-      `NA` accepted for backward compatibility.
+      `NA` accepted for backward compatibility. **Not taken:** the fix added a scalar
+      `hasMask()` guard that accepts `NA`, `NULL`, a path, or a matrix, so changing the
+      default would be churn for no user-visible gain. Still worth doing if the signature
+      is ever revised.
 
 ### 7. `generateStimuli2IFC()` requires the base image to already be exactly `img_size` **[verified] [own review]**  ✅ **FIXED**
 **Root cause of open issue [#124](https://github.com/rdotsch/rcicr/issues/124)**
@@ -207,12 +212,15 @@ The reporter in #124 used a `.jpg` with the default `img_size = 512`; any base i
 isn't exactly 512x512 fails this way. The error surfaces from inside a `foreach` worker,
 so it names neither the image nor the size mismatch — which is why it reads as inscrutable.
 
-- [ ] Validate up front that `dim(img) == c(img_size, img_size)`, with an error naming the
+- [x] Validate up front that `dim(img) == c(img_size, img_size)`, with an error naming the
       file, its actual dimensions, and the requested `img_size`.
 - [ ] Better: restore automatic resizing with a maintained package
       (`magick::image_resize()`, or `raster`/`terra`), so the original intent works again.
       Gate it behind an argument if silent resizing is considered too implicit.
-- [ ] Test covering a base image that doesn't match `img_size`.
+      **Not taken:** the fix validates and errors clearly instead, which needs no new
+      dependency and never silently alters a researcher's stimuli. Resizing remains the
+      nicer end state.
+- [x] Test covering a base image that doesn't match `img_size`.
 
 ### 8. Legacy `sinusoids`/`sinIdx` `.Rdata` support is unreachable  ✅ **FIXED**
 `generateNoiseImage()` validates `length(params) != max(p$patchIdx)` **before** the block
@@ -221,8 +229,28 @@ hits `max(NULL)` → `-Inf` and always errors with "Stimulus generation aborted"
 the code clearly intending to support it. This defeats the backward compatibility the
 package explicitly promises for old `.Rdata` files.
 
-- [ ] Move the rename block above the validation.
-- [ ] Test with a genuine pre-0.3.3-shaped `p`.
+- [x] Move the rename block above the validation.
+- [x] Test with a genuine pre-0.3.3-shaped `p`.
+
+### Also found and fixed while working through the P0 items
+
+None of these were in the original backlog; they surfaced only once the surrounding bug
+was fixed and the code path actually ran. All three are covered by tests.
+
+- **`write()` was creating a file called `data`.** `computeInfoVal2IFC()` called
+  `write("Note that now that this simulated reference distribution has been saved...")`
+  with no destination. Base R's `write()` defaults to `file = "data"`, so the message was
+  never printed — it silently wrote a file named `data` into the user's working directory
+  on every run that regenerated a reference distribution. Every other `write()` in the
+  package passes `stdout()`; this one was missed. Invisible until the item 3 fix made the
+  branch reachable.
+- **`applyMask()` rejected masks it had just successfully converted.** In the
+  RGB→greyscale branch, `stop()` sat *outside* the `else`, so it ran unconditionally —
+  even when the channels were identical and the conversion had worked.
+- **`applyMask()` compared against a hardcoded `512`** rather than `img_size`, so masks
+  could never work at any other stimulus size, and the error message reported `img_size`,
+  which is not in that function's scope.
+
 
 ---
 
@@ -274,8 +302,9 @@ Several related problems in one area:
 - `detectCores()` reports *physical* cores, not the cgroup/container limit — it
   over-subscribes on shared/HPC systems, which is exactly where researchers run big jobs.
 
-- [ ] Add `ncores` to `generateReferenceDistribution2IFC()` (default preserving current
-      behavior).
+- [x] Add `ncores` to `generateReferenceDistribution2IFC()` (default preserving current
+      behavior). **Done** — this also removed the need for the `detectCores()` mock that
+      the test suite had been using to stay under CRAN's 2-core check limit.
 - [ ] `on.exit()` cluster cleanup everywhere a cluster is created.
 - [ ] Skip the cluster entirely when `ncores == 1`.
 
@@ -283,14 +312,15 @@ Several related problems in one area:
 A testthat suite now exists (84 tests) covering the pure functions, light I/O paths, and
 an end-to-end smoke test. Gaps worth closing:
 
-- [ ] **Lock in the InfoVal formula.** See the note under item #17 — the implementation is
+- [x] **Lock in the InfoVal formula.** Done — pinned in `test-regression-baseline.R`.
+      See the note under item #17 — the implementation is
       currently correct per the published erratum, but *nothing tests it*, so a future
       refactor could silently regress a published metric.
 - [ ] Cover the `scaling` methods (`none`/`constant`/`matched`/`independent`) — currently
       only `independent` is meaningfully exercised, and scaling choice is the most
       documented user-facing decision in the package.
-- [ ] Cover `mask` handling in `generateCI()` — **currently untestable; see item 6**, where
-      masks are shown to be broken outright on R ≥ 4.2.
+- [x] Cover `mask` handling in `generateCI()` — **done**, now that item 6 is fixed; see
+      `test-fixed-bugs.R`.
 - [ ] Cover the `zmap = TRUE` paths (`quick` and `t.test`).
 - [ ] Cover `participants` (per-participant → group averaging).
 
@@ -350,7 +380,8 @@ The GitHub issues are dominated by confusing failure modes, not missing features
       message naming the offending file and its actual dimensions.
 - [ ] Validate `.Rdata` contents on load, naming any missing fields and the package
       version that wrote the file.
-- [ ] Check `length(stimuli) == length(responses)` before `aggregate()`.
+- [x] Check `length(stimuli) == length(responses)` before `aggregate()`. **Done** as part
+      of the item 4 fix.
 
 ### 15. Documentation and onboarding
 - [ ] Publish a **pkgdown** site (docs are otherwise only readable via `?help` or an
@@ -447,7 +478,7 @@ recur. None are blocking; all are meaningful to researchers.
   *separate*, still-open problem in item #11: `generateReferenceDistribution2IFC()` has no
   `ncores` argument at all.)
 
-### <a name="17"></a>17. InfoVal formula — verified correct, but untested
+### <a name="17"></a>17. InfoVal formula — verified correct, now pinned by a test  ✅
 
 Worth recording so it isn't "re-fixed" by someone reading only the comment paper:
 
@@ -466,5 +497,6 @@ by default — leaving only the norm issue, of minor impact.
 `01e547e "Euclidean norm and scaling factor k (#97)"` and
 `ae8fa9c "Removed k constant, since it is already included in the R mad function."`
 
-- [ ] Add a regression test pinning infoVal to a hand-computed expected value, so this
-      cannot silently regress. Currently nothing in the test suite would catch it.
+- [x] Add a regression test pinning infoVal to a hand-computed expected value, so this
+      cannot silently regress. **Done** — `test-regression-baseline.R` pins both the
+      formula (recomputed independently) and a literal expected value.

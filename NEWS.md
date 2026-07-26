@@ -26,6 +26,13 @@
 - `simulateNoiseIntensities()` runs at all, and honours its `img_size` argument.
 - `generateReferenceDistribution2IFC()` gained an `ncores` argument instead of always
   using `detectCores() - 1`.
+- `computeInfoVal2IFC()` no longer creates a stray file called `data` in your working
+  directory. One `write()` call omitted its destination, and base R's `write()` defaults
+  to `file = "data"` — so the "reference distribution has been saved" message was written
+  to that file instead of the console.
+- `generateCI()` accepts a greyscale-encoded RGB PNG as a `mask`. The conversion worked,
+  but the error for genuinely non-greyscale images was raised unconditionally afterwards,
+  so every such mask was rejected anyway.
 
 ## Reproducibility impact — read this if you have published or in-progress results
 
