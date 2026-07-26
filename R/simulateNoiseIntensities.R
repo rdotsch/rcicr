@@ -8,6 +8,14 @@
 #' @param nrep Number of replications
 #' @param img_size Size of noise pattern in pixels (one value equal for width and height)
 #' @return Matrix with range of noise intensities for each replication
+#' @note This function currently always errors: it references undefined \code{data}/\code{by}
+#' variables when sizing its progress bar (apparently copy-pasted from \code{\link{batchGenerateCI}}),
+#' and it also ignores the \code{img_size} argument internally, always simulating at 512px. Not fixed
+#' here; the example below is not run.
+#' @examples
+#' \dontrun{
+#' simulateNoiseIntensities(nrep = 10, img_size = 512)
+#' }
 simulateNoiseIntensities <- function(nrep=1000, img_size=512) {
 
   results <- matlab::zeros(nrep, 2)

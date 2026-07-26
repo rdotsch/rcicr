@@ -34,7 +34,7 @@ batchGenerateCI2IFC(
 
 \item{save_as_png}{Boolean stating whether to additionally save the CI as PNG image.}
 
-\item{targetpath}{Optional string specifying path to save PNGGs to (default: ./cis).}
+\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
@@ -42,7 +42,7 @@ batchGenerateCI2IFC(
 
 \item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
 
-\item{label}{Optional string to insert in file names of PNGGs to make them easier to identify.}
+\item{label}{Optional string to insert in file names of PNGs to make them easier to identify.}
 }
 \value{
 List of classification image data structures (which are themselves lists of pixel matrix of classification noise only, scaled classification noise only, base image only and combined).
@@ -51,5 +51,37 @@ List of classification image data structures (which are themselves lists of pixe
 Generate classification image for 2 images forced choice reverse correlation task.
 }
 \details{
-This funcions saves the classification images by participant or condition as PNG to a folder and returns the CIs.
+This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
+}
+\examples{
+\donttest{
+# a synthetic square grayscale image stands in for a real base face photo
+base_face <- tempfile(fileext = ".png")
+png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
+
+stimulus_path <- tempdir()
+generateStimuli2IFC(
+  base_face_files = list(face = base_face),
+  n_trials = 6,
+  img_size = 32,
+  stimulus_path = stimulus_path,
+  seed = 1,
+  ncores = 1,
+  nscales = 1,
+  save_as_png = FALSE
+)
+rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TRUE)[1]
+
+# two "participants", three trials each
+data <- data.frame(
+  participant = rep(c("p1", "p2"), each = 3),
+  stimulus = 1:6,
+  response = sample(c(1, -1), 6, replace = TRUE)
+)
+
+cis <- suppressWarnings(batchGenerateCI2IFC(
+  data = data, by = "participant", stimuli = "stimulus", responses = "response",
+  baseimage = "face", rdata = rdata_file, save_as_png = FALSE
+))
+}
 }

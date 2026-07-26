@@ -37,7 +37,7 @@ generateStimuli2IFC(
 
 \item{seed}{Integer seeding the random number generator (for reproducibility).}
 
-\item{maximize_baseimage_contrast}{Boolean specifying wheter the pixel values of the base image should be rescaled to maximize its contrast.}
+\item{maximize_baseimage_contrast}{Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast.}
 
 \item{noise_type}{String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).}
 
@@ -51,7 +51,7 @@ generateStimuli2IFC(
 
 \item{save_as_png}{Boolean specifying whether to write the stimuli as images to disk (default: TRUE).}
 
-\item{save_rdata}{Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classifciation images. This function argument exists primarily for internal rcicr use.}
+\item{save_rdata}{Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classification images. This function argument exists primarily for internal rcicr use.}
 }
 \value{
 Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
@@ -60,6 +60,23 @@ Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE
 Generate stimuli for 2 images forced choice reverse correlation task.
 }
 \details{
-Will save the stimuli as #' PNGs to a folder, including .Rdata file needed for analysis of data
+Will save the stimuli as PNGs to a folder, including .Rdata file needed for analysis of data
 after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
+}
+\examples{
+\donttest{
+# a synthetic square grayscale image stands in for a real base face photo
+base_face <- tempfile(fileext = ".png")
+png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
+
+generateStimuli2IFC(
+  base_face_files = list(face = base_face),
+  n_trials = 4,
+  img_size = 32,
+  stimulus_path = tempdir(),
+  seed = 1,
+  ncores = 1,
+  nscales = 1
+)
+}
 }
