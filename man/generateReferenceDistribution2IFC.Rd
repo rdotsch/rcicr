@@ -45,7 +45,11 @@ rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TR
 # (run from a temp working directory: generateReferenceDistribution2IFC()
 # internally re-generates stimuli via generateStimuli2IFC() without
 # forwarding a stimulus_path, so it always creates a ./stimuli directory
-# relative to the working directory)
+# relative to the working directory. It also hardcodes
+# ncores=parallel::detectCores()-1 for that internal call with no way to
+# override it, so - unlike the other examples in this package - this one
+# isn't pinned to a single core; wrapped in \donttest{} partly for that
+# reason.)
 withr::with_dir(tempdir(), {
   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3))
 })
