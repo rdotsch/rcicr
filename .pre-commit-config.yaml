@@ -1,0 +1,17 @@
+# Minimal, language-agnostic hooks. Deliberately avoids R-specific hooks
+# (styler/lintr/roxygenize via lorenzwalthert/precommit): they are slow in CI,
+# and styler in particular would reformat most of R/ in one sweep. See
+# https://pre-commit.ci for the hosted runner that executes this on PRs.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-added-large-files
+        args: [--maxkb=1024]

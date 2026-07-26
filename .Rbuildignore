@@ -1,0 +1,8 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^\.claude$
+^CLAUDE\.md$
+^\.session-log\.md$
+^\.pre-commit-config\.yaml$
+^codecov\.yml$
