@@ -14,8 +14,16 @@ autoscale(cis, save_as_pngs = TRUE, targetpath = "./cis")
 \item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
 }
 \value{
-List of scaled noise patterns and determined scaling factor.
+The input \code{cis} list, with a \code{$scaled} pixel matrix added to each element. The
+scaling constant that was determined is printed to the console, not returned.
 }
 \description{
 Determines optimal scaling constant for a list of CIs
+}
+\examples{
+cis <- list(
+  participant1 = list(ci = matrix(runif(64, -0.2, 0.2), 8, 8), base = matrix(0.5, 8, 8)),
+  participant2 = list(ci = matrix(runif(64, -0.3, 0.3), 8, 8), base = matrix(0.5, 8, 8))
+)
+scaled_cis <- autoscale(cis, save_as_pngs = FALSE)
 }

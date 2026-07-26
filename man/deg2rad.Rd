@@ -9,6 +9,9 @@ deg2rad(deg)
 \arguments{
 \item{deg}{Angle in degrees}
 }
+\value{
+The angle in radians.
+}
 \description{
 Convert angle in degrees to radians
 }

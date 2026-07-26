@@ -20,3 +20,13 @@ The classification image as pixel matrix.
 \description{
 Generate classification image noise pattern based on set of stimuli (matrix: trials, parameters), responses (vector), and sinusoid
 }
+\examples{
+p <- generateNoisePattern(img_size = 32, nscales = 1)
+nparams <- max(p$patchIdx)
+
+# two trials, one chosen original (1) and one inverted (-1)
+stimuli <- matrix(runif(2 * nparams, -1, 1), nrow = 2)
+responses <- c(1, -1)
+
+ci <- generateCINoise(stimuli, responses, p)
+}

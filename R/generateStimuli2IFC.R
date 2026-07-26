@@ -2,7 +2,7 @@
 #'
 #' Generate stimuli for 2 images forced choice reverse correlation task.
 #'
-#' Will save the stimuli as #' PNGs to a folder, including .Rdata file needed for analysis of data
+#' Will save the stimuli as PNGs to a folder, including .Rdata file needed for analysis of data
 #' after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
 #'
 #' @export
@@ -21,15 +21,31 @@
 #' @param label Label to prepend to each file for your convenience.
 #' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
 #' @param seed Integer seeding the random number generator (for reproducibility).
-#' @param maximize_baseimage_contrast Boolean specifying wheter the pixel values of the base image should be rescaled to maximize its contrast.
+#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast.
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
 #' @param ncores Number of CPU cores to use (default: detectCores()-1).
 #' @param return_as_dataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
 #' @param save_as_png Boolean specifying whether to write the stimuli as images to disk (default: TRUE).
-#' @param save_rdata Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classifciation images. This function argument exists primarily for internal rcicr use.
+#' @param save_rdata Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classification images. This function argument exists primarily for internal rcicr use.
 #' @return Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
+#' @examples
+#' \donttest{
+#' # a synthetic square grayscale image stands in for a real base face photo
+#' base_face <- tempfile(fileext = ".png")
+#' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
+#'
+#' generateStimuli2IFC(
+#'   base_face_files = list(face = base_face),
+#'   n_trials = 4,
+#'   img_size = 32,
+#'   stimulus_path = tempdir(),
+#'   seed = 1,
+#'   ncores = 1,
+#'   nscales = 1
+#' )
+#' }
 generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores()-1, return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
 
   # Initialize #
