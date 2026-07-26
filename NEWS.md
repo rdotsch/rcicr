@@ -6,6 +6,27 @@
 > (see below) rather than only repairing it. The public API is unchanged, so a
 > 2.0.0 is not warranted.
 
+## Bug fixes
+
+- `generateStimuli2IFC()` now validates that the base image matches `img_size`, with an
+  error naming the file and both sizes, instead of failing inside a parallel worker with
+  `non-conformable arrays` (#124).
+- The `mask` argument of `generateCI()` works again. It was unusable on R >= 4.2, was
+  restricted to 512px stimuli by a hardcoded size check, and rejected greyscale-as-RGB
+  PNG masks even when it had successfully converted them.
+- `generateCI()`, `batchGenerateCI()` and `computeCumulativeCICorrelation()` accept
+  tibble columns, not only `data.frame` columns (#70, #123). `generateCI()` also checks
+  that `stimuli` and `responses` are the same length up front.
+- `generateStimuli2IFC()` saves `nscales` and `sigma` to the `.Rdata` file, and
+  `generateReferenceDistribution2IFC()` uses them (#81). See below.
+- `computeInfoVal2IFC(force_gen_ref_dist = TRUE)` regenerates the reference distribution
+  instead of silently reusing the cached one (#113).
+- `generateNoiseImage()` accepts pre-0.3.3 `.Rdata` noise patterns using the
+  `sinusoids`/`sinIdx` layout. This backward-compatibility path had never worked.
+- `simulateNoiseIntensities()` runs at all, and honours its `img_size` argument.
+- `generateReferenceDistribution2IFC()` gained an `ncores` argument instead of always
+  using `detectCores() - 1`.
+
 ## Reproducibility impact — read this if you have published or in-progress results
 
 This release fixes several long-standing bugs. Most of them turn a **crash into

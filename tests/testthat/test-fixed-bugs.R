@@ -1,17 +1,13 @@
-# Failing tests for known, unfixed bugs. See BACKLOG.md.
+# Regression tests for bugs that HAVE been fixed.
 #
-# Every test in this file asserts the behaviour rcicr *should* have, and is
-# EXPECTED TO FAIL against the current code. That is deliberate: they are the
-# executable specification of the P0 items in BACKLOG.md, and they turn green
-# one by one as each bug is fixed.
+# These began life in test-known-bugs.R as deliberately failing tests - the
+# executable form of the P0 list in BACKLOG.md. Every one of them now passes,
+# so the file was renamed: its job from here on is to stop these bugs coming
+# back.
 #
-# They are deliberately NOT written as expect_error(<current buggy output>).
-# That style passes while the bug exists and breaks when someone fixes it,
-# which is exactly backwards: it locks the bug in and punishes the fix.
-#
-# As each bug is fixed, its test should start passing with no edit to the test
-# itself. If a fix leaves its test red, the fix is incomplete. When this file
-# is empty, the P0 list in BACKLOG.md is done.
+# Each test asserts intended behaviour, never the buggy output it replaced.
+# Do not "fix" a failure here by asserting the broken result - that locks the
+# bug back in. A failure means a regression.
 
 test_that("generateStimuli2IFC saves nscales and sigma in the .Rdata file", {
   # BACKLOG item 2 / issue #81. Because nscales is not saved,

@@ -93,6 +93,22 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
   # Preprocessing -----------------------------------------------------------
 
+  # Coerce stimuli/responses to plain vectors. Data read with readr or
+  # manipulated with dplyr comes back as a tibble, where tbl[, "col"] stays a
+  # one-column tibble rather than dropping to a vector the way df[, "col"]
+  # does. That made aggregate() below fail with the opaque message
+  # "arguments must have same length".
+  stimuli <- unlist(stimuli, use.names = FALSE)
+  responses <- unlist(responses, use.names = FALSE)
+  if (!all(is.na(participants))) {
+    participants <- unlist(participants, use.names = FALSE)
+  }
+
+  if (length(stimuli) != length(responses)) {
+    stop(paste0('stimuli and responses must have the same length (stimuli: ',
+                length(stimuli), ', responses: ', length(responses), ').'))
+  }
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
@@ -204,8 +220,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
       # Check if individual CIs should be saved. If so, generate and save them
       if (save_individual_cis) {
-        if (!is.na(mask)) {
-          individual_ci <- applyMask(ci, mask)
+        if (hasMask(mask)) {
+          individual_ci <- applyMask(ci, mask, img_size)
         } else {
           individual_ci <- ci
         }
@@ -227,8 +243,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   }
 
   # Check if a mask has been set. If so, apply it to the CI
-  if (!is.na(mask)) {
-    ci <- applyMask(ci, mask)
+  if (hasMask(mask)) {
+    ci <- applyMask(ci, mask, img_size)
   }
 
   # Apply scaling
@@ -311,9 +327,19 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 # Functions ---------------------------------------------------------------
 
 # Apply masking to a CI
-# Input: CI, mask (either a string or a matrix)
+# Has the user actually supplied a mask?
+# The `mask` argument defaults to NA, so a plain `!is.na(mask)` test returns a
+# whole matrix when a mask *is* supplied - which R >= 4.2 rejects outright with
+# "the condition has length > 1". This collapses the test to a single logical.
+# Input: mask (NA, NULL, a string path, or a matrix)
+# Output: TRUE if a mask was supplied
+hasMask <- function(mask) {
+  !is.null(mask) && !(length(mask) == 1L && is.na(mask))
+}
+
+# Input: CI, mask (either a string or a matrix), expected stimulus size
 # Output: masked CI (input CI, but masked pixels are NA)
-applyMask <- function(ci, mask) {
+applyMask <- function(ci, mask, img_size = nrow(ci)) {
   # If mask argument is a string, treat it as a path to a bitmap and try to read
   # it into a matrix. If it is a matrix, use it. Else, throw an error
   if (typeof(mask) == 'character') {
@@ -328,11 +354,13 @@ applyMask <- function(ci, mask) {
       rgb_channels <- list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3])
       if (all(sapply(rgb_channels, FUN = identical, mask_matrix[,,1]))) {
         mask_matrix <- mask_matrix[,,1]
+      } else {
+        # Only error if the channels genuinely differ. This stop() used to run
+        # unconditionally, so even a convertible greyscale-as-RGB PNG failed.
+        stop(paste0('This PNG is not encoded with a greyscale color palette and ',
+                    'could not be converted to this encoding either. In other ',
+                    'words, this is not a greyscale image.'))
       }
-      # Else, throw error
-      stop(paste0('This PNG is not encoded with a greyscale color palette and ',
-                  'could not be converted to this encoding either. In other ',
-                  'words, this is not a greyscale image.'))
     }
   } else if (typeof(mask) == 'double' && length(dim(mask)) == 2) {
     mask_matrix <- mask
@@ -340,8 +368,11 @@ applyMask <- function(ci, mask) {
     stop('The mask argument is neither a string nor a matrix!')
   }
 
-  # Check if mask is of the same size as the stimuli (i.e. img_size)
-  if (!all(dim(mask_matrix) == 512)) {
+  # Check if mask is of the same size as the stimuli (i.e. img_size). This used
+  # to compare against a hardcoded 512, so masks failed for every other
+  # stimulus size, and reported img_size - which is not in scope here - in the
+  # error message.
+  if (!all(dim(mask_matrix) == img_size)) {
     stop(paste0('Mask is not of the same dimensions as the stimuli! ',
                 '(stimulus dimensions: ', img_size, ' x ', img_size,
                 '; mask dimensions: ', dim(mask_matrix)[2],

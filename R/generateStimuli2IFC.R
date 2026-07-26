@@ -84,8 +84,19 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       img <- apply(img, c(1, 2), mean)
     }
 
-    # Adjust size of base face
-    #base_faces[[base_face]] <- biOps::imgMedianShrink(img, x_scale=img_size/ncol(img), y_scale=img_size/nrow(img))
+    # Check that the base face matches the requested stimulus size. Automatic
+    # resizing used to happen here via biOps, but that dependency was dropped
+    # and never replaced, so a mismatch would otherwise surface much later as
+    # an opaque "non-conformable arrays" error from inside a parallel worker
+    # (when the noise is added to the base image).
+    if (nrow(img) != img_size) {
+      stop(paste0('Base image "', base_face, '" (', filename, ') is ',
+                  nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
+                  img_size, '. rcicr does not resize base images: please ',
+                  'either resize the image to ', img_size, ' by ', img_size,
+                  ' pixels, or call generateStimuli2IFC() with img_size = ',
+                  nrow(img), '.'))
+    }
 
     # If necessary, rescale to maximize contrast
     if (maximize_baseimage_contrast) {
@@ -184,7 +195,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   generator_version <- '0.4.0'
 
   if (save_rdata) {
-    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
+    # nscales and sigma are saved so that anything re-generating this stimulus
+    # set later (notably generateReferenceDistribution2IFC(), which builds the
+    # infoVal null distribution) reproduces the same noise basis. They were
+    # previously omitted, so re-generation silently fell back to the defaults.
+    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
   }
 
   # Return CIs
