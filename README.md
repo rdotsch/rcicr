@@ -1,5 +1,8 @@
 # rcicr
 
+[![R-CMD-check](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/rdotsch/rcicr/branch/main/graph/badge.svg)](https://codecov.io/gh/rdotsch/rcicr)
+
 This package contains functions needed for conducting reverse correlation image classification experiments in psychology (generating stimuli and classification images).
 
 We would very much welcome any contributions, thoughts and criticisms you might have! Please submit an issue at [here](https://github.com/rdotsch/rcicr/issues/){.uri}.
