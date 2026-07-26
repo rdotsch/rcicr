@@ -1,9 +1,8 @@
 #' Simulate pixel intensity range for noise
 #'
 #' @export
-#' @import dplyr
 #' @import matlab
-#' @importFrom utils data
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats runif
 #' @importFrom graphics boxplot
 #' @param nrep Number of replications
@@ -20,18 +19,25 @@
 simulateNoiseIntensities <- function(nrep=1000, img_size=512) {
 
   results <- matlab::zeros(nrep, 2)
-  s <- generateNoisePattern(img_size=512)
+  # img_size was previously ignored here, hardcoding a 512px noise pattern
+  # regardless of what the caller asked for.
+  s <- generateNoisePattern(img_size=img_size)
 
-  pb <- dplyr::progress_estimated(length(unique(data[,by])))
+  # The progress bar used to be sized with `data[, by]`, neither of which is a
+  # parameter of this function - `data` resolved to utils::data, so every call
+  # failed with "object of type 'closure' is not subsettable".
+  pb <- txtProgressBar(min = 0, max = nrep, style = 3)
   for (i in 1:nrep) {
-    pb$tick()$print()
+    setTxtProgressBar(pb, i)
 
-    params <- (runif(4096) * 2) - 1
+    # One contrast weight per patch index, matching the noise pattern actually
+    # generated above rather than a hardcoded 4096.
+    params <- (runif(max(s$patchIdx)) * 2) - 1
 
     noise <- generateNoiseImage(params, s)
     results[i,] <- range(noise)
   }
-  pb$stop()
+  close(pb)
   boxplot(results)
   return(results)
 }

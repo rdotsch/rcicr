@@ -47,17 +47,13 @@
 #' rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE)[1]
 #'
 #' # compute (and cache in rdata_file) a reference distribution; iter is kept
-#' # tiny here for a fast example, in practice use iter >= 10000
-#' # (run from a temp working directory: generateReferenceDistribution2IFC()
-#' # internally re-generates stimuli via generateStimuli2IFC() without
-#' # forwarding a stimulus_path, so it always creates a ./stimuli directory
-#' # relative to the working directory. It also hardcodes
-#' # ncores=parallel::detectCores()-1 for that internal call with no way to
-#' # override it, so - unlike the other examples in this package - this one
-#' # isn't pinned to a single core; wrapped in \donttest{} partly for that
-#' # reason.)
+#' # tiny here for a fast example, in practice use iter >= 10000.
+#' # Run from a temp working directory: generateReferenceDistribution2IFC()
+#' # re-generates stimuli via generateStimuli2IFC() without forwarding a
+#' # stimulus_path, so it always creates a ./stimuli directory relative to the
+#' # working directory.
 #' withr::with_dir(tempdir(), {
-#'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3))
+#'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #' })
 #'
 #' responses <- sample(c(1, -1), 6, replace = TRUE)
@@ -128,15 +124,23 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
   if (!exists("ref_median", envir=environment(), inherits=FALSE)) {
 
-    if (!exists("reference_norms", envir=environment(), inherits=FALSE)) {
+    # Regenerate when there is no cached distribution, or when the caller
+    # explicitly asked for one. force_gen_ref_dist previously only skipped the
+    # lookup-table branch above and never reached here, so it was silently
+    # ignored whenever reference_norms already existed in the .Rdata file.
+    if (force_gen_ref_dist | !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
-      # Reference norms not present in rdata file, re-generate
+      # Reference norms not present in rdata file (or regeneration forced)
       generateReferenceDistribution2IFC(rdata, iter=iter)
 
       # Re-load rdata file
       load(rdata)
 
-      write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.")
+      # NB: write() defaults to file = "data", so omitting stdout() here did
+      # not print this message - it silently created a file called "data" in
+      # the working directory. Every other write() in the package passes
+      # stdout(); this one was missed.
+      write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
 
     } else {
 

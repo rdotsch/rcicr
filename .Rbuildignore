@@ -6,3 +6,4 @@
 ^\.session-log\.md$
 ^\.pre-commit-config\.yaml$
 ^codecov\.yml$
+^BACKLOG\.md$

@@ -4,12 +4,18 @@
 \alias{generateReferenceDistribution2IFC}
 \title{Generates reference distribution}
 \usage{
-generateReferenceDistribution2IFC(rdata, iter = 10000)
+generateReferenceDistribution2IFC(
+  rdata,
+  iter = 10000,
+  ncores = parallel::detectCores() - 1
+)
 }
 \arguments{
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
 \item{iter}{Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).}
+
+\item{ncores}{Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).}
 }
 \value{
 Nothing. The reference distribution (\code{reference_norms}) is added to the supplied
@@ -41,17 +47,12 @@ generateStimuli2IFC(
 )
 rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TRUE)[1]
 
-# iter is kept tiny here for a fast example; in practice use iter >= 10000
-# (run from a temp working directory: generateReferenceDistribution2IFC()
-# internally re-generates stimuli via generateStimuli2IFC() without
-# forwarding a stimulus_path, so it always creates a ./stimuli directory
-# relative to the working directory. It also hardcodes
-# ncores=parallel::detectCores()-1 for that internal call with no way to
-# override it, so - unlike the other examples in this package - this one
-# isn't pinned to a single core; wrapped in \donttest{} partly for that
-# reason.)
+# iter is kept tiny here for a fast example; in practice use iter >= 10000.
+# Run from a temp working directory: this function re-generates stimuli via
+# generateStimuli2IFC() without forwarding a stimulus_path, so it always
+# creates a ./stimuli directory relative to the working directory.
 withr::with_dir(tempdir(), {
-  suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3))
+  suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 })
 }
 }

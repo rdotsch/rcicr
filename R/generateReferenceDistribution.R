@@ -8,6 +8,7 @@
 #' @importFrom purrr rbernoulli
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
+#' @param ncores Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).
 #' @return Nothing. The reference distribution (\code{reference_norms}) is added to the supplied
 #' \code{rdata} file, so a later call to \code{\link{computeInfoVal2IFC}} using the same file can
 #' reuse it instead of re-simulating.
@@ -30,27 +31,40 @@
 #' )
 #' rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE)[1]
 #'
-#' # iter is kept tiny here for a fast example; in practice use iter >= 10000
-#' # (run from a temp working directory: generateReferenceDistribution2IFC()
-#' # internally re-generates stimuli via generateStimuli2IFC() without
-#' # forwarding a stimulus_path, so it always creates a ./stimuli directory
-#' # relative to the working directory. It also hardcodes
-#' # ncores=parallel::detectCores()-1 for that internal call with no way to
-#' # override it, so - unlike the other examples in this package - this one
-#' # isn't pinned to a single core; wrapped in \donttest{} partly for that
-#' # reason.)
+#' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
+#' # Run from a temp working directory: this function re-generates stimuli via
+#' # generateStimuli2IFC() without forwarding a stimulus_path, so it always
+#' # creates a ./stimuli directory relative to the working directory.
 #' withr::with_dir(tempdir(), {
-#'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3))
+#'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #' })
 #' }
-generateReferenceDistribution2IFC <- function(rdata, iter=10000) {
+generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel::detectCores()-1) {
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
+  # Recover the noise-basis parameters used for the real stimuli. These were
+  # not saved before this version, so .Rdata files written by older rcicr lack
+  # them. Falling back to the defaults silently would rebuild the reference
+  # distribution on a *different* noise basis than participants actually saw,
+  # producing a wrong infoVal - so warn loudly rather than guessing quietly.
+  if (!exists('nscales', envir=environment(), inherits=FALSE)) {
+    nscales <- 5
+    warning(paste0('This .Rdata file was written by a version of rcicr that ',
+                   'did not save `nscales`, so the default (5) is assumed for ',
+                   'the reference distribution. If the stimuli were generated ',
+                   'with a different nscales, the resulting infoVal will be ',
+                   'wrong - regenerate the stimulus set with this version of ',
+                   'rcicr to fix this.'))
+  }
+  if (!exists('sigma', envir=environment(), inherits=FALSE)) {
+    sigma <- 25
+  }
+
   # Re-generate stimuli based on rdata parameters in matrix form
   write("Re-generating stimuli based on rdata file, please wait...", stdout())
-  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed=seed, noise_type=noise_type,ncores=parallel::detectCores()-1, return_as_dataframe=TRUE, save_as_png=FALSE, save_rdata=FALSE)
+  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed=seed, noise_type=noise_type, nscales=nscales, sigma=sigma, ncores=ncores, return_as_dataframe=TRUE, save_as_png=FALSE, save_rdata=FALSE)
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())

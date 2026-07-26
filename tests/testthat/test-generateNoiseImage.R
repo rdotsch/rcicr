@@ -25,21 +25,8 @@ test_that("legacy 0-indexed patchIdx warns but still returns a valid image", {
   expect_false(anyNA(result))
 })
 
-test_that("legacy sinusoids/sinIdx list shape currently errors (known issue)", {
-  # generateNoiseImage()'s validation checks `p$patchIdx` before the block
-  # that renames `sinusoids`/`sinIdx` to `patches`/`patchIdx`, so a
-  # pre-0.3.3-style `p` list is rejected instead of being supported as the
-  # roxygen comment ("Pre 0.3.3 noise pattern, rename for appropriate use")
-  # implies. Documenting current (broken) behavior rather than the
-  # documented intent - not fixed as part of this task.
-  p <- generateNoisePattern(16, nscales = 1)
-  p_legacy <- list(sinusoids = p$patches, sinIdx = p$patchIdx)
-  params <- rep(1, max(p$patchIdx))
-  suppressWarnings(expect_error(
-    generateNoiseImage(params, p_legacy),
-    "Stimulus generation aborted"
-  ))
-})
+# NOTE: support for the pre-0.3.3 sinusoids/sinIdx list shape is currently
+# broken; test-known-bugs.R holds a failing test for the intended behaviour.
 
 test_that("all-zero params gives an all-zero image", {
   p <- generateNoisePattern(16, nscales = 1)

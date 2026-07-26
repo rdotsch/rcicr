@@ -57,17 +57,13 @@ generateStimuli2IFC(
 rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TRUE)[1]
 
 # compute (and cache in rdata_file) a reference distribution; iter is kept
-# tiny here for a fast example, in practice use iter >= 10000
-# (run from a temp working directory: generateReferenceDistribution2IFC()
-# internally re-generates stimuli via generateStimuli2IFC() without
-# forwarding a stimulus_path, so it always creates a ./stimuli directory
-# relative to the working directory. It also hardcodes
-# ncores=parallel::detectCores()-1 for that internal call with no way to
-# override it, so - unlike the other examples in this package - this one
-# isn't pinned to a single core; wrapped in \donttest{} partly for that
-# reason.)
+# tiny here for a fast example, in practice use iter >= 10000.
+# Run from a temp working directory: generateReferenceDistribution2IFC()
+# re-generates stimuli via generateStimuli2IFC() without forwarding a
+# stimulus_path, so it always creates a ./stimuli directory relative to the
+# working directory.
 withr::with_dir(tempdir(), {
-  suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3))
+  suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 })
 
 responses <- sample(c(1, -1), 6, replace = TRUE)
