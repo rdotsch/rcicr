@@ -139,6 +139,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
 
   cl <- parallel::makeCluster(ncores, outfile = "")
+  on.exit(stopClusterSafely(cl), add = TRUE)
   doParallel::registerDoParallel(cl)
 
   stims <- foreach::foreach(
@@ -196,6 +197,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     setTxtProgressBar(pb, trial)
   }
   parallel::stopCluster(cl)
+  cl <- NULL
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   generator_version <- '0.4.0'
