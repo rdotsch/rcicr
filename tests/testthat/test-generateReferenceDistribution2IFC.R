@@ -53,7 +53,14 @@ test_that("the reference distribution is fixed by the stimulus file, not the cal
   # distribution no matter what the ambient RNG was doing beforehand.
   #
   # Verified rather than assumed: seeding 42 vs 99 around the two calls below
-  # gives byte-identical norms.
+  # gives byte-identical norms, and ncores = 1 vs 2 also agree, so the null is
+  # portable across machines.
+  #
+  # Note this determinism is a *side effect* of the stimulus rebuild, not a
+  # designed guarantee -- there is no seed argument on this function. It is
+  # pinned here precisely because it is load-bearing but incidental: removing
+  # or moving that set.seed() would silently change every InfoVal ever
+  # computed. See BACKLOG.md item 26 for the design question.
   tmp <- withr::local_tempdir()
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 

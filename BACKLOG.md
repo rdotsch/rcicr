@@ -70,6 +70,7 @@ they are the backlog proper for after CRAN, and are deliberately not in the tabl
 | 23 | `plotZmap(mask=)` validated then never applied | **Open, needs a decision.** A documented argument that silently does nothing; narrow blast radius (`generateCI()` never passes it), but fixing it changes rendered output, so it is a behaviour change rather than a plain bug fix | S |
 | 24 | `generateReferenceDistribution2IFC()` litters a `./stimuli` dir | Cosmetic; hidden until now because `stimuli` is git-ignored, so it never showed in `git status` | S |
 | 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
+| 26 | InfoVal's null is seeded by accident and cannot be varied | Behaviour is correct and worth keeping (MC error measured at ~0.04 infoVal units), but it is emergent rather than designed, and a stray edit to `set.seed()` in `generateStimuli2IFC()` would silently change every InfoVal | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -830,6 +831,55 @@ function's own roxygen already documents the behaviour as a caveat (with a
       rather than documenting the side effect.
 - [ ] Wrap the tests in `withr::local_dir()` so a suite run leaves no directory behind
       either way.
+
+### 26. InfoVal's null is seeded by accident, and cannot be varied **[verified] [own review]**
+Found 2026-07-27. `generateReferenceDistribution2IFC()` has no `seed` argument, yet its
+output is fully deterministic: it rebuilds the stimuli via `generateStimuli2IFC()`, which
+calls `set.seed(seed)` internally (`R/generateStimuli2IFC.R:53`) using the seed stored in
+the `.Rdata` file, and that reset lands *before* the `runif()` draws in the simulation
+loop. So the reference distribution — and every InfoVal computed from it — is fixed by the
+stimulus file alone.
+
+**Verified:** seeding 42 vs 99 around two calls gives byte-identical norms, and
+`ncores = 1` vs `ncores = 2` also agree, so the null is portable across machines. Both are
+now pinned by tests.
+
+**The behaviour is worth keeping** — reproducibility is this package's guiding constraint,
+and the Monte Carlo error it freezes in is small. Measured by splitting a 100,000-iteration
+run into ten independent 10,000-iteration batches (`img_size = 32`, `n_trials = 300`):
+
+| statistic | relative SD at `iter = 10000` |
+|---|---|
+| `median(reference_norms)` | 0.19% |
+| `mad(reference_norms)` | 1.26% |
+
+For a CI at infoVal ≈ 3 that is a spread of 2.95–3.06 (SD 0.036), i.e. below anything
+interpretable. The existing `iter >= 10000` warning is well calibrated.
+
+**The problem is that it is emergent, not designed.** Nobody chose to have the null inherit
+the stimulus seed; it is a side effect of the stimulus rebuild. Two consequences:
+
+- There is **no way to vary the null**, so a user cannot check the Monte Carlo error
+  themselves — measuring the table above required batching one long run.
+- Studies sharing `(seed, n_trials, img_size, nscales, noise_type)` share the *same draw*
+  of the null, not merely the same null distribution, so their InfoVal errors are perfectly
+  correlated rather than independent. For comparing InfoVals that is arguably a feature
+  (one ruler), and it is evidently the intent behind the `ref_lookup` table in
+  `computeInfoVal2IFC()` — but it means those errors cannot be treated as independent in a
+  meta-analysis.
+
+The real risk is silent breakage: anyone who moves or removes that `set.seed()`, or adds a
+seed argument to `generateStimuli2IFC()`, changes every InfoVal ever computed without
+touching `computeInfoVal2IFC()` at all.
+
+- [ ] Document the determinism as an intended **guarantee** in
+      `?generateReferenceDistribution2IFC`, and note that InfoVal is reproducible from the
+      stimulus file alone.
+- [ ] Consider an explicit `seed` argument defaulting to the current behaviour, so the null
+      *can* be varied deliberately. Purely additive — no change to the `.Rdata` contract or
+      to any existing call.
+- [ ] Add a comment at `R/generateStimuli2IFC.R:53` recording that the reference
+      distribution depends on that `set.seed()` call, so it is not moved casually.
 
 ### 25. `computeInfoVal2IFC`'s test oracle mirrors the implementation **[own review]**
 Found 2026-07-27 during the test-intent audit. `test-computeInfoVal2IFC.R:24` recomputes
