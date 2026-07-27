@@ -8,6 +8,19 @@
 
 ## Bug fixes
 
+- `generateCI(zmap = TRUE, zmapdecoration = FALSE)` works at all. The undecorated
+  branch of `plotZmap()` tested its background image with `if (bgimage != '')`, a
+  condition of length `img_size^2`, which R >= 4.2 treats as an error rather than
+  silently taking the first element. `generateCI()` always supplies a background
+  image, so this path could never run. Same root cause as the `mask` bug above; the
+  decorated branch already used `identical()`.
+- `plotZmap(decoration = FALSE)` works on small images. `plot.new()` was called
+  before the margins were reset to zero, and it rejects a device too small to hold
+  the default margins, so any z-map below roughly 100 pixels failed with
+  `figure margins too large`. Rendered output at usual sizes is unchanged.
+- `generateCI(zmaptargetpath = ...)` is honoured. The argument was documented and
+  accepted but never forwarded to `plotZmap()`, so z-maps were always written to
+  `./zmaps` relative to the working directory regardless of what was requested.
 - `generateStimuli2IFC()` now validates that the base image matches `img_size`, with an
   error naming the file and both sizes, instead of failing inside a parallel worker with
   `non-conformable arrays` (#124).

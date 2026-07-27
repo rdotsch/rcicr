@@ -328,21 +328,44 @@ Several related problems in one area:
       Verified: a mid-loop failure now leaks zero connections (issue #50).
 - [ ] Skip the cluster entirely when `ncores == 1`.
 
-### 12. Fill out the test suite
-A testthat suite now exists (84 tests) covering the pure functions, light I/O paths, and
-an end-to-end smoke test. Gaps worth closing:
+### 12. Fill out the test suite  ✅ **DONE**
+A testthat suite now exists (**177 tests**) covering the pure functions, light I/O paths,
+and an end-to-end smoke test. Every gap listed below is now closed — and closing the last
+two turned up three previously unknown bugs in `plotZmap()`, which is the argument for
+writing tests for code that "obviously works":
 
 - [x] **Lock in the InfoVal formula.** Done — pinned in `test-regression-baseline.R`.
       See the note under item #17 — the implementation is
       currently correct per the published erratum, but *nothing tests it*, so a future
       refactor could silently regress a published metric.
-- [ ] Cover the `scaling` methods (`none`/`constant`/`matched`/`independent`) — currently
-      only `independent` is meaningfully exercised, and scaling choice is the most
-      documented user-facing decision in the package.
+- [x] **Cover the `scaling` methods. Done** — `test-scaling.R`, 15 assertions. Each method
+      is tested against the property that defines it (`none` is the identity; `constant` is
+      `(ci + k)/2k` and centres zero at mid grey; `matched` reproduces the base image's
+      range; `independent` is `constant` with `k = max(abs(ci))` and touches exactly one
+      boundary), plus the warning paths for a too-small constant and an unrecognised
+      method. The load-bearing one is last: **scaling must change only `$scaled`, never
+      `$ci`** — published numbers come from `$ci`, so a leak there would make results
+      depend on a display choice.
 - [x] Cover `mask` handling in `generateCI()` — **done**, now that item 6 is fixed; see
       `test-fixed-bugs.R`.
-- [ ] Cover the `zmap = TRUE` paths (`quick` and `t.test`).
-- [ ] Cover `participants` (per-participant → group averaging).
+- [x] **Cover the `zmap = TRUE` paths. Done** — `test-generateCI-paths.R`. **Writing these
+      found three real bugs, all now fixed** (see `NEWS.md`):
+      1. `plotZmap()`'s undecorated branch used `if (bgimage != '')` on an image matrix —
+         a length-`img_size^2` condition, an error on R >= 4.2. `generateCI()` always
+         passes a background image, so `zmapdecoration = FALSE` was **entirely dead**.
+         Same root cause as item 6; the decorated branch already used `identical()`.
+      2. `plot.new()` ran *before* `par(mar = c(0,0,0,0))`, and it rejects a device too
+         small for the current margins — so z-maps below roughly 100px failed with
+         `figure margins too large`. Verified the ordering is the whole cause, and
+         verified rendered output at 512px is **unchanged**, so this is not a visual
+         change.
+      3. `zmaptargetpath` was documented and accepted but never forwarded to `plotZmap()`,
+         so every z-map went to `./zmaps` regardless.
+- [x] **Cover `participants`. Done** — asserts the group CI equals the mean of
+      independently computed per-participant CIs, that an **unbalanced** design makes
+      per-participant averaging diverge from trial pooling (the reason the argument
+      exists, and a check that the test is not vacuous), and that `save_individual_cis`
+      writes one PNG per participant.
 
 ### 18. The Codecov CI step fails without a repository token  ✅ **FIXED**
 
