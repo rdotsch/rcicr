@@ -4,9 +4,10 @@ A prioritized backlog for bringing `rcicr` to a modern, maintainable state **wit
 breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
-**Last updated:** 2026-07-27 — P0 items 2–8, plus 11, 12 and 22, fixed and released as
-**v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what remains in item 1
-is the submission decision itself.
+**Last updated:** 2026-07-27 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
+and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what
+remains in item 1 is the submission decision itself. Items 13–15 are the only substantive
+work left.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -42,22 +43,27 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 
 ## Suggested order of attack
 
-**All seven P0 code bugs (items 2–8) are fixed.** What remains, in the order I would
-take it:
+**All seven P0 code bugs (items 2–8) are fixed, along with every P1 *code* item — the
+dependency, toolchain, parallelism, test-coverage and vignette work — all released as
+v1.1.0.** The three rows left below are not code: item 20's checklist is fully ticked, so
+what remains across 1, 20 and 21 is the go/no-go and the submission itself, which are the
+maintainer's to make. Items **13, 14 and 15** (modernize the R code, better errors, docs
+and onboarding) are the only substantive work still untouched — they are the backlog
+proper for after CRAN, and are deliberately not in the table above.
 
 | # | Item | Why | Size |
 |---|---|---|---|
-| 9 | Drop 13 unused `Imports` | Trivial deletion; removes install-failure risk and clears an `R CMD check` NOTE, which unblocks CRAN | S |
-| 16 | Pointless 1.5 GB array exported to every worker | Roughly a one-line fix; likely resolves most of issue #12 | S |
-| 10 | Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()` | Still work today, but warn on every run and will eventually break five functions at once | S |
+| ~~9~~ | ~~Drop 13 unused `Imports`~~ | **Done** — the 13 unused declarations are gone; `DESCRIPTION` now imports 15 packages. Removed the install-failure risk and the `R CMD check` NOTE that would have blocked resubmission | S |
+| ~~16~~ | ~~Pointless 1.5 GB array exported to every worker~~ | **Done** — the per-worker array copy is gone. Addresses, but does not fully close, issue #12: the `ncores == 1` path and `img_size` scaling remain, which is why #12 stays open | S |
+| ~~10~~ | ~~Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()`~~ | **Done.** The `rbernoulli()` replacement had to preserve the random *stream*, not just the distribution — it is `runif(n) > (1 - p)`, and the obvious `rbinom(n, 1, p)` would have silently changed every infoVal computed from a given seed | S |
 | 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
-| 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
+| ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | Verified against a real `--as-cran` run; six concrete fixes then submit | M |
+| 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs. Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
-| 22 | Move the Medium walkthrough into a vignette | Removes the last real CRAN NOTE, and makes the tutorial execute at build time so it cannot go stale | M |
+| ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -464,8 +470,17 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 
 ### 20. CRAN resubmission checklist  **[verified against `R CMD check --as-cran`]**
 
-**Current status — re-run 2026-07-27 against `main` @ `5428b79`, in a check environment
-that now genuinely matches CRAN's.** `texlive` and `tidy` are installed, and the run set
+**Current status — every box below is ticked.** The latest `--as-cran` run, on
+`release-1.1.0` after the version bump, gives **0 errors, 0 warnings, 2 NOTEs**, and
+`Version contains large components` is **gone** — confirmed by reading the incoming-
+feasibility block, not by assuming the bump worked. The two survivors are the
+archived/new-submission pair and the Medium 403, both expected and both explained in
+`cran-comments.md`. Nothing mechanical is left in this item; the go/no-go and the
+submission are Ron's.
+
+The run below is the earlier baseline, kept because it is what established the check
+environment. **Re-run 2026-07-27 against `main` @ `5428b79`, in a check environment that
+genuinely matches CRAN's.** `texlive` and `tidy` are installed, and the run set
 `_R_CHECK_CRAN_INCOMING_=TRUE` / `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`, so the incoming
 checks CRAN actually performs on submission ran for real.
 
@@ -500,10 +515,17 @@ Found the following (possibly) invalid URLs:
     From: inst/doc/getting-started.html, README.md
 ```
 
-Of these, only **"Version contains large components"** is an actual blocker, and it is the
-one unticked box below. "New submission" and "Package was archived" are expected for a
-reinstatement and are what `cran-comments.md` exists to explain. The `codecov.io` URL that
-this NOTE previously also flagged is gone.
+Of these, only **"Version contains large components"** was ever an actual blocker, and the
+1.1.0 bump closed it — see the first ticked box below; it no longer appears in the output.
+"New submission" and "Package was archived" are expected for a reinstatement and are what
+`cran-comments.md` exists to explain. The `codecov.io` URL that this NOTE previously also
+flagged is gone.
+
+Two details of the block above are pre-1.1.0 and should not be read as current. The
+version string is now `1.1.0`. And the URL NOTE now reads `From: README.md` only — item 22
+moved the walkthrough into a vignette, so `inst/doc/getting-started.html` no longer carries
+the Medium link. That narrowing is what lets `cran-comments.md` tell a reviewer the content
+ships *in the package* and the link is courtesy to nine years of citations.
 
 #### Must do before submitting
 
