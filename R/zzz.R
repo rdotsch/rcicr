@@ -13,6 +13,31 @@ default_ncores <- function() {
   max(1L, parallel::detectCores() - 1)
 }
 
+# Register a foreach backend and return the cluster to stop afterwards, or NULL
+# when running serially.
+#
+# With ncores == 1 there is nothing to parallelise, but the old code built a
+# cluster anyway: makeCluster(1) starts a second R process, makes it
+# library(rcicr), ships each iteration to it and waits. That is pure overhead,
+# and it dominated R CMD check -- the test suite reported [8s/126s], eight
+# seconds of CPU against 126 elapsed, across 22 cluster spawns.
+#
+# registerDoSEQ() runs the very same %dopar% loop in the current process, so no
+# loop body needed to change. Numeric output is unaffected: neither parallel
+# loop in this package draws random numbers (stimulus parameters are drawn under
+# set.seed() before the loop starts), so there is no worker RNG stream to
+# diverge from the sequential one.
+startBackend <- function(ncores) {
+  if (is.null(ncores) || is.na(ncores) || ncores < 2) {
+    foreach::registerDoSEQ()
+    return(NULL)
+  }
+
+  cl <- parallel::makeCluster(ncores, outfile = "")
+  doParallel::registerDoParallel(cl)
+  cl
+}
+
 # CRAN Note avoidance
 
 

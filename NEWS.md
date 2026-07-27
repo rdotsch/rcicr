@@ -58,6 +58,17 @@
   compounds. Thanks to [@hvalev](https://github.com/hvalev), who diagnosed this and
   benchmarked it in #122. See "Reproducibility impact" below — the result is not
   *bit*-identical to the old one.
+- **`ncores = 1` no longer builds a cluster.** The parallel loops in
+  `generateStimuli2IFC()` and `generateCI()` previously started a one-worker cluster even
+  when asked for a single core — a second R process, loading the package, receiving each
+  iteration and sending it back. They now run in the current process. The test suite went
+  from 140s to 4s, and `R CMD check` from `[8s/126s]` on tests (eight seconds of CPU
+  against 126 elapsed, over 22 cluster spawns) to a fraction of that. Results are
+  unaffected and this is verified rather than asserted: `ncores = 1` and `ncores = 2`
+  produce bit-identical stimulus parameters, noise bases and classification images, now
+  pinned by `tests/testthat/test-parallel-equivalence.R`. Neither loop draws random
+  numbers — parameters are drawn under `set.seed()` before the loop — so there is no
+  worker RNG stream to diverge. Addresses the remainder of issue #50's neighbourhood.
 - `Imports` shrank from 27 packages to 15; none of the removed ones were used.
 - Deprecated calls replaced: `dplyr::progress_estimated()`, `purrr::rbernoulli()`, and
   `citEntry()`/`personList()` in `inst/CITATION`. The `rbernoulli()` replacement was

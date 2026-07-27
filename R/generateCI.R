@@ -201,9 +201,10 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     pb <- txtProgressBar(min = 1, max = npids, style = 3)
 
     # Create cluster for parallel processing
-    cl <- parallel::makeCluster(n_cores, outfile = '')
-    on.exit(stopClusterSafely(cl), add = TRUE)
-    doParallel::registerDoParallel(cl)
+    cl <- startBackend(n_cores)
+    if (!is.null(cl)) {
+      on.exit(stopClusterSafely(cl), add = TRUE)
+    }
 
     # For each weighted stimulus, construct the noise pattern
     pid.cis <- foreach::foreach(obs = 1:npids,
@@ -236,7 +237,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
       # Return the CI
       return(ci)
     }
-    parallel::stopCluster(cl)
+    if (!is.null(cl)) {
+      parallel::stopCluster(cl)
+    }
     cl <- NULL
     dim(pid.cis) <- c(img_size, img_size, npids)
 
@@ -289,9 +292,10 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
         pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
 
         # Create cluster for parallel processing
-        cl <- parallel::makeCluster(n_cores, outfile = '')
-        on.exit(stopClusterSafely(cl), add = TRUE)
-        doParallel::registerDoParallel(cl)
+        cl <- startBackend(n_cores)
+        if (!is.null(cl)) {
+          on.exit(stopClusterSafely(cl), add = TRUE)
+        }
 
         # For each weighted stimulus, construct the complementary noise pattern
         noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c',
@@ -300,7 +304,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
           setTxtProgressBar(pb, obs)
           return(noiseimage)
         }
-        parallel::stopCluster(cl)
+        if (!is.null(cl)) {
+          parallel::stopCluster(cl)
+        }
         cl <- NULL
         dim(noiseimages) <- c(img_size, img_size, n_observations)
 

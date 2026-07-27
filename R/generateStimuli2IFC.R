@@ -138,9 +138,12 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   # Generate stimuli
   pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
 
-  cl <- parallel::makeCluster(ncores, outfile = "")
-  on.exit(stopClusterSafely(cl), add = TRUE)
-  doParallel::registerDoParallel(cl)
+  # NULL when ncores == 1: the loop below then runs in this process instead of
+  # in a one-worker cluster. See startBackend() in zzz.R.
+  cl <- startBackend(ncores)
+  if (!is.null(cl)) {
+    on.exit(stopClusterSafely(cl), add = TRUE)
+  }
 
   stims <- foreach::foreach(
     trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE) %dopar% {
@@ -196,7 +199,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # Update progress bar
     setTxtProgressBar(pb, trial)
   }
-  parallel::stopCluster(cl)
+  if (!is.null(cl)) {
+    parallel::stopCluster(cl)
+  }
   cl <- NULL
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)

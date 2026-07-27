@@ -49,12 +49,13 @@ take it:
 | 16 | Pointless 1.5 GB array exported to every worker | Roughly a one-line fix; likely resolves most of issue #12 | S |
 | 10 | Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()` | Still work today, but warn on every run and will eventually break five functions at once | S |
 | 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
-| 11 | Cluster cleanup (`on.exit`), serial fallback | Partly done — cleanup landed in #130. **The `ncores == 1` fast path is now the top lever on `R CMD check` time**: tests are `[8s/126s]`, i.e. 22 cluster spawns of pure waiting. See item 20 | M |
+| ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | 19 | Close the 8 issues already fixed in `main` | Cheapest credibility win available; the tracker currently makes the package look unmaintained | S |
 | 20 | CRAN resubmission checklist | Verified against a real `--as-cran` run; six concrete fixes then submit | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
+| 22 | Move the Medium walkthrough into a vignette | Removes the last real CRAN NOTE, and makes the tutorial execute at build time so it cannot go stale | M |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -550,6 +551,32 @@ settled, so the post can say where the package actually lives instead of hedging
 **One thing not to soften when editing:** the reproducibility section says default results
 are unchanged *and* that two fixes genuinely change infoVal. Flattening that to "nothing
 changed" would be both untrue and less useful to the researcher it is written for.
+
+### 22. Move the Medium walkthrough into the package as a vignette
+
+The method walkthrough — the thing a new user is actually sent to read — lives at
+`https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/`,
+outside the repository. Three problems with that:
+
+- It returns **403 to `R CMD check`** (Medium blocks non-browser agents), so it is a
+  standing NOTE on every CRAN submission that has to be explained away each time.
+- It cannot be versioned with the code. If an argument changes, the tutorial silently
+  goes stale and nothing catches it — whereas a vignette is **executed** at build time,
+  so a broken example fails the build.
+- It is not available offline or via `vignette()`, which is where R users look first.
+
+- [ ] Port the walkthrough into a vignette (alongside `getting-started.Rmd`), with its
+      code chunks actually running so they stay honest.
+- [ ] **Keep the Medium post published**, updated with a pointer to the package docs. It
+      has nine years of inbound links and citations; deleting it would break them. This
+      is a *move of the canonical copy*, not a takedown.
+- [ ] Once the content lives here, the remaining `medium.com` references in `README.md`
+      and `vignettes/getting-started.Rmd` become "further reading" rather than the primary
+      source — and if they are dropped entirely at that point, the CRAN URL NOTE goes with
+      them.
+
+Worth doing before the CRAN submission if there is appetite, since it removes the one
+non-trivial NOTE. Not a blocker: the NOTE is explainable in `cran-comments.md`.
 
 ---
 
