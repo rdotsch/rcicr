@@ -10,3 +10,4 @@
 ^notes$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
+^cran-comments\.md$
