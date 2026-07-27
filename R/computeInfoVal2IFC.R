@@ -26,6 +26,14 @@
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli and possibly its corresponding reference distribution generated with generateReferenceDistribution().
 #' @param iter Number of iterations for the simulation of the reference distribution (only used if reference distribution is not already pre-generated and present in rdata file)
 #' @param force_gen_ref_dist Boolean specifying whether to override the default behavior to use pre-computed values for the reference distribution for specific task parameters and instead force to recompute the reference distribution (default: FALSE).
+#' @param response_seed Optional seed for the simulated random responses used to build the
+#' reference distribution. The default (\code{NULL}) uses the reference distribution stored in
+#' the \code{rdata} file, or generates the reproducible default one described under
+#' Reproducibility in \code{\link{generateReferenceDistribution2IFC}}. Supplying a number
+#' forces a fresh reference distribution to be simulated from an independent draw, which is
+#' how you check how much Monte Carlo error \code{iter} leaves in this Informational Value.
+#' The result is deliberately \emph{not} written back to the \code{rdata} file, so a one-off
+#' check cannot change the number every later analysis of that stimulus set reports.
 #' @return Informational value (z-score)
 #' @examples
 #' \donttest{
@@ -65,7 +73,7 @@
 #' computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
 #' }
 
-computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE) {
+computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL) {
 
   # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug
   ref_seed <- NA
@@ -78,10 +86,22 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # into the file - would overwrite the path we were called with. This function
   # still uses `rdata` further down (to regenerate and re-load), so it would
   # then operate on whatever path that file happened to record. Restore ours.
-  .args <- list(rdata = rdata, iter = iter)
+  .args <- list(rdata = rdata, iter = iter, response_seed = response_seed)
   load(rdata)
-  rdata <- .args$rdata
-  iter  <- .args$iter
+  rdata         <- .args$rdata
+  iter          <- .args$iter
+  response_seed <- .args$response_seed
+
+  # Asking for a specific response seed is asking for a specific reference
+  # distribution, so it has to imply regeneration. Without this the argument
+  # would be silently ignored on every file that already has reference_norms -
+  # which is every file after the first call, since generating one writes it
+  # back. That is the same shape of bug as force_gen_ref_dist being ignored
+  # (see the comment further down) and the documented-but-unapplied `mask`
+  # argument of plotZmap(): accepted, documented, and doing nothing.
+  if (!is.null(response_seed)) {
+    force_gen_ref_dist <- TRUE
+  }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
   if (!force_gen_ref_dist & !exists("reference_norms", envir=environment(), inherits=FALSE)) {
@@ -149,17 +169,35 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     # ignored whenever reference_norms already existed in the .Rdata file.
     if (force_gen_ref_dist | !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
-      # Reference norms not present in rdata file (or regeneration forced)
-      generateReferenceDistribution2IFC(rdata, iter=iter)
+      # Reference norms not present in rdata file (or regeneration forced).
+      #
+      # A caller-supplied response_seed is a one-off check, not a redefinition
+      # of this stimulus set's null, so it is never cached: saving it would
+      # silently change what every later InfoVal computed from this file means,
+      # for anyone using it, with nothing in the call to say so.
+      cache_ref_dist <- is.null(response_seed)
 
-      # Re-load rdata file
-      load(rdata)
+      reference_norms <- generateReferenceDistribution2IFC(
+        rdata, iter=iter, response_seed=response_seed, save_rdata=cache_ref_dist)
 
-      # NB: write() defaults to file = "data", so omitting stdout() here did
-      # not print this message - it silently created a file called "data" in
-      # the working directory. Every other write() in the package passes
-      # stdout(); this one was missed.
-      write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
+      if (cache_ref_dist) {
+
+        # Re-load rdata file
+        load(rdata)
+
+        # NB: write() defaults to file = "data", so omitting stdout() here did
+        # not print this message - it silently created a file called "data" in
+        # the working directory. Every other write() in the package passes
+        # stdout(); this one was missed.
+        write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
+
+      } else {
+
+        write(paste0("Reference distribution simulated with response_seed = ", response_seed,
+                     ". This is an independent draw of the null, not the reference distribution ",
+                     "stored in the .Rdata file, and it has deliberately not been saved there."), stdout())
+
+      }
 
     } else {
 

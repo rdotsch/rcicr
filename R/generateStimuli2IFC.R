@@ -50,6 +50,15 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
   dir.create(stimulus_path, recursive=T, showWarnings = F)
+
+  # More depends on this call than the stimuli. generateReferenceDistribution2IFC()
+  # re-generates stimuli through this function and then draws its simulated
+  # responses with runif(), *after* this set.seed() has run - which is what makes
+  # every Informational Value reproducible from the stimulus file alone, and is
+  # documented as a guarantee in ?generateReferenceDistribution2IFC.
+  #
+  # So moving or removing this line, or reseeding after it, changes every InfoVal
+  # ever computed with this package without touching computeInfoVal2IFC() at all.
   set.seed(seed)
 
   stimuli_params <- list()

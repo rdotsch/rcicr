@@ -56,11 +56,13 @@ test_that("the reference distribution is fixed by the stimulus file, not the cal
   # gives byte-identical norms, and ncores = 1 vs 2 also agree, so the null is
   # portable across machines.
   #
-  # Note this determinism is a *side effect* of the stimulus rebuild, not a
-  # designed guarantee -- there is no seed argument on this function. It is
-  # pinned here precisely because it is load-bearing but incidental: removing
-  # or moving that set.seed() would silently change every InfoVal ever
-  # computed. See BACKLOG.md item 26 for the design question.
+  # This determinism began as a *side effect* of the stimulus rebuild rather
+  # than a designed guarantee. Backlog item 26 resolved that: it is now
+  # documented as a guarantee under ?generateReferenceDistribution2IFC, the
+  # set.seed() call it rests on carries a comment saying so, and the deliberate
+  # way to vary the null is the response_seed argument tested below. This test
+  # is the guarantee's guard -- removing or moving that set.seed() would
+  # silently change every InfoVal ever computed.
   tmp <- withr::local_tempdir()
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 
@@ -74,4 +76,123 @@ test_that("the reference distribution is fixed by the stimulus file, not the cal
   }
 
   expect_equal(read_norms(42), read_norms(99))
+})
+
+test_that("response_seed varies the null reproducibly, and NULL leaves the default alone", {
+  # The point of the argument is to let a user draw an independent null from the
+  # same stimuli -- e.g. to measure how much Monte Carlo error a given iter
+  # leaves in their InfoVal. Two claims have to hold together: the same seed
+  # must reproduce, and different seeds must actually differ. Without the
+  # second, the first is satisfied by an argument that is ignored entirely.
+  tmp <- withr::local_tempdir()
+  pristine <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  # Each run gets its own copy, since a run with save_rdata = TRUE rewrites the file.
+  norms_for <- function(tag, ...) {
+    path <- file.path(tmp, paste0(tag, ".Rdata"))
+    file.copy(pristine, path, overwrite = TRUE)
+    suppressWarnings(generateReferenceDistribution2IFC(path, iter = 8, ncores = 1, ...))
+  }
+
+  expect_equal(norms_for("s99a", response_seed = 99), norms_for("s99b", response_seed = 99))
+  expect_false(identical(norms_for("s99a2", response_seed = 99),
+                         norms_for("s1234", response_seed = 1234)))
+
+  # And a seeded null is not just the default null relabelled.
+  expect_false(identical(norms_for("seeded", response_seed = 99), norms_for("default")))
+})
+
+test_that("response_seed reaches the responses, and never the stimulus rebuild", {
+  # This is the whole semantic distinction, and the reason the seed is not
+  # simply forwarded to generateStimuli2IFC(): handing that function a different
+  # seed would rebuild a *different stimulus set*, so the null would describe
+  # stimuli the participants never saw.
+  #
+  # It has to be tested on the call itself. Comparing p/stimuli_params in the
+  # .Rdata before and after is vacuous -- the rebuild runs with
+  # save_rdata = FALSE and never writes stimuli back, so the file is unchanged
+  # whichever seed the rebuild received. A mutant forwarding response_seed to
+  # generateStimuli2IFC() passed that version of this test.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  # Grab the real function before mocking, so the mock can delegate to it.
+  real_generate <- get("generateStimuli2IFC", envir = asNamespace("rcicr"))
+  seen_seed <- NULL
+
+  testthat::local_mocked_bindings(
+    generateStimuli2IFC = function(..., seed) {
+      seen_seed <<- seed
+      real_generate(..., seed = seed)
+    },
+    .package = "rcicr"
+  )
+
+  suppressWarnings(generateReferenceDistribution2IFC(
+    rdata_path, iter = 8, ncores = 1, response_seed = 99))
+
+  # The stimulus seed stored in the file, not the response seed we passed.
+  stored <- new.env()
+  load(rdata_path, envir = stored)
+  expect_equal(seen_seed, stored$seed)
+  expect_false(identical(seen_seed, 99))
+})
+
+test_that("save_rdata = FALSE returns the norms without touching the file", {
+  # Needed so a one-off check of the null cannot become the stimulus set's
+  # permanent reference distribution. The norms are only reachable through the
+  # return value in that case, which is why the function returns them at all.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  norms <- suppressWarnings(generateReferenceDistribution2IFC(
+    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = FALSE))
+
+  expect_length(norms, 8)
+  expect_true(all(norms > 0))
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+  expect_false(exists("reference_norms", envir = e, inherits = FALSE))
+
+  # Discriminating case: the same call with save_rdata = TRUE does write it,
+  # so the assertion above is about the flag and not about the call failing.
+  suppressWarnings(generateReferenceDistribution2IFC(
+    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = TRUE))
+  e2 <- new.env()
+  load(rdata_path, envir = e2)
+  expect_equal(e2$reference_norms, norms)
+})
+
+test_that("the saved file records which seed produced its norms, and no arguments", {
+  # Provenance: a file carrying a deliberately varied null must be
+  # distinguishable from one carrying the default, otherwise the two are
+  # indistinguishable to anyone who picks the file up later.
+  #
+  # The second half guards the clobbering trap documented at the top of
+  # generateReferenceDistribution2IFC(): an argument left in the frame at save
+  # time becomes an *input* to the next call's load(). That is what happened to
+  # `rdata` and `ncores`, and is why the seed is recorded under a different name
+  # (reference_norms_seed) than the argument that sets it (response_seed).
+  tmp <- withr::local_tempdir()
+  pristine <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  read_after <- function(tag, ...) {
+    path <- file.path(tmp, paste0(tag, ".Rdata"))
+    file.copy(pristine, path, overwrite = TRUE)
+    suppressWarnings(generateReferenceDistribution2IFC(path, iter = 8, ncores = 1, ...))
+    e <- new.env()
+    load(path, envir = e)
+    e
+  }
+
+  default_run <- read_after("default")
+  expect_true(exists("reference_norms_seed", envir = default_run, inherits = FALSE))
+  expect_null(default_run$reference_norms_seed)
+
+  seeded_run <- read_after("seeded", response_seed = 99)
+  expect_equal(seeded_run$reference_norms_seed, 99)
+
+  expect_false(any(c("response_seed", "save_rdata", "rdata", "ncores", "iter") %in%
+                     ls(seeded_run, all.names = TRUE)))
 })

@@ -7,7 +7,9 @@
 generateReferenceDistribution2IFC(
   rdata,
   iter = 10000,
-  ncores = default_ncores()
+  ncores = default_ncores(),
+  response_seed = NULL,
+  save_rdata = TRUE
 )
 }
 \arguments{
@@ -16,11 +18,24 @@ generateReferenceDistribution2IFC(
 \item{iter}{Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).}
 
 \item{ncores}{Number of CPU cores to use when re-generating the stimuli (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
+
+\item{response_seed}{Optional seed for the simulated random responses. The default
+(\code{NULL}) draws them from the state left by the stimulus re-generation, which is the
+reproducible behaviour described under Reproducibility. Supply a number to obtain an
+independent draw of the null from the same stimuli.}
+
+\item{save_rdata}{Boolean specifying whether the reference distribution should be written
+back into the \code{rdata} file (default \code{TRUE}). Set to \code{FALSE} to compute a
+distribution without changing what later calls to \code{\link{computeInfoVal2IFC}} will
+use -- worth doing whenever \code{response_seed} is set, so a one-off null does not become
+the file's permanent reference.}
 }
 \value{
-Nothing. The reference distribution (\code{reference_norms}) is added to the supplied
-\code{rdata} file, so a later call to \code{\link{computeInfoVal2IFC}} using the same file can
-reuse it instead of re-simulating.
+The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
+Unless \code{save_rdata = FALSE}, it is also added to the supplied \code{rdata} file as
+\code{reference_norms} (alongside \code{reference_norms_seed}, recording the
+\code{response_seed} it was generated with), so a later call to
+\code{\link{computeInfoVal2IFC}} using the same file can reuse it instead of re-simulating.
 }
 \description{
 Generates reference distribution of norms for a particular set of task parameters.
@@ -28,6 +43,25 @@ Generates reference distribution of norms for a particular set of task parameter
 \details{
 In order to compute the Informational Value metric. Saves its results in the supplied rdata file for later reuse.
 }
+\section{Reproducibility}{
+
+With the default \code{response_seed = NULL}, the reference distribution is determined by
+the stimulus \code{.Rdata} file alone. It does not depend on the ambient random number
+state of the calling session, and it does not depend on \code{ncores}. Two researchers
+who compute InfoVal from the same stimulus file therefore get the same number, and the
+same reference distribution, on different machines and in different sessions.
+
+This is a guarantee, not a coincidence, and it is relied upon: the function re-generates
+the stimuli through \code{\link{generateStimuli2IFC}}, whose internal \code{set.seed()}
+call uses the seed stored in the \code{.Rdata} file and lands before the random responses
+below are drawn.
+
+Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
+for instance to check how much Monte Carlo error a given \code{iter} leaves in your
+InfoVal. This changes only the simulated responses; the stimuli themselves, and so the
+noise basis the null is built on, are unaffected.
+}
+
 \examples{
 \donttest{
 # a synthetic square grayscale image stands in for a real base face photo

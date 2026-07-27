@@ -1,3 +1,42 @@
+# rcicr (development version)
+
+## New features
+
+- `generateReferenceDistribution2IFC()` and `computeInfoVal2IFC()` gained a
+  `response_seed` argument, so the null distribution InfoVal is scored against can be
+  varied deliberately. Until now there was no way to draw a second, independent null from
+  the same stimuli — which meant you could not check how much Monte Carlo error your choice
+  of `iter` was leaving in your InfoVal. `response_seed` seeds the simulated responses only;
+  the stimuli, and so the noise basis the null is built on, are untouched.
+
+  **Existing calls are unaffected.** The default (`NULL`) issues no `set.seed()` call at
+  all, so the reference distribution is byte-identical to what earlier versions produced.
+  Verified against norms generated before the change, not merely assumed.
+
+  In `computeInfoVal2IFC()`, passing `response_seed` forces the reference distribution to be
+  regenerated even when the `.Rdata` file already holds one, and the result is deliberately
+  *not* written back — a one-off check of the Monte Carlo error cannot silently become the
+  number every later analysis of that stimulus set reports.
+
+- `generateReferenceDistribution2IFC()` gained `save_rdata` (default `TRUE`, i.e. unchanged)
+  and now returns the reference distribution invisibly instead of returning nothing, so the
+  norms are reachable when you ask it not to write them to the `.Rdata` file.
+
+- The `.Rdata` file gained a `reference_norms_seed` field recording the `response_seed` the
+  stored `reference_norms` were generated with (`NULL` for the default). Purely additive;
+  files written by earlier versions simply lack it. A stimulus set carrying a deliberately
+  varied null is no longer indistinguishable from one carrying the default.
+
+## Documentation
+
+- `?generateReferenceDistribution2IFC` now documents as a **guarantee** what was previously
+  only true by accident: with the default `response_seed`, the reference distribution — and
+  therefore InfoVal — is reproducible from the stimulus `.Rdata` file alone, independent of
+  the calling session's random number state and of `ncores`. This held before, but nobody
+  had chosen it: it is a consequence of `generateStimuli2IFC()`'s internal `set.seed()`
+  landing before the simulation draws. That call now carries a comment saying what depends
+  on it, so it is not moved casually.
+
 # rcicr 1.1.0 (2026-07-27)
 
 > First release since 1.0.1, and the version submitted to CRAN to reinstate the
