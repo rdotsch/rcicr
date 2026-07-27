@@ -23,6 +23,13 @@
 # are on vectors, where the two agree), but do not drop these prefixes.
 
 # helper: build a stimulus set at default nscales/noise_type, return .Rdata path
+
+# Skipped on CRAN: the golden master exists to stop *us* changing researchers'
+# numbers between commits. It is meaningless as a check on an end user's machine
+# and it is expensive. It keeps running on GitHub Actions, which is where it
+# actually does its job.
+skip_on_cran()
+
 baseline_rdata <- function(dir, img_size = 64, n_trials = 20, seed = 1) {
   input <- file.path(dir, "in")
   output <- file.path(dir, "out")

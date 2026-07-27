@@ -7,7 +7,7 @@
 generateReferenceDistribution2IFC(
   rdata,
   iter = 10000,
-  ncores = parallel::detectCores() - 1
+  ncores = default_ncores()
 )
 }
 \arguments{
@@ -15,7 +15,7 @@ generateReferenceDistribution2IFC(
 
 \item{iter}{Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).}
 
-\item{ncores}{Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).}
+\item{ncores}{Number of CPU cores to use when re-generating the stimuli (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 }
 \value{
 Nothing. The reference distribution (\code{reference_norms}) is added to the supplied

@@ -25,7 +25,7 @@ generateCI(
   sigma = 3,
   threshold = 3,
   zmaptargetpath = "./zmaps",
-  n_cores = detectCores() - 1,
+  n_cores = default_ncores(),
   mask = NA
 )
 }
@@ -70,7 +70,7 @@ generateCI(
 
 \item{zmaptargetpath}{Optional string specifying path to save z-map PNGs to (default: ./zmaps).}
 
-\item{n_cores}{Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()-1).}
+\item{n_cores}{Optional integer specifying the number of CPU cores to use to generate the z-map (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 
 \item{mask}{Optional 2D matrix that defines the mask to be applied to the CI (1 = masked, 0 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked). Default: NA.}
 }

@@ -24,7 +24,7 @@
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
-#' @param ncores Number of CPU cores to use (default: detectCores()-1).
+#' @param ncores Number of CPU cores to use (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @param return_as_dataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
 #' @param save_as_png Boolean specifying whether to write the stimuli as images to disk (default: TRUE).
 #' @param save_rdata Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classification images. This function argument exists primarily for internal rcicr use.
@@ -45,7 +45,7 @@
 #'   nscales = 1
 #' )
 #' }
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=parallel::detectCores()-1, return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=default_ncores(), return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)

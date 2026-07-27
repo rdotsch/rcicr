@@ -9,7 +9,7 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
-#' @param ncores Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).
+#' @param ncores Number of CPU cores to use when re-generating the stimuli (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @return Nothing. The reference distribution (\code{reference_norms}) is added to the supplied
 #' \code{rdata} file, so a later call to \code{\link{computeInfoVal2IFC}} using the same file can
 #' reuse it instead of re-simulating.
@@ -40,7 +40,7 @@
 #'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #' })
 #' }
-generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel::detectCores()-1) {
+generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_ncores()) {
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name. This

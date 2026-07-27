@@ -17,6 +17,13 @@
 #
 # Kept small on purpose: 32px, nscales = 2, 300 trials, about 6 seconds.
 
+# Skipped on CRAN: this file generates a 300-trial stimulus set and computes 100
+# permutation CIs, which is the slowest thing in the suite. It is a development
+# guard against the response-to-stimulus wiring breaking -- it protects the
+# maintainer, not a CRAN user -- and it keeps running on GitHub Actions, where
+# there is no 10-minute budget for the whole check.
+skip_on_cran()
+
 simulate_observer <- function(rdata, template_seed, response_seed, internal_noise = 1) {
   e <- new.env()
   load(rdata, envir = e)
