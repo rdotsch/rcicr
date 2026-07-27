@@ -61,6 +61,33 @@ Version/date/dependency metadata lives in `DESCRIPTION`; user-facing changes sho
   rebase merges are still permitted in the repository settings, so it is on whoever
   merges to pick the right one.
 
+## Releases and versioning
+
+Trunk-based with tags — the standard R-package layout (what r-lib/tidyverse do). There is
+**no `develop` branch** and there should not be one: CRAN has no concept of it, this is a
+single-maintainer package, and it would add a permanent second merge direction for no gain.
+Feature branches → PR → squash onto `main`, and releases are marked by tags.
+
+- **`main` carries a `.9000` development version between releases.** Right after a release,
+  `DESCRIPTION` goes to `<released>.9000` (e.g. `1.1.0.9000`); the release commit drops it
+  to the clean number. `NEWS.md` accumulates entries under a
+  `# rcicr (development version)` heading, which gets renamed to `# rcicr X.Y.Z (date)` at
+  release time.
+- **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a GitHub release. This
+  was missing until 2026-07-27 and it cost real clarity: `main` had moved two PRs past the
+  1.1.0 that was awaiting CRAN submission, and nothing recorded which tree that was. `v1.1.0`
+  is tagged retroactively at `a3904e8`.
+- **Build the CRAN tarball from the tag, never from `main` HEAD.** This is also what keeps
+  the `.9000` suffix safe: `Version contains large components` is only a CRAN blocker if the
+  *submitted tarball* carries it, and a tarball built from the tag never does. Do not drop
+  the development-version convention to avoid that NOTE.
+- **Order `NEWS.md` entries largest-impact first** within each section — changes to numeric
+  output or return values, then behaviour changes, then bug fixes that only ever produced
+  errors, then message-only fixes. Someone who stops reading after three bullets should have
+  read the three that could change their results.
+- Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
+  clears the stale remote refs locally.
+
 ## Backlog
 
 `BACKLOG.md` is the prioritized modernization backlog — read it before starting substantial work, and update it when you close something out. It was compiled from the open GitHub issues, the published literature, and a direct source review, and it records:
