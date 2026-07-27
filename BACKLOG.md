@@ -6,8 +6,10 @@ breaking the API that researchers depend on**.
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
 **Last updated:** 2026-07-27 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
 and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what
-remains in item 1 is the submission decision itself. Items 13–15 are the only substantive
-work left.
+remains in item 1 is the submission decision itself. **Items 23–25 were opened the same
+day** by a test-intent audit — 23 is a real bug in `plotZmap()` awaiting a
+fix-or-deprecate decision, 24 is cosmetic, 25 is a logged non-fix. Items 13–15 remain the
+only substantive untouched work.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -45,11 +47,12 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 
 **All seven P0 code bugs (items 2–8) are fixed, along with every P1 *code* item — the
 dependency, toolchain, parallelism, test-coverage and vignette work — all released as
-v1.1.0.** The three rows left below are not code: item 20's checklist is fully ticked, so
-what remains across 1, 20 and 21 is the go/no-go and the submission itself, which are the
-maintainer's to make. Items **13, 14 and 15** (modernize the R code, better errors, docs
-and onboarding) are the only substantive work still untouched — they are the backlog
-proper for after CRAN, and are deliberately not in the table above.
+v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
+remains across them is the go/no-go and the submission itself, which are the maintainer's
+to make. **Item 23 is the one open code bug** — a decision, not a diagnosis, since the
+cause is known and the fix changes rendered output. Items **13, 14 and 15** (modernize the
+R code, better errors, docs and onboarding) are the only substantive work still untouched —
+they are the backlog proper for after CRAN, and are deliberately not in the table above.
 
 | # | Item | Why | Size |
 |---|---|---|---|
@@ -64,6 +67,10 @@ proper for after CRAN, and are deliberately not in the table above.
 | 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs. Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
+| 23 | `plotZmap(mask=)` validated then never applied | **Open, needs a decision.** A documented argument that silently does nothing; narrow blast radius (`generateCI()` never passes it), but fixing it changes rendered output, so it is a behaviour change rather than a plain bug fix | S |
+| 24 | `generateReferenceDistribution2IFC()` litters a `./stimuli` dir | Cosmetic; hidden until now because `stimuli` is git-ignored, so it never showed in `git status` | S |
+| 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
+| 26 | InfoVal's null is seeded by accident and cannot be varied | Behaviour is correct and worth keeping (MC error measured at ~0.04 infoVal units), but it is emergent rather than designed, and a stray edit to `set.seed()` in `generateStimuli2IFC()` would silently change every InfoVal | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -244,6 +251,45 @@ package explicitly promises for old `.Rdata` files.
 
 - [x] Move the rename block above the validation.
 - [x] Test with a genuine pre-0.3.3-shaped `p`.
+
+### 23. `plotZmap(mask = ...)` is validated and then never applied **[verified] [own review]**
+Not in the issue tracker. Found 2026-07-27 while writing content tests for `plotZmap()`.
+
+`R/plotZmap.R:34–69` does real work on the `mask` argument: reads it from a PNG if given a
+path, checks it against the z-map's dimensions, verifies the values are 0/1 or TRUE/FALSE,
+collapses identical RGB channels to one layer, and converts the result to boolean. Then the
+function moves on to `zmap[abs(zmap) < threshold] <- NA` and **`mask` is never referenced
+again** — it appears nowhere after line 69 (the mention at line 116 is inside a comment).
+
+So the documented behaviour — *"If a cell evaluates to TRUE, the corresponding zmap pixel
+will be masked"* — does nothing at all. A user who passes a correct mask gets a z-map with
+no masking applied and no warning, which is the bad failure mode: the output looks
+plausible and is silently wrong about which regions carry signal.
+
+Blast radius is narrow. `generateCI()` calls `plotZmap()` **without** `mask`
+(`R/generateCI.R:327`) and masks the CI itself via `applyMask()` beforehand, so z-maps
+produced through the normal pipeline are unaffected. Only direct `plotZmap(mask = ...)`
+calls are hit.
+
+Why it survived the item-12 sweep: the only existing `mask` test asserts the *error* path
+for mismatched dimensions, which exercises lines 34–69 and stops there. The tests added
+alongside this entry check rendered content, but deliberately do not cover `mask` — see
+below.
+
+**This needs a decision before it is a code change.** Fixing it alters rendered output for
+anyone currently passing `mask`, which makes it a behaviour change rather than an
+unambiguous bug fix, and the standing lesson from the `autoscale()` / `$combined` episode
+is to flag those rather than relabel them. Hence no failing test was committed: a knowingly
+red test in the suite is worse than a backlog entry.
+
+- [ ] **Decide:** apply the mask (`zmap[mask] <- NA` after the threshold step), or formally
+      deprecate the argument if masking is considered `generateCI()`'s job alone.
+- [ ] If applied: document under a **"Behaviour change"** heading in `NEWS.md`, since
+      existing scripts passing `mask` will start producing different images.
+- [ ] Add the content test that is currently missing — a masked region must come back as
+      background, exactly as the sub-threshold test does.
+- [ ] Check the same argument in any sibling that accepts a mask; item 6 and this one are
+      the same argument mishandled in two different functions.
 
 ### Also found and fixed while working through the P0 items
 
@@ -767,6 +813,88 @@ The GitHub issues are dominated by confusing failure modes, not missing features
       (`rcicr_examples`).
 - [ ] Add a `CITATION.cff` so GitHub renders a "Cite this repository" button; keep it in
       sync with `inst/CITATION`.
+
+### 24. `generateReferenceDistribution2IFC()` writes a stray `./stimuli` directory **[verified] [own review]**
+Found 2026-07-27. The function re-generates the stimulus set by calling
+`generateStimuli2IFC()` (`R/generateReferenceDistribution.R:81`) **without forwarding a
+`stimulus_path`**, so that call falls back to its own default and creates a `stimuli`
+directory relative to whatever the working directory happens to be. Running the test suite
+leaves a `tests/testthat/stimuli/` behind.
+
+Harmless to results — `save_as_png = FALSE` and `save_rdata = FALSE` are passed, so the
+directory ends up empty — but it litters the user's working directory, and it was invisible
+here because `stimuli` is already in `.gitignore`, so it never appears in `git status`. The
+function's own roxygen already documents the behaviour as a caveat (with a
+`withr::with_dir()` workaround in the example), which is a note where a fix belongs.
+
+- [ ] Forward a `stimulus_path` (a `tempdir()` default is fine — nothing is written to it)
+      rather than documenting the side effect.
+- [ ] Wrap the tests in `withr::local_dir()` so a suite run leaves no directory behind
+      either way.
+
+### 26. InfoVal's null is seeded by accident, and cannot be varied **[verified] [own review]**
+Found 2026-07-27. `generateReferenceDistribution2IFC()` has no `seed` argument, yet its
+output is fully deterministic: it rebuilds the stimuli via `generateStimuli2IFC()`, which
+calls `set.seed(seed)` internally (`R/generateStimuli2IFC.R:53`) using the seed stored in
+the `.Rdata` file, and that reset lands *before* the `runif()` draws in the simulation
+loop. So the reference distribution — and every InfoVal computed from it — is fixed by the
+stimulus file alone.
+
+**Verified:** seeding 42 vs 99 around two calls gives byte-identical norms, and
+`ncores = 1` vs `ncores = 2` also agree, so the null is portable across machines. Both are
+now pinned by tests.
+
+**The behaviour is worth keeping** — reproducibility is this package's guiding constraint,
+and the Monte Carlo error it freezes in is small. Measured by splitting a 100,000-iteration
+run into ten independent 10,000-iteration batches (`img_size = 32`, `n_trials = 300`):
+
+| statistic | relative SD at `iter = 10000` |
+|---|---|
+| `median(reference_norms)` | 0.19% |
+| `mad(reference_norms)` | 1.26% |
+
+For a CI at infoVal ≈ 3 that is a spread of 2.95–3.06 (SD 0.036), i.e. below anything
+interpretable. The existing `iter >= 10000` warning is well calibrated.
+
+**The problem is that it is emergent, not designed.** Nobody chose to have the null inherit
+the stimulus seed; it is a side effect of the stimulus rebuild. Two consequences:
+
+- There is **no way to vary the null**, so a user cannot check the Monte Carlo error
+  themselves — measuring the table above required batching one long run.
+- Studies sharing `(seed, n_trials, img_size, nscales, noise_type)` share the *same draw*
+  of the null, not merely the same null distribution, so their InfoVal errors are perfectly
+  correlated rather than independent. For comparing InfoVals that is arguably a feature
+  (one ruler), and it is evidently the intent behind the `ref_lookup` table in
+  `computeInfoVal2IFC()` — but it means those errors cannot be treated as independent in a
+  meta-analysis.
+
+The real risk is silent breakage: anyone who moves or removes that `set.seed()`, or adds a
+seed argument to `generateStimuli2IFC()`, changes every InfoVal ever computed without
+touching `computeInfoVal2IFC()` at all.
+
+- [ ] Document the determinism as an intended **guarantee** in
+      `?generateReferenceDistribution2IFC`, and note that InfoVal is reproducible from the
+      stimulus file alone.
+- [ ] Consider an explicit `seed` argument defaulting to the current behaviour, so the null
+      *can* be varied deliberately. Purely additive — no change to the `.Rdata` contract or
+      to any existing call.
+- [ ] Add a comment at `R/generateStimuli2IFC.R:53` recording that the reference
+      distribution depends on that `set.seed()` call, so it is not moved casually.
+
+### 25. `computeInfoVal2IFC`'s test oracle mirrors the implementation **[own review]**
+Found 2026-07-27 during the test-intent audit. `test-computeInfoVal2IFC.R:24` recomputes
+`(norm(ci, "f") - median(reference_norms)) / mad(reference_norms)` — the same expression as
+the implementation. It therefore pins the *implementation*, not the published definition: a
+formula that is wrong but consistently wrong in both places passes.
+
+Deliberately **not** changed. The formula was hand-checked against the Schmitz et al.
+erratum (item 17), and the golden master pins the resulting number, so the risk is already
+covered from two other directions. Recorded here so that a future reader does not mistake
+this test for the independent check it resembles — the genuinely independent oracle in the
+suite is the one in `test-generateNoiseImage.R`.
+
+- [ ] If ever revisited: assert against a worked example taken from the paper, or a
+      hand-computed case with a fixed 2×2 CI and a known reference vector.
 
 ### 16. Memory ceiling on large stimulus sets — concrete root cause found **[own review]**  ✅ **FIXED**
 Issue [#12](https://github.com/rdotsch/rcicr/issues/12) reports that large stimulus sets
