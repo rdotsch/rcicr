@@ -77,14 +77,40 @@ test_that("the CI recovers a simulated observer's template", {
   # 0.5 leaves room for the run-to-run variation without being vacuous.
   expect_gt(observed, 0.5)
 
-  # And it must beat chance. The null here is the same responses in a shuffled
-  # order: that keeps the number of 1s and -1s identical and destroys only the
-  # pairing between a response and the stimulus that produced it, which is
-  # exactly the relationship the CI is supposed to exploit. A fixed threshold
-  # would not do -- with 60 patches and 300 trials a random response vector can
-  # reach |r| = 0.45 by chance, so the null is calibrated rather than assumed.
+  # And it must beat chance. This is a one-sided Monte Carlo permutation test:
+  # the statistic is the correlation above, and the null distribution comes
+  # from permuting the response labels across trials. That keeps the noise
+  # images and the count of 1s and -1s exactly as they are, and destroys only
+  # the pairing between a response and the stimulus that produced it -- which
+  # is the relationship generateCI() exploits, so it is the right thing to
+  # break. Exchangeability holds by construction, since the per-trial
+  # parameter vectors are drawn i.i.d.
+  #
+  # WHY A PERMUTATION TEST AND NOT A PARAMETRIC ONE ON r
+  #
+  # A t-test on Pearson r would take df = n_pixels - 2, here 1022, and be
+  # wildly anticonservative, because the pixels are nowhere near independent.
+  # The noise basis has only 60 patches, so the effective dimensionality of a
+  # 32x32 CI is about 60, not 1024, and neighbouring pixels are strongly
+  # autocorrelated by construction -- that is what a sinusoid basis *is*.
+  #
+  # The size of the error is not subtle. Permuting responses here produces
+  # null correlations reaching |r| = 0.45, which a parametric test on 1022 df
+  # would report as overwhelmingly significant. Any fixed threshold picked
+  # without measuring this would be either flaky or vacuous.
+  #
+  # Every null CI is built from the same basis as the real one, so the null
+  # inherits the identical spatial autocorrelation. That is what makes it the
+  # correct reference distribution rather than merely a convenient one.
+  #
+  # B = 100 puts the smallest achievable p-value at 1/(B+1) = 0.0099. Note the
+  # seed: this is a deterministic regression guard, not live inference, so
+  # that figure is the resolution of the procedure and not a result. What
+  # actually makes the test safe is the margin, measured across 10 different
+  # templates at this B: the real CI beat the largest of 100 permutations by
+  # 0.26 to 0.48, never less.
   set.seed(42)
-  null_cors <- vapply(1:20, function(i) {
+  null_cors <- vapply(1:100, function(i) {
     shuffled <- generateCI(
       stimuli = seq_len(obs$n_trials), responses = sample(obs$responses),
       baseimage = "base", rdata = rdata, save_as_png = FALSE
