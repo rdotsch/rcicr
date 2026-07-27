@@ -52,7 +52,7 @@ take it:
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
-| 19 | Close the 8 issues already fixed in `main` | Cheapest credibility win available; the tracker currently makes the package look unmaintained | S |
+| ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
 | 20 | CRAN resubmission checklist | Verified against a real `--as-cran` run; six concrete fixes then submit | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | 22 | Move the Medium walkthrough into a vignette | Removes the last real CRAN NOTE, and makes the tutorial execute at build time so it cannot go stale | M |
@@ -388,7 +388,7 @@ reporting is wanted later, add the token and set this back to `true` — the fir
 above is the recipe. The point of this change is narrower: a red `main` should mean the
 package is broken, and it now does.
 
-### 19. Eight issues are fixed in `main` but still open on the tracker  **[own review]**
+### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**
 
 Not a code task, but it is the largest gap between what the package *is* and what a
 prospective user *sees*. As of 2026-07-27 the tracker has 30 open issues, and at least
@@ -410,10 +410,10 @@ today searches the tracker, finds #124 open since September 2024 with no resolut
 concludes the package is unmaintained — while the fix sits in `main`. The tracker is the
 package's public health signal and it currently understates the state of the code badly.
 
-- [ ] Close each with a short comment naming the version that fixes it and how to get it
-      (`devtools::install_github("rdotsch/rcicr")` until the CRAN question in item 1 is
-      settled), plus a pointer to the `NEWS.md` entry.
-- [ ] **Do not blanket-close #12.** `NEWS.md` says "addresses", not "fixes", and that
+- [x] **Done 2026-07-27.** #70, #123, #81, #113, #124, #50 each got a comment explaining
+      the actual root cause — not just "fixed" — plus install instructions and a pointer to
+      the `NEWS.md` reproducibility section. #122 closed automatically with #131.
+- [x] **#12 commented, deliberately left OPEN.** `NEWS.md` says "addresses", not "fixes", and that
       wording is deliberate: #130 removed the ~1.5 GB array copied to every worker, which
       was the dominant cost, but the `ncores == 1` serial path in item 11 is still open and
       per-worker memory still scales with `img_size`. Comment with what changed and what
