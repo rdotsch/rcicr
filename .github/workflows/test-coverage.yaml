@@ -39,7 +39,14 @@ jobs:
 
       - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
         with:
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN }}
+          # Best-effort upload. There is no CODECOV_TOKEN secret on this repo, and
+          # the previous expression -- `github.event_name != 'pull_request' ||
+          # secrets.CODECOV_TOKEN` -- evaluated to false on pull requests but true
+          # on pushes to main, so every merge turned the main branch red for a
+          # reason unrelated to the code. Coverage is still computed and printed in
+          # the step above; only the upload is allowed to fail. If a token is added
+          # later this can go back to true. See BACKLOG.md item 18.
+          fail_ci_if_error: false
           files: ./cobertura.xml
           plugins: noop
           disable_search: true
