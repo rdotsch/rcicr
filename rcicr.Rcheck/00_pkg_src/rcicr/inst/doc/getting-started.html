@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Getting started with rcicr</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Getting started with rcicr</h1>
+
+
+
+<p><code>rcicr</code> implements <strong>reverse correlation image
+classification</strong>, a technique from psychophysics for visualizing
+internal mental representations (for example, of faces). It works in two
+stages:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Stimulus generation</strong>: a base image (e.g. a face
+photo) is combined with random visual noise to create pairs of stimuli —
+an “original” and its pixel-inverted counterpart — for a
+two-image-forced-choice (2IFC) task. Participants pick, on each trial,
+whichever of the pair looks more like some target category
+(e.g. “trustworthy”, “happy”).</li>
+<li><strong>Classification image (CI) computation</strong>: after data
+collection, the noise patterns from stimuli where the participant chose
+the “original” are averaged together (and subtracted for stimuli where
+the “inverted” version was chosen). The result — the classification
+image — visualizes which visual features were systematically associated
+with the participant’s choices.</li>
+</ol>
+<p>This vignette walks through both stages using a tiny synthetic
+example. For a full walkthrough with a real face photo, see the <a href="https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/">Medium
+post</a> linked from the README; for example datasets and analysis
+scripts, see <a href="https://github.com/rdotsch/rcicr_examples/">rcicr_examples</a>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(rcicr)</span></code></pre></div>
+<div id="generate-stimuli" class="section level2">
+<h2>1. Generate stimuli</h2>
+<p><code>generateStimuli2IFC()</code> needs a square base image. Here we
+generate a synthetic grayscale image instead of using a real photo,
+purely so this vignette is self-contained; in a real study you would
+pass the path to your base face photo(s) instead.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>base_face_path <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="at">fileext =</span> <span class="st">&quot;.png&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>png<span class="sc">::</span><span class="fu">writePNG</span>(<span class="fu">matrix</span>(<span class="fu">runif</span>(<span class="dv">64</span> <span class="sc">*</span> <span class="dv">64</span>), <span class="dv">64</span>, <span class="dv">64</span>), base_face_path)</span></code></pre></div>
+<p>Now generate stimuli for a small task: 20 trials, one base image, at
+a small image size (kept small here so the vignette builds quickly — a
+real study would typically use <code>img_size = 512</code> and several
+hundred trials, following Dotsch &amp; Todorov, 2012).</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>stimulus_path <span class="ot">&lt;-</span> <span class="fu">tempdir</span>()</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">generateStimuli2IFC</span>(</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">base_face_files =</span> <span class="fu">list</span>(<span class="at">face =</span> base_face_path),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">n_trials        =</span> <span class="dv">20</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">img_size        =</span> <span class="dv">64</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">stimulus_path   =</span> stimulus_path,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">seed            =</span> <span class="dv">1</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">ncores          =</span> <span class="dv">1</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="at">save_as_png     =</span> <span class="cn">FALSE</span> <span class="co"># set to TRUE to also write stimulus PNGs to stimulus_path</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>rdata_file <span class="ot">&lt;-</span> <span class="fu">list.files</span>(stimulus_path, <span class="at">pattern =</span> <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.Rdata$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span>]</span></code></pre></div>
+<p>This writes an <code>.Rdata</code> file to <code>stimulus_path</code>
+containing the random noise parameters used for every trial.
+<strong>That file is the only link between stimulus generation and CI
+computation</strong> — keep it, since every analysis function below
+needs it via the <code>rdata</code> argument.</p>
+</div>
+<div id="collect-or-here-simulate-responses" class="section level2">
+<h2>2. Collect (or, here, simulate) responses</h2>
+<p>In a real experiment, this is where you would run the 2IFC task and
+record which image (original = <code>1</code>, inverted =
+<code>-1</code>) each participant chose on each trial. Since this
+vignette has no real participant, we simulate random responses instead —
+a real analysis would never do this, as random responding contains no
+signal and yields an uninformative classification image.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>responses <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="dv">20</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+</div>
+<div id="compute-the-classification-image" class="section level2">
+<h2>3. Compute the classification image</h2>
+<p><code>generateCI()</code> looks up the noise parameters for the
+stimuli that were shown, weights them by the responses, and averages
+them into a single classification image.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>ci <span class="ot">&lt;-</span> <span class="fu">generateCI</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">stimuli     =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">responses   =</span> responses,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">baseimage   =</span> <span class="st">&quot;face&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">rdata       =</span> rdata_file,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">save_as_png =</span> <span class="cn">FALSE</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">names</span>(ci)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ci&quot;       &quot;scaled&quot;   &quot;base&quot;     &quot;combined&quot;</span></span></code></pre></div>
+<p><code>ci$ci</code> is the raw noise, <code>ci$scaled</code> is that
+noise rescaled for display (see <code>?generateCI</code> for the
+available scaling methods — the default, <code>&#39;independent&#39;</code>,
+picks the lowest scaling constant that avoids clipping this particular
+image), and <code>ci$combined</code> overlays the scaled noise on the
+base image.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">image</span>(ci<span class="sc">$</span>combined, <span class="at">col =</span> <span class="fu">gray.colors</span>(<span class="dv">256</span>), <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">asp =</span> <span class="dv">1</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Because the responses above were random rather than real data, this
+classification image is just noise — with real experimental data,
+systematic patterns tied to participants’ choices would emerge here
+instead.</p>
+</div>
+<div id="next-steps" class="section level2">
+<h2>Next steps</h2>
+<ul>
+<li><code>batchGenerateCI()</code> / <code>batchGenerateCI2IFC()</code>
+compute one CI per participant or condition from a data frame,
+optionally followed by <code>autoscale()</code> to rescale a whole batch
+of CIs consistently so they stay visually comparable.</li>
+<li><code>computeInfoVal2IFC()</code> computes an “Informational Value”
+(a z-score-like measure of how much signal is in a CI) by comparing it
+to a simulated null distribution.</li>
+<li><code>plotZmap()</code> visualizes which regions of a CI carry
+statistically reliable signal.</li>
+</ul>
+<p>See each function’s help page (e.g. <code>?generateCI</code>,
+<code>?batchGenerateCI</code>) for further options and runnable
+examples.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

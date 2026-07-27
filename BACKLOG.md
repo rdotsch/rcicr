@@ -53,6 +53,8 @@ take it:
 | 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | 19 | Close the 8 issues already fixed in `main` | Cheapest credibility win available; the tracker currently makes the package look unmaintained | S |
+| 20 | CRAN resubmission checklist | Verified against a real `--as-cran` run; six concrete fixes then submit | M |
+| 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -86,9 +88,9 @@ This is the single highest-impact item: it affects every new user's first five m
       "Install the latest stable release from CRAN" — that instruction is broken today.)*
 - [ ] If returning to CRAN: the stated archival reason (undeliverable maintainer email)
       **no longer applies** — `Authors@R` now carries `rdotsch@gmail.com`, replacing the
-      old `r.dotsch@uu.nl` address that was presumably the one that bounced. So the
-      remaining work is clearing the `R CMD check` NOTEs below and resubmitting; archived
-      packages can be reinstated.
+      old `r.dotsch@uu.nl` address that was presumably the one that bounced. Archived
+      packages can be reinstated. **The concrete checklist is item 20 below**, built from
+      an actual `R CMD check --as-cran` run rather than from guesswork.
 - [x] Either way, add a `NEWS.md` so users can see what changed between 0.3.4.1 and 1.0.1.
       **Done** — `NEWS.md` now exists, including a "Reproducibility impact" section for
       researchers with published or in-progress results.
@@ -420,6 +422,105 @@ package's public health signal and it currently understates the state of the cod
       ones this modernization pass touched directly.
 
 Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
+
+### 20. CRAN resubmission checklist  **[verified against `R CMD check --as-cran`]**
+
+Run on 2026-07-27 against `main` @ `3ef0a39`. Result: **1 ERROR, 1 WARNING, 4 NOTEs** —
+but read that number carefully, because most of it is this sandbox and not the package.
+
+**Artifacts of the check environment, not package problems** (they will not appear on
+CRAN's machines, and nothing needs fixing for them):
+
+- ERROR + WARNING, "PDF version of manual": `pdflatex is not available` here.
+- NOTE, "HTML version of manual": no `tidy` command here.
+- NOTE, "non-standard things in the check directory": `rcicr-manual.tex`, left behind by
+  the failed `pdflatex` above.
+- NOTE, "future file timestamps": `unable to verify current time` — no network clock.
+
+Everything that matters passed: dependencies, R code, Rd files, cross-references,
+examples (`[13s/15s]`), and examples with `--run-donttest` (`[14s/73s]`).
+
+**The one real NOTE — "CRAN incoming feasibility":**
+
+```
+New submission
+Package was archived on CRAN
+Version contains large components (1.0.1.9000)
+Found the following (possibly) invalid URLs:
+  https://codecov.io/gh/rdotsch/rcicr  (moved to https://app.codecov.io/gh/rdotsch/rcicr)
+  https://medium.com/@rondotsch/...    Status: 403 Forbidden
+```
+
+#### Must do before submitting
+
+- [ ] **Bump the version to `1.1.0`.** `1.0.1.9000` trips "Version contains large
+      components" — the `.9000` development suffix is not acceptable in a submission.
+      Date the `NEWS.md` heading at the same time.
+- [ ] **Fix the two flagged URLs.** `codecov.io/gh/...` now redirects to
+      `app.codecov.io/gh/...` (README). The Medium link returns **403 Forbidden** to
+      CRAN's checker because Medium blocks automated requests — it appears in
+      `DESCRIPTION`, `README.md` and the vignette. CRAN will ask about it. Either move it
+      out of `DESCRIPTION` (see the next item, which replaces it anyway) or note in
+      `cran-comments.md` that the URL is valid in a browser and Medium blocks bots.
+- [ ] **Add `BugReports:` and a repo `URL:` to `DESCRIPTION`.** There is currently no
+      `BugReports` field at all, and `URL:` points only at the Medium article rather than
+      the repository. Suggested:
+      `URL: https://github.com/rdotsch/rcicr`,
+      `BugReports: https://github.com/rdotsch/rcicr/issues`.
+- [ ] **Cap the core count under check.** `generateStimuli2IFC()`,
+      `generateReferenceDistribution2IFC()` and `generateCI(n_cores=)` all default to
+      `parallel::detectCores() - 1`. **CRAN policy allows at most 2 cores** in examples,
+      tests and vignettes, and reviewers frequently object to `detectCores()` defaults on
+      their own. The standard idiom keeps user-facing behaviour identical:
+      ```r
+      ncores = if (nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_"))) 2L else parallel::detectCores() - 1
+      ```
+      Note this is *not* a behaviour change for researchers — only under `R CMD check`.
+- [ ] **Get the test time down.** `checking tests` took **`[10s/148s]`**. CRAN wants the
+      whole check comfortably under ~10 minutes on hardware slower than this. Put
+      `skip_on_cran()` on the three slowest files — `test-recovery.R`,
+      `test-smoke-pipeline.R`, `test-regression-baseline.R`. All three are development
+      guards; none of them protects a CRAN *user*, and they keep running in GitHub CI.
+- [ ] **Guard the interactive prompt.** `computeInfoVal2IFC()` calls `yesno::yesno()` at
+      `R/computeInfoVal2IFC.R:118` with no `interactive()` check around it. In a
+      non-interactive session — CRAN's checks, or anybody's batch script — that either
+      hangs or errors instead of taking a sensible default.
+
+#### Then, before hitting submit
+
+- [ ] Check on platforms this machine cannot provide: `devtools::check_win_devel()` and
+      `rhub::rhub_check()` (macOS, Windows, R-devel). CRAN tests those and we do not.
+- [ ] Write **`cran-comments.md`**: test environments and results, and — for an archived
+      package — state plainly that it was archived 2021-06-08 for an undeliverable
+      maintainer address, and that the address is now `rdotsch@gmail.com`. Reinstatement
+      gets more scrutiny than a routine update, so the NOTE count matters more than usual.
+- [ ] Submit at <https://cran.r-project.org/submit.html> (or `devtools::release()`).
+      **Ron has to do this himself** — CRAN emails the maintainer address for
+      confirmation, and that address working again is the entire point.
+- [ ] Update `README.md` once the outcome is known.
+
+### 21. Announcement post — drafted, waiting on the CRAN outcome
+
+Ron asked for a write-up covering the important changes, the reproducibility guarantees,
+and an honest note on how he used AI. **Drafts are written and live in `notes/`:**
+
+- `notes/announcement-draft-medium.md` — long-form (~1800 words). Medium is the natural
+  home: the existing Medium article is literally the `URL:` field in `DESCRIPTION`, so
+  this reads as its sequel.
+- `notes/announcement-draft-linkedin.md` — short teaser linking to the above.
+
+Deliberately **not published yet** — hold until the CRAN question (item 1 / item 20) is
+settled, so the post can say where the package actually lives instead of hedging.
+
+- [ ] Ron to review both drafts. They are written in his voice and make claims about his
+      work and his use of AI; they are a starting point, not a finished text.
+- [ ] Verify every factual claim still holds at publication time (test counts, the 6x
+      figure, dependency count). The drafts state specific numbers.
+- [ ] Fill in the Medium link in the LinkedIn draft once published.
+
+**One thing not to soften when editing:** the reproducibility section says default results
+are unchanged *and* that two fixes genuinely change infoVal. Flattening that to "nothing
+changed" would be both untrue and less useful to the researcher it is written for.
 
 ---
 
