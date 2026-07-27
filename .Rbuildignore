@@ -3,7 +3,7 @@
 ^\.github$
 ^\.claude$
 ^CLAUDE\.md$
-^\.session-log\.md$
+^DECISIONS\.md$
 ^\.pre-commit-config\.yaml$
 ^codecov\.yml$
 ^BACKLOG\.md$
@@ -11,3 +11,4 @@
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
 ^cran-comments\.md$
+^CONTRIBUTING\.md$

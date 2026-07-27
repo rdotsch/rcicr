@@ -41,7 +41,31 @@ Version/date/dependency metadata lives in `DESCRIPTION`; user-facing changes sho
 - `tests/testthat/test-regression-baseline.R` is a golden master pinning the numeric output of the default pipeline — noise basis, classification image, scaling, infoVal — to the values produced *before* the P0 fixes. It is the evidence that those fixes did not change results under normal usage. **If a change turns it red, that change alters researchers' results** and must be documented in `NEWS.md` under "Reproducibility impact" before merging. It is not a test to casually update.
 - `.github/workflows/R-CMD-check.yaml` runs `R CMD check` on `ubuntu-latest` for R `release` and `devel` on every push/PR to `main`. `.github/workflows/test-coverage.yaml` runs `covr::package_coverage()` and uploads to Codecov (needs a `CODECOV_TOKEN` repo secret). `codecov.yml` sets lenient coverage thresholds since coverage is deliberately partial (I/O-heavy functions get lighter tests, not full coverage).
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package. `R CMD check` fails a "non-standard file/directory found at top level" NOTE otherwise (and a separate "hidden files" NOTE for dotfiles). This has already caught `codecov.yml`, `.pre-commit-config.yaml`, and `BACKLOG.md` — if you add a config, doc, or scratch file at the repo root, update `.Rbuildignore` in the same commit. Note the file is a set of *regexes anchored with `^`*, not globs (e.g. `^BACKLOG\.md$`).
-  - It currently excludes `*.Rproj`, `.Rproj.user`, `.github`, `.claude`, `CLAUDE.md`, `.session-log.md`, `.pre-commit-config.yaml`, `codecov.yml`, `BACKLOG.md`.
+  - It currently excludes `*.Rproj`, `.Rproj.user`, `.github`, `.claude`, `CLAUDE.md`, `DECISIONS.md`, `.pre-commit-config.yaml`, `codecov.yml`, `BACKLOG.md`, `CONTRIBUTING.md`.
+  - `.Rbuildignore` and `.gitignore` are **not** interchangeable. `R CMD build` works from the
+    *working directory*, not from git, so a file that is git-ignored but present on disk still
+    ships in the tarball unless `.Rbuildignore` also excludes it. Untracking a file is never a
+    substitute for `.Rbuildignore`ing it.
+
+## DECISIONS.md
+
+`DECISIONS.md` records **why** the package is the way it is: the measurement that ruled an
+option out, the alternative that looked obvious and was wrong, the thing that looks like a
+bug and is deliberate. It is tracked in git and organised **by theme, not by date**.
+
+It replaced `.session-log.md`, a chronological running narrative, on 2026-07-27. The old log
+is in git history up to `887aea4`; do not recreate it.
+
+- **Update it as decisions are made**, not in a sweep at the end — the reasoning and the
+  numbers are only cheap to write down while they are still to hand.
+- **Add an entry when a decision was not obvious.** Rejecting a plausible alternative,
+  measuring something surprising, or deliberately *not* fixing something all qualify. Routine
+  changes do not.
+- **Edit entries in place** when they stop being true. It is not an append-only log, and it
+  carries no dates, state or next-steps sections — `BACKLOG.md` holds what is left to do and
+  `NEWS.md` holds what changed for users.
+- Its "Corrections" section records claims that did not survive checking. Add to it when a
+  stated fact turns out wrong; the pattern is more useful than any individual case.
   - `.Rbuildignore` itself was listed in `.gitignore` from 2016 until recently (likely an unintentional RStudio-template leftover), so it never actually shipped to CI or other contributors — don't re-add it there.
 - `.pre-commit-config.yaml` drives the pre-commit.ci GitHub App, which runs on every PR. It uses only minimal language-agnostic hooks (trailing whitespace, end-of-file, YAML/merge-conflict checks). R-specific hooks (`styler`/`lintr`/`roxygenize`) were deliberately left out — `styler` would reformat nearly every file in one sweep and destroy `git blame`.
 

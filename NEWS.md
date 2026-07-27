@@ -44,6 +44,15 @@
 
 ## Documentation
 
+- `README.md` now describes the package's architecture and, more usefully, the **anatomy of
+  the `.Rdata` file** field by field. That file is the only link between stimulus generation
+  and analysis — nothing about a stimulus set is recoverable without it — and until now its
+  contents were documented nowhere a user would look.
+
+- A `CONTRIBUTING.md` sets out how to work on the package, leading with the constraint that
+  makes it unusual: researchers re-run old analysis scripts years later and publish the
+  results, so numeric output must not change silently.
+
 - `?generateReferenceDistribution2IFC` now documents as a **guarantee** what was previously
   only true by accident: with the default `response_seed`, the reference distribution — and
   therefore InfoVal — is reproducible from the stimulus `.Rdata` file alone, independent of

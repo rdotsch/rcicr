@@ -61,6 +61,82 @@ The walkthrough covers designing a study, generating stimuli, computing classifi
 
 For example datasets and analysis scripts, see [rcicr_examples](https://github.com/rdotsch/rcicr_examples/). There is also an older [Medium post](https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/) covering similar ground; the vignette above supersedes it and is the version kept current with the code.
 
+## How it works
+
+The package is two halves that run at different times — often months apart — and share no
+state except one file on disk.
+
+```
+base face image(s) ─┐
+                    ├─> generateStimuli2IFC() ─> stimulus PNGs + <label>_seed_<n>_time_<ts>.Rdata
+     random noise ──┘                                        │
+                                                             │  (run your experiment)
+                             participant responses ──────────┤
+                                                             ▼
+                                       generateCI() / generateCI2IFC() ──> classification image
+                                                             │
+                                        ┌────────────────────┼────────────────────┐
+                                        ▼                    ▼                    ▼
+                                  autoscale()      computeInfoVal2IFC()      plotZmap()
+```
+
+**1. Stimulus generation.** `generateNoisePattern()` builds the *noise basis* — a stack of
+sinusoid (or Gabor) patches at several orientations, phases and spatial scales. This is
+built once and reused for every trial. `generateNoiseImage()` then combines one random
+contrast weight per patch into a single noise image, and `generateStimuli2IFC()` runs that
+loop over trials, writing two PNGs per trial per base face: the noise blended with the base
+image, and its inverted counterpart.
+
+**2. Analysis.** `generateCI()` loads the stimulus file, looks up the parameters of the
+stimuli a participant actually saw, weights each by their response (`1` = original chosen,
+`-1` = inverted chosen), and averages them into one image — the classification image. From
+there, `autoscale()` makes a batch of CIs visually comparable, `computeInfoVal2IFC()` scores
+one against a simulated null distribution, and `plotZmap()` shows which regions carry
+reliable signal.
+
+**The `.Rdata` file is the only link between the two halves.** Nothing about your stimuli is
+recoverable without it — not from the PNGs, not from the seed alone. Back it up with your
+response data, and keep it alongside anything you publish: recomputing a classification
+image years later needs this file and nothing else.
+
+## Anatomy of the `.Rdata` file
+
+`generateStimuli2IFC()` writes one file named
+`<label>_seed_<seed>_time_<timestamp>.Rdata`. `load()` it and you get these objects
+(sizes shown for a 3-trial, 32px, `nscales = 2` example):
+
+| Object | What it is |
+|---|---|
+| `p` | The noise basis. A list of `patches` (an `img_size × img_size × 12·nscales` array of sinusoid/Gabor layers), `patchIdx` (which parameter drives each pixel of each layer), `noise_type`, and `generator_version`. This is the expensive part and the reason the file exists. |
+| `stimuli_params` | Named list, one entry per base image, each an `n_trials × nparams` matrix of contrast weights in `[-1, 1]`. **Row *i* is the noise of stimulus *i*** — this is what `generateCI()` looks up and weights by responses. |
+| `base_faces` | Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained. |
+| `base_face_files` | The paths they were read from, for reference. |
+| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters. `generateReferenceDistribution2IFC()` re-reads these to rebuild the same noise basis when simulating a null distribution, so they must describe the stimuli exactly. |
+| `seed` | The RNG seed. Regenerating with the same seed and parameters reproduces the identical stimulus set. |
+| `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
+| `label`, `stimulus_path` | What the files were called and where they were written. |
+| `generator_version` | The rcicr version that wrote the file — see the caveat below. |
+| `trial` | A leftover loop counter, equal to `n_trials`. Carries no information; ignore it. |
+
+`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** two more fields to
+the same file the first time you compute an informational value:
+
+| Object | What it is |
+|---|---|
+| `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. |
+| `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in the development version. |
+
+Two things worth knowing before you write code against this file:
+
+- **The contract is append-only.** Fields get added across versions and are never renamed or
+  repurposed, so newer rcicr reads older files. The converse does not hold: `nscales` and
+  `sigma` were only added in 1.1.0, and `noise_type` earlier still, so functions warn rather
+  than guess when reading a file that predates them.
+- **`generator_version` is unreliable on older files.** It was a hardcoded `'0.4.0'` string
+  until the development version, so any file written between 0.4.0 and 1.1.0 claims to be
+  0.4.0 whatever wrote it. `p$generator_version` has always held the real value. Compare
+  versions with `numeric_version()` semantics, never as text.
+
 ## Development
 
 ``` r
