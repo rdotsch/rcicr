@@ -8,3 +8,5 @@
 ^codecov\.yml$
 ^BACKLOG\.md$
 ^notes$
+^.*\.Rcheck$
+^.*\.tar\.gz$

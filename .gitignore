@@ -8,3 +8,9 @@ test
 
 # test/check detritus
 Rplots.pdf
+
+# R CMD check leaves a full copy of the package plus its check log here, and
+# R CMD build writes the tarball next to it. Both are regenerated on every run
+# and were once committed by accident (~75k lines).
+*.Rcheck/
+*.tar.gz
