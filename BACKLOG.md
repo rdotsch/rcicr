@@ -919,6 +919,30 @@ suite is the one in `test-generateNoiseImage.R`.
 - [ ] If ever revisited: assert against a worked example taken from the paper, or a
       hand-computed case with a fixed 2×2 CI and a known reference vector.
 
+### 27. `return_as_dataframe = TRUE` silently drops all but the first base image **[verified] [own review]**
+Found 2026-07-27 while fixing issue [#82](https://github.com/rdotsch/rcicr/issues/82). The
+`return()` that hands back a trial's noise sits *inside* the per-base-image loop, so with
+several base images it fires on the first one and the rest never run. The returned data
+frame has one column per trial, not per trial × base image, so the shape cannot represent
+them anyway.
+
+With the default `use_same_parameters = TRUE` this is correct — every base image shares one
+parameter set, so one noise image per trial is all there is. With
+`use_same_parameters = FALSE` the caller silently receives only the first base image's
+noise.
+
+**InfoVal is not affected, checked rather than assumed.**
+`generateReferenceDistribution2IFC()` is the only in-package caller of this path. It does
+not pass `use_same_parameters`, so the rebuild always uses the default, and the first base
+image's parameters are drawn from the same leading block of the RNG stream either way —
+measured identical, max absolute difference 0 across both settings with two base images.
+
+- [ ] Document the restriction on `@param return_as_dataframe`: one noise image per trial,
+      meaningful only under `use_same_parameters = TRUE`.
+- [ ] Only if a user actually needs it: widen the returned frame to trial × base image.
+      That changes the return shape, so it needs a new argument rather than a redefinition
+      — the `.Rdata`/return contract is append-only.
+
 ### 16. Memory ceiling on large stimulus sets — concrete root cause found **[own review]**  ✅ **FIXED**
 Issue [#12](https://github.com/rdotsch/rcicr/issues/12) reports that large stimulus sets
 exhaust memory, with the suggested fix being "distribute stimulus matrices over multiple

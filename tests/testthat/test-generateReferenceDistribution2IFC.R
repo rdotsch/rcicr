@@ -44,6 +44,55 @@ test_that("the reference norms are positive and actually vary across iterations"
   expect_gt(mad(e$reference_norms), 0)
 })
 
+test_that("an .Rdata file predating noise_type still works, and says so", {
+  # Issue #94. Old files have no noise_type, and re-generating the stimuli from
+  # one failed outright with "object 'noise_type' not found". The workaround on
+  # record was to load the file and assign noise_type by hand.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  # Age the fixture by removing the field, which is how a pre-0.3.x file looks.
+  e <- new.env()
+  load(rdata_path, envir = e)
+  rm("noise_type", envir = e)
+  save(list = ls(e), file = rdata_path, envir = e)
+
+  # Collected by hand rather than with expect_warning(): the iter < 10000
+  # warning fires too, and this needs to assert on one specific warning without
+  # swallowing or being tripped by the other.
+  collect_warnings <- function(expr) {
+    seen <- character()
+    withCallingHandlers(
+      expr,
+      warning = function(cond) {
+        seen <<- c(seen, conditionMessage(cond))
+        invokeRestart("muffleWarning")
+      }
+    )
+    seen
+  }
+
+  warnings_seen <- collect_warnings(
+    generateReferenceDistribution2IFC(rdata_path, iter = 3, ncores = 1))
+
+  expect_true(any(grepl("did not save `noise_type`", warnings_seen, fixed = TRUE)))
+
+  # It has to actually finish, not just warn on the way to the old error.
+  after <- new.env()
+  load(rdata_path, envir = after)
+  expect_length(after$reference_norms, 3)
+  expect_false(anyNA(after$reference_norms))
+
+  # And the warning must be specific to the missing field, or it is just noise
+  # on every call.
+  fresh <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6,
+                              nscales = 1, seed = 1)
+  expect_false(any(grepl(
+    "did not save `noise_type`",
+    collect_warnings(generateReferenceDistribution2IFC(fresh, iter = 3, ncores = 1)),
+    fixed = TRUE)))
+})
+
 test_that("the reference distribution is fixed by the stimulus file, not the caller's RNG state", {
   # This is what makes InfoVal reproducible across sessions: the function
   # re-generates the stimuli via generateStimuli2IFC(), which calls

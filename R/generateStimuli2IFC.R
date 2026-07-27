@@ -201,6 +201,13 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
       # Return CI
       if (return_as_dataframe) {
+        # Advance the bar here too. This return exits the entire foreach body,
+        # not just this loop, so the update below it never ran on this path and
+        # the bar sat at zero for the whole run (issue #82). It is duplicated
+        # rather than hoisted above the loop deliberately: `trial_noise` is
+        # reassigned per base face when use_same_parameters is FALSE, so moving
+        # this return would change *which* base face's noise is returned.
+        setTxtProgressBar(pb, trial)
         return(as.vector(trial_noise))
       }
     }
