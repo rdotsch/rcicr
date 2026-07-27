@@ -57,6 +57,37 @@ test_that("the .Rdata records the rcicr version that actually wrote it", {
   expect_false(identical(as.character(e$generator_version), "0.4.0"))
 })
 
+test_that("the progress bar advances even when returning a data frame", {
+  # Issue #82. The return that hands back the trial's noise exits the whole
+  # foreach body, so it used to jump straight past setTxtProgressBar() and the
+  # bar stayed at zero for the entire run -- on exactly the path that takes
+  # longest to sit through, since generateReferenceDistribution2IFC() uses it.
+  tmp <- withr::local_tempdir()
+  png_path <- file.path(tmp, "base.png")
+  make_square_png(png_path, size = 32)
+
+  run <- function(return_as_dataframe) {
+    # The result is assigned, not left to auto-print: with
+    # return_as_dataframe = TRUE the returned data frame would otherwise be
+    # printed into the capture and swamp the progress bar being measured.
+    capture.output(
+      result <- generateStimuli2IFC(
+        base_face_files = list(base = png_path),
+        n_trials = 5, img_size = 32, stimulus_path = tmp,
+        seed = 1, ncores = 1, nscales = 1,
+        save_as_png = FALSE, save_rdata = FALSE,
+        return_as_dataframe = return_as_dataframe
+      ),
+      type = "output"
+    )
+  }
+
+  # Compared against the normal path rather than asserted as "not empty", so
+  # this cannot pass on a bar that emits one stray character and then stalls.
+  expect_gt(sum(nchar(run(TRUE))), 0)
+  expect_equal(sum(nchar(run(TRUE))), sum(nchar(run(FALSE))))
+})
+
 test_that("full pipeline: generateStimuli2IFC -> generateCI produces a classification image", {
   tmp <- withr::local_tempdir()
   input_dir <- file.path(tmp, "input")

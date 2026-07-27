@@ -29,6 +29,20 @@
 
 ## Bug fixes
 
+- `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` work on `.Rdata` files
+  written before `noise_type` was saved (#94). Such a file failed outright with
+  `object 'noise_type' not found`, and the workaround on record was to load the file and
+  assign the variable by hand. It now falls back to `sinusoid` with a loud warning, matching
+  how `nscales` is handled — a warning rather than a silent default, because guessing wrong
+  means the null is built on a different *kind* of noise than participants saw, and the
+  resulting InfoVal would be wrong. Files written by 1.1.0 or later already store the field
+  and are unaffected.
+
+- `generateStimuli2IFC(return_as_dataframe = TRUE)` shows its progress bar (#82). The
+  `return` handing back each trial's noise exits the entire loop body, so it jumped past the
+  progress-bar update and the bar sat at zero for the whole run — on the slowest path there
+  is, since `generateReferenceDistribution2IFC()` takes it for every InfoVal.
+
 - The `.Rdata` file written by `generateStimuli2IFC()` now records the rcicr version that
   actually wrote it (#29). `generator_version` was a hardcoded `'0.4.0'` string from 2016
   onwards, so every file produced by 0.4.0 through 1.1.0 claims to come from 0.4.0 —

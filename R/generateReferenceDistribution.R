@@ -111,6 +111,21 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   if (!exists('sigma', envir=environment(), inherits=FALSE)) {
     sigma <- 25
   }
+  # Same story for noise_type, which older .Rdata files also lack. Without this
+  # the re-generation below failed outright with "object 'noise_type' not
+  # found" (issue #94) - the workaround on record was to load the file and
+  # assign noise_type by hand. It gets the same loud warning as nscales rather
+  # than the silent default given to sigma, because guessing wrong here means
+  # the null is built on a different *kind* of noise than participants saw.
+  if (!exists('noise_type', envir=environment(), inherits=FALSE)) {
+    noise_type <- 'sinusoid'
+    warning(paste0('This .Rdata file was written by a version of rcicr that ',
+                   'did not save `noise_type`, so the default (sinusoid) is ',
+                   'assumed for the reference distribution. If the stimuli ',
+                   'were generated with noise_type = "gabor", the resulting ',
+                   'infoVal will be wrong - regenerate the stimulus set with ',
+                   'this version of rcicr to fix this.'))
+  }
 
   # Re-generate stimuli based on rdata parameters in matrix form
   write("Re-generating stimuli based on rdata file, please wait...", stdout())
