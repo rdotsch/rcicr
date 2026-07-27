@@ -256,7 +256,7 @@ was fixed and the code path actually ran. All three are covered by tests.
 
 ## P1 — Modernize dependencies and toolchain
 
-### 9. Remove 13 unused `Imports` (and shrink a 27-package dependency surface)
+### 9. Remove 13 unused `Imports` (and shrink a 27-package dependency surface)  ✅ **FIXED**
 `R CMD check` flags: `DBI`, `abind`, `assertthat`, `deldir`, `ggplot2`, `goftest`,
 `gridExtra`, `iterators`, `munsell`, `plyr`, `polyclip`, `sp`, `tensor` — declared but
 never used. These look like transitive dependencies of old `spatstat` that were pinned
@@ -265,11 +265,14 @@ directly and never cleaned up.
 Every one is an install-failure risk for users and a CRAN-resubmission blocker. `sp` in
 particular is in the retiring `sp`/`rgdal` ecosystem.
 
-- [ ] Delete all 13 from `Imports`. Low risk: nothing references them.
+- [x] Delete all 13 from `Imports`. Low risk: nothing references them. **Done** — 27 to
+      15, dropping `purrr` too once `rbernoulli` went. `scales` and `viridis` were kept:
+      they are used via `::` and so never appear in `NAMESPACE`. This cleared both
+      dependency `R CMD check` NOTEs.
 - [ ] Consider `raster` → `terra` (raster is superseded and depends on `sp`).
 - [ ] Move genuinely optional deps (`ggplot2`, `gridExtra` if reintroduced) to `Suggests`.
 
-### 10. Replace deprecated function calls
+### 10. Replace deprecated function calls  ✅ **FIXED**
 Verified deprecation warnings on current package versions:
 
 | Call | Status | Used in |
@@ -281,11 +284,20 @@ Verified deprecation warnings on current package versions:
 These still work today but emit warnings on every run and will eventually be removed —
 at which point five functions break at once.
 
-- [ ] Swap progress bars for `utils::txtProgressBar()` (already used elsewhere in the
-      package, so no new dependency) or `cli`.
-- [ ] Replace `purrr::rbernoulli(n, p)` with `stats::rbinom(n, 1, p)` — this may drop the
-      `purrr` dependency entirely.
-- [ ] Modernize `inst/CITATION` to `bibentry()`.
+- [x] Swap progress bars for `utils::txtProgressBar()` (already used elsewhere in the
+      package, so no new dependency) or `cli`. **Done** in all five call sites.
+- [x] Replace `purrr::rbernoulli(n, p)`. **Done — but NOT with `rbinom()`, despite what
+      this item originally recommended.** `rbernoulli(n, p)` is literally
+      `runif(n) > (1 - p)`; `rbinom(n, 1, p)` consumes the random stream differently.
+      Verified across 150 seed/probability combinations that the two diverge, so swapping
+      in `rbinom()` would have silently changed every reference distribution — and
+      therefore every infoVal — computed from a given seed. Replaced with the `runif`
+      form, verified bit-identical. **Anyone modernizing RNG calls in this package should
+      check the stream, not just the distribution.** This did drop the `purrr` dependency.
+- [x] Modernize `inst/CITATION` to `bibentry()`. **Done.** Also fixed a bug this exposed:
+      the file read `meta$Date`, which broke when the stale `Date: 2023-01-13` field was
+      dropped from DESCRIPTION — citations were rendering as "Ron Dotsch ()." with an
+      empty year.
 
 ### 11. Make parallelism robust and user-controllable
 Several related problems in one area:
@@ -305,7 +317,10 @@ Several related problems in one area:
 - [x] Add `ncores` to `generateReferenceDistribution2IFC()` (default preserving current
       behavior). **Done** — this also removed the need for the `detectCores()` mock that
       the test suite had been using to stay under CRAN's 2-core check limit.
-- [ ] `on.exit()` cluster cleanup everywhere a cluster is created.
+- [x] `on.exit()` cluster cleanup everywhere a cluster is created. **Done** — a
+      `stopClusterSafely()` helper is registered via `on.exit()` at all three cluster
+      sites, so workers are released even when an error interrupts the `foreach` loop.
+      Verified: a mid-loop failure now leaks zero connections (issue #50).
 - [ ] Skip the cluster entirely when `ncores == 1`.
 
 ### 12. Fill out the test suite
@@ -396,7 +411,7 @@ The GitHub issues are dominated by confusing failure modes, not missing features
 - [ ] Add a `CITATION.cff` so GitHub renders a "Cite this repository" button; keep it in
       sync with `inst/CITATION`.
 
-### 16. Memory ceiling on large stimulus sets — concrete root cause found **[own review]**
+### 16. Memory ceiling on large stimulus sets — concrete root cause found **[own review]**  ✅ **FIXED**
 Issue [#12](https://github.com/rdotsch/rcicr/issues/12) reports that large stimulus sets
 exhaust memory, with the suggested fix being "distribute stimulus matrices over multiple
 .RData files". Reading the code suggests that's treating a symptom — there's a specific
@@ -426,8 +441,7 @@ So the array is both enormous and pointless. Replacing `stimuli[,,trial] <- ...`
 plain local variable should remove nearly all of the memory pressure without changing
 behavior or the `.Rdata` contract.
 
-- [ ] Replace the pre-allocated array with a per-iteration local variable. Small, safe,
-      and likely resolves the bulk of #12 on its own.
+- [x] Replace the pre-allocated array with a per-iteration local variable. **Done.**
 - [ ] Re-measure the ceiling afterwards and document it, so users can size jobs up front.
 - [ ] Only if still needed: chunking, or regenerating noise from `seed` on demand rather
       than storing every parameter vector.

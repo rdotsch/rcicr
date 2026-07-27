@@ -5,7 +5,8 @@
 #' In order to compute the Informational Value metric. Saves its results in the supplied rdata file for later reuse.
 #'
 #' @export
-#' @importFrom purrr rbernoulli
+#' @importFrom stats runif
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
 #' @param ncores Number of CPU cores to use when re-generating the stimuli (default: detectCores()-1).
@@ -41,8 +42,21 @@
 #' }
 generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel::detectCores()-1) {
 
+  # load() assigns straight into this function's frame, so any object stored in
+  # the .Rdata file silently overwrites an argument of the same name. This
+  # function re-saves its frame at the end, so files it has already written
+  # contain `rdata` (and, since ncores was added, `ncores`) - meaning a second
+  # call on the same file would ignore the ncores the caller passed and write
+  # back to the path recorded during the first call. Keep private copies and
+  # restore them after loading.
+  .args <- list(rdata = rdata, iter = iter, ncores = ncores)
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
+
+  rdata  <- .args$rdata
+  iter   <- .args$iter
+  ncores <- .args$ncores
 
   # Recover the noise-basis parameters used for the real stimuli. These were
   # not saved before this version, so .Rdata files written by older rcicr lack
@@ -73,17 +87,22 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel
     warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
   }
 
-  # Initialize progressbar
-  pb <- progress_estimated(iter)
+  # Initialize progressbar (dplyr::progress_estimated() is deprecated)
+  pb <- txtProgressBar(min = 0, max = iter, style = 3)
 
   # Run simulation
   reference_norms <- vector(length = iter)
 
   for (i in 1:iter) {
-      pb$tick()$print()
+      setTxtProgressBar(pb, i)
 
-      # Generate random responses for this iteration
-      responses <- (purrr::rbernoulli(n_trials, p=0.5) * 2) - 1
+      # Generate random responses for this iteration.
+      # This is exactly what the deprecated purrr::rbernoulli(n, p) did
+      # internally. It is spelled out rather than swapped for rbinom() on
+      # purpose: rbinom() consumes the random stream differently, so it would
+      # silently change every reference distribution - and therefore every
+      # infoVal - computed from a given seed.
+      responses <- ((runif(n_trials) > 0.5) * 2) - 1
 
       # Compute classification image for this iteration
       ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
@@ -94,7 +113,17 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=parallel
 
   # Save reference norms to rdata file
   write("\nSaving simulated reference distribution to rdata file...", stdout())
-  rm(stimuli, responses, pb, iter, ci)
-  save(list=ls(all.names=TRUE), file=rdata, envir=environment())
+  close(pb)
+
+  # Save everything that came from (or belongs in) the stimulus file, but none
+  # of this function's own arguments or scratch variables. Writing `rdata` and
+  # `ncores` back into the file is what causes the clobbering described at the
+  # top of this function, so they are excluded at the source rather than only
+  # worked around on read.
+  outfile <- rdata
+  internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
+                 "rdata", "iter", "ncores", "outfile", "internals")
+  save(list=setdiff(ls(all.names=TRUE), internals), file=outfile,
+       envir=environment())
 
 }

@@ -5,7 +5,7 @@
 #' Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
 #'
 #' @export
-#' @import dplyr
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats cor
 #' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
@@ -91,18 +91,19 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   }
 
   # Compute correlations with final CI with cumulative CI
-  pb <- dplyr::progress_estimated(length(responses))
+  # dplyr::progress_estimated() is deprecated; use the base R progress bar
+  pb <- txtProgressBar(min = 0, max = length(responses), style = 3)
 
   correlations <- vector()
   corcounter <- 1
   for (trial in seq(1,length(responses), step)) {
-    pb$tick()$print()
+    setTxtProgressBar(pb, trial)
 
     cumCI <- generateCINoise(params[1:trial,], responses[1:trial], p)
     correlations[corcounter] <- cor(as.vector(cumCI), as.vector(finalCI))
     corcounter <- corcounter + 1
   }
-  pb$stop()
+  close(pb)
 
   # Return correlations
   return(correlations)

@@ -138,3 +138,57 @@ test_that("simulateNoiseIntensities returns a matrix of noise intensity ranges",
   expect_equal(dim(result), c(2, 2))
   expect_true(all(result[, 1] <= result[, 2])) # min <= max per replication
 })
+
+test_that("generateReferenceDistribution2IFC does not write its own arguments into the .Rdata file", {
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  # This function re-generates stimuli without forwarding a stimulus_path, so
+  # it always creates ./stimuli relative to the working directory.
+  withr::local_dir(tmp)
+
+  suppressWarnings(generateReferenceDistribution2IFC(rdata_path, iter = 3, ncores = 1))
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+
+  # load() assigns straight into the caller's frame, so an `rdata` or `ncores`
+  # object stored in the file overwrites the argument of the same name on the
+  # next call: the caller's ncores would be silently ignored and the save
+  # redirected to whatever path the file happened to record.
+  expect_false(exists("rdata", envir = e, inherits = FALSE))
+  expect_false(exists("ncores", envir = e, inherits = FALSE))
+  expect_false(exists("i", envir = e, inherits = FALSE))
+
+  # ...while everything the analysis functions actually need is still there.
+  for (nm in c("base_faces", "stimuli_params", "p", "img_size", "seed",
+               "n_trials", "nscales", "sigma", "reference_norms")) {
+    expect_true(exists(nm, envir = e, inherits = FALSE), info = nm)
+  }
+})
+
+test_that("computeInfoVal2IFC ignores a stale `rdata` path stored inside the .Rdata file", {
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  # Simulate a file written by an older generateReferenceDistribution2IFC(),
+  # which saved its own `rdata` argument into the file. Here that recorded path
+  # no longer exists, so if load() is allowed to overwrite the argument this
+  # function was called with, the regeneration below reads a missing file.
+  e <- new.env()
+  load(rdata_path, envir = e)
+  assign("rdata", file.path(tmp, "moved-away.Rdata"), envir = e)
+  save(list = ls(e, all.names = TRUE), file = rdata_path, envir = e)
+
+  testthat::local_mocked_bindings(detectCores = function(...) 2L, .package = "parallel")
+  withr::local_dir(tmp)
+
+  target_ci <- list(ci = matrix(0.01, 32, 32))
+  iv <- suppressWarnings(
+    computeInfoVal2IFC(target_ci, rdata_path, iter = 3, force_gen_ref_dist = TRUE)
+  )
+
+  expect_type(iv, "double")
+  expect_length(iv, 1)
+  expect_false(is.na(iv))
+})

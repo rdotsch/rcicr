@@ -7,7 +7,6 @@
 #'
 #' @export
 #' @import matlab
-#' @import dplyr
 #' @import jpeg
 #' @import png
 #' @import foreach
@@ -139,27 +138,35 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   # Generate stimuli
   pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
 
-  stimuli <- matlab::zeros(img_size, img_size, n_trials)
-
   cl <- parallel::makeCluster(ncores, outfile = "")
+  on.exit(stopClusterSafely(cl), add = TRUE)
   doParallel::registerDoParallel(cl)
 
   stims <- foreach::foreach(
     trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE) %dopar% {
+    # Each iteration only ever needs the noise for its own trial, so this is a
+    # plain matrix. It used to write into a preallocated
+    # zeros(img_size, img_size, n_trials) array declared before the cluster was
+    # created - at the defaults that is a 1.5 GB object (512 x 512 x 770), and
+    # because it existed in the parent environment foreach exported a full copy
+    # to *every* worker. Each worker then wrote one slice into its own private
+    # copy and discarded it, so the memory was pure overhead. See issue #12.
     if (use_same_parameters) {
-      # compute noise pattern, can be used for all base faces
-      stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
+      # One parameter set is shared by every base face, so any key gives the
+      # same values; take the first explicitly rather than relying on `base_face`
+      # still holding a value left over from the base-image loop above.
+      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial,], p)
     }
 
     for (base_face in names(base_faces)) {
       if (!use_same_parameters) {
         # compute noise pattern unique to this base face
-        stimuli[,,trial] <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
+        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
       }
 
       # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
       # for yourself with simulateNoiseIntensities())
-      stimulus <- ((stimuli[,,trial] + 0.3) / 0.6)
+      stimulus <- ((trial_noise + 0.3) / 0.6)
 
       # add base face
       combined <- (stimulus + base_faces[[base_face]]) / 2
@@ -170,7 +177,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       }
 
       # compute inverted stimulus
-      stimulus <- ((-stimuli[,,trial] + 0.3) / 0.6)
+      stimulus <- ((-trial_noise + 0.3) / 0.6)
 
       # add base face
       combined <- (stimulus + base_faces[[base_face]]) / 2
@@ -182,7 +189,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
       # Return CI
       if (return_as_dataframe) {
-        return(as.vector(stimuli[,,trial]))
+        return(as.vector(trial_noise))
       }
     }
 
@@ -190,6 +197,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     setTxtProgressBar(pb, trial)
   }
   parallel::stopCluster(cl)
+  cl <- NULL
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   generator_version <- '0.4.0'

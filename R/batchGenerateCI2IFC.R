@@ -5,7 +5,7 @@
 #' This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 #'
 #' @export
-#' @import dplyr
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param data Data frame
 #' @param by String specifying column name that specifies the smallest unit (participant, condition) to subset the data on and calculate CIs for.
 #' @param stimuli String specifying column name in data frame that contains the stimulus numbers of the presented stimuli.
@@ -65,12 +65,15 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
   data <- data[!is.na(data[,by]), ]
 
   by.levels <- unique(data[,by])
-  pb <- dplyr::progress_estimated(length(by.levels))
+  # dplyr::progress_estimated() is deprecated; use the base R progress bar
+  pb <- txtProgressBar(min = 0, max = length(by.levels), style = 3)
+  pb_i <- 0
 
   for (unit in by.levels) {
 
     # Update progress bar
-    pb$tick()$print()
+    pb_i <- pb_i + 1
+    setTxtProgressBar(pb, pb_i)
 
     # Get subset of data
     unitdata <- data[data[,by] == unit, ]
@@ -100,7 +103,7 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     cis <- autoscale(cis, save_as_pngs=save_as_png, targetpath=targetpath)
   }
 
-  pb$stop()
+  close(pb)
   return(cis)
 
 }

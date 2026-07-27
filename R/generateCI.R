@@ -202,6 +202,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
     # Create cluster for parallel processing
     cl <- parallel::makeCluster(n_cores, outfile = '')
+    on.exit(stopClusterSafely(cl), add = TRUE)
     doParallel::registerDoParallel(cl)
 
     # For each weighted stimulus, construct the noise pattern
@@ -236,6 +237,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
       return(ci)
     }
     parallel::stopCluster(cl)
+    cl <- NULL
     dim(pid.cis) <- c(img_size, img_size, npids)
 
     # Average across participants for final CI and return to original variance
@@ -288,6 +290,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
         # Create cluster for parallel processing
         cl <- parallel::makeCluster(n_cores, outfile = '')
+        on.exit(stopClusterSafely(cl), add = TRUE)
         doParallel::registerDoParallel(cl)
 
         # For each weighted stimulus, construct the complementary noise pattern
@@ -298,6 +301,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
           return(noiseimage)
         }
         parallel::stopCluster(cl)
+        cl <- NULL
         dim(noiseimages) <- c(img_size, img_size, n_observations)
 
       } else {
@@ -325,6 +329,21 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 }
 
 # Functions ---------------------------------------------------------------
+
+# Stop a parallel cluster if it is still running.
+# Intended for on.exit(), so that workers are released even when an error
+# interrupts a foreach loop. Without that, the socket connections leak and R
+# reports "closing unused connections" warnings later (issue #50).
+# Callers set their cluster variable to NULL after a normal stopCluster(), which
+# turns the registered on.exit() call into a no-op.
+# Input: cluster object, or NULL
+# Output: nothing
+stopClusterSafely <- function(cl) {
+  if (!is.null(cl)) {
+    try(parallel::stopCluster(cl), silent = TRUE)
+  }
+  invisible(NULL)
+}
 
 # Apply masking to a CI
 # Has the user actually supplied a mask?

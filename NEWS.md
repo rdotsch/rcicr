@@ -33,6 +33,26 @@
 - `generateCI()` accepts a greyscale-encoded RGB PNG as a `mask`. The conversion worked,
   but the error for genuinely non-greyscale images was raised unconditionally afterwards,
   so every such mask was rejected anyway.
+- `generateReferenceDistribution2IFC()` no longer writes its own arguments into the
+  `.Rdata` file it updates. `load()` assigns straight into the calling function's frame,
+  so a stored `rdata` (or, newly, `ncores`) object overwrote the argument of the same name
+  on the next call — meaning a second call ignored the `ncores` you passed and wrote back
+  to the path recorded during the first call. `computeInfoVal2IFC()` additionally guards
+  against this when reading `.Rdata` files written by older versions, which still contain
+  the stale path.
+
+## Performance and dependencies
+
+- `generateStimuli2IFC()` no longer preallocates the full stimulus array before starting
+  its parallel workers. At the default 512px / 770 trials that array was ~1.5 GB, and
+  `foreach` copied it to every worker, which each wrote one slice into and discarded.
+  Addresses issue #12.
+- Parallel clusters are now stopped via `on.exit()`, so workers are released even when an
+  error interrupts the loop. Fixes the "closing unused connections" warnings (issue #50).
+- `Imports` shrank from 27 packages to 15; none of the removed ones were used.
+- Deprecated calls replaced: `dplyr::progress_estimated()`, `purrr::rbernoulli()`, and
+  `citEntry()`/`personList()` in `inst/CITATION`. The `rbernoulli()` replacement was
+  chosen to preserve the random number stream exactly — see below.
 
 ## Reproducibility impact — read this if you have published or in-progress results
 
@@ -99,6 +119,18 @@ obtained result changes:
 - **Pre-0.3.3 `.Rdata` files** using the `sinusoids`/`sinIdx` layout — the
   backward-compatibility path was unreachable and always errored.
 - **`simulateNoiseIntensities()`** — errored on every call.
+- **Arguments overwritten by `load()`** — only reachable if you renamed or moved an
+  `.Rdata` file between calls, in which case the old code either errored with
+  `cannot open the connection` or wrote the reference distribution back to the file's
+  former path. The `ncores` half affects speed only. No infoVal changes.
+
+### Deliberately unchanged: the random number stream
+
+`purrr::rbernoulli(n, p)` (deprecated) is internally `runif(n) > (1 - p)`. The obvious
+modern replacement, `rbinom(n, 1, p)`, draws from the stream differently — verified across
+150 seed/probability combinations that the two diverge. Swapping it in would have silently
+changed every reference distribution, and therefore every infoVal, computed from a given
+seed. The `runif` form is used instead, verified bit-identical to the old behaviour.
 
 ### Unchanged and verified
 
