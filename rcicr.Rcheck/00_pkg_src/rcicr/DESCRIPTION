@@ -4,7 +4,7 @@ Title: Reverse-Correlation Image-Classification Toolbox
 Version: 1.0.1.9000
 URL: https://github.com/rdotsch/rcicr
 BugReports: https://github.com/rdotsch/rcicr/issues
-Authors@R: 
+Authors@R:
   person("Ron", "Dotsch", email="rdotsch@gmail.com", role=c("aut", "cre"))
 Description: Functions to generate stimuli and analyze data of reverse
     correlation image classification experiments (psychophysical tasks aimed at

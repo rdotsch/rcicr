@@ -45,4 +45,3 @@ names(ci)
 
 ## ----plot-ci------------------------------------------------------------------
 image(ci$combined, col = gray.colors(256), axes = FALSE, asp = 1)
-

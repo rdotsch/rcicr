@@ -54,7 +54,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -103,7 +103,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -151,7 +151,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -192,7 +192,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -265,7 +265,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -307,7 +307,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -436,7 +436,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -499,7 +499,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## No test: 
+## No test:
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -574,7 +574,7 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 
 ### ** Examples
 
-## Not run: 
+## Not run:
 ##D simulateNoiseIntensities(nrep = 10, img_size = 512)
 ## End(Not run)
 

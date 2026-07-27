@@ -11,7 +11,7 @@
 .rimage img { /* from knitr - for examples and demos */
     width: 96%;
     margin-left: 2%;
-} 	
+}
 
 .katex { font-size: 1.1em; }
 
@@ -127,4 +127,3 @@ span.rlang {
     font-family: Courier New, Courier;
     color: #666666;
 }
-
