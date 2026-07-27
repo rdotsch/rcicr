@@ -14,8 +14,10 @@ autoscale(cis, save_as_pngs = TRUE, targetpath = "./cis")
 \item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
 }
 \value{
-The input \code{cis} list, with a \code{$scaled} pixel matrix added to each element. The
-scaling constant that was determined is printed to the console, not returned.
+The input \code{cis} list, with the \code{$scaled} pixel matrix of each element
+replaced by its autoscaled version, and \code{$combined} refreshed to match (where a
+\code{$base} image is present). The scaling constant that was determined is printed to
+the console, not returned.
 }
 \description{
 Determines optimal scaling constant for a list of CIs

@@ -48,7 +48,18 @@ generateCI(
 )
 ```
 
-See [this Medium post](https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/) for a full walkthrough, and [rcicr_examples](https://github.com/rdotsch/rcicr_examples/) for example datasets and scripts.
+## Documentation
+
+Two vignettes ship with the package:
+
+``` r
+vignette("getting-started", package = "rcicr")  # shortest working example
+vignette("reverse-correlation-walkthrough", package = "rcicr")  # the full method
+```
+
+The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs when the package is built, so it cannot drift out of date.
+
+For example datasets and analysis scripts, see [rcicr_examples](https://github.com/rdotsch/rcicr_examples/). There is also an older [Medium post](https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/) covering similar ground; the vignette above supersedes it and is the version kept current with the code.
 
 ## Development
 

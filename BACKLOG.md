@@ -601,7 +601,39 @@ settled, so the post can say where the package actually lives instead of hedging
 are unchanged *and* that two fixes genuinely change infoVal. Flattening that to "nothing
 changed" would be both untrue and less useful to the researcher it is written for.
 
-### 22. Move the Medium walkthrough into the package as a vignette
+### 22. Move the Medium walkthrough into the package as a vignette  ✅ **DONE**
+
+Ported as `vignettes/reverse-correlation-walkthrough.Rmd`. Covers the same ground as the
+Medium post — install, generate stimuli, analyse, batch, scaling, online tasks, citation —
+plus material the post did not have: what the four scaling methods actually do to an image,
+how to read a z-map threshold, and a simulated observer with a known template so the
+walkthrough shows a **recovered signal** (r = 0.55) rather than a grey smudge.
+
+Every chunk executes at build time. Vignette rebuild is 15s for both vignettes together;
+`--as-cran` still reports the same 2 NOTEs.
+
+**Porting it immediately proved the premise.** Two lines of the published tutorial no longer
+work against the current package: `autoscale(cis, saveasjpegs = TRUE)` (the argument is
+`save_as_pngs`) and `install_github("rdotsch/rcicr", ref = "development")` (no such branch).
+That is exactly the silent drift a vignette prevents, since a broken chunk now fails the
+build.
+
+Writing it also surfaced the `autoscale()` `$combined` staleness — the batch CIs rendered
+as a nearly invisible overlay, which is what led to the fix (see `NEWS.md`, "Behaviour
+change"). Documentation that runs is a test.
+
+- [x] Port the walkthrough into a vignette with executing chunks.
+- [x] README and `getting-started.Rmd` now point at the vignette first; the Medium link is
+      demoted to "further reading" rather than removed, so its inbound links keep working.
+- [ ] **Ron:** add a pointer at the top of the Medium post to
+      `vignette("reverse-correlation-walkthrough", package = "rcicr")`. Nothing in the repo
+      can do this.
+- [ ] The Medium URL still trips the CRAN URL NOTE (Medium blocks datacenter IPs). It is
+      explained in `cran-comments.md`. If a reviewer objects, dropping it is now a one-line
+      change in `README.md`, because the content no longer lives only there.
+
+#### Original entry
+
 
 The method walkthrough — the thing a new user is actually sent to read — lives at
 `https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/`,
