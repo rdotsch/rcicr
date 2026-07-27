@@ -15,9 +15,20 @@ autoscale(cis, save_as_pngs = TRUE, targetpath = "./cis")
 }
 \value{
 The input \code{cis} list, with the \code{$scaled} pixel matrix of each element
-replaced by its autoscaled version, and \code{$combined} refreshed to match (where a
-\code{$base} image is present). The scaling constant that was determined is printed to
-the console, not returned.
+replaced by its autoscaled version. The scaling constant that was determined is printed
+to the console, not returned.
+
+\strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is left exactly
+as it was passed in: autoscaling deliberately does not disturb it, so a combination made
+before this call survives unchanged. Only \code{$scaled} reflects the autoscaled result.
+If you want the autoscaled noise shown over the base image, build it yourself with
+\code{(ci$scaled + ci$base) / 2} — that is exactly what \code{save_as_pngs = TRUE}
+writes to disk.
+
+This matters most after \code{\link{batchGenerateCI}} or
+\code{\link{batchGenerateCI2IFC}}, which scale with \code{'none'} before handing over to
+this function: their \code{$combined} is therefore an overlay of the \emph{unscaled}
+noise and will look almost blank, while \code{$scaled} is the image you want.
 }
 \description{
 Determines optimal scaling constant for a list of CIs

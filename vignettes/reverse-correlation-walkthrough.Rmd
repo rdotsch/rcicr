@@ -305,15 +305,35 @@ Because each of those was scaled independently, they cannot be compared by eye y
 scaled <- autoscale(cis, save_as_pngs = FALSE)
 
 for (nm in names(scaled)) {
-  show(scaled[[nm]]$combined, sub(".*_", "", nm), zlim = c(0, 1))
+  # $scaled, not $combined -- see the note below.
+  show(scaled[[nm]]$scaled, sub(".*_", "", nm), zlim = c(0, 1))
 }
 ```
 
 `p01` should look cleanest and `p03` weakest — they share a template but differ in how
 consistently they applied it, which is what internal noise means in practice.
 
-Note the argument is `save_as_pngs`. Older tutorials show `saveasjpegs`, which no longer
-exists; this is precisely the drift that keeping the walkthrough inside the package
+### After `autoscale()`, look at `$scaled`
+
+`autoscale()` rewrites `$scaled` and **deliberately leaves `$combined` exactly as it
+was**. That is by design: a combination you made before autoscaling survives the call
+untouched, so an existing analysis script that plots `$combined` keeps producing the same
+image.
+
+It catches people out after `batchGenerateCI()`, though, because that function scales with
+`'none'` before handing over — so its `$combined` is an overlay of the *unscaled* noise and
+looks almost blank. If you want the autoscaled noise over the base image, build it
+yourself:
+
+```{r autoscale-combined, fig.width = 2.4, fig.height = 2.4}
+p01 <- scaled[["face_participant_p01"]]
+show((p01$scaled + p01$base) / 2, "p01 over base", zlim = c(0, 1))
+```
+
+That expression is exactly what `autoscale(save_as_pngs = TRUE)` writes to disk.
+
+Note also that the argument is `save_as_pngs`. Older tutorials show `saveasjpegs`, which no
+longer exists — precisely the drift that keeping this walkthrough inside the package
 prevents.
 
 ## 8. Is there actually signal?

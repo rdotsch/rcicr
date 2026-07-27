@@ -6,26 +6,6 @@
 > (see below) rather than only repairing it. The public API is unchanged, so a
 > 2.0.0 is not warranted.
 
-## Behaviour change
-
-- **`autoscale()` now refreshes `$combined` to match the `$scaled` image it computes.**
-  Previously it replaced `$scaled` and left `$combined` exactly as passed in, so the two
-  fields of the returned object described different images. This mattered most through
-  `batchGenerateCI()` / `batchGenerateCI2IFC()`, which scale with `'none'` before handing
-  over to `autoscale()`: their documented `$combined` was an overlay of the *unscaled*
-  noise, nearly invisible, and it disagreed with the `_autoscaled.png` that the very same
-  call had already written to disk.
-
-  Listed separately from the bug fixes below because it is genuinely arguable rather than
-  clear-cut: `autoscale()`'s own documentation only ever promised to update `$scaled`, and
-  its example input has no `$combined` at all. It reads as an oversight at the seam between
-  the two functions rather than a decision, and the new behaviour makes the returned object
-  agree with the file on disk — but if you plotted `$combined` after `autoscale()`, the
-  image you get now is different (and is the autoscaled one you almost certainly wanted).
-
-  **No statistical result changes.** `$ci` is untouched, and `computeInfoVal2IFC()`,
-  `plotZmap()` and any correlation between CIs all derive from `$ci`, not from `$combined`.
-
 ## Bug fixes
 
 - `generateCI(zmap = TRUE, zmapdecoration = FALSE)` works at all. The undecorated

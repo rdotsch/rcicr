@@ -618,9 +618,12 @@ work against the current package: `autoscale(cis, saveasjpegs = TRUE)` (the argu
 That is exactly the silent drift a vignette prevents, since a broken chunk now fails the
 build.
 
-Writing it also surfaced the `autoscale()` `$combined` staleness — the batch CIs rendered
-as a nearly invisible overlay, which is what led to the fix (see `NEWS.md`, "Behaviour
-change"). Documentation that runs is a test.
+Writing it also surfaced a real usability trap: after `batchGenerateCI()` the batch CIs
+rendered as a nearly invisible overlay, because `autoscale()` rewrites `$scaled` and leaves
+`$combined` alone. **That is intended** — Ron confirmed `$combined` is meant to survive the
+call untouched so existing scripts keep plotting the same image — so it is now *documented*
+in `?autoscale` and the vignette, and pinned by a test, rather than "fixed". An initial
+change that rewrote `$combined` was reverted. Documentation that runs is a test.
 
 - [x] Port the walkthrough into a vignette with executing chunks.
 - [x] README and `getting-started.Rmd` now point at the vignette first; the Medium link is
