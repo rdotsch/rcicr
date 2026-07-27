@@ -49,13 +49,15 @@
   Addresses issue #12.
 - Parallel clusters are now stopped via `on.exit()`, so workers are released even when an
   error interrupts the loop. Fixes the "closing unused connections" warnings (issue #50).
-- `generateNoiseImage()` is about 29x faster — 1.38s to 0.05s at the default 512px with
-  `nscales = 5` — and allocates roughly a third less memory. The per-pixel average across
-  patch layers is now computed with `rowMeans(..., dims = 2)` instead of
-  `apply(..., 1:2, mean)`. Because this function is called for every trial during stimulus
-  generation and again for every CI and z-map, the saving compounds. Thanks to
-  [@hvalev](https://github.com/hvalev), who diagnosed this and benchmarked it in #122.
-  See "Reproducibility impact" below — the result is not *bit*-identical to the old one.
+- `generateNoiseImage()` is about **6x faster** — 1.66s to 0.28s per call at the default
+  512px with `nscales = 5` — and allocates about 30% less memory. The per-pixel average
+  across patch layers is now computed with `rowMeans(..., dims = 2)` instead of
+  `apply(..., 1:2, mean)`; that step alone is ~31x faster, and what remains is building
+  the weighted patch array, which is unavoidable. Because this function is called for
+  every trial during stimulus generation and again for every CI and z-map, the saving
+  compounds. Thanks to [@hvalev](https://github.com/hvalev), who diagnosed this and
+  benchmarked it in #122. See "Reproducibility impact" below — the result is not
+  *bit*-identical to the old one.
 - `Imports` shrank from 27 packages to 15; none of the removed ones were used.
 - Deprecated calls replaced: `dplyr::progress_estimated()`, `purrr::rbernoulli()`, and
   `citEntry()`/`personList()` in `inst/CITATION`. The `rbernoulli()` replacement was
