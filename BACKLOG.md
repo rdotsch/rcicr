@@ -51,6 +51,8 @@ take it:
 | 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
 | 11 | Cluster cleanup (`on.exit`), serial fallback | Partly done — `generateReferenceDistribution2IFC()` now takes `ncores`; cleanup and the `ncores == 1` fast path remain | M |
 | 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
+| ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
+| 19 | Close the 8 issues already fixed in `main` | Cheapest credibility win available; the tracker currently makes the package look unmaintained | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -338,6 +340,86 @@ an end-to-end smoke test. Gaps worth closing:
       `test-fixed-bugs.R`.
 - [ ] Cover the `zmap = TRUE` paths (`quick` and `t.test`).
 - [ ] Cover `participants` (per-participant → group averaging).
+
+### 18. The Codecov CI step fails without a repository token  ✅ **FIXED**
+
+`.github/workflows/test-coverage.yaml` runs `covr::package_coverage()` and uploads the
+result to Codecov, which needs a `CODECOV_TOKEN` repository secret. That secret does not
+exist, so the upload step fails. The coverage *computation* itself is fine — it is only
+the upload that fails.
+
+Note the exact trigger, because it is easy to misread: the step sets
+
+```yaml
+fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN }}
+```
+
+so on a **pull request** it is `false` and a missing token is tolerated, but on a **push
+to `main`** it is `true` and the run goes red. That is why every PR so far has been green
+while `main` shows a failing badge — the merge of #130 on 2026-07-27 is the current
+example. Anyone judging the health of the repo from the front page sees a red X.
+
+Three ways out were put to Ron, who chose the third:
+
+- [ ] **Get a token.** Sign in to codecov.io with the GitHub account, add `rdotsch/rcicr`,
+      copy the upload token into Settings → Secrets → Actions as `CODECOV_TOKEN`. Keeps
+      the coverage badge and per-PR coverage comments. Codecov is free for public repos.
+      *Still available later — see below.*
+- [ ] **Or drop the upload.** Delete `.github/workflows/test-coverage.yaml` (and
+      `codecov.yml`, plus its `.Rbuildignore` line). Coverage is deliberately partial
+      here — I/O-heavy functions get lighter tests by design — so the reporting is of
+      limited value, and `R CMD check` on release and devel is the check that actually
+      matters.
+- [x] **Keep the workflow but stop it failing.** `fail_ci_if_error: false`,
+      unconditionally. Coverage is still computed and printed in the step log; only the
+      upload is best-effort. Smallest change, and it keeps the token option open.
+
+**Chosen and applied.** The conditional expression is gone; the setting is now a plain
+`false` with a comment recording why, so nobody restores the old expression thinking it
+was deliberate.
+
+What this does *not* do: it does not make coverage reporting work. There is still no
+Codecov token, so no badge, no per-PR coverage comments, and the `codecov.yml`
+thresholds are inert. Coverage numbers are visible only in the workflow log. If that
+reporting is wanted later, add the token and set this back to `true` — the first bullet
+above is the recipe. The point of this change is narrower: a red `main` should mean the
+package is broken, and it now does.
+
+### 19. Eight issues are fixed in `main` but still open on the tracker  **[own review]**
+
+Not a code task, but it is the largest gap between what the package *is* and what a
+prospective user *sees*. As of 2026-07-27 the tracker has 30 open issues, and at least
+these are already fixed:
+
+| issue | what | fixed by |
+|---|---|---|
+| #70 | `generateCI()` cannot handle tibbles | #129 (P0 item 4) |
+| #81 | `nscales` not saved in `.Rdata` | #129 (P0 item 2) |
+| #113 | `force_gen_ref_dist` does nothing | #129 (P0 item 3) |
+| #123 | `aggregate.data.frame` length error | #129 (P0 item 4, same cause as #70) |
+| #124 | `non-conformable arrays` from `generateStimuli2IFC()` | #129 (P0 item 7) |
+| #50 | "closing unused connections" warnings | #130 (`on.exit()` cluster cleanup) |
+| #12 | large stimulus sets exhaust memory | #130 — **partially**, see below |
+| #122 | `generateNoiseImage()` speed (a PR) | closed by #131 |
+
+Why this matters more than it sounds: someone hitting the `non-conformable arrays` error
+today searches the tracker, finds #124 open since September 2024 with no resolution, and
+concludes the package is unmaintained — while the fix sits in `main`. The tracker is the
+package's public health signal and it currently understates the state of the code badly.
+
+- [ ] Close each with a short comment naming the version that fixes it and how to get it
+      (`devtools::install_github("rdotsch/rcicr")` until the CRAN question in item 1 is
+      settled), plus a pointer to the `NEWS.md` entry.
+- [ ] **Do not blanket-close #12.** `NEWS.md` says "addresses", not "fixes", and that
+      wording is deliberate: #130 removed the ~1.5 GB array copied to every worker, which
+      was the dominant cost, but the `ncores == 1` serial path in item 11 is still open and
+      per-worker memory still scales with `img_size`. Comment with what changed and what
+      did not, and leave it open, or close it explicitly scoped to the array copy.
+- [ ] Sweep the remaining ~22 open issues the same way — some are likely stale or already
+      resolved by earlier releases. This has not been done; the eight above are only the
+      ones this modernization pass touched directly.
+
+Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
 
 ---
 

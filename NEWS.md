@@ -49,6 +49,15 @@
   Addresses issue #12.
 - Parallel clusters are now stopped via `on.exit()`, so workers are released even when an
   error interrupts the loop. Fixes the "closing unused connections" warnings (issue #50).
+- `generateNoiseImage()` is about **6x faster** — 1.66s to 0.28s per call at the default
+  512px with `nscales = 5` — and allocates about 30% less memory. The per-pixel average
+  across patch layers is now computed with `rowMeans(..., dims = 2)` instead of
+  `apply(..., 1:2, mean)`; that step alone is ~31x faster, and what remains is building
+  the weighted patch array, which is unavoidable. Because this function is called for
+  every trial during stimulus generation and again for every CI and z-map, the saving
+  compounds. Thanks to [@hvalev](https://github.com/hvalev), who diagnosed this and
+  benchmarked it in #122. See "Reproducibility impact" below — the result is not
+  *bit*-identical to the old one.
 - `Imports` shrank from 27 packages to 15; none of the removed ones were used.
 - Deprecated calls replaced: `dplyr::progress_estimated()`, `purrr::rbernoulli()`, and
   `citEntry()`/`personList()` in `inst/CITATION`. The `rbernoulli()` replacement was
@@ -123,6 +132,30 @@ obtained result changes:
   `.Rdata` file between calls, in which case the old code either errored with
   `cannot open the connection` or wrote the reference distribution back to the file's
   former path. The `ncores` half affects speed only. No infoVal changes.
+
+### Changed, but below any scale that can matter: the patch average
+
+`generateNoiseImage()` now averages patch layers with `rowMeans(..., dims = 2)`
+rather than `apply(..., 1:2, mean)`. These compute the same quantity but sum in a
+different order, so they are **not bit-identical**: they differ by about one unit
+in the last place, ~1e-19 in absolute terms on pixel values of order 0.01.
+
+This is a different class of thing from the `rbernoulli` case below. That one would
+have changed the random *stream* — a large, systematic divergence. This is
+floating-point summation order, and it was checked against an independent oracle
+(the average written as an explicit triple loop, using neither `apply()` nor
+`rowMeans()`) across noise types, spatial scales and seeds: both the old and new
+forms sit ~5.6e-17 from that oracle. Neither is "more correct" than the other.
+
+- **Affected:** nothing you would report. No CI, z-map, infoVal or scaling decision
+  changes at any precision a paper prints, and the difference is far below the
+  noise you would get from re-running with a different seed.
+- **At the configuration the golden master pins**, the results came out bit-identical.
+- It is recorded here anyway, because the standard for this package is that any
+  numeric change is written down rather than discovered later by someone re-running
+  a five-year-old script.
+- `tests/testthat/test-generateNoiseImage.R` now pins the new implementation against
+  the original `apply()` form across 12 configurations, so it cannot drift further.
 
 ### Deliberately unchanged: the random number stream
 
