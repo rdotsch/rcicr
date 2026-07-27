@@ -747,7 +747,7 @@ checklist at the top of this item, which is the live one.
 ## P2 — Usability and maintainability
 
 ### 13. Modernize the R code itself
-- [ ] **[own review]** Version metadata is inconsistent and stale. `generateStimuli2IFC()`
+- [x] **[own review]** Version metadata is inconsistent and stale. `generateStimuli2IFC()`
       hardcodes `generator_version <- '0.4.0'` (`R/generateStimuli2IFC.R:168`) into every
       `.Rdata` file, while `generateNoisePattern()` writes the real
       `utils::packageVersion('rcicr')`. So a file written today claims to come from 0.4.0
@@ -755,6 +755,13 @@ checklist at the top of this item, which is the live one.
       `pre_0.3.0`-style compatibility checks that key off it. Covers issue
       [#29](https://github.com/rdotsch/rcicr/issues/29). Replace the literal with
       `utils::packageVersion('rcicr')`, but keep *reading* tolerant of old values.
+      **Done 2026-07-27.** Nothing in the package reads the field, so "keep reads
+      tolerant" had no code to change — the tolerance requirement is instead recorded at
+      the write site and in `NEWS.md`, because it falls on *user* code: files in the wild
+      say `'0.4.0'` regardless of what wrote them, and the field is now a
+      `package_version` rather than a character string. The `pre_0.3.0` compatibility path
+      does not in fact key off this field — it detects the old `sinusoids`/`sinIdx` layout
+      structurally — which is just as well, given the field was lying.
 - [ ] **[own review]** The `matlab` package exports its own `sum()` with MATLAB semantics
       (column sums for a matrix, not a single total), which masks `base::sum()` wherever
       `@import matlab` is in effect — six files. Package code is currently safe (its only

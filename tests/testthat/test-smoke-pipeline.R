@@ -35,6 +35,28 @@ test_that("generateStimuli2IFC produces stimuli, PNGs, and a loadable .Rdata end
   expect_equal(e$img_size, 32)
 })
 
+test_that("the .Rdata records the rcicr version that actually wrote it", {
+  # generator_version was a hardcoded '0.4.0' literal from 2016 until
+  # 1.1.0.9000, so it described no file written after 0.4.0 and was useless for
+  # the provenance purpose it exists for (issue #29). It must now agree with the
+  # installed version, and with p$generator_version, which was already correct --
+  # the two disagreeing is what made the field untrustworthy in the first place.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+
+  installed <- as.character(utils::packageVersion("rcicr"))
+  expect_equal(as.character(e$generator_version), installed)
+  expect_equal(as.character(e$p$generator_version), installed)
+
+  # The specific failure being guarded against: any run reporting the frozen
+  # literal. Kept as its own assertion so a future re-freeze reads as such
+  # rather than as a stale-installed-package problem.
+  expect_false(identical(as.character(e$generator_version), "0.4.0"))
+})
+
 test_that("full pipeline: generateStimuli2IFC -> generateCI produces a classification image", {
   tmp <- withr::local_tempdir()
   input_dir <- file.path(tmp, "input")

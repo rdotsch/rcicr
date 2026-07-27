@@ -214,7 +214,17 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   cl <- NULL
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
-  generator_version <- '0.4.0'
+  #
+  # This records which rcicr wrote the file. It was a hardcoded '0.4.0' string
+  # from 2016 until 1.1.0.9000, so *every* .Rdata written by 0.4.0 through 1.1.0
+  # claims to come from 0.4.0 no matter what actually wrote it. Anything reading
+  # this field must therefore treat '0.4.0' as "unknown, somewhere in that
+  # range" rather than as a real version, and must accept both a character
+  # string (old files) and the package_version object written here (new ones) --
+  # note that comparing versions as strings is wrong anyway, since '0.10.0' sorts
+  # below '0.4.0'. p$generator_version has always held the real version and is
+  # the more trustworthy of the two on any file that has it.
+  generator_version <- utils::packageVersion('rcicr')
 
   if (save_rdata) {
     # nscales and sigma are saved so that anything re-generating this stimulus

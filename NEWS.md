@@ -27,6 +27,21 @@
   files written by earlier versions simply lack it. A stimulus set carrying a deliberately
   varied null is no longer indistinguishable from one carrying the default.
 
+## Bug fixes
+
+- The `.Rdata` file written by `generateStimuli2IFC()` now records the rcicr version that
+  actually wrote it (#29). `generator_version` was a hardcoded `'0.4.0'` string from 2016
+  onwards, so every file produced by 0.4.0 through 1.1.0 claims to come from 0.4.0 —
+  useless for the provenance the field exists for, and it disagreed with
+  `p$generator_version`, which held the real version all along.
+
+  No result changes: nothing in the package has ever read this field. If your own code
+  does, note two things. Existing files cannot be trusted to say what wrote them, so treat
+  a stored `'0.4.0'` as "unknown, somewhere between 0.4.0 and 1.1.0" rather than as a
+  version. And the field is now a `package_version` object rather than a character string,
+  so compare with `utils::packageVersion()` or `numeric_version()`, never as text —
+  `'0.10.0' < '0.4.0'` is `TRUE` when compared as strings.
+
 ## Documentation
 
 - `?generateReferenceDistribution2IFC` now documents as a **guarantee** what was previously
