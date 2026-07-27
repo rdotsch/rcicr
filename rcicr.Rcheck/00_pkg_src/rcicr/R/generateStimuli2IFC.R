@@ -1,0 +1,217 @@
+#' Generates 2IFC stimuli
+#'
+#' Generate stimuli for 2 images forced choice reverse correlation task.
+#'
+#' Will save the stimuli as PNGs to a folder, including .Rdata file needed for analysis of data
+#' after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
+#'
+#' @export
+#' @import matlab
+#' @import jpeg
+#' @import png
+#' @import foreach
+#' @import doParallel
+#' @importFrom stats setNames runif
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @param base_face_files List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.
+#' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
+#' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).
+#' @param stimulus_path Path to save stimuli and .Rdata file to.
+#' @param label Label to prepend to each file for your convenience.
+#' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
+#' @param seed Integer seeding the random number generator (for reproducibility).
+#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast.
+#' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
+#' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
+#' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
+#' @param ncores Number of CPU cores to use (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param return_as_dataframe Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.
+#' @param save_as_png Boolean specifying whether to write the stimuli as images to disk (default: TRUE).
+#' @param save_rdata Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classification images. This function argument exists primarily for internal rcicr use.
+#' @return Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
+#' @examples
+#' \donttest{
+#' # a synthetic square grayscale image stands in for a real base face photo
+#' base_face <- tempfile(fileext = ".png")
+#' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
+#'
+#' generateStimuli2IFC(
+#'   base_face_files = list(face = base_face),
+#'   n_trials = 4,
+#'   img_size = 32,
+#'   stimulus_path = tempdir(),
+#'   seed = 1,
+#'   ncores = 1,
+#'   nscales = 1
+#' )
+#' }
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=default_ncores(), return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
+
+  # Initialize #
+  p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
+  dir.create(stimulus_path, recursive=T, showWarnings = F)
+  set.seed(seed)
+
+  stimuli_params <- list()
+  base_faces <- list()
+
+  if (!is.list(base_face_files)) {
+    write("Please provide base face file name as named list, e.g. base_face_files=list(aName='baseface.jpg')", stderr())
+    stop()
+  }
+
+  for (base_face in names(base_face_files)) {
+    # Read base face
+    filename <- base_face_files[[base_face]]
+    if (grepl('png|PNG', filename)) {
+      img <- png::readPNG(filename)
+    } else if (grepl('jpeg|JPEG|jpg|JPG', filename)) {
+      img <- jpeg::readJPEG(filename)
+    } else {
+      stop(paste0('Error in reading base image file ',
+                  filename, ': must be a PNG or JPEG file.'))
+    }
+
+    # Check if base face is square. If not, throw an error
+    if (dim(img)[1] != dim(img)[2]) {
+      stop(paste0('Base face is not square! It\'s ', dim(img)[1], ' by ',
+                  dim(img)[2], ' pixels. Please use a square base face.'))
+    }
+
+    # Change base face to greyscale if necessary
+    if (length(dim(img)) == 3) {
+      img <- apply(img, c(1, 2), mean)
+    }
+
+    # Check that the base face matches the requested stimulus size. Automatic
+    # resizing used to happen here via biOps, but that dependency was dropped
+    # and never replaced, so a mismatch would otherwise surface much later as
+    # an opaque "non-conformable arrays" error from inside a parallel worker
+    # (when the noise is added to the base image).
+    if (nrow(img) != img_size) {
+      stop(paste0('Base image "', base_face, '" (', filename, ') is ',
+                  nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
+                  img_size, '. rcicr does not resize base images: please ',
+                  'either resize the image to ', img_size, ' by ', img_size,
+                  ' pixels, or call generateStimuli2IFC() with img_size = ',
+                  nrow(img), '.'))
+    }
+
+    # If necessary, rescale to maximize contrast
+    if (maximize_baseimage_contrast) {
+      img <- (img - min(img)) / (max(img) - min(img))
+    }
+
+    # Save base image to list
+    base_faces[[base_face]] <- img
+  }
+
+  # Compute number of parameters needed  #
+  nparams <- sum(6*2*(2^(0:(nscales-1)))^2)
+
+  # Generate parameters #
+  if (use_same_parameters) {
+
+    # Generate stimuli parameters, one set for all base faces
+    params <- matlab::zeros(n_trials, nparams)
+    for (trial in 1:n_trials) {
+      params[trial,] <- (runif(nparams) * 2) - 1
+    }
+
+    # Assign to each base face the same set
+    for (base_face in names(base_faces)) {
+      stimuli_params[[base_face]] <- params
+    }
+
+    rm(params)
+  } else {
+    for (base_face in names(base_faces)) {
+      # Generate stimuli parameters, unique to each base face
+      stimuli_params[[base_face]] <- matlab::zeros(n_trials, nparams)
+      for (trial in 1:n_trials) {
+        stimuli_params[[base_face]][trial,] <- (runif(nparams) * 2) - 1
+      }
+    }
+
+  }
+
+  # Generate stimuli
+  pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
+
+  cl <- parallel::makeCluster(ncores, outfile = "")
+  on.exit(stopClusterSafely(cl), add = TRUE)
+  doParallel::registerDoParallel(cl)
+
+  stims <- foreach::foreach(
+    trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE) %dopar% {
+    # Each iteration only ever needs the noise for its own trial, so this is a
+    # plain matrix. It used to write into a preallocated
+    # zeros(img_size, img_size, n_trials) array declared before the cluster was
+    # created - at the defaults that is a 1.5 GB object (512 x 512 x 770), and
+    # because it existed in the parent environment foreach exported a full copy
+    # to *every* worker. Each worker then wrote one slice into its own private
+    # copy and discarded it, so the memory was pure overhead. See issue #12.
+    if (use_same_parameters) {
+      # One parameter set is shared by every base face, so any key gives the
+      # same values; take the first explicitly rather than relying on `base_face`
+      # still holding a value left over from the base-image loop above.
+      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial,], p)
+    }
+
+    for (base_face in names(base_faces)) {
+      if (!use_same_parameters) {
+        # compute noise pattern unique to this base face
+        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
+      }
+
+      # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
+      # for yourself with simulateNoiseIntensities())
+      stimulus <- ((trial_noise + 0.3) / 0.6)
+
+      # add base face
+      combined <- (stimulus + base_faces[[base_face]]) / 2
+
+      # write to file
+      if (save_as_png) {
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
+      }
+
+      # compute inverted stimulus
+      stimulus <- ((-trial_noise + 0.3) / 0.6)
+
+      # add base face
+      combined <- (stimulus + base_faces[[base_face]]) / 2
+
+      # write to file
+      if (save_as_png) {
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+      }
+
+      # Return CI
+      if (return_as_dataframe) {
+        return(as.vector(trial_noise))
+      }
+    }
+
+    # Update progress bar
+    setTxtProgressBar(pb, trial)
+  }
+  parallel::stopCluster(cl)
+  cl <- NULL
+
+  # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
+  generator_version <- '0.4.0'
+
+  if (save_rdata) {
+    # nscales and sigma are saved so that anything re-generating this stimulus
+    # set later (notably generateReferenceDistribution2IFC(), which builds the
+    # infoVal null distribution) reproduces the same noise basis. They were
+    # previously omitted, so re-generation silently fell back to the defaults.
+    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, trial, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
+  }
+
+  # Return CIs
+  if (return_as_dataframe) {
+    return(stims)
+  }
+}

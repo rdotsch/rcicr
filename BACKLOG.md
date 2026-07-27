@@ -49,7 +49,7 @@ take it:
 | 16 | Pointless 1.5 GB array exported to every worker | Roughly a one-line fix; likely resolves most of issue #12 | S |
 | 10 | Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()` | Still work today, but warn on every run and will eventually break five functions at once | S |
 | 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
-| 11 | Cluster cleanup (`on.exit`), serial fallback | Partly done — `generateReferenceDistribution2IFC()` now takes `ncores`; cleanup and the `ncores == 1` fast path remain | M |
+| 11 | Cluster cleanup (`on.exit`), serial fallback | Partly done — cleanup landed in #130. **The `ncores == 1` fast path is now the top lever on `R CMD check` time**: tests are `[8s/126s]`, i.e. 22 cluster spawns of pure waiting. See item 20 | M |
 | 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | 19 | Close the 8 issues already fixed in `main` | Cheapest credibility win available; the tracker currently makes the package look unmaintained | S |
@@ -453,21 +453,30 @@ Found the following (possibly) invalid URLs:
 
 #### Must do before submitting
 
-- [ ] **Bump the version to `1.1.0`.** `1.0.1.9000` trips "Version contains large
+- [ ] **Bump the version to `1.1.0`.** *(left deliberately — it is a release decision,
+      not a mechanical fix, and it belongs with the CRAN go/no-go in item 1.)* `1.0.1.9000` trips "Version contains large
       components" — the `.9000` development suffix is not acceptable in a submission.
       Date the `NEWS.md` heading at the same time.
-- [ ] **Fix the two flagged URLs.** `codecov.io/gh/...` now redirects to
-      `app.codecov.io/gh/...` (README). The Medium link returns **403 Forbidden** to
-      CRAN's checker because Medium blocks automated requests — it appears in
-      `DESCRIPTION`, `README.md` and the vignette. CRAN will ask about it. Either move it
-      out of `DESCRIPTION` (see the next item, which replaces it anyway) or note in
-      `cran-comments.md` that the URL is valid in a browser and Medium blocks bots.
-- [ ] **Add `BugReports:` and a repo `URL:` to `DESCRIPTION`.** There is currently no
+- [x] **Fix the two flagged URLs — partly done.** The `codecov.io` one is **gone**: the
+      badge rendered `unknown` (nothing has ever been uploaded, there being no token), so
+      it was removed rather than repointed — a badge that reports nothing while looking
+      like it reports something is worse than no badge. Re-verified by a second
+      `--as-cran` run: it no longer appears.
+
+      The **Medium link still flags, and that is fine.** It returns 403 to CRAN's checker
+      because Medium blocks automated requests; it works in a browser. It is out of
+      `DESCRIPTION` now but remains in `README.md:51` and `vignettes/getting-started.Rmd:36`,
+      where it is a genuinely useful pointer to the method walkthrough. **Do not delete it
+      to silence the NOTE** — explain it in `cran-comments.md` instead: "the URL is valid;
+      medium.com returns 403 to non-browser user agents.
+- [x] **Add `BugReports:` and a repo `URL:` to `DESCRIPTION`. Done.** There is currently no
       `BugReports` field at all, and `URL:` points only at the Medium article rather than
       the repository. Suggested:
       `URL: https://github.com/rdotsch/rcicr`,
       `BugReports: https://github.com/rdotsch/rcicr/issues`.
-- [ ] **Cap the core count under check.** `generateStimuli2IFC()`,
+- [x] **Cap the core count under check. Done** via `default_ncores()` in `R/zzz.R`;
+      verified to return `detectCores() - 1` normally and `2` when `_R_CHECK_LIMIT_CORES_`
+      is set. Original text: `generateStimuli2IFC()`,
       `generateReferenceDistribution2IFC()` and `generateCI(n_cores=)` all default to
       `parallel::detectCores() - 1`. **CRAN policy allows at most 2 cores** in examples,
       tests and vignettes, and reviewers frequently object to `detectCores()` defaults on
@@ -476,12 +485,32 @@ Found the following (possibly) invalid URLs:
       ncores = if (nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_"))) 2L else parallel::detectCores() - 1
       ```
       Note this is *not* a behaviour change for researchers — only under `R CMD check`.
-- [ ] **Get the test time down.** `checking tests` took **`[10s/148s]`**. CRAN wants the
+- [x] **Get the test time down. Partly done, and the diagnosis changed** —
+      `skip_on_cran()` on three files. **Verified it fires**: under a real `R CMD check`
+      the suite reports `SKIP 3 | PASS 119` (vs 145 in development).
+
+      But the saving is only **148s → 126s**, not the large drop expected, because those
+      three were not as dominant as assumed. The real finding is in the ratio:
+      `checking tests ... [8s/126s]` — **8 seconds of CPU against 126 seconds elapsed.**
+      Nearly all of it is waiting, not computing. `testthat.Rout` shows **22 PSOCK cluster
+      spawns**, each starting a fresh R process that runs `library(rcicr)`. The same shape
+      appears in `--run-donttest`: `[15s/75s]`.
+
+      **This makes item 11 (the `ncores == 1` serial fast path) the single biggest lever on
+      check time**, not a nicety — every test already passes `ncores = 1`, and every one of
+      them still builds a one-worker cluster to run a sequential loop. Do item 11 before
+      worrying further about check duration.
+      Note the trap found while verifying this: `devtools::test()` and
+      `testthat::test_local()` **set `NOT_CRAN=true` themselves**, so `skip_on_cran()` can
+      never fire under them and they cannot be used to check that a skip works. Only a
+      real `R CMD check` shows it. Original text: `checking tests` took **`[10s/148s]`**. CRAN wants the
       whole check comfortably under ~10 minutes on hardware slower than this. Put
       `skip_on_cran()` on the three slowest files — `test-recovery.R`,
       `test-smoke-pipeline.R`, `test-regression-baseline.R`. All three are development
       guards; none of them protects a CRAN *user*, and they keep running in GitHub CI.
-- [ ] **Guard the interactive prompt.** `computeInfoVal2IFC()` calls `yesno::yesno()` at
+- [x] **Guard the interactive prompt. Done.** Non-interactive callers now decline and
+      regenerate with the requested iteration count rather than silently substituting a
+      distribution built with a different one. Original text: `computeInfoVal2IFC()` calls `yesno::yesno()` at
       `R/computeInfoVal2IFC.R:118` with no `interactive()` check around it. In a
       non-interactive session — CRAN's checks, or anybody's batch script — that either
       hangs or errors instead of taking a sensible default.

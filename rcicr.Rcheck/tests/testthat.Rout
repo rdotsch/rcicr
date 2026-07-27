@@ -1,0 +1,124 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(testthat)
+> library(rcicr)
+> 
+> test_check("rcicr")
+Using scaling factor constant:0.3
+starting worker pid=230082 on localhost:11125 at 07:03:43.312
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%Using scaling factor constant:0.243058701371615
+
+starting worker pid=230148 on localhost:11125 at 07:03:48.792
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%Using scaling factor constant:0.243058701371615
+
+starting worker pid=230197 on localhost:11125 at 07:03:54.375
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%  |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%
+starting worker pid=230260 on localhost:11125 at 07:03:59.702
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%Using reference distribution found in rdata file.
+Informational value: z = 13.4008068693451 (ci norm = 32.3506289583554; reference median = 10.2582083075873; MAD = 1.64858883992317; iterations = 50)
+starting worker pid=230326 on localhost:11125 at 07:04:05.661
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=230374 on localhost:11125 at 07:04:11.063
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=230434 on localhost:11125 at 07:04:16.751
+starting worker pid=230435 on localhost:11125 at 07:04:16.771
+Loading required package: rcicr
+Loading required package: rcicr
+loaded rcicr and set parent environment
+loaded rcicr and set parent environment
+starting worker pid=230535 on localhost:11125 at 07:04:25.749
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=230578 on localhost:11125 at 07:04:31.624
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
+starting worker pid=230644 on localhost:11125 at 07:04:37.438
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%Re-generating stimuli based on rdata file, please wait...
+starting worker pid=230692 on localhost:11125 at 07:04:42.925
+Loading required package: rcicr
+loaded rcicr and set parent environment
+Computing reference distribution, please wait...
+  |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
+Saving simulated reference distribution to rdata file...
+
+starting worker pid=230761 on localhost:11125 at 07:04:48.939
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%Re-generating stimuli based on rdata file, please wait...
+starting worker pid=230804 on localhost:11125 at 07:04:54.844
+starting worker pid=230803 on localhost:11125 at 07:04:54.914
+Loading required package: rcicr
+Loading required package: rcicr
+loaded rcicr and set parent environment
+loaded rcicr and set parent environment
+Computing reference distribution, please wait...
+  |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
+Saving simulated reference distribution to rdata file...
+
+Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.
+Informational value: z = -2.31242442940839 (ci norm = 0.320000000000003; reference median = 1.50357804391794; MAD = 0.51183425882624; iterations = 3)
+starting worker pid=230910 on localhost:11125 at 07:05:04.204
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=230976 on localhost:11125 at 07:05:10.006
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=231018 on localhost:11125 at 07:05:15.630
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=231086 on localhost:11125 at 07:05:21.412
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%starting worker pid=231152 on localhost:11125 at 07:05:27.838
+Loading required package: rcicr
+loaded rcicr and set parent environment
+  |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%Re-generating stimuli based on rdata file, please wait...
+starting worker pid=231201 on localhost:11125 at 07:05:33.496
+starting worker pid=231202 on localhost:11125 at 07:05:33.543
+Loading required package: rcicr
+Loading required package: rcicr
+loaded rcicr and set parent environment
+loaded rcicr and set parent environment
+Computing reference distribution, please wait...
+  |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
+Saving simulated reference distribution to rdata file...
+
+[ FAIL 0 | WARN 0 | SKIP 3 | PASS 119 ]
+
+══ Skipped tests (3) ═══════════════════════════════════════════════════════════
+• On CRAN (3): 'test-recovery.R:25:1', 'test-regression-baseline.R:31:1',
+  'test-smoke-pipeline.R:2:1'
+
+[ FAIL 0 | WARN 0 | SKIP 3 | PASS 119 ]
+> 
+> proc.time()
+   user  system elapsed 
+  7.745   0.352 125.665 
