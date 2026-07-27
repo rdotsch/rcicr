@@ -426,31 +426,46 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 
 ### 20. CRAN resubmission checklist  **[verified against `R CMD check --as-cran`]**
 
-Run on 2026-07-27 against `main` @ `3ef0a39`. Result: **1 ERROR, 1 WARNING, 4 NOTEs** —
-but read that number carefully, because most of it is this sandbox and not the package.
+**Current status — re-run 2026-07-27 against `main` @ `5428b79`, in a check environment
+that now genuinely matches CRAN's.** `texlive` and `tidy` are installed, and the run set
+`_R_CHECK_CRAN_INCOMING_=TRUE` / `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`, so the incoming
+checks CRAN actually performs on submission ran for real.
 
-**Artifacts of the check environment, not package problems** (they will not appear on
-CRAN's machines, and nothing needs fixing for them):
+Result: **2 NOTEs, no ERRORs, no WARNINGs.**
 
-- ERROR + WARNING, "PDF version of manual": `pdflatex is not available` here.
-- NOTE, "HTML version of manual": no `tidy` command here.
-- NOTE, "non-standard things in the check directory": `rcicr-manual.tex`, left behind by
-  the failed `pdflatex` above.
-- NOTE, "future file timestamps": `unable to verify current time` — no network clock.
+- `checking PDF version of manual ... OK`
+- `checking HTML version of manual ... OK`
+- `checking tests ... [8s/37s] OK`  (was `[8s/126s]`, see item 11)
+- `checking examples with --run-donttest ... [12s/13s] OK`  (was `[15s/75s]`)
 
-Everything that matters passed: dependencies, R code, Rd files, cross-references,
-examples (`[13s/15s]`), and examples with `--run-donttest` (`[14s/73s]`).
+This supersedes an earlier run that reported 1 ERROR + 1 WARNING + 4 NOTEs. **Those were
+all this sandbox, not the package** — no `pdflatex`, no `tidy`, and a leftover
+`rcicr-manual.tex` from the failed PDF build. Installing the real toolchain was the only
+change needed. Worth recording because an earlier note here claimed the ERROR/WARNING had
+been *resolved* between runs; it had not — that run simply passed `--no-manual`, which
+skips the check rather than passing it.
 
-**The one real NOTE — "CRAN incoming feasibility":**
+**The two remaining NOTEs:**
+
+1. **`checking for future file timestamps`** — `unable to verify current time`. The
+   sandbox cannot reach `worldclockapi.com`. Environmental; will not appear on CRAN.
+2. **`checking CRAN incoming feasibility`** — the one that matters:
 
 ```
 New submission
 Package was archived on CRAN
 Version contains large components (1.0.1.9000)
+CRAN repository db overrides:
+  X-CRAN-Comment: Archived on 2021-06-08 as email to the maintainer was undeliverable.
 Found the following (possibly) invalid URLs:
-  https://codecov.io/gh/rdotsch/rcicr  (moved to https://app.codecov.io/gh/rdotsch/rcicr)
-  https://medium.com/@rondotsch/...    Status: 403 Forbidden
+  URL: https://medium.com/@rondotsch/...  Status: 403 Forbidden
+    From: inst/doc/getting-started.html, README.md
 ```
+
+Of these, only **"Version contains large components"** is an actual blocker, and it is the
+one unticked box below. "New submission" and "Package was archived" are expected for a
+reinstatement and are what `cran-comments.md` exists to explain. The `codecov.io` URL that
+this NOTE previously also flagged is gone.
 
 #### Must do before submitting
 
@@ -464,12 +479,22 @@ Found the following (possibly) invalid URLs:
       like it reports something is worse than no badge. Re-verified by a second
       `--as-cran` run: it no longer appears.
 
-      The **Medium link still flags, and that is fine.** It returns 403 to CRAN's checker
-      because Medium blocks automated requests; it works in a browser. It is out of
-      `DESCRIPTION` now but remains in `README.md:51` and `vignettes/getting-started.Rmd:36`,
-      where it is a genuinely useful pointer to the method walkthrough. **Do not delete it
-      to silence the NOTE** — explain it in `cran-comments.md` instead: "the URL is valid;
-      medium.com returns 403 to non-browser user agents.
+      The **Medium link still flags, and that is fine.** It is out of `DESCRIPTION` now but
+      remains in `README.md:51` and `vignettes/getting-started.Rmd:36`, where it is a
+      genuinely useful pointer to the method walkthrough. **Do not delete it to silence the
+      NOTE** — explain it in `cran-comments.md` instead.
+
+      Be precise about *why* in that explanation. An earlier draft here said Medium "returns
+      403 to non-browser user agents", which is wrong: retested with
+      `curl -A "Mozilla/5.0"` and it still returns 403. Medium blocks by network origin
+      (datacenter IPs), not by user agent, so spoofing a browser UA does not help and
+      neither would any change on our side. The link resolves normally from a residential
+      browser. Claiming the wrong cause to a CRAN reviewer who can check it is worse than
+      claiming none.
+
+      Item 22 (port the walkthrough into a vignette) is the durable fix: once the content
+      lives in the package, the external link becomes a courtesy pointer rather than the
+      only copy, and can be dropped from the vignette if a reviewer objects.
 - [x] **Add `BugReports:` and a repo `URL:` to `DESCRIPTION`. Done.** There is currently no
       `BugReports` field at all, and `URL:` points only at the Medium article rather than
       the repository. Suggested:
@@ -520,10 +545,11 @@ Found the following (possibly) invalid URLs:
 
 - [ ] Check on platforms this machine cannot provide: `devtools::check_win_devel()` and
       `rhub::rhub_check()` (macOS, Windows, R-devel). CRAN tests those and we do not.
-- [ ] Write **`cran-comments.md`**: test environments and results, and — for an archived
-      package — state plainly that it was archived 2021-06-08 for an undeliverable
-      maintainer address, and that the address is now `rdotsch@gmail.com`. Reinstatement
-      gets more scrutiny than a routine update, so the NOTE count matters more than usual.
+- [x] **Write `cran-comments.md`. Done** — at the repo root, `.Rbuildignore`d. It states
+      plainly that the 2021-06-08 archival was for an undeliverable maintainer address
+      rather than any code or policy problem, that the address now works, and explains both
+      remaining NOTEs. Two `<!-- TODO -->` markers remain for the win-builder and R-hub
+      results, which cannot be filled in until those actually run.
 - [ ] Submit at <https://cran.r-project.org/submit.html> (or `devtools::release()`).
       **Ron has to do this himself** — CRAN emails the maintainer address for
       confirmation, and that address working again is the entire point.
