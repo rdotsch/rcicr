@@ -45,6 +45,22 @@ Version/date/dependency metadata lives in `DESCRIPTION`; user-facing changes sho
   - `.Rbuildignore` itself was listed in `.gitignore` from 2016 until recently (likely an unintentional RStudio-template leftover), so it never actually shipped to CI or other contributors — don't re-add it there.
 - `.pre-commit-config.yaml` drives the pre-commit.ci GitHub App, which runs on every PR. It uses only minimal language-agnostic hooks (trailing whitespace, end-of-file, YAML/merge-conflict checks). R-specific hooks (`styler`/`lintr`/`roxygenize`) were deliberately left out — `styler` would reformat nearly every file in one sweep and destroy `git blame`.
 
+## Git and merge strategy
+
+- **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`, or the
+  "Squash and merge" button). Decided 2026-07-27; PRs up to and including #132 were
+  ordinary merge commits, so `main`'s history changes shape from #131 onward. One commit
+  per PR on `main` keeps the history readable and makes `git revert` of a whole change
+  straightforward, which matters here because a single PR is usually one self-contained
+  fix plus its test and its `NEWS.md` entry.
+- The squash commit message is the place to preserve *why* a change was made — the
+  per-commit detail on the branch disappears, so anything that a future reader needs
+  (measurements, rejected alternatives, reproducibility impact) belongs in the squash
+  message or in `NEWS.md`, not only in the branch commits.
+- Note this is repo convention, not enforced by GitHub settings — merge commits and
+  rebase merges are still permitted in the repository settings, so it is on whoever
+  merges to pick the right one.
+
 ## Backlog
 
 `BACKLOG.md` is the prioritized modernization backlog — read it before starting substantial work, and update it when you close something out. It was compiled from the open GitHub issues, the published literature, and a direct source review, and it records:
