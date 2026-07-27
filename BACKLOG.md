@@ -51,6 +51,7 @@ take it:
 | 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
 | 11 | Cluster cleanup (`on.exit`), serial fallback | Partly done — `generateReferenceDistribution2IFC()` now takes `ncores`; cleanup and the `ncores == 1` fast path remain | M |
 | 12 | Widen test coverage (scaling methods, z-maps, `participants`) | The suite covers the fixed bugs well; these paths are still untested | M |
+| 18 | Codecov step fails for want of a token | A red X on every PR that has nothing to do with the code; needs a decision, not a fix | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -338,6 +339,39 @@ an end-to-end smoke test. Gaps worth closing:
       `test-fixed-bugs.R`.
 - [ ] Cover the `zmap = TRUE` paths (`quick` and `t.test`).
 - [ ] Cover `participants` (per-participant → group averaging).
+
+### 18. The Codecov CI step fails without a repository token
+
+`.github/workflows/test-coverage.yaml` runs `covr::package_coverage()` and uploads the
+result to Codecov, which needs a `CODECOV_TOKEN` repository secret. That secret does not
+exist, so the upload step fails. The coverage *computation* itself is fine — it is only
+the upload that fails.
+
+Note the exact trigger, because it is easy to misread: the step sets
+
+```yaml
+fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN }}
+```
+
+so on a **pull request** it is `false` and a missing token is tolerated, but on a **push
+to `main`** it is `true` and the run goes red. That is why every PR so far has been green
+while `main` shows a failing badge — the merge of #130 on 2026-07-27 is the current
+example. Anyone judging the health of the repo from the front page sees a red X.
+
+Three ways out; this needs a decision rather than a fix:
+
+- [ ] **Get a token.** Sign in to codecov.io with the GitHub account, add `rdotsch/rcicr`,
+      copy the upload token into Settings → Secrets → Actions as `CODECOV_TOKEN`. Keeps
+      the coverage badge and per-PR coverage comments. Codecov is free for public repos.
+- [ ] **Or drop the upload.** Delete `.github/workflows/test-coverage.yaml` (and
+      `codecov.yml`, plus its `.Rbuildignore` line). Coverage is deliberately partial
+      here — I/O-heavy functions get lighter tests by design — so the reporting is of
+      limited value, and `R CMD check` on release and devel is the check that actually
+      matters.
+- [ ] **Or keep the workflow but stop it failing.** Set `fail_ci_if_error: false`
+      unconditionally. Coverage still gets computed and printed in the log; only the
+      upload becomes best-effort. This is the smallest change and keeps the option of
+      adding a token later.
 
 ---
 

@@ -33,7 +33,13 @@ generateNoiseImage <- function(params, p) {
     }
   }
 
-  noise <- apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean)
+  # Average the weighted patches over the third dimension, i.e. one mean per
+  # pixel across all patch layers. rowMeans() with dims=2 does exactly that and
+  # is ~29x faster than the apply() it replaces (1.38s -> 0.05s at 512px,
+  # nscales=5). Note that dims MUST be given: rowMeans() on a 3-D array defaults
+  # to dims=1, which collapses dimensions 2 and 3 and silently returns a vector
+  # that array() would then recycle. See PR #122.
+  noise <- rowMeans(p$patches * array(params[p$patchIdx], dim(p$patches)), dims = 2)
   return(noise)
 
 }
