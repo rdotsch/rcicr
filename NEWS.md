@@ -1,10 +1,11 @@
-# rcicr 1.0.1.9000 (development version)
+# rcicr 1.1.0 (2026-07-27)
 
-> The `.9000` suffix marks an unreleased development version, per the usual R
-> convention. It will become a release number when these fixes ship — most
-> likely **1.1.0** rather than 1.0.2, since some of them change behaviour
-> (see below) rather than only repairing it. The public API is unchanged, so a
-> 2.0.0 is not warranted.
+> First release since 1.0.1, and the version submitted to CRAN to reinstate the
+> package after its 2021 archival. The minor bump rather than 1.0.2 is deliberate:
+> some of the changes below alter behaviour rather than only repairing it. The
+> public API is unchanged — no function, argument or argument meaning was removed
+> or redefined — so a 2.0.0 is not warranted. Anyone re-running an old analysis
+> script should read the "Reproducibility impact" section below.
 
 ## Bug fixes
 

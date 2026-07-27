@@ -42,15 +42,20 @@ Expected for a reinstatement; see the explanation above.
 ```
 Found the following (possibly) invalid URLs:
   URL: https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/
+    From: README.md
     Status: 403
 ```
 
 This URL is valid and resolves normally in a browser. `medium.com` returns 403 to
 requests originating from datacenter networks — this is a block by network origin rather
 than by user agent, so it reproduces from CI machines and not from an ordinary desktop.
-It is a tutorial walkthrough of the method that the package implements, and it is
-referenced from `README.md` and the vignette as a pointer for new users. We have kept it
-because it is genuinely useful to readers, but are happy to remove it if you prefer.
+
+It points to the original tutorial walkthrough of the method. That walkthrough has been
+ported into this release as the `reverse-correlation-walkthrough` vignette, so it is no
+longer the primary documentation. The single remaining reference, in `README.md`, is a
+"further reading" pointer to the historical copy, which has nine years of inbound links
+from published papers. We are happy to remove the link if you prefer — it is now a
+one-line change, since the content itself ships with the package.
 
 ### NOTE 2 — future file timestamps
 

@@ -4,7 +4,9 @@ A prioritized backlog for bringing `rcicr` to a modern, maintainable state **wit
 breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
-**Last updated:** 2026-07-26 — P0 items 2–8 fixed (v1.0.1.9000); see `NEWS.md`.
+**Last updated:** 2026-07-27 — P0 items 2–8, plus 11, 12 and 22, fixed and released as
+**v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what remains in item 1
+is the submission decision itself.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -505,10 +507,14 @@ this NOTE previously also flagged is gone.
 
 #### Must do before submitting
 
-- [ ] **Bump the version to `1.1.0`.** *(left deliberately — it is a release decision,
-      not a mechanical fix, and it belongs with the CRAN go/no-go in item 1.)* `1.0.1.9000` trips "Version contains large
+- [x] **Bump the version to `1.1.0`. Done.** `1.0.1.9000` tripped "Version contains large
       components" — the `.9000` development suffix is not acceptable in a submission.
-      Date the `NEWS.md` heading at the same time.
+      `DESCRIPTION` now reads `1.1.0`, the `NEWS.md` heading is dated `2026-07-27`, and
+      `ChangeLog` gained a 1.1.0 entry pointing at `NEWS.md` as the canonical changelog
+      from this release onward. Minor rather than patch because some changes alter
+      behaviour; not major because the public API is untouched.
+      **This closes the last mechanical CRAN blocker** — what remains in this item is
+      the go/no-go and the submission itself, which are Ron's.
 - [x] **Fix the two flagged URLs — partly done.** The `codecov.io` one is **gone**: the
       badge rendered `unknown` (nothing has ever been uploaded, there being no token), so
       it was removed rather than repointed — a badge that reports nothing while looking

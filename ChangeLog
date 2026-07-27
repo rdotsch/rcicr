@@ -1,3 +1,12 @@
+Changes 1.1.0 [27-Jul-2026]
+
+* See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward,
+  and records the bug fixes, the removed dependencies, and — importantly — which
+  numeric results can and cannot differ from earlier versions.
+* In brief: many bug fixes (mask, zmaps, tibble columns, InfoVal reference
+  distributions), a test suite and CI where there were none, 13 unused
+  dependencies removed, and a reverse-correlation walkthrough vignette.
+
 Changes 1.0.1 [13-Jan-2023]
 
 * Replaced spatstat.core dependency (deprecated) with spatstat.explore
