@@ -31,10 +31,10 @@ It works in two stages:
    classification image — visualizes which visual features were systematically
    associated with the participant's choices.
 
-This vignette walks through both stages using a tiny synthetic example. For a full
-walkthrough with a real face photo, see the
-[Medium post](https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/)
-linked from the README; for example datasets and analysis scripts, see
+This vignette walks through both stages using a tiny synthetic example. For the full
+treatment — several participants, scaling choices, z-maps and informational value —
+see `vignette("reverse-correlation-walkthrough", package = "rcicr")`. For example
+datasets and analysis scripts, see
 [rcicr_examples](https://github.com/rdotsch/rcicr_examples/).
 
 ```{r setup}
