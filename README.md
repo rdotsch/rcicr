@@ -2,24 +2,24 @@
 
 [![CRAN status](https://www.r-pkg.org/badges/version/rcicr)](https://CRAN.R-project.org/package=rcicr)
 [![R-CMD-check](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/rdotsch/rcicr/branch/main/graph/badge.svg)](https://codecov.io/gh/rdotsch/rcicr)
 
 `rcicr` implements **reverse correlation image classification**, a technique from psychophysics for visualizing internal mental representations (for example, of faces). It generates noise-based stimuli for two-image-forced-choice (2IFC) perceptual tasks, and computes "classification images" from participants' responses that reveal what visual features drove their choices.
 
 ## Installation
 
-Install the latest stable release from CRAN:
+Install from GitHub:
 
 ``` r
-install.packages('rcicr')
+install.packages('remotes')
+remotes::install_github('rdotsch/rcicr')
 ```
 
-Or install the development version from GitHub:
-
-``` r
-install.packages('devtools')
-devtools::install_github('rdotsch/rcicr')
-```
+> **`install.packages('rcicr')` does not currently work.** The package was archived on
+> CRAN on 2021-06-08 because email to the maintainer had become undeliverable — an old
+> university address that stopped working. The code was never the problem, and the
+> maintainer address has since been updated. Returning to CRAN is being worked on; until
+> then, GitHub is the only source. The last CRAN release was 0.3.4.1, which is several
+> years behind.
 
 ## Quick example
 

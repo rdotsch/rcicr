@@ -53,7 +53,7 @@
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
 #' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
-#' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: detectCores()-1).
+#' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
 #' @examples
 #' \donttest{
@@ -89,7 +89,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
                        individual_scaling_constant=0.1, zmap = F,
                        zmapmethod = 'quick', zmapdecoration = T, sigma = 3,
                        threshold = 3, zmaptargetpath = './zmaps',
-                       n_cores = detectCores()-1, mask=NA) {
+                       n_cores = default_ncores(), mask=NA) {
 
   # Preprocessing -----------------------------------------------------------
 
@@ -201,9 +201,10 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     pb <- txtProgressBar(min = 1, max = npids, style = 3)
 
     # Create cluster for parallel processing
-    cl <- parallel::makeCluster(n_cores, outfile = '')
-    on.exit(stopClusterSafely(cl), add = TRUE)
-    doParallel::registerDoParallel(cl)
+    cl <- startBackend(n_cores)
+    if (!is.null(cl)) {
+      on.exit(stopClusterSafely(cl), add = TRUE)
+    }
 
     # For each weighted stimulus, construct the noise pattern
     pid.cis <- foreach::foreach(obs = 1:npids,
@@ -236,7 +237,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
       # Return the CI
       return(ci)
     }
-    parallel::stopCluster(cl)
+    if (!is.null(cl)) {
+      parallel::stopCluster(cl)
+    }
     cl <- NULL
     dim(pid.cis) <- c(img_size, img_size, npids)
 
@@ -289,9 +292,10 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
         pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
 
         # Create cluster for parallel processing
-        cl <- parallel::makeCluster(n_cores, outfile = '')
-        on.exit(stopClusterSafely(cl), add = TRUE)
-        doParallel::registerDoParallel(cl)
+        cl <- startBackend(n_cores)
+        if (!is.null(cl)) {
+          on.exit(stopClusterSafely(cl), add = TRUE)
+        }
 
         # For each weighted stimulus, construct the complementary noise pattern
         noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c',
@@ -300,7 +304,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
           setTxtProgressBar(pb, obs)
           return(noiseimage)
         }
-        parallel::stopCluster(cl)
+        if (!is.null(cl)) {
+          parallel::stopCluster(cl)
+        }
         cl <- NULL
         dim(noiseimages) <- c(img_size, img_size, n_observations)
 

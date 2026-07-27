@@ -1,3 +1,6 @@
+# Skipped on CRAN: spawns parallel workers and writes PNGs. Keeps running in CI.
+skip_on_cran()
+
 test_that("generateStimuli2IFC produces stimuli, PNGs, and a loadable .Rdata end-to-end", {
   tmp <- withr::local_tempdir()
   input_dir <- file.path(tmp, "input")

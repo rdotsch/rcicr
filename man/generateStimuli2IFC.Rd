@@ -16,7 +16,7 @@ generateStimuli2IFC(
   noise_type = "sinusoid",
   nscales = 5,
   sigma = 25,
-  ncores = parallel::detectCores() - 1,
+  ncores = default_ncores(),
   return_as_dataframe = FALSE,
   save_as_png = TRUE,
   save_rdata = TRUE
@@ -45,7 +45,7 @@ generateStimuli2IFC(
 
 \item{sigma}{Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).}
 
-\item{ncores}{Number of CPU cores to use (default: detectCores()-1).}
+\item{ncores}{Number of CPU cores to use (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 
 \item{return_as_dataframe}{Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.}
 

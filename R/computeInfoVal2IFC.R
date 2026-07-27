@@ -115,7 +115,18 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       if (ref_values %>% count() > 0) {
         write("I found pre-computed reference values that matched seed, image size, and number of trials, but not the number of reference distribution iterations.", stdout())
         max_ref_iter <- as.numeric(ref_values %>% summarise(max(ref_iter)))
-        user_response <- yesno::yesno(paste0("I did find pre-computed values for ", max_ref_iter, " iterations matching all other parameters. Do you want to use those instead?"))
+
+        # Only ask when there is somebody to answer. In a non-interactive
+        # session -- a batch script, knitr, R CMD check -- there is no way to
+        # respond, so decline and regenerate rather than silently substituting a
+        # reference distribution built with a different number of iterations than
+        # the caller asked for. Regenerating is slower but is what was requested.
+        if (interactive()) {
+          user_response <- yesno::yesno(paste0("I did find pre-computed values for ", max_ref_iter, " iterations matching all other parameters. Do you want to use those instead?"))
+        } else {
+          write(paste0("Not running interactively, so I cannot ask -- regenerating the reference distribution with the requested ", iter, " iterations rather than reusing the pre-computed ", max_ref_iter, ". Pass the pre-computed value explicitly if you want it."), stdout())
+          user_response <- FALSE
+        }
 
         if (user_response) {
           write(paste0("Using pre-computed reference values for ", max_ref_iter, " instead of ", iter, " iterations."), stdout())
