@@ -4,15 +4,43 @@
 #'
 #' In order to compute the Informational Value metric. Saves its results in the supplied rdata file for later reuse.
 #'
+#' @section Reproducibility:
+#' With the default \code{response_seed = NULL}, the reference distribution is determined by
+#' the stimulus \code{.Rdata} file alone. It does not depend on the ambient random number
+#' state of the calling session, and it does not depend on \code{ncores}. Two researchers
+#' who compute InfoVal from the same stimulus file therefore get the same number, and the
+#' same reference distribution, on different machines and in different sessions.
+#'
+#' This is a guarantee, not a coincidence, and it is relied upon: the function re-generates
+#' the stimuli through \code{\link{generateStimuli2IFC}}, whose internal \code{set.seed()}
+#' call uses the seed stored in the \code{.Rdata} file and lands before the random responses
+#' below are drawn.
+#'
+#' Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
+#' for instance to check how much Monte Carlo error a given \code{iter} leaves in your
+#' InfoVal. This changes only the simulated responses; the stimuli themselves, and so the
+#' noise basis the null is built on, are unaffected.
+#'
 #' @export
 #' @importFrom stats runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
 #' @param ncores Number of CPU cores to use when re-generating the stimuli (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
-#' @return Nothing. The reference distribution (\code{reference_norms}) is added to the supplied
-#' \code{rdata} file, so a later call to \code{\link{computeInfoVal2IFC}} using the same file can
-#' reuse it instead of re-simulating.
+#' @param response_seed Optional seed for the simulated random responses. The default
+#' (\code{NULL}) draws them from the state left by the stimulus re-generation, which is the
+#' reproducible behaviour described under Reproducibility. Supply a number to obtain an
+#' independent draw of the null from the same stimuli.
+#' @param save_rdata Boolean specifying whether the reference distribution should be written
+#' back into the \code{rdata} file (default \code{TRUE}). Set to \code{FALSE} to compute a
+#' distribution without changing what later calls to \code{\link{computeInfoVal2IFC}} will
+#' use -- worth doing whenever \code{response_seed} is set, so a one-off null does not become
+#' the file's permanent reference.
+#' @return The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
+#' Unless \code{save_rdata = FALSE}, it is also added to the supplied \code{rdata} file as
+#' \code{reference_norms} (alongside \code{reference_norms_seed}, recording the
+#' \code{response_seed} it was generated with), so a later call to
+#' \code{\link{computeInfoVal2IFC}} using the same file can reuse it instead of re-simulating.
 #' @examples
 #' \donttest{
 #' # a synthetic square grayscale image stands in for a real base face photo
@@ -40,7 +68,7 @@
 #'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #' })
 #' }
-generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_ncores()) {
+generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_ncores(), response_seed=NULL, save_rdata=TRUE) {
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name. This
@@ -49,14 +77,22 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   # call on the same file would ignore the ncores the caller passed and write
   # back to the path recorded during the first call. Keep private copies and
   # restore them after loading.
-  .args <- list(rdata = rdata, iter = iter, ncores = ncores)
+  #
+  # This is also why the response seed is called `response_seed` and not `seed`:
+  # `seed` is the stimulus seed stored in the file, so an argument of that name
+  # would overwrite it here and then be written back, corrupting the record of
+  # how the stimuli were generated.
+  .args <- list(rdata = rdata, iter = iter, ncores = ncores,
+                response_seed = response_seed, save_rdata = save_rdata)
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
-  rdata  <- .args$rdata
-  iter   <- .args$iter
-  ncores <- .args$ncores
+  rdata         <- .args$rdata
+  iter          <- .args$iter
+  ncores        <- .args$ncores
+  response_seed <- .args$response_seed
+  save_rdata    <- .args$save_rdata
 
   # Recover the noise-basis parameters used for the real stimuli. These were
   # not saved before this version, so .Rdata files written by older rcicr lack
@@ -82,6 +118,19 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
+
+  # Seed the *responses* only, and only when asked. This deliberately sits after
+  # the stimulus re-generation above rather than being passed into it: handing a
+  # different seed to generateStimuli2IFC() would rebuild a different stimulus
+  # set, so the null would describe stimuli the participants never saw. What
+  # varies here is the simulated responding, on the same stimuli.
+  #
+  # NULL means no set.seed() call at all, leaving the stream exactly as the
+  # stimulus re-generation left it - so the default path is byte-identical to
+  # what previous versions produced, not merely equivalent.
+  if (!is.null(response_seed)) {
+    set.seed(response_seed)
+  }
 
   if (iter < 10000) {
     warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
@@ -111,19 +160,35 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
       reference_norms[i] <- norm(ci, "f")
   }
 
-  # Save reference norms to rdata file
-  write("\nSaving simulated reference distribution to rdata file...", stdout())
   close(pb)
 
-  # Save everything that came from (or belongs in) the stimulus file, but none
-  # of this function's own arguments or scratch variables. Writing `rdata` and
-  # `ncores` back into the file is what causes the clobbering described at the
-  # top of this function, so they are excluded at the source rather than only
-  # worked around on read.
-  outfile <- rdata
-  internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
-                 "rdata", "iter", "ncores", "outfile", "internals")
-  save(list=setdiff(ls(all.names=TRUE), internals), file=outfile,
-       envir=environment())
+  if (save_rdata) {
+
+    # Save reference norms to rdata file
+    write("\nSaving simulated reference distribution to rdata file...", stdout())
+
+    # Record which seed produced these norms, so a file carrying a deliberately
+    # varied null is distinguishable from one carrying the default. NULL records
+    # the default stream. Files written before this version simply lack the
+    # field, which is why every read of it must be guarded with exists().
+    reference_norms_seed <- response_seed
+
+    # Save everything that came from (or belongs in) the stimulus file, but none
+    # of this function's own arguments or scratch variables. Writing `rdata` and
+    # `ncores` back into the file is what causes the clobbering described at the
+    # top of this function, so they are excluded at the source rather than only
+    # worked around on read. `response_seed` and `save_rdata` are excluded for
+    # the same reason - `reference_norms_seed` is the field that records the
+    # seed, and it is a description of the norms rather than an input.
+    outfile <- rdata
+    internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
+                   "rdata", "iter", "ncores", "response_seed", "save_rdata",
+                   "outfile", "internals")
+    save(list=setdiff(ls(all.names=TRUE), internals), file=outfile,
+         envir=environment())
+
+  }
+
+  invisible(reference_norms)
 
 }

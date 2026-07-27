@@ -4,7 +4,13 @@
 \alias{computeInfoVal2IFC}
 \title{Computes Informational Value}
 \usage{
-computeInfoVal2IFC(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE)
+computeInfoVal2IFC(
+  target_ci,
+  rdata,
+  iter = 10000,
+  force_gen_ref_dist = FALSE,
+  response_seed = NULL
+)
 }
 \arguments{
 \item{target_ci}{A classification image object (list-type) as returned by generateCI}
@@ -14,6 +20,15 @@ computeInfoVal2IFC(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE)
 \item{iter}{Number of iterations for the simulation of the reference distribution (only used if reference distribution is not already pre-generated and present in rdata file)}
 
 \item{force_gen_ref_dist}{Boolean specifying whether to override the default behavior to use pre-computed values for the reference distribution for specific task parameters and instead force to recompute the reference distribution (default: FALSE).}
+
+\item{response_seed}{Optional seed for the simulated random responses used to build the
+reference distribution. The default (\code{NULL}) uses the reference distribution stored in
+the \code{rdata} file, or generates the reproducible default one described under
+Reproducibility in \code{\link{generateReferenceDistribution2IFC}}. Supplying a number
+forces a fresh reference distribution to be simulated from an independent draw, which is
+how you check how much Monte Carlo error \code{iter} leaves in this Informational Value.
+The result is deliberately \emph{not} written back to the \code{rdata} file, so a one-off
+check cannot change the number every later analysis of that stimulus set reports.}
 }
 \value{
 Informational value (z-score)

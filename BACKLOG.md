@@ -70,7 +70,7 @@ they are the backlog proper for after CRAN, and are deliberately not in the tabl
 | 23 | `plotZmap(mask=)` validated then never applied | **Open, needs a decision.** A documented argument that silently does nothing; narrow blast radius (`generateCI()` never passes it), but fixing it changes rendered output, so it is a behaviour change rather than a plain bug fix | S |
 | 24 | `generateReferenceDistribution2IFC()` litters a `./stimuli` dir | Cosmetic; hidden until now because `stimuli` is git-ignored, so it never showed in `git status` | S |
 | 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
-| 26 | InfoVal's null is seeded by accident and cannot be varied | Behaviour is correct and worth keeping (MC error measured at ~0.04 infoVal units), but it is emergent rather than designed, and a stray edit to `set.seed()` in `generateStimuli2IFC()` would silently change every InfoVal | S |
+| ~~26~~ | ~~InfoVal's null is seeded by accident and cannot be varied~~ | **Done** — the determinism is now a documented guarantee with a comment guarding the `set.seed()` it rests on, and `response_seed` makes the null varyable on purpose. Default output verified byte-identical to before the change | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -872,14 +872,30 @@ The real risk is silent breakage: anyone who moves or removes that `set.seed()`,
 seed argument to `generateStimuli2IFC()`, changes every InfoVal ever computed without
 touching `computeInfoVal2IFC()` at all.
 
-- [ ] Document the determinism as an intended **guarantee** in
+**Done 2026-07-27.** All three boxes closed; default behaviour verified byte-identical
+against norms captured before the change.
+
+- [x] Document the determinism as an intended **guarantee** in
       `?generateReferenceDistribution2IFC`, and note that InfoVal is reproducible from the
       stimulus file alone.
-- [ ] Consider an explicit `seed` argument defaulting to the current behaviour, so the null
+- [x] Consider an explicit `seed` argument defaulting to the current behaviour, so the null
       *can* be varied deliberately. Purely additive — no change to the `.Rdata` contract or
-      to any existing call.
-- [ ] Add a comment at `R/generateStimuli2IFC.R:53` recording that the reference
+      to any existing call. Shipped as **`response_seed`**, not `seed`: `seed` is an object
+      in the `.Rdata` file, and since the function re-saves its own frame an argument of
+      that name would overwrite the stimulus seed *and be written back*, corrupting the
+      record of how the stimuli were generated. The seed is applied after the stimulus
+      rebuild, not forwarded into it — forwarding would rebuild a different stimulus set, so
+      the null would describe stimuli the participants never saw.
+- [x] Add a comment at `R/generateStimuli2IFC.R:53` recording that the reference
       distribution depends on that `set.seed()` call, so it is not moved casually.
+
+Also shipped: `save_rdata` and an invisible return on the generator, and a
+`reference_norms_seed` provenance field in the `.Rdata` (append-only) so a file carrying a
+varied null is distinguishable from one carrying the default.
+`computeInfoVal2IFC(response_seed = )` forces regeneration — without that it would have been
+silently ignored on every file that already had `reference_norms`, which is every file after
+the first call, the same shape as item 23's dead `mask` argument — and never caches its
+result.
 
 ### 25. `computeInfoVal2IFC`'s test oracle mirrors the implementation **[own review]**
 Found 2026-07-27 during the test-intent audit. `test-computeInfoVal2IFC.R:24` recomputes
