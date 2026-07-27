@@ -95,13 +95,26 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # Without decoration
   }
   if (!decoration) {
-    # Initialize plot without margins
-    plot.new()
+    # Initialize plot without margins. The order matters: plot.new() validates
+    # that the current margins fit inside the device, and the default margins
+    # (c(5.1, 4.1, 4.1, 2.1) *lines*) do not fit a small one. Setting them after
+    # plot.new(), as this did, meant any device below roughly 100 px failed with
+    # "figure margins too large" -- and generateCI() sizes the device to
+    # img_size, so small stimulus sets could not produce a z-map at all.
+    # Rendered output at usual sizes is unchanged: par(mar=) still takes effect
+    # before plot.window() either way.
     par(mar = c(0, 0, 0, 0))
+    plot.new()
     plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = 'i', yaxs = 'i')
 
-    # If specified, add bgimage
-    if (bgimage != '') {
+    # If specified, add bgimage. Must be identical(), not !=: bgimage is normally
+    # an image matrix, so `bgimage != ''` is a condition of length img_size^2.
+    # R >= 4.2 makes that an error rather than silently using the first element,
+    # so this branch could not run at all with a background image -- which is
+    # every call from generateCI(), as it always passes the combined CI. The
+    # decoration = TRUE branch above already used identical(); this one was
+    # missed. Same root cause as the `mask` bug in BACKLOG.md item 6.
+    if (!identical(bgimage, '')) {
       rasterImage(bgimage, 0, 0, 1, 1)
     }
     # Add Z-map

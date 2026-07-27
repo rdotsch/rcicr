@@ -320,10 +320,13 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
       # Create Z-map
       zmap <- sign(ci) * abs(qnorm(pmap/2))
     }
-    # Pass zmap object to plotZmap for plotting
+    # Pass zmap object to plotZmap for plotting. targetpath was previously not
+    # forwarded, so the documented zmaptargetpath argument was silently ignored
+    # and every z-map went to plotZmap()'s own default ('zmaps', relative to the
+    # working directory) no matter what the caller asked for.
     plotZmap(zmap = zmap, bgimage = combined, filename = baseimage,
              sigma = sigma, threshold = threshold, size = img_size,
-             decoration = zmapdecoration)
+             decoration = zmapdecoration, targetpath = zmaptargetpath)
   }
 
   # Return data
