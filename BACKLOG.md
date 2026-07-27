@@ -304,7 +304,7 @@ at which point five functions break at once.
       dropped from DESCRIPTION — citations were rendering as "Ron Dotsch ()." with an
       empty year.
 
-### 11. Make parallelism robust and user-controllable
+### 11. Make parallelism robust and user-controllable  ✅ **DONE**
 Several related problems in one area:
 
 - `generateReferenceDistribution2IFC()` **hardcodes** `ncores = parallel::detectCores() - 1`
@@ -326,10 +326,23 @@ Several related problems in one area:
       `stopClusterSafely()` helper is registered via `on.exit()` at all three cluster
       sites, so workers are released even when an error interrupts the `foreach` loop.
       Verified: a mid-loop failure now leaks zero connections (issue #50).
-- [ ] Skip the cluster entirely when `ncores == 1`.
+- [x] **Skip the cluster entirely when `ncores == 1`. Done** via `startBackend()` in
+      `R/zzz.R`, which registers `foreach::registerDoSEQ()` instead of building a
+      one-worker PSOCK cluster. No loop body changed. `devtools::test()` went 140.1s →
+      4.3s and `R CMD check`'s test phase `[8s/126s]` → `[8s/37s]`.
+      Output is bit-identical, verified rather than assumed: neither parallel loop draws
+      random numbers (parameters are drawn under `set.seed()` *before* the loop), so
+      there is no per-worker RNG stream to diverge. Pinned by
+      `tests/testthat/test-parallel-equivalence.R`.
+**Known limitation, not planned.** `detectCores()` still reports physical cores rather
+than a cgroup/container quota, so the default can over-subscribe on shared or HPC systems
+— exactly where big jobs run. `default_ncores()` caps at 2 only under `R CMD check`.
+Reading cgroup limits properly is platform-specific and not worth the complexity here;
+users on such systems should pass `ncores` explicitly. Recorded so it is a known
+trade-off rather than an oversight.
 
 ### 12. Fill out the test suite  ✅ **DONE**
-A testthat suite now exists (**177 tests**) covering the pure functions, light I/O paths,
+A testthat suite now exists (**180 tests**) covering the pure functions, light I/O paths,
 and an end-to-end smoke test. Every gap listed below is now closed — and closing the last
 two turned up three previously unknown bugs in `plotZmap()`, which is the argument for
 writing tests for code that "obviously works":
@@ -649,18 +662,11 @@ outside the repository. Three problems with that:
   so a broken example fails the build.
 - It is not available offline or via `vignette()`, which is where R users look first.
 
-- [ ] Port the walkthrough into a vignette (alongside `getting-started.Rmd`), with its
-      code chunks actually running so they stay honest.
-- [ ] **Keep the Medium post published**, updated with a pointer to the package docs. It
-      has nine years of inbound links and citations; deleting it would break them. This
-      is a *move of the canonical copy*, not a takedown.
-- [ ] Once the content lives here, the remaining `medium.com` references in `README.md`
-      and `vignettes/getting-started.Rmd` become "further reading" rather than the primary
-      source — and if they are dropped entirely at that point, the CRAN URL NOTE goes with
-      them.
-
-Worth doing before the CRAN submission if there is appetite, since it removes the one
-non-trivial NOTE. Not a blocker: the NOTE is explainable in `cran-comments.md`.
+The plan was: port the walkthrough into a vignette with its chunks actually running;
+keep the Medium post published (nine years of inbound links — a move of the canonical
+copy, not a takedown); and demote the remaining `medium.com` references in `README.md`
+and `vignettes/getting-started.Rmd` to further reading. All of that is done — see the
+checklist at the top of this item, which is the live one.
 
 ---
 
