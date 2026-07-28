@@ -18,6 +18,12 @@ The package has been actively maintained since. This version fixes a number of b
 found by a systematic source review, adds a test suite (previously there was none) and
 continuous integration, and removes 13 unused dependencies.
 
+**On the version number.** The archived CRAN version is 0.3.4.1 and this submission is
+1.2.0. Nothing is missing: 1.0.1 and 1.1.0 exist only as GitHub releases, made while the
+package was off CRAN, and 1.1.0 in particular was never published anywhere a user could
+install it from. `NEWS.md` carries their entries, so the record between 0.3.4.1 and 1.2.0
+is complete.
+
 ## Test environments
 
 * local: Ubuntu 24.04, R 4.3.3 — `R CMD check --as-cran`, with
@@ -81,8 +87,8 @@ on it.
   `_R_CHECK_LIMIT_CORES_`: `default_ncores()` returns 2 when that variable is set and
   `parallel::detectCores() - 1` otherwise, so no example, test or vignette uses more than
   two cores under check.
-* Three test files call `skip_on_cran()`. They are development guards — a golden-master
-  regression baseline, an end-to-end pipeline smoke test, and a statistical signal
-  recovery test — that protect against changes to numeric output during development. They
-  are not needed to validate an installation, and they continue to run on every push in
-  GitHub Actions.
+* Four test files call `skip_on_cran()`. They are development guards — a golden-master
+  regression baseline, an end-to-end pipeline smoke test, a statistical signal recovery
+  test, and a check that serial and parallel runs agree bit for bit — that protect against
+  changes to numeric output during development. They are not needed to validate an
+  installation, and they continue to run on every push in GitHub Actions.

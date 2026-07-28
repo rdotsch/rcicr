@@ -124,7 +124,7 @@ the same file the first time you compute an informational value:
 | Object | What it is |
 |---|---|
 | `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. |
-| `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in the development version. |
+| `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in 1.2.0. |
 
 Two things worth knowing before you write code against this file:
 
@@ -133,7 +133,7 @@ Two things worth knowing before you write code against this file:
   `sigma` were only added in 1.1.0, and `noise_type` earlier still, so functions warn rather
   than guess when reading a file that predates them.
 - **`generator_version` is unreliable on older files.** It was a hardcoded `'0.4.0'` string
-  until the development version, so any file written between 0.4.0 and 1.1.0 claims to be
+  until 1.2.0, so any file written between 0.4.0 and 1.1.0 claims to be
   0.4.0 whatever wrote it. `p$generator_version` has always held the real value. Compare
   versions with `numeric_version()` semantics, never as text.
 

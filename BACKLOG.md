@@ -73,9 +73,10 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 dependency, toolchain, parallelism, test-coverage and vignette work — all released as
 v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
 remains across them is the go/no-go and the submission itself, which are the maintainer's
-to make. **Item 23, the last open code bug, is fixed** — the `plotZmap()` mask is applied,
-under a "Behaviour change" heading in `NEWS.md`. What is left in the table is triage: items
-27, 30 and 31, none of which blocks a submission. Items **13, 14 and 15** (modernize the
+to make. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
+heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturing
+`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. What is
+left in the table is triage: items 27, 30, 31 and 33, none of which blocks a submission. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
 they are the backlog proper for after CRAN, and are deliberately kept out of the table.
 
@@ -1111,7 +1112,10 @@ explicitly passed `sigma` did nothing. Measured at 512px: the number of pixels s
 (range `-3.32 .. 4.07` became `3.00 .. 3.88`).
 
 Only z-maps are affected — `sigma` is used for nothing else — and only for stimulus sets
-generated with 1.1.0. Fixed by keeping copies of every argument across the `load()`, the
+generated with 1.1.0, which was a GitHub tag for about a day and never on CRAN. **Real-world
+impact is therefore close to zero**, and `NEWS.md` says so rather than alarming anyone; the
+value of the find is that the gate caught a live regression on its first run, in a code path
+no test covered. Fixed by keeping copies of every argument across the `load()`, the
 same guard `generateReferenceDistribution2IFC()` already carries, so a field added to the
 `.Rdata` later cannot capture another argument. Regression test in `test-fixed-bugs.R`;
 `NEWS.md` carries the reproducibility note.
