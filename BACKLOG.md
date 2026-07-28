@@ -103,6 +103,7 @@ they are the backlog proper for after CRAN, and are deliberately kept out of the
 | 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
 | 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
 | ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
+| 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
@@ -1142,6 +1143,46 @@ force it. Options, in order of how much they presume:
       (`zmapdecoration = FALSE`, or a larger `size`).
 - [ ] Or fall back to undecorated with a warning — silently changing what gets rendered,
       which is a behaviour change and needs Ron's call.
+
+### 34. `raster` costs four packages and a C++ toolchain for three plotting calls **[verified] [own review]**
+Found 2026-07-28, from watching R-hub: `windows (R-devel)` finished in minutes while
+`linux (R-devel)` and `macos (R-devel)` sat in dependency installation for over half an hour.
+Windows had CRAN binaries; the others built from source, and the expensive branch of the tree
+is `raster` → `terra`, which compiles against GDAL/GEOS/PROJ.
+
+`raster` is used in exactly three lines, all in `R/plotZmap.R` — `raster::plot()` at
+[106](R/plotZmap.R#L106), [112](R/plotZmap.R#L112) and [147](R/plotZmap.R#L147), each on a
+`raster(zmap)` built from a plain matrix. Nothing else in the package touches it. Dropping it
+removes four packages nothing else here needs:
+
+| removed | why it is expensive |
+|---|---|
+| `raster` | the API actually used |
+| `terra` | C++ against GDAL/GEOS/PROJ — the bulk of the build time |
+| `sp`, `Rcpp` | pulled in behind them; needed by no other `Imports` entry |
+
+What has to be replaced is small but not nothing: `main`/`xlab` titling, `axes = F, box = F`,
+`add = TRUE` overlay onto a `rasterImage()` background, and the **colour-bar legend** that
+`raster::plot()` draws by default (the `legend = F` at line 147 is what makes the undecorated
+path simple). `graphics::image()` covers everything except the legend, which would have to be
+drawn by hand — reaching for `fields::image.plot` would just trade one dependency for another.
+
+**The release gate will not catch a mistake here.** `tools/compare-harness.R` captures
+`ci$zmap`, the z-map *matrix*, which is computed before anything is plotted — so a rendering
+change is invisible to it and passes green. Verification has to be visual, plus the
+uniform-background trick in `CLAUDE.md`'s test conventions. Pixel orientation is the specific
+trap: `raster::plot()` and `image()` do not agree on row order, and getting it wrong flips the
+z-map vertically over a base face that is drawn separately by `rasterImage()`.
+
+- [ ] Replace the three `raster::plot()` calls with `graphics::image()`, hand-drawing the
+      colour bar for the decorated path.
+- [ ] Compare rendered PNGs before and after at 128/256/512px, decorated and not, with and
+      without a background image.
+- [ ] Drop `raster` from `DESCRIPTION` and the two `importFrom(raster, ...)` lines in
+      `NAMESPACE`.
+
+Hold until after the CRAN submission — it changes rendered output, so it wants the same care
+item 23 got, and the tarball in front of CRAN should not move under it.
 
 ---
 
