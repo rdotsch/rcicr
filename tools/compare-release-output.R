@@ -47,7 +47,10 @@ INSTALL_DEPS <- "--install-deps" %in% args
 
 # --- expected deviations ----------------------------------------------------
 #
-# key: "<config>/<output>", or "<config>/*" for a whole config.
+# key: "<config>/<output>", "<config>/*" for a whole config, or a vector of
+#      either when one cause shows up in several outputs. Every key listed must
+#      actually deviate, or the run fails as stale -- so a vector is a claim
+#      about all of them, not a net cast wide.
 # ref: which reference this applies to -- a deviation from v1.0.1 is not a
 #      deviation from v1.1.0, and listing it for both would make one of the two
 #      runs report a stale expectation.
@@ -63,12 +66,29 @@ EXPECTED <- list(
        reason = paste("Same cause as the nscales case: v1.0.1's reference distribution",
                       "ignored noise_type and sigma, so InfoVal for Gabor noise (and for",
                       "any non-default sigma) was measured against a sinusoid null."),
+       news = "Reproducibility impact"),
+
+  list(ref = "v1.1.0",
+       key = c("defaults-512-sinusoid/zmap_quick",
+               "defaults-512-sinusoid/zmap_plain",
+               "sinusoid-128-nscales3/zmap_plain"),
+       reason = paste("The .Rdata's noise sigma was overwriting generateCI()'s z-map blur",
+                      "sigma via load(), so 1.1.0 blurred z-maps with 25 instead of 3 and",
+                      "ignored the sigma the caller passed (backlog item 32). Fixed here,",
+                      "which changes every blur-based z-map made from a 1.1.0 stimulus set.",
+                      "zmap_ttest is deliberately absent: that method does not blur, so it",
+                      "must still match."),
        news = "Reproducibility impact")
 )
 
+# Entries are matched by position so a vector `key` can be tracked as one
+# expectation: it has fired once any of its keys deviates.
 expectation_for <- function(key) {
   cfg <- sub("/.*$", "", key)
-  for (e in EXPECTED) if (identical(e$key, key) || identical(e$key, paste0(cfg, "/*"))) return(e)
+  for (i in seq_along(EXPECTED)) {
+    e <- EXPECTED[[i]]
+    if (key %in% e$key || paste0(cfg, "/*") %in% e$key) return(c(e, list(id = i)))
+  }
   NULL
 }
 
@@ -79,10 +99,20 @@ expectation_for <- function(key) {
 # summation order. Everything else is allowed to move by a few ULP *of the
 # values involved* -- an absolute epsilon would be far too tight for z-maps,
 # whose values run to several units, and needlessly loose nowhere.
+#
+# ULPS = 8 rather than 1 because these are not single passes over the data. A
+# z-map is a convolution over 262,144 pixels followed by a standardisation over
+# the same 262,144 values, so a 3.5e-18 difference in the classification image
+# arrives as ~1.3e-15 -- measured, at 512px. Even at 8 ULP the bar is ~1e-15,
+# orders of magnitude below anything that could move a pixel at 8-bit or move a
+# cell across the z threshold, and both of those are checked exactly: the NA
+# pattern must match cell for cell, which is what caught the sigma bug (1,282
+# cells changed side) while every numeric tolerance here would have passed it.
 
 EXACT_RE  <- "^(patchIdx|stimuli_params_|base_face_|stimulus_pngs)"
 IMAGE_RE  <- "^(patches|noise_image|ci|combined|scaled_|ci2ifc|subset_|participants_|batch_)"
 ULP       <- .Machine$double.eps      # 2.22e-16
+ULPS      <- 8
 INFOVAL_TOL <- 1e-9
 
 say <- function(...) cat(..., "\n", sep = "")
@@ -209,6 +239,13 @@ run_side <- function(lib, tag) {
                 # some calls only became comparable once a crash was fixed.
                 env = c(paste0("R_LIBS=", libs), paste0("R_LIBS_USER=", libs),
                         paste0("RCICR_COMPARE_REF_VERSION=", ref_version),
+                        # The 512px battery is memory-bound, not CPU-bound: the
+                        # noise basis is ~250 MB and the reference version's
+                        # cluster worker gets its own copy, so R's default
+                        # eagerness to grow the heap is what tips an 8 GB
+                        # machine over. Trading some speed for a smaller
+                        # footprint is the right way round here.
+                        "R_GC_MEM_GROW=0",
                         if (QUICK) "RCICR_COMPARE_QUICK=1"),
                 stdout = if (VERBOSE) "" else logfile,
                 stderr = if (VERBOSE) "" else logfile)
@@ -255,7 +292,7 @@ compare_one <- function(name, a, b) {
     return(list(status = "DIFF",
                 detail = sprintf("NA pattern differs (%d vs %d NA)", sum(is.na(a)), sum(is.na(b)))))
 
-  tol <- ULP * max(1, max(abs(a), na.rm = TRUE))
+  tol <- ULPS * ULP * max(1, max(abs(a), na.rm = TRUE))
   d <- suppressWarnings(max(abs(a - b), na.rm = TRUE))
   if (!is.finite(d)) d <- 0
   ok <- d <= tol
@@ -309,8 +346,20 @@ for (cfg in cur_meta$configs) {
   invisible(gc(verbose = FALSE))
 }
 
-fired <- vapply(accounted, function(a) a$exp$key, character(1))
-stale <- setdiff(vapply(EXPECTED, function(e) e$key, character(1)), fired)
+# Staleness is judged per key, not per entry: an entry naming four outputs is a
+# claim about all four, so three deviating does not excuse the fourth.
+#
+# A key for a config this run did not execute is neither fired nor stale, it is
+# untested -- otherwise --quick, which skips the 512px config, would report
+# every 512px expectation as stale and fail every PR.
+fired_keys <- vapply(accounted, function(a) a$key, character(1))
+fired_cfgs <- sub("/.*$", "", fired_keys)
+all_keys <- unlist(lapply(EXPECTED, function(e) e$key))
+key_ran <- vapply(all_keys, function(k) sub("/.*$", "", k) %in% cur_meta$configs, logical(1))
+untested <- all_keys[!key_ran]
+stale <- Filter(function(k) {
+  if (endsWith(k, "/*")) !(sub("/\\*$", "", k) %in% fired_cfgs) else !(k %in% fired_keys)
+}, all_keys[key_ran])
 
 # "Deliberate" is not enough on its own: a deviation researchers are not told
 # about is still a silent change to their results.
@@ -335,6 +384,12 @@ if (length(undocumented)) {
   say("\nUNDOCUMENTED DEVIATIONS -- an expectation fired, but NEWS.md does not")
   say("mention the heading it points at, so users would never hear about it:")
   for (h in undocumented) say("  missing from NEWS.md: ", h)
+}
+
+if (length(untested)) {
+  say("\nNOT EXERCISED -- expectations whose configuration this run skipped:")
+  for (k in untested) say("  ", k)
+  say("  (expected under --quick; a release run covers them)")
 }
 
 if (length(stale)) {

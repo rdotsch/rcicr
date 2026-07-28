@@ -52,8 +52,12 @@ setwd(workdir)
 #   zmap_quick   generateCI(zmap=TRUE, zmapmethod='quick')  -- includes plotZmap()
 #   zmap_ttest   generateCI(zmap=TRUE, zmapmethod='t.test') -- one t-test per pixel
 #   mask         generateCI(mask=) -- masked pixels come back NA        [>= 1.1.0]
-#   zmap_small   the same call as zmap_quick, on a config below 512px   [>= 1.1.0]
 #   zmap_plain   a z-map with zmapdecoration = FALSE                    [>= 1.1.0]
+#
+# zmap_plain is also the only way to cover a z-map below 512px: a *decorated*
+# small z-map cannot be produced by any version of rcicr, including this one.
+# Decoration needs margins the device does not have, and R fails with "figure
+# margins too large" -- measured, 128px fails and 256px works (backlog item 33).
 #
 # The bracketed extras are skipped when the reference version predates them,
 # because the reference *crashes* on those calls rather than returning a
@@ -69,10 +73,10 @@ setwd(workdir)
 # quantisation and clamping that the in-memory matrices do not.
 
 ALL_EXTRAS <- c("ci2ifc", "subset", "participants", "batch", "cumulative",
-                "zmap_quick", "zmap_ttest", "mask", "zmap_small", "zmap_plain")
+                "zmap_quick", "zmap_ttest", "mask", "zmap_plain")
 
 # Oldest reference version that can run each extra without crashing.
-SINCE <- c(mask = "1.1.0", zmap_small = "1.1.0", zmap_plain = "1.1.0")
+SINCE <- c(mask = "1.1.0", zmap_plain = "1.1.0")
 
 REF_VERSION <- package_version(Sys.getenv("RCICR_COMPARE_REF_VERSION", "1.0.1"))
 message("battery for reference version ", REF_VERSION)
@@ -95,7 +99,7 @@ CONFIGS <- list(
   # The default pipeline, at the size and settings the package documents. The
   # only config that can carry the z-map extras (see above).
   cfg_("defaults-512-sinusoid", img_size = 512, stimulus_pngs = TRUE,
-       extras = setdiff(ALL_EXTRAS, "zmap_small")),
+       extras = ALL_EXTRAS),
 
   # Spatial scales: fewer and more than the default 5. nscales also decides how
   # many parameters a trial draws, so it moves the RNG stream too.
@@ -273,7 +277,6 @@ run_config <- function(cfg) {
   zmap_calls <- list(
     zmap_quick = list(method = "quick",  decoration = TRUE),
     zmap_ttest = list(method = "t.test", decoration = TRUE),
-    zmap_small = list(method = "quick",  decoration = TRUE),
     zmap_plain = list(method = "quick",  decoration = FALSE)
   )
   for (key in intersect(names(zmap_calls), ex)) {

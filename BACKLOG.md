@@ -102,6 +102,7 @@ they are the backlog proper for after CRAN, and are deliberately kept out of the
 | 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
 | 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
 | ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
+| 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1114,6 +1115,29 @@ generated with 1.1.0. Fixed by keeping copies of every argument across the `load
 same guard `generateReferenceDistribution2IFC()` already carries, so a field added to the
 `.Rdata` later cannot capture another argument. Regression test in `test-fixed-bugs.R`;
 `NEWS.md` carries the reproducibility note.
+
+### 33. A decorated z-map below 256px dies in base R with no useful message **[verified] [own review]**
+Found 2026-07-28 while extending the release gate's battery. Measured on 1.1.0.9000:
+
+| `img_size` | `zmapdecoration = TRUE` | `zmapdecoration = FALSE` |
+|---|---|---|
+| 128 | **`figure margins too large`** | ok |
+| 256 | ok | ok |
+| 512 | ok | ok |
+
+`zmapdecoration = TRUE` is the **default**, so `generateCI(zmap = TRUE)` on a 128px stimulus
+set fails outright, from `plot.new()` inside `.rasterImagePlot()`, with an error that names
+neither `rcicr` nor the actual cause. Not a regression: v1.1.0 behaves identically, and
+v1.0.1 was worse (it could not render a small z-map either way — that half was fixed in
+1.1.0). Small stimulus sizes are common in simulations and tests, which is where this bites.
+
+The margins the decoration needs genuinely do not fit on a 128px device, so the fix is not to
+force it. Options, in order of how much they presume:
+
+- [ ] Error early with a message naming the function, the size and the way out
+      (`zmapdecoration = FALSE`, or a larger `size`).
+- [ ] Or fall back to undecorated with a warning — silently changing what gets rendered,
+      which is a behaviour change and needs Ron's call.
 
 ---
 

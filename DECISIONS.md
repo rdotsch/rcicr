@@ -220,13 +220,25 @@ crash into a number has no old number to compare against.** Those paths are cove
 suite, and by the gate only from v1.1.0 onward — the `SINCE` table in `tools/compare-harness.R`
 records which extras need which reference.
 
-### Tolerances: ULP scaled to the values, plus an 8-bit pixel count
+### Tolerances: 8 ULP scaled to the values, plus an 8-bit pixel count
 A flat `.Machine$double.eps` is the right bar for a classification image (values around 0.01)
 and far too tight for a z-map, whose values run to several units and whose one-ULP steps are
-therefore ~4× larger. So the tolerance is `eps * max(1, max(abs(reference)))`: a few ULP *of
-the values involved*. Anything that could only come from a changed random stream, algorithm or
-file format — patch indices, drawn stimulus parameters, the base image, the stimulus PNGs — is
-required to be bit-identical instead, with no tolerance at all.
+therefore ~4× larger. So the tolerance is `8 * eps * max(1, max(abs(reference)))`: a few ULP
+*of the values involved*. Anything that could only come from a changed random stream, algorithm
+or file format — patch indices, drawn stimulus parameters, the base image, the stimulus PNGs —
+is required to be bit-identical instead, with no tolerance at all.
+
+**Why 8 and not 1.** These are not single passes over the data. A z-map is a convolution over
+262,144 pixels followed by a standardisation over the same 262,144 values, so a 3.5e-18
+difference in the classification image arrives as **1.33e-15** — measured at 512px, comparing
+the current tree against v1.0.1. One ULP of the largest value (9.0e-16) rejects that; eight
+accepts it and still sits three orders of magnitude below anything observable.
+
+Widening a tolerance to make a run pass is exactly the move `CONTRIBUTING.md` warns against, so
+the distinction matters: what protects this comparison is not the numeric tolerance but the two
+**exact** checks beside it — 0 of N pixels may differ once quantised to 8 bits, and the NA
+pattern must match cell for cell. The z-map sigma bug moved 1,282 cells across the threshold
+and was caught by the NA check; every numeric tolerance considered here would have passed it.
 
 Image-like outputs additionally have to survive quantisation: 0 of N pixels may differ once
 rounded to 8 bits. That is the check that answers the question a researcher actually has, which
