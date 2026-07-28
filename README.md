@@ -99,6 +99,17 @@ recoverable without it — not from the PNGs, not from the seed alone. Back it u
 response data, and keep it alongside anything you publish: recomputing a classification
 image years later needs this file and nothing else.
 
+**Compare numbers, not figures, across machines.** Classification images, scaling,
+informational value and z-scores are ordinary R arithmetic and do not depend on your
+operating system — the test suite pins them to fixed values and they hold on Linux and on
+macOS ARM64 alike. The one exception is the PNG written by `plotZmap()`, the only function
+here that draws through a graphics device: devices differ between platforms in colour
+management and in whether they write an alpha channel, so the same z-map yields visibly
+identical figures whose files are not byte-identical. A z-map image that differs
+pixel-for-pixel on a colleague's machine is not a different result. Every other PNG the
+package writes comes straight from the pixel array via `png::writePNG()` and is unaffected.
+See `?plotZmap`.
+
 ## Anatomy of the `.Rdata` file
 
 `generateStimuli2IFC()` writes one file named
