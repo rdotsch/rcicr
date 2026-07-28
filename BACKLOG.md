@@ -580,6 +580,19 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 
 ### 20. CRAN resubmission checklist  **[verified against `R CMD check --as-cran`]**
 
+> **Do not submit a tarball built from the `v1.2.0` tag.** That tree fails `R CMD check`
+> on macOS: `test-plotZmap.R` asserted properties of a rendered PNG that belong to the
+> graphics device rather than to the drawing, and macOS quartz writes an alpha channel and
+> applies colour management where cairo does not. Found 2026-07-28 by the first R-hub
+> dispatch, which ran against the v1.2.0 tree. `tests/` is not in `.Rbuildignore`, so the
+> tests ship and get run. The fix is on `main` **after** the tag, so the submitted release
+> has to be cut from a later tree — 1.2.1 — and the win-builder results recorded in
+> `cran-comments.md`, which are for the v1.2.0 tarball, need re-running against it.
+> CRAN's incoming checks are mainly Linux and Windows so this might not block acceptance,
+> but macOS binaries are checked on the farm after publication, and a package returning
+> from archival should not arrive already red. See `DECISIONS.md` → Testing for the
+> underlying rule.
+
 **Current status — every box below is ticked.** The latest `--as-cran` run, on
 `release-1.1.0` after the version bump, gives **0 errors, 0 warnings, 2 NOTEs**, and
 `Version contains large components` is **gone** — confirmed by reading the incoming-
