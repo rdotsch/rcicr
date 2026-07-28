@@ -1111,7 +1111,10 @@ explicitly passed `sigma` did nothing. Measured at 512px: the number of pixels s
 (range `-3.32 .. 4.07` became `3.00 .. 3.88`).
 
 Only z-maps are affected — `sigma` is used for nothing else — and only for stimulus sets
-generated with 1.1.0. Fixed by keeping copies of every argument across the `load()`, the
+generated with 1.1.0, which was a GitHub tag for about a day and never on CRAN. **Real-world
+impact is therefore close to zero**, and `NEWS.md` says so rather than alarming anyone; the
+value of the find is that the gate caught a live regression on its first run, in a code path
+no test covered. Fixed by keeping copies of every argument across the `load()`, the
 same guard `generateReferenceDistribution2IFC()` already carries, so a field added to the
 `.Rdata` later cannot capture another argument. Regression test in `test-fixed-bugs.R`;
 `NEWS.md` carries the reproducibility note.

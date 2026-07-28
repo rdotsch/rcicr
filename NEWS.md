@@ -4,28 +4,24 @@
 was archived in 2021. 1.0.1 and 1.1.0 were GitHub-only releases made in the meantime, so the
 1.1.0 section below applies to you too — it is where the bulk of the bug fixes are.
 
-## Reproducibility impact — read this if you have made z-maps
+## Reproducibility impact
 
-- **`generateCI(zmap = TRUE)` smoothed z-maps with the wrong sigma, and ignored the
-  `sigma` you passed.** `generateCI()` reads the stimulus set with `load()`, which assigns
-  straight into the function's own frame, and 1.1.0 started storing the *noise* `sigma` in
-  the `.Rdata` file — the same name as the z-map blur argument. The saved value therefore
-  replaced the argument on every call: z-maps were blurred with 25 (the default noise sigma,
-  or whatever you generated your stimuli with) instead of the documented default of 3, and
-  passing `sigma` explicitly did nothing at all.
+- **`generateCI(zmap = TRUE)` blurred z-maps with the wrong sigma, for stimulus sets
+  generated with 1.1.0 only.** `generateCI()` reads the stimulus set with `load()`, which
+  assigns into the function's own frame, and 1.1.0 began storing the *noise* `sigma` there —
+  the same name as the z-map blur argument. The saved value replaced the argument, so z-maps
+  were blurred with 25 rather than the documented 3, and passing `sigma` did nothing.
 
-  **Who is affected.** Only z-maps, and only from stimulus sets generated with 1.1.0 —
-  `.Rdata` files written by 1.0.1 and earlier have no `sigma` field, so their z-maps were
-  always correct. The classification images themselves, their scaling, InfoVal and every
-  saved number are untouched; `sigma` is used for nothing else. If you produced a z-map from
-  a 1.1.0 stimulus set, regenerate it: the blur it received was roughly eight times wider
-  than intended, which spreads and weakens exactly the localised signal a z-map exists to
-  show.
+  **In practice this affects nobody.** 1.1.0 was a GitHub tag that stood for about a day and
+  was never on CRAN, so almost no stimulus set carries the field that triggers it. Files from
+  1.0.1 and earlier have no `sigma` at all and were never affected. Only z-maps are involved
+  — classification images, scaling, InfoVal and every saved number are untouched. It is
+  recorded here because it did change a number, and because if you are the one person who
+  generated stimuli that day, regenerating the z-map is a one-line rerun.
 
   Every argument is now kept across the `load()`, so a field added to the `.Rdata` later
   cannot quietly capture another one. Found by `tools/compare-release-output.R`, the release
-  gate that compares this tree's output against the last published version — this is the
-  first bug it caught.
+  gate introduced in this version — the first bug it caught.
 
 ## Behaviour change
 
