@@ -836,9 +836,17 @@ checklist at the top of this item, which is the live one.
 - [ ] Replace bare `T`/`F` with `TRUE`/`FALSE` (11 occurrences across `autoscale.R`,
       `generateCI.R`, `generateStimuli2IFC.R`, `plotZmap.R`). `T`/`F` are ordinary
       rebindable variables, so this is a genuine (if rare) correctness hazard.
-- [ ] Adopt a consistent style (`styler` + `lintr`). Deliberately *not* bundled into the
-      current pre-commit config, because it would reformat nearly every file in one sweep
-      and destroy `git blame`. Do it as one clearly-labelled commit, or not at all.
+- [ ] **`lintr` — additive, and separable from `styler`.** It rewrites nothing, so it can
+      land as a config plus a CI job with a zero-line diff to `R/`. Worth doing for the
+      static analysis rather than the style: this codebase has form for bugs in code that
+      reads fine (item 12 found three in `plotZmap()`), and `lintr` flags exactly that
+      class — the bare `T`/`F` above, `seq_len()` vs `1:n`, unused variables, and the
+      `if (matrix)` length-`n` conditions that caused items 6 and 23. Expect a large first
+      report; take it as a to-fix list, not a gate, and set the gate at "no new lints".
+- [ ] **`styler` — all-or-nothing, and still deliberately deferred.** It would reformat
+      nearly every file in one sweep and destroy `git blame`. If it ever happens it goes in
+      as a commit of its own, changing nothing else — see `DECISIONS.md`. Neither tool is
+      in the pre-commit config, and that is why.
 - [ ] `generateCI()` is ~440 lines mixing CI computation, masking, scaling, PNG writing,
       z-maps, and parallelism. Extract the internal helpers (`applyMask`, `applyScaling`,
       `combine`, `saveToImage` already exist) and cover them directly.
