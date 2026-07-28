@@ -31,7 +31,6 @@
 #' @importFrom stats aggregate t.test qnorm
 #' @importFrom spatstat.geom as.im
 #' @importFrom spatstat.explore blur
-#' @importFrom grDevices png dev.off
 #' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.

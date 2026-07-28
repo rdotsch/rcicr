@@ -160,10 +160,51 @@ with `save_rdata = FALSE` and never writes them back, so it could not have faile
 testing caught both; reading did not. Hence every grouping and threshold test now also asserts
 that the *wrong* answer differs (a positional split ≠ a by-column split).
 
+A third instance was caught *before* shipping, when the z-map golden master was written on
+2026-07-28, and it shows the shape to watch for. `zmapmethod = "quick"` ends in `scale()`, so
+its z-map has sum 0 and sd 1 **by construction** — the obvious summary statistics to pin, and
+both worthless as value checks. Mutating `sigma` from 3 to 4, a real change to the output, left
+sum and sd bit-identical while `sum(abs())`, `min`, `max` and every individual cell moved. The
+rule: **before pinning a summary statistic, ask what the transformation guarantees about it.**
+Anything a normalisation fixes carries no information about the values that went in. They are
+still asserted, labelled as a check that the standardisation happened, alongside statistics
+that actually vary.
+
 ### To test a rendered image, render onto a uniform background
-Then "drew nothing" is `expect_length(unique(as.vector(png)), 1)` — a comparison rather than
-an eyeball. `plotZmap`'s tests were three-quarters `file.exists()` before this; a function
-writing a uniformly blank PNG passed them all.
+Then "drew nothing" is "the image is one flat value" — a comparison rather than an eyeball.
+`plotZmap`'s tests were three-quarters `file.exists()` before this; a function writing a
+uniformly blank PNG passed them all.
+
+Count distinct values over the **colour channels only**, never the raw array. Whether a PNG
+device writes an alpha channel is a property of the graphics backend, not of what was drawn:
+cairo (Linux, Windows) writes RGB, macOS quartz writes RGBA. An opaque alpha plane is a solid
+block of 1s, so it adds a second distinct value to the array while nothing has been painted.
+The original `expect_length(unique(as.vector(png)), 1)` therefore measured the backend as much
+as the drawing, and `test-plotZmap.R` now drops any alpha plane before counting.
+
+This is not theoretical: it is the only assertion that failed when the suite first ran on
+macOS (R-hub R-devel, 2026-07-28) — 220 passed, that one reported 2 distinct values where it
+wanted 1. It was also the only assertion in the suite counting distinct values rather than
+comparing two renders, which is why nothing else moved; every image-to-image comparison stays
+green because both sides gain the same plane. Prefer the comparison form for new tests.
+
+The replacement keeps the full detection power — verified against synthetic 1-, 2-, 3- and
+4-channel images, painted and unpainted: every unpainted layout collapses to one value, every
+painted one still yields two.
+
+**The absolute pixel value is device-dependent too, and must not be asserted.** The first
+attempt at this fix also pinned the flat value to the background grey, on the reasoning that
+"uniform" alone would admit a `plotZmap()` flooding the image with a colour of its own. That
+assertion passed on cairo and failed on macOS, which renders `bgimage` 0.5 to roughly 0.573
+where cairo gives 0.502 — colour management, and precisely the same mistake the alpha fix was
+correcting, made one line below it. The check is now an *ordering*: the same render over a
+darker background must come out darker. Ordering survives any monotone transfer function,
+which is all a colour pipeline can sanely be.
+
+The general form, and the reason this cost two CI rounds rather than one: **when a test reads
+pixels back from a graphics device, every absolute property of those pixels belongs to the
+device.** Channel count and value are both device-dependent; only relationships between
+renders — this differs from that, this is darker than that — are portable.
 
 ### The recovery test uses a permutation null, not a parametric one
 `test-recovery.R` gives a simulated observer a known template and asserts `generateCI()`
@@ -308,10 +349,35 @@ contains `rcicr/.git`, repo-root tarball contains no match.
 ### R-hub runs on `workflow_dispatch` only, never on push
 The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
 be refreshed from upstream. It is left trigger-on-demand because R-hub answers a question that
-only arises at release time — does this build on Windows, macOS and the odd CRAN compiler
-flags — and the everyday answer is already covered by `R-CMD-check.yaml` on release and devel.
-Running it per-PR would spend a matrix of platforms on a question nobody asked yet, and it
-would compete with the ~11-minute reproducibility gate that *is* required on every code PR.
+only arises at release time — does this build under CRAN's own compiler flags and on the
+odd platforms nobody develops on — and running it per-PR would spend a matrix of platforms on
+a question nobody asked yet, competing with the ~11-minute reproducibility gate that *is*
+required on every code PR.
+
+This entry used to justify that by saying the everyday answer was "already covered by
+`R-CMD-check.yaml` on release and devel". That was wrong, and expensively so: the matrix
+varied only the *R version* and pinned `runs-on: ubuntu-latest`, so what it actually covered
+was one platform twice. The hole stayed invisible until the first R-hub dispatch, on
+2026-07-28 while preparing the CRAN resubmission, failed a `plotZmap()` test on macOS that
+had been green on Linux since `b7cb6d9` — see the alpha-channel entry under Testing. CRAN
+builds on macOS, so a platform-specific failure would have landed as a submission ERROR.
+Both platforms CRAN gates on are now in the everyday matrix on release — `macos-latest`, then
+`windows-latest` — and R-hub no longer stands in for per-platform coverage at all.
+
+Windows was added on different grounds from macOS, and the distinction is the useful part.
+macOS had never been run; Windows had, and passed, on that same R-hub dispatch and on
+win-builder twice. So Windows was never an untested hole — it was a *late* one, checked only
+at release, which is the same lateness the macOS row exists to fix. Adding it also puts the
+pinned z-map values in `test-regression-baseline.R` in front of a third platform and a
+different BLAS.
+
+The lesson generalises past this workflow: "already covered by X" is a claim about what X
+runs, and it is worth reading X to check rather than repeating.
+
+Adding to that matrix is safe; renaming in it is not. `ubuntu-latest (release)` and
+`ubuntu-latest (devel)` are required status checks matched **by name**, so a rename makes the
+required check never report — which GitHub reads as pending forever, blocking every PR. Same
+trap as the `paths:` filter on the reproducibility gate.
 
 The cost of `workflow_dispatch`-only is that the workflow is invisible until it reaches the
 **default branch** — GitHub offers no "Run workflow" button for a file that exists only on a

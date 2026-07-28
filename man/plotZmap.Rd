@@ -48,6 +48,15 @@ Plots a Z-map given a matrix of z-scores that maps onto a specified base image.
 This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
 Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
 }
+\section{Reproducibility across platforms}{
+
+The z-scores themselves are ordinary R arithmetic and do not depend on your operating system, and neither do classification images, scaling or informational value. The PNG this function writes is different: it is drawn through a graphics device, and graphics devices differ between platforms both in colour management and in whether they write an alpha channel. The same z-map rendered on Linux and on macOS gives visibly identical figures whose files are not byte-identical -- macOS renders a mid-grey background at roughly 0.573 where the cairo device gives 0.502.
+
+So when you are checking that an analysis reproduces, compare the numbers rather than the rendered figures. A z-map PNG that differs pixel-for-pixel on a colleague's machine is not a different result, and regenerating figures on another platform is safe.
+
+This applies only to \code{plotZmap()}, which is the only function in the package that opens a graphics device. Every other PNG written by \code{rcicr} -- stimuli, classification images, autoscaled classification images -- is written straight from the pixel array by \code{png::writePNG()} and carries no such dependence.
+}
+
 \examples{
 set.seed(1)
 zmap <- matrix(rnorm(64, sd = 5), 8, 8)

@@ -48,13 +48,33 @@ test_that("decoration = FALSE works on a device too small for default margins", 
 # PNG back and check the thresholding actually took effect. Rendering onto a
 # uniform background makes "nothing was painted" exactly equal to "the output
 # is the background", which is a comparison rather than an eyeball.
-render_zmap <- function(dir, zmap, name, threshold = 3, mask = NULL) {
+render_zmap <- function(dir, zmap, name, threshold = 3, mask = NULL, bg = 0.5) {
   plotZmap(
-    zmap = zmap, bgimage = matrix(0.5, 8, 8), sigma = 3, threshold = threshold,
+    zmap = zmap, bgimage = matrix(bg, 8, 8), sigma = 3, threshold = threshold,
     mask = mask, decoration = FALSE, targetpath = dir, filename = name,
     size = 64
   )
   png::readPNG(file.path(dir, paste0(name, ".png")))
+}
+
+# Colour channels only, dropping any alpha plane.
+#
+# Whether a PNG device writes an alpha channel is a property of the graphics
+# backend, not of what was drawn: cairo (Linux, Windows) writes RGB, macOS
+# quartz writes RGBA. An opaque alpha plane is a solid block of 1s, so it adds a
+# second distinct value to the array without a single pixel having been painted
+# -- which is enough on its own to fail a "the whole image is one value"
+# assertion, while every image-to-image comparison in this file stays green
+# because both sides gain the same plane.
+#
+# That is exactly what happened when the suite first ran on macOS (R-hub,
+# R-devel, 2026-07-28): 220 assertions passed and the single one below failed,
+# reporting 2 distinct values where it wanted 1. It was the only assertion in
+# the suite that counted distinct values rather than comparing two renders.
+colour_channels <- function(img) {
+  d <- dim(img)
+  if (length(d) == 2) return(img)  # greyscale, no alpha plane
+  if (d[3] %in% c(2, 4)) img[, , -d[3], drop = FALSE] else img
 }
 
 test_that("sub-threshold z-scores are not painted and supra-threshold ones are", {
@@ -64,8 +84,35 @@ test_that("sub-threshold z-scores are not painted and supra-threshold ones are",
   above <- render_zmap(tmp, matrix(5, 8, 8), "above")
 
   # Every cell is under threshold, so the z-map contributes nothing and the
-  # result is the bare background: a single grey value across the image.
-  expect_length(unique(as.vector(below)), 1)
+  # result is the bare background: a single grey value across the image. The
+  # info= is deliberate -- a bare "expected length 1, got 2" says nothing about
+  # which backend wrote what, which is the one thing worth knowing here.
+  below_values <- unique(as.vector(colour_channels(below)))
+  expect_true(
+    length(below_values) == 1,
+    info = paste0(
+      "expected one flat value across the colour channels; got ",
+      length(below_values), " (",
+      paste(signif(sort(below_values), 4), collapse = ", "),
+      ") from an image of dim ", paste(dim(below), collapse = "x")
+    )
+  )
+
+  # ...and that flat value is the background being drawn rather than a colour
+  # of plotZmap()'s own, which the assertion above does not distinguish. Tested
+  # by ordering, not by value: rendering the same call over a darker background
+  # must come out darker.
+  #
+  # The absolute value is deliberately *not* asserted. It is as
+  # device-dependent as the alpha channel above -- cairo renders bgimage 0.5 to
+  # 0.502, macOS to roughly 0.573, a colour-management difference -- so pinning
+  # it repeats exactly the mistake this helper exists to avoid. That version was
+  # written and did fail on macOS (test-plotZmap.R:106, 2026-07-28). Ordering
+  # survives any monotone transfer function, which is all a sane one can be.
+  darker <- render_zmap(tmp, matrix(1, 8, 8), "below_darker", bg = 0.25)
+  darker_values <- unique(as.vector(colour_channels(darker)))
+  expect_length(darker_values, 1)
+  expect_lt(darker_values[1], below_values[1])
 
   # ...and when the z-map does clear the threshold, the output is no longer the
   # background. Without this the assertion above is satisfied by a function
