@@ -160,6 +160,16 @@ with `save_rdata = FALSE` and never writes them back, so it could not have faile
 testing caught both; reading did not. Hence every grouping and threshold test now also asserts
 that the *wrong* answer differs (a positional split ≠ a by-column split).
 
+A third instance was caught *before* shipping, when the z-map golden master was written on
+2026-07-28, and it shows the shape to watch for. `zmapmethod = "quick"` ends in `scale()`, so
+its z-map has sum 0 and sd 1 **by construction** — the obvious summary statistics to pin, and
+both worthless as value checks. Mutating `sigma` from 3 to 4, a real change to the output, left
+sum and sd bit-identical while `sum(abs())`, `min`, `max` and every individual cell moved. The
+rule: **before pinning a summary statistic, ask what the transformation guarantees about it.**
+Anything a normalisation fixes carries no information about the values that went in. They are
+still asserted, labelled as a check that the standardisation happened, alongside statistics
+that actually vary.
+
 ### To test a rendered image, render onto a uniform background
 Then "drew nothing" is "the image is one flat value" — a comparison rather than an eyeball.
 `plotZmap`'s tests were three-quarters `file.exists()` before this; a function writing a
