@@ -29,12 +29,17 @@ is complete.
 * local: Ubuntu 24.04, R 4.3.3 — `R CMD check --as-cran`, with
   `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
 * GitHub Actions: ubuntu-latest, R release and R devel
-* win-builder (R-devel)  <!-- TODO: run devtools::check_win_devel() and record result -->
-* R-hub: macOS, Windows, R-devel  <!-- TODO: run rhub::rhub_check() and record result -->
+* win-builder, R-devel — Windows Server 2022, R Under development (2026-07-26 r90304 ucrt):
+  **1 NOTE**, the CRAN incoming feasibility note below
+* win-builder, R-release — Windows Server 2022, R 4.6.1: **1 NOTE**, the same one
+* R-hub: Linux, Windows, macOS  <!-- TODO: run and record result -->
 
 ## R CMD check results
 
 0 errors | 0 warnings | 2 notes
+
+Both win-builder runs reported **1 NOTE** — only the first of the two below. The second is
+local to our build machine.
 
 ### NOTE 1 — CRAN incoming feasibility
 
@@ -62,6 +67,17 @@ longer the primary documentation. The single remaining reference, in `README.md`
 "further reading" pointer to the historical copy, which has nine years of inbound links
 from published papers. We are happy to remove the link if you prefer — it is now a
 one-line change, since the content itself ships with the package.
+
+win-builder additionally reports, under the same note:
+
+```
+Possibly misspelled words in DESCRIPTION:
+  psychophysical (10:51)
+```
+
+`psychophysical` is spelled correctly. It is the standard adjective for psychophysics, the
+field this package's method comes from, and it is used in the sense of "psychophysical
+task" — the 2-image forced-choice procedure the package generates stimuli for.
 
 ### NOTE 2 — future file timestamps
 
