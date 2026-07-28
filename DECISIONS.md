@@ -161,9 +161,28 @@ testing caught both; reading did not. Hence every grouping and threshold test no
 that the *wrong* answer differs (a positional split ≠ a by-column split).
 
 ### To test a rendered image, render onto a uniform background
-Then "drew nothing" is `expect_length(unique(as.vector(png)), 1)` — a comparison rather than
-an eyeball. `plotZmap`'s tests were three-quarters `file.exists()` before this; a function
-writing a uniformly blank PNG passed them all.
+Then "drew nothing" is "the image is one flat value" — a comparison rather than an eyeball.
+`plotZmap`'s tests were three-quarters `file.exists()` before this; a function writing a
+uniformly blank PNG passed them all.
+
+Count distinct values over the **colour channels only**, never the raw array. Whether a PNG
+device writes an alpha channel is a property of the graphics backend, not of what was drawn:
+cairo (Linux, Windows) writes RGB, macOS quartz writes RGBA. An opaque alpha plane is a solid
+block of 1s, so it adds a second distinct value to the array while nothing has been painted.
+The original `expect_length(unique(as.vector(png)), 1)` therefore measured the backend as much
+as the drawing, and `test-plotZmap.R` now drops any alpha plane before counting.
+
+This is not theoretical: it is the only assertion that failed when the suite first ran on
+macOS (R-hub R-devel, 2026-07-28) — 220 passed, that one reported 2 distinct values where it
+wanted 1. It was also the only assertion in the suite counting distinct values rather than
+comparing two renders, which is why nothing else moved; every image-to-image comparison stays
+green because both sides gain the same plane. Prefer the comparison form for new tests.
+
+The replacement keeps the full detection power — verified against synthetic 1-, 2-, 3- and
+4-channel images, painted and unpainted: every unpainted layout collapses to one value, every
+painted one still yields two — and additionally pins the flat value to the background grey,
+which the original did not, so a `plotZmap()` flooding the image with a colour of its own can
+no longer pass.
 
 ### The recovery test uses a permutation null, not a parametric one
 `test-recovery.R` gives a simulated observer a known template and asserts `generateCI()`

@@ -57,6 +57,26 @@ render_zmap <- function(dir, zmap, name, threshold = 3, mask = NULL) {
   png::readPNG(file.path(dir, paste0(name, ".png")))
 }
 
+# Colour channels only, dropping any alpha plane.
+#
+# Whether a PNG device writes an alpha channel is a property of the graphics
+# backend, not of what was drawn: cairo (Linux, Windows) writes RGB, macOS
+# quartz writes RGBA. An opaque alpha plane is a solid block of 1s, so it adds a
+# second distinct value to the array without a single pixel having been painted
+# -- which is enough on its own to fail a "the whole image is one value"
+# assertion, while every image-to-image comparison in this file stays green
+# because both sides gain the same plane.
+#
+# That is exactly what happened when the suite first ran on macOS (R-hub,
+# R-devel, 2026-07-28): 220 assertions passed and the single one below failed,
+# reporting 2 distinct values where it wanted 1. It was the only assertion in
+# the suite that counted distinct values rather than comparing two renders.
+colour_channels <- function(img) {
+  d <- dim(img)
+  if (length(d) == 2) return(img)  # greyscale, no alpha plane
+  if (d[3] %in% c(2, 4)) img[, , -d[3], drop = FALSE] else img
+}
+
 test_that("sub-threshold z-scores are not painted and supra-threshold ones are", {
   tmp <- withr::local_tempdir()
 
@@ -64,8 +84,26 @@ test_that("sub-threshold z-scores are not painted and supra-threshold ones are",
   above <- render_zmap(tmp, matrix(5, 8, 8), "above")
 
   # Every cell is under threshold, so the z-map contributes nothing and the
-  # result is the bare background: a single grey value across the image.
-  expect_length(unique(as.vector(below)), 1)
+  # result is the bare background: a single grey value across the image. The
+  # info= is deliberate -- a bare "expected length 1, got 2" says nothing about
+  # which backend wrote what, which is the one thing worth knowing here.
+  below_values <- unique(as.vector(colour_channels(below)))
+  expect_true(
+    length(below_values) == 1,
+    info = paste0(
+      "expected one flat value across the colour channels; got ",
+      length(below_values), " (",
+      paste(signif(sort(below_values), 4), collapse = ", "),
+      ") from an image of dim ", paste(dim(below), collapse = "x")
+    )
+  )
+
+  # ...and that value is the background grey specifically, not merely uniform.
+  # Without this, a plotZmap() that flooded the image with one flat colour of
+  # its own would satisfy the assertion above. Absolute tolerance, not
+  # expect_equal()'s relative one: the target is 0.5 and the 8-bit quantised
+  # value is 128/255, whose relative difference sits exactly on 1/255.
+  expect_lt(abs(below_values[1] - 0.5), 1 / 255)
 
   # ...and when the z-map does clear the threshold, the output is no longer the
   # background. Without this the assertion above is satisfied by a function
