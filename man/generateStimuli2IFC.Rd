@@ -47,7 +47,7 @@ generateStimuli2IFC(
 
 \item{ncores}{Number of CPU cores to use (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 
-\item{return_as_dataframe}{Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli.}
+\item{return_as_dataframe}{Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli. The frame holds one noise image per trial, so it is meaningful only under the default \code{use_same_parameters = TRUE}, where every base image shares a single parameter set and one noise image per trial is all there is. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned; the frame's shape cannot represent trial x base image. Stimuli are still written to disk for every base image either way, and \code{save_rdata = TRUE} records the full parameter set, so nothing is lost from the files themselves.}
 
 \item{save_as_png}{Boolean specifying whether to write the stimuli as images to disk (default: TRUE).}
 

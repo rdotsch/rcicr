@@ -26,7 +26,7 @@ plotZmap(
 
 \item{threshold}{Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.}
 
-\item{mask}{Optional. A boolean matrix with the same dimensions as zmap. If a cell evaluates to TRUE, the corresponding zmap pixel will be masked. Can also be the filename (as a string) of a black and white PNG image to be converted to a matrix (black = masked).}
+\item{mask}{Optional. A binary matrix with the same dimensions as zmap: cells that are 0 (or FALSE) are masked, cells that are 1 (or TRUE) are kept. Can also be the filename (as a string) of a black and white PNG image, in which case black (0) is masked and white (1) is kept. This is the same convention \code{generateCI()} uses for its own \code{mask} argument, so a mask can be used with both. Note that earlier versions of this documentation stated the opposite for the matrix form; the description here matches what the code does.}
 
 \item{decoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
 

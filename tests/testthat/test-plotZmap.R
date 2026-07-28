@@ -48,10 +48,11 @@ test_that("decoration = FALSE works on a device too small for default margins", 
 # PNG back and check the thresholding actually took effect. Rendering onto a
 # uniform background makes "nothing was painted" exactly equal to "the output
 # is the background", which is a comparison rather than an eyeball.
-render_zmap <- function(dir, zmap, name, threshold = 3) {
+render_zmap <- function(dir, zmap, name, threshold = 3, mask = NULL) {
   plotZmap(
     zmap = zmap, bgimage = matrix(0.5, 8, 8), sigma = 3, threshold = threshold,
-    decoration = FALSE, targetpath = dir, filename = name, size = 64
+    mask = mask, decoration = FALSE, targetpath = dir, filename = name,
+    size = 64
   )
   png::readPNG(file.path(dir, paste0(name, ".png")))
 }
@@ -114,6 +115,93 @@ test_that("raising the threshold removes regions from the z-map", {
 
   expect_false(isTRUE(all.equal(lenient, background)))
   expect_equal(strict, background)
+})
+
+test_that("a masked region is dropped from the z-map", {
+  # Regression test for BACKLOG.md item 23. Commit 18e07cb (2016) landed the
+  # mask import as "todo: applying the mask" and the todo was never picked up,
+  # so `mask` was validated and then discarded in every released version. Half
+  # a fully-painted z-map is masked here: that half must fall back to bare
+  # background while the other half stays painted, which pins *where* the
+  # masking lands rather than only that something changed.
+  tmp <- withr::local_tempdir()
+
+  # 0 = masked, matching generateCI()'s applyMask() for both matrices and PNGs.
+  mask <- matrix(1, 8, 8)
+  mask[, 1:4] <- 0
+
+  masked <- render_zmap(tmp, matrix(5, 8, 8), "masked", mask = mask)
+  above <- render_zmap(tmp, matrix(5, 8, 8), "unmasked")
+  background <- render_zmap(tmp, matrix(1, 8, 8), "bare")
+
+  expect_equal(masked[, 1:32, ], background[, 1:32, ])
+  expect_equal(masked[, 33:64, ], above[, 33:64, ])
+})
+
+test_that("an all-zero mask blanks the z-map entirely", {
+  # The boolean conversion collapsed every cell to FALSE regardless of input
+  # (`mask[mask == 0] <- TRUE` coerces TRUE to 1, so the following
+  # `mask[mask == 1] <- FALSE` unset it again). A mask that masks everything is
+  # the case that distinguishes a working conversion from that one: under the
+  # old code it masked nothing.
+  tmp <- withr::local_tempdir()
+
+  masked <- render_zmap(tmp, matrix(5, 8, 8), "all", mask = matrix(0, 8, 8))
+  background <- render_zmap(tmp, matrix(0, 8, 8), "none")
+
+  expect_equal(masked, background)
+})
+
+test_that("a matrix mask and a PNG mask select the same region", {
+  # Both input paths use one convention (0 = masked), so the same mask
+  # expressed either way must produce the same image. Asserted rather than
+  # assumed: the roxygen claimed a matrix used the opposite polarity to a PNG,
+  # and implementing that would have made a mask mask complementary halves in
+  # plotZmap() and generateCI().
+  tmp <- withr::local_tempdir()
+
+  mask_file <- file.path(tmp, "mask.png")
+  mask_image <- matrix(1, 8, 8)
+  mask_image[, 1:4] <- 0
+  png::writePNG(mask_image, mask_file)
+
+  as_matrix <- render_zmap(tmp, matrix(5, 8, 8), "as_matrix", mask = mask_image)
+  as_png <- render_zmap(tmp, matrix(5, 8, 8), "as_png", mask = mask_file)
+  expect_equal(as_matrix, as_png)
+
+  # ...and the shared region is the black half, not its complement.
+  above <- render_zmap(tmp, matrix(5, 8, 8), "png_unmasked")
+  background <- render_zmap(tmp, matrix(1, 8, 8), "png_bare")
+
+  expect_equal(as_png[, 1:32, ], background[, 1:32, ])
+  expect_equal(as_png[, 33:64, ], above[, 33:64, ])
+})
+
+test_that("plotZmap and generateCI mask the same half of one mask", {
+  # The two functions have separate mask-import code (issue #89), so a mask
+  # built for one has to be checked against the other or they can drift into
+  # opposite polarities -- which is what their documentation asserted until
+  # 1.1.0, and what an earlier attempt at this fix implemented. Comparing the
+  # rendered z-map against the CI directly is not possible (one is a PNG, the
+  # other a matrix), so both are reduced to "which half went away".
+  mask <- matrix(1, 8, 8)
+  mask[, 1:4] <- 0
+
+  # generateCI(): masked cells become NA in the CI itself.
+  ci_masked <- rcicr:::applyMask(matrix(1, 8, 8), mask, img_size = 8)
+  ci_dropped_left <- all(is.na(ci_masked[, 1:4])) && !anyNA(ci_masked[, 5:8])
+
+  # plotZmap(): masked cells fall back to the background in the rendered PNG.
+  tmp <- withr::local_tempdir()
+  zmap_masked <- render_zmap(tmp, matrix(5, 8, 8), "cross", mask = mask)
+  background <- render_zmap(tmp, matrix(1, 8, 8), "cross_bare")
+  painted <- render_zmap(tmp, matrix(5, 8, 8), "cross_full")
+  zmap_dropped_left <-
+    isTRUE(all.equal(zmap_masked[, 1:32, ], background[, 1:32, ])) &&
+    isTRUE(all.equal(zmap_masked[, 33:64, ], painted[, 33:64, ]))
+
+  expect_true(ci_dropped_left)
+  expect_true(zmap_dropped_left)
 })
 
 test_that("mismatched mask and zmap dimensions error", {
