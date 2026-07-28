@@ -12,16 +12,34 @@ permissions: read-all
 
 jobs:
   R-CMD-check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.config.os }}
 
-    name: ubuntu-latest (${{ matrix.config.r }})
+    # The two ubuntu-latest names here are load-bearing: `ubuntu-latest
+    # (release)` and `ubuntu-latest (devel)` are required status checks on
+    # `main`, matched by name. Renaming either one means the required check
+    # never reports, which GitHub reads as pending forever and makes every PR
+    # unmergeable -- the same trap documented on the reproducibility gate's
+    # `paths:` filter. Adding a job is safe; renaming one is not. The required
+    # set is enforced by a ruleset, not classic branch protection, so it is
+    # `gh api repos/rdotsch/rcicr/rules/branches/main` that shows it.
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {r: 'release'}
-          - {r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest, r: 'release'}
+          - {os: ubuntu-latest, r: 'devel', http-user-agent: 'release'}
+          # macOS is here because the suite had never run on it. The first
+          # macOS run of any kind -- an R-hub dispatch on 2026-07-28, made
+          # while preparing the CRAN resubmission -- failed a plotZmap() test
+          # that had been green on Linux since b7cb6d9, because the macOS
+          # quartz PNG device writes an alpha channel where cairo does not.
+          # CRAN builds on macOS, so that would have surfaced as an ERROR
+          # during submission rather than on a PR. Release only: the gap this
+          # closes is the graphics backend and the platform, neither of which
+          # varies with the R version, so a second macOS job would buy little.
+          - {os: macos-latest, r: 'release'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

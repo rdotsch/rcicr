@@ -315,10 +315,27 @@ re-add it.
 ### R-hub runs on `workflow_dispatch` only, never on push
 The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
 be refreshed from upstream. It is left trigger-on-demand because R-hub answers a question that
-only arises at release time — does this build on Windows, macOS and the odd CRAN compiler
-flags — and the everyday answer is already covered by `R-CMD-check.yaml` on release and devel.
-Running it per-PR would spend a matrix of platforms on a question nobody asked yet, and it
-would compete with the ~11-minute reproducibility gate that *is* required on every code PR.
+only arises at release time — does this build on Windows and the odd CRAN compiler flags — and
+running it per-PR would spend a matrix of platforms on a question nobody asked yet, competing
+with the ~11-minute reproducibility gate that *is* required on every code PR.
+
+This entry used to justify that by saying the everyday answer was "already covered by
+`R-CMD-check.yaml` on release and devel". That was wrong, and expensively so: the matrix
+varied only the *R version* and pinned `runs-on: ubuntu-latest`, so what it actually covered
+was one platform twice. The hole stayed invisible until the first R-hub dispatch, on
+2026-07-28 while preparing the CRAN resubmission, failed a `plotZmap()` test on macOS that
+had been green on Linux since `b7cb6d9` — see the alpha-channel entry under Testing. CRAN
+builds on macOS, so a platform-specific failure would have landed as a submission ERROR.
+`macos-latest` on release is now in the everyday matrix, and R-hub is left covering Windows
+and the CRAN-specific compilers rather than standing in for per-platform coverage at all.
+
+The lesson generalises past this workflow: "already covered by X" is a claim about what X
+runs, and it is worth reading X to check rather than repeating.
+
+Adding to that matrix is safe; renaming in it is not. `ubuntu-latest (release)` and
+`ubuntu-latest (devel)` are required status checks matched **by name**, so a rename makes the
+required check never report — which GitHub reads as pending forever, blocking every PR. Same
+trap as the `paths:` filter on the reproducibility gate.
 
 The cost of `workflow_dispatch`-only is that the workflow is invisible until it reaches the
 **default branch** — GitHub offers no "Run workflow" button for a file that exists only on a
