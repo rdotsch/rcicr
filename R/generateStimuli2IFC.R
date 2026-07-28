@@ -223,7 +223,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   #
   # This records which rcicr wrote the file. It was a hardcoded '0.4.0' string
-  # from 2016 until 1.1.0.9000, so *every* .Rdata written by 0.4.0 through 1.1.0
+  # from 2016 until 1.2.0, so *every* .Rdata written by 0.4.0 through 1.1.0
   # claims to come from 0.4.0 no matter what actually wrote it. Anything reading
   # this field must therefore treat '0.4.0' as "unknown, somewhere in that
   # range" rather than as a real version, and must accept both a character

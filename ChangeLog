@@ -1,3 +1,12 @@
+Changes 1.2.0 [28-Jul-2026]
+
+* See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward.
+* In brief: z-maps made with 1.1.0 were blurred with the wrong constant and must
+  be regenerated (see "Reproducibility impact" in NEWS.md); a reproducibility
+  release gate now compares every release against the last published version.
+* 1.1.0 was tagged on GitHub but never released to CRAN, so this is the first
+  CRAN release since 0.3.4.1.
+
 Changes 1.1.0 [27-Jul-2026]
 
 * See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward,

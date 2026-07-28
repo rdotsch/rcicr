@@ -1,4 +1,8 @@
-# rcicr (development version)
+# rcicr 1.2.0 (2026-07-28)
+
+*Upgrading from the CRAN version?* The last release on CRAN was 0.3.4.1, before the package
+was archived in 2021. 1.0.1 and 1.1.0 were GitHub-only releases made in the meantime, so the
+1.1.0 section below applies to you too — it is where the bulk of the bug fixes are.
 
 ## Reproducibility impact — read this if you have made z-maps
 
