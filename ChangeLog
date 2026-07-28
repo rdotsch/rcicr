@@ -1,9 +1,11 @@
 Changes 1.2.0 [28-Jul-2026]
 
 * See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward.
-* In brief: z-maps made with 1.1.0 were blurred with the wrong constant and must
-  be regenerated (see "Reproducibility impact" in NEWS.md); a reproducibility
-  release gate now compares every release against the last published version.
+* In brief: a reproducibility release gate now compares every release against the
+  last published version, and caught one live regression on its first run —
+  z-maps from 1.1.0-generated stimulus sets were blurred with the wrong constant.
+  1.1.0 stood for a day and was never on CRAN, so that affects essentially nobody;
+  see "Reproducibility impact" in NEWS.md.
 * 1.1.0 was tagged on GitHub but never released to CRAN, so this is the first
   CRAN release since 0.3.4.1.
 

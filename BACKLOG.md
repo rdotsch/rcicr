@@ -73,9 +73,10 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 dependency, toolchain, parallelism, test-coverage and vignette work — all released as
 v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
 remains across them is the go/no-go and the submission itself, which are the maintainer's
-to make. **Item 23, the last open code bug, is fixed** — the `plotZmap()` mask is applied,
-under a "Behaviour change" heading in `NEWS.md`. What is left in the table is triage: items
-27, 30 and 31, none of which blocks a submission. Items **13, 14 and 15** (modernize the
+to make. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
+heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturing
+`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. What is
+left in the table is triage: items 27, 30, 31 and 33, none of which blocks a submission. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
 they are the backlog proper for after CRAN, and are deliberately kept out of the table.
 
