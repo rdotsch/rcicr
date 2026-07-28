@@ -40,6 +40,15 @@ jobs:
           # closes is the graphics backend and the platform, neither of which
           # varies with the R version, so a second macOS job would buy little.
           - {os: macos-latest, r: 'release'}
+          # Windows is the other platform CRAN gates on. Unlike macOS it was
+          # not untested -- the same R-hub dispatch ran it green, and
+          # win-builder passed twice -- so this is about *when* rather than
+          # whether: both of those are release-time checks, and finding a
+          # Windows-only failure at submission is exactly the lateness the
+          # macOS row was added to fix. It also puts the pinned z-map values in
+          # test-regression-baseline.R in front of a third platform and a
+          # different BLAS.
+          - {os: windows-latest, r: 'release'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
