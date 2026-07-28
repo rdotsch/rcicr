@@ -19,27 +19,38 @@ found by a systematic source review, adds a test suite (previously there was non
 continuous integration, and removes 13 unused dependencies.
 
 **On the version number.** The archived CRAN version is 0.3.4.1 and this submission is
-1.2.0. Nothing is missing: 1.0.1 and 1.1.0 exist only as GitHub releases, made while the
-package was off CRAN, and 1.1.0 in particular was never published anywhere a user could
-install it from. `NEWS.md` carries their entries, so the record between 0.3.4.1 and 1.2.0
-is complete.
+1.2.1. Nothing is missing: 1.0.1, 1.1.0 and 1.2.0 exist only as GitHub releases, made while
+the package was off CRAN, and none of them was published anywhere a user could install it
+from with `install.packages()`. `NEWS.md` carries their entries, so the record between
+0.3.4.1 and 1.2.1 is complete.
+
+1.2.1 follows 1.2.0 by a short interval and contains no user-facing change. 1.2.0 did not
+pass `R CMD check` on macOS: a test in the package's own suite asserted properties of a
+rendered PNG that belong to the graphics device rather than to what was drawn, and those
+differ between macOS and Linux. No released function was affected and nothing the package
+computes changed, but the tree could not pass its own checks on a platform CRAN builds for,
+so it is not the tree we are asking you to accept.
 
 ## Test environments
 
 * local: Ubuntu 24.04, R 4.3.3 — `R CMD check --as-cran`, with
   `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
-* GitHub Actions: ubuntu-latest, R release and R devel
-* win-builder, R-devel — Windows Server 2022, R Under development (2026-07-26 r90304 ucrt):
-  **1 NOTE**, the CRAN incoming feasibility note below
-* win-builder, R-release — Windows Server 2022, R 4.6.1: **1 NOTE**, the same one
-* R-hub: Linux, Windows, macOS  <!-- TODO: run and record result -->
+* GitHub Actions: ubuntu-latest on R release and R devel, macos-latest on R release,
+  windows-latest on R release — all green
+* win-builder, R-devel  <!-- TODO: re-run against the 1.2.1 tarball and record result -->
+* win-builder, R-release  <!-- TODO: re-run against the 1.2.1 tarball and record result -->
+* R-hub: Linux, Windows, macOS  <!-- TODO: run against 1.2.1 and record result -->
+
+The win-builder results previously recorded here were for the **1.2.0** tarball (R-devel
+2026-07-26 r90304 ucrt and R 4.6.1, 1 NOTE each — the incoming feasibility note below).
+They are not carried forward: the submitted tarball has changed, so they are re-run rather
+than assumed still to hold.
 
 ## R CMD check results
 
 0 errors | 0 warnings | 2 notes
 
-Both win-builder runs reported **1 NOTE** — only the first of the two below. The second is
-local to our build machine.
+The second is local to our build machine; on win-builder only the first appeared.
 
 ### NOTE 1 — CRAN incoming feasibility
 
