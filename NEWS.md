@@ -1,5 +1,28 @@
 # rcicr (development version)
 
+## Reproducibility impact — read this if you have made z-maps
+
+- **`generateCI(zmap = TRUE)` smoothed z-maps with the wrong sigma, and ignored the
+  `sigma` you passed.** `generateCI()` reads the stimulus set with `load()`, which assigns
+  straight into the function's own frame, and 1.1.0 started storing the *noise* `sigma` in
+  the `.Rdata` file — the same name as the z-map blur argument. The saved value therefore
+  replaced the argument on every call: z-maps were blurred with 25 (the default noise sigma,
+  or whatever you generated your stimuli with) instead of the documented default of 3, and
+  passing `sigma` explicitly did nothing at all.
+
+  **Who is affected.** Only z-maps, and only from stimulus sets generated with 1.1.0 —
+  `.Rdata` files written by 1.0.1 and earlier have no `sigma` field, so their z-maps were
+  always correct. The classification images themselves, their scaling, InfoVal and every
+  saved number are untouched; `sigma` is used for nothing else. If you produced a z-map from
+  a 1.1.0 stimulus set, regenerate it: the blur it received was roughly eight times wider
+  than intended, which spreads and weakens exactly the localised signal a z-map exists to
+  show.
+
+  Every argument is now kept across the `load()`, so a field added to the `.Rdata` later
+  cannot quietly capture another one. Found by `tools/compare-release-output.R`, the release
+  gate that compares this tree's output against the last published version — this is the
+  first bug it caught.
+
 ## Behaviour change
 
 - **`plotZmap(mask = ...)` now actually masks the z-map.** The argument has been documented
@@ -59,6 +82,21 @@
   varied null is no longer indistinguishable from one carrying the default.
 
 ## Bug fixes
+
+- `autoscale()` works on masked classification images. `generateCI(mask = ...)` sets masked
+  pixels to `NA` by design, and `autoscale()` took a bare `range()` over them, so the scaling
+  constant became `NA` and the call died with `missing value where TRUE/FALSE needed`. The
+  scaling constant is now computed from the unmasked pixels, exactly as `generateCI()`'s own
+  scaling has always done, and masked pixels stay masked in the result. A CI that is
+  *entirely* `NA` now raises an error naming the CI instead of failing the same opaque way.
+
+- `generateCI()` accepts a pre-0.3.0 `.Rdata` file when computing a CI from a **single**
+  trial. rcicr 0.3.0 stopped drawing four random contrasts per trial that no patch index
+  ever referred to (4096 → 4092), and `generateCI()` has truncated older files ever since —
+  but the single-trial branch tested for a length of 4092 and then truncated to 4092, a
+  no-op that could never fire on the 4096-parameter input it existed for. Such a call failed
+  with `Stimulus generation aborted: number of parameters doesn't equal number of patches!`.
+  The multi-trial path was always correct and is unchanged.
 
 - `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` work on `.Rdata` files
   written before `noise_type` was saved (#94). Such a file failed outright with

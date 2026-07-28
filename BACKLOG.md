@@ -9,8 +9,31 @@ and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are clos
 remains in item 1 is the submission decision itself. **Items 23–25 were opened by a
 test-intent audit on 2026-07-27**; 23 is now fixed (the mask is applied, and a second bug
 in its boolean conversion was found and fixed with it), 24 is cosmetic, 25 is a logged
-non-fix. **No known open code bugs remain.** Items 13–15 are the only substantive untouched
-work, and are deliberately held until after the CRAN submission.
+non-fix. **Items 28–31 were opened by a full source review on 2026-07-28**; 28 and 29 are
+fixed, 30 is a documentation correction with optional follow-up, 31 is an unhandled edge
+case. Items 13–15 are the only substantive untouched work, and are deliberately held until
+after the CRAN submission.
+
+**Reproducibility, verified 2026-07-28 — and re-checkable on demand.**
+`tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last release before 1.1.0) from its
+own commit and runs it and the current tree through the same battery, then compares every
+output. Coverage: 10 configurations across 64/128/512px, sinusoid and Gabor noise, `nscales`
+3/5/6, `sigma` 10/25, one and two base images with shared and independent parameters,
+`antiCI`, masks, non-contiguous stimulus subsets, and every analysis entry point —
+`generateCI()`, `generateCI2IFC()`, `batchGenerateCI()` + `autoscale()`,
+`computeCumulativeCICorrelation()`, both z-map methods and `computeInfoVal2IFC()`.
+
+Result: noise basis, patch indices, RNG-drawn stimulus parameters, base images and the
+stimulus PNGs written to disk are **bit-identical**; classification images and all four
+scaling methods differ by at most **2.22e-16**, one ULP, which is the expected signature of
+the documented `rowMeans(dims = 2)` change, and **0 pixels differ** once quantised to 8-bit.
+Two deviations are on record as deliberate, both InfoVal at non-default `nscales`/`sigma`,
+where v1.0.1 measured against the wrong null (item 2). The `.Rdata` contract held
+append-only (gained `nscales`, `sigma`).
+
+The gate is a **release blocker** — `CONTRIBUTING.md` → "Releasing" — and it earned that on
+its first full run by catching item 32, a regression against v1.0.1 that no test in the
+suite could have found.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -51,9 +74,10 @@ dependency, toolchain, parallelism, test-coverage and vignette work — all rele
 v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
 remains across them is the go/no-go and the submission itself, which are the maintainer's
 to make. **Item 23, the last open code bug, is fixed** — the `plotZmap()` mask is applied,
-under a "Behaviour change" heading in `NEWS.md`. Items **13, 14 and 15** (modernize the
+under a "Behaviour change" heading in `NEWS.md`. What is left in the table is triage: items
+27, 30 and 31, none of which blocks a submission. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
-they are the backlog proper for after CRAN, and are deliberately not in the table above.
+they are the backlog proper for after CRAN, and are deliberately kept out of the table.
 
 | # | Item | Why | Size |
 |---|---|---|---|
@@ -68,10 +92,17 @@ they are the backlog proper for after CRAN, and are deliberately not in the tabl
 | 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs. Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
-| 23 | `plotZmap(mask=)` validated then never applied | **Open, needs a decision.** A documented argument that silently does nothing; narrow blast radius (`generateCI()` never passes it), but fixing it changes rendered output, so it is a behaviour change rather than a plain bug fix | S |
+| ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
 | 24 | `generateReferenceDistribution2IFC()` litters a `./stimuli` dir | Cosmetic; hidden until now because `stimuli` is git-ignored, so it never showed in `git status` | S |
 | 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
 | ~~26~~ | ~~InfoVal's null is seeded by accident and cannot be varied~~ | **Done** — the determinism is now a documented guarantee with a comment guarding the `set.seed()` it rests on, and `response_seed` makes the null varyable on purpose. Default output verified byte-identical to before the change | S |
+| 27 | `return_as_dataframe = TRUE` drops all but the first base image | **Documented, not fixed.** Correct under the default `use_same_parameters = TRUE`; silent only with `FALSE`. Widening the frame changes the return shape, so it needs a new argument rather than a redefinition — do it only if a user asks | S |
+| ~~28~~ | ~~`generateCI()`'s single-trial 4096-parameter truncation is a no-op~~ | **Done** — the vector branch tested `length(params) == 4092` and then truncated to 4092, so it could never fire on the 4096-length input it existed for. Single-trial analysis of pre-0.3.0 files worked in no released version | S |
+| ~~29~~ | ~~`autoscale()` aborts on masked classification images~~ | **Done** — a bare `range()` over the `NA`s that `generateCI(mask=)` writes by design. The single-CI `applyScaling()` path had always guarded this; only the batch path did not | S |
+| 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
+| 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
+| ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
+| 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -871,7 +902,7 @@ function's own roxygen already documents the behaviour as a caveat (with a
 - [ ] Wrap the tests in `withr::local_dir()` so a suite run leaves no directory behind
       either way.
 
-### 26. InfoVal's null is seeded by accident, and cannot be varied **[verified] [own review]**
+### 26. InfoVal's null is seeded by accident, and cannot be varied **[verified] [own review]**  ✅ **DONE**
 Found 2026-07-27. `generateReferenceDistribution2IFC()` has no `seed` argument, yet its
 output is fully deterministic: it rebuilds the stimuli via `generateStimuli2IFC()`, which
 calls `set.seed(seed)` internally (`R/generateStimuli2IFC.R:53`) using the seed stored in
@@ -1010,6 +1041,103 @@ behavior or the `.Rdata` contract.
 - [ ] Re-measure the ceiling afterwards and document it, so users can size jobs up front.
 - [ ] Only if still needed: chunking, or regenerating noise from `seed` on demand rather
       than storing every parameter vector.
+
+### 28. `generateCI()`'s single-trial 4096-parameter truncation is a no-op **[verified] [own review]**  ✅ **FIXED**
+Found 2026-07-28 in a full source review. `R/generateCI.R` truncates pre-0.3.0 parameter
+matrices from 4096 columns to 4092. The matrix branch tests `ncol(params) == 4096`; the
+vector branch, added by `4a6c58a` ("make generateCI work with a single input trial"), tested
+`length(params) == 4092` and then truncated to `1:4092` — **a no-op that can never fire on
+the 4096-length input it exists for**. Reproduced: with a 4096-parameter `.Rdata`,
+multi-trial returns a CI and single-trial dies with `Stimulus generation aborted: number of
+parameters doesn't equal number of patches!`.
+
+Narrow (pre-0.3.0 files, single-trial CIs) but the failure is total, and it was present in
+1.0.1 and every CRAN release. Fixed with a regression test that also pins the multi-trial
+branch, so the two cannot be inverted.
+
+### 29. `autoscale()` aborts on masked classification images **[verified] [own review]**  ✅ **FIXED**
+Found 2026-07-28 in the same review. `generateCI(mask = ...)` sets masked pixels to `NA` by
+design. `autoscale()` called a bare `range()` on `$ci`, so the scaling constant became `NA`
+and the next line failed with `missing value where TRUE/FALSE needed`.
+
+The telling detail: `applyScaling()` guards **every** reduction with `[!is.na(...)]`, so the
+single-CI scaling path has always handled masked CIs and only the batch path did not.
+Fixed with `na.rm = TRUE` plus an explicit error for a CI that is entirely `NA`, which would
+otherwise produce an infinite constant.
+
+### 30. The InfoVal reference lookup table has been empty since 2018 **[verified] [own review]**
+`R/computeInfoVal2IFC.R` carries a `ref_lookup` tibble whose four rows are all commented
+out. That was correct and deliberate: `01e547e` (2018-07-31) adopted the Euclidean norm and
+scaling factor *k* from the erratum to Schmitz et al. (2019), which redefined the norms
+those medians and MADs summarise. Reusing them would score CIs against a null built from the
+wrong formula.
+
+The consequence is that roughly 55 lines of lookup, matching and interactive-prompt code run
+against an empty table and can never match, and the reference distribution is always
+regenerated — correct, just slow. **`CLAUDE.md` described this as a working cache**, which
+has been corrected. The machinery is deliberately kept rather than deleted so that
+repopulating is a matter of measuring four numbers.
+
+- [ ] Optional: re-measure `median(reference_norms)` and `mad(reference_norms)` under the
+      current formula for seed 1, 512px, 10000 iterations at 100/300/500/1000 trials, and
+      uncomment the rows. Each is one `generateReferenceDistribution2IFC()` run.
+- [ ] If they are not going to be re-measured, delete the matching and prompt machinery
+      instead — but not both halves independently, or the feature becomes unrecoverable.
+
+### 31. A uniform base image silently becomes all-`NaN` **[verified] [own review]**
+`maximize_baseimage_contrast = TRUE` (the default) computes `(img - min(img)) / (max(img) -
+min(img))` in `R/generateStimuli2IFC.R`. On a constant image that is 0/0. Reproduced: the
+`NaN` base image is written into the `.Rdata` with no error and no warning, and every CI
+computed from that stimulus set inherits it.
+
+A photograph is never uniform, so this only bites synthetic or accidentally-blank base
+images — but it fails silently, which is the worst mode, and the symptom (all-`NaN` CIs)
+appears far from the cause.
+
+- [ ] Error when `max(img) == min(img)`, naming the file: a base image with no contrast
+      cannot be used, and saying so at generation time costs nothing.
+
+### 32. The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma` **[verified]**  ✅ **FIXED**
+Found 2026-07-28 by `tools/compare-release-output.R` on its first full run — the first bug
+the release gate caught, and one no test in the suite could have found, because it is a
+regression *relative to 1.0.1* introduced by a change that was itself correct.
+
+`generateCI()` reads the stimulus set with `load(rdata)`, which assigns into the function's
+own frame. Item 2's fix started saving the noise `sigma` into the `.Rdata` — and
+`generateCI()` has an argument of the same name, the z-map blur width. So from 1.1.0 on, the
+saved value silently replaced the argument: z-maps were blurred with 25 instead of 3, and an
+explicitly passed `sigma` did nothing. Measured at 512px: the number of pixels surviving the
+`threshold = 3` cut moved from 1,157 to 2,439, and the map lost its entire negative tail
+(range `-3.32 .. 4.07` became `3.00 .. 3.88`).
+
+Only z-maps are affected — `sigma` is used for nothing else — and only for stimulus sets
+generated with 1.1.0. Fixed by keeping copies of every argument across the `load()`, the
+same guard `generateReferenceDistribution2IFC()` already carries, so a field added to the
+`.Rdata` later cannot capture another argument. Regression test in `test-fixed-bugs.R`;
+`NEWS.md` carries the reproducibility note.
+
+### 33. A decorated z-map below 256px dies in base R with no useful message **[verified] [own review]**
+Found 2026-07-28 while extending the release gate's battery. Measured on 1.1.0.9000:
+
+| `img_size` | `zmapdecoration = TRUE` | `zmapdecoration = FALSE` |
+|---|---|---|
+| 128 | **`figure margins too large`** | ok |
+| 256 | ok | ok |
+| 512 | ok | ok |
+
+`zmapdecoration = TRUE` is the **default**, so `generateCI(zmap = TRUE)` on a 128px stimulus
+set fails outright, from `plot.new()` inside `.rasterImagePlot()`, with an error that names
+neither `rcicr` nor the actual cause. Not a regression: v1.1.0 behaves identically, and
+v1.0.1 was worse (it could not render a small z-map either way — that half was fixed in
+1.1.0). Small stimulus sizes are common in simulations and tests, which is where this bites.
+
+The margins the decoration needs genuinely do not fit on a 128px device, so the fix is not to
+force it. Options, in order of how much they presume:
+
+- [ ] Error early with a message naming the function, the size and the way out
+      (`zmapdecoration = FALSE`, or a larger `size`).
+- [ ] Or fall back to undecorated with a warning — silently changing what gets rendered,
+      which is a behaviour change and needs Ron's call.
 
 ---
 

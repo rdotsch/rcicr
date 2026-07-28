@@ -192,3 +192,109 @@ test_that("computeInfoVal2IFC ignores a stale `rdata` path stored inside the .Rd
   expect_length(iv, 1)
   expect_false(is.na(iv))
 })
+
+test_that("generateCI truncates 4096-parameter files for a single trial too", {
+  # Pre-0.3.0 rcicr drew 4096 random contrasts per trial while only 4092 patch
+  # indices exist (6 orientations x 2 phases x sum(4^0..4^4)); 0.3.0 dropped the
+  # 4 redundant draws and generateCI() has truncated old files ever since. The
+  # single-trial branch tested `length(params) == 4092` and then truncated to
+  # 4092 -- a no-op that could never fire on the 4096-length input it exists
+  # for, so this path died in generateNoiseImage(). The multi-trial branch was
+  # always correct and is asserted here too, so the fix cannot invert them.
+  tmp <- withr::local_tempdir()
+
+  img_size <- 512
+  p <- generateNoisePattern()          # defaults: 4092 parameters
+  expect_equal(max(p$patchIdx), 4092)
+
+  base_faces <- list(base = matrix(0.5, img_size, img_size))
+  stimuli_params <- list(base = matrix(runif(6 * 4096, -1, 1), nrow = 6))
+  seed <- 1
+  rdata_path <- file.path(tmp, "old4096.Rdata")
+  save(base_faces, stimuli_params, p, img_size, seed, file = rdata_path)
+
+  single <- generateCI(
+    stimuli = 1, responses = 1, baseimage = "base",
+    rdata = rdata_path, save_as_png = FALSE
+  )
+  multi <- generateCI(
+    stimuli = 1:3, responses = c(1, -1, 1), baseimage = "base",
+    rdata = rdata_path, save_as_png = FALSE
+  )
+
+  expect_equal(dim(single$ci), c(img_size, img_size))
+  expect_equal(dim(multi$ci), c(img_size, img_size))
+  expect_false(anyNA(single$ci))
+
+  # The single-trial CI must be the noise of trial 1 alone, which is also what
+  # the multi-trial route produces from that one row -- so the truncation cannot
+  # be silently dropping or shifting parameters.
+  expect_equal(single$ci, generateNoiseImage(stimuli_params$base[1, 1:4092], p))
+})
+
+test_that("generateCI's z-map sigma is not overwritten by the .Rdata's noise sigma", {
+  # Found by tools/compare-release-output.R, 2026-07-28. load() assigns into
+  # generateCI()'s own frame, and 1.1.0 started storing the noise `sigma` in the
+  # .Rdata -- which has the same name as the z-map blur argument. So every
+  # z-map from a 1.1.0-generated stimulus set was smoothed with the noise sigma
+  # (25 by default) instead of the requested 3, silently, and passing `sigma`
+  # did nothing at all. v1.0.1 files have no `sigma` field and were unaffected.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+  withr::local_dir(tmp)
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+  # The field doing the shadowing. If this ever stops being saved, the bug is
+  # gone for a different reason and this test stops testing anything.
+  expect_equal(e$sigma, 25)
+
+  zmap_at <- function(s) {
+    ci <- generateCI(
+      stimuli = 1:6, responses = c(1, -1, 1, -1, 1, -1), baseimage = "base",
+      rdata = rdata_path, save_as_png = FALSE, targetpath = tmp,
+      zmap = TRUE, zmapmethod = "quick", zmapdecoration = FALSE,
+      zmaptargetpath = file.path(tmp, "zmaps"), sigma = s, threshold = 0
+    )
+    ci
+  }
+
+  small <- zmap_at(1)
+  large <- zmap_at(e$sigma)
+
+  # The z-map is exactly the blur at the sigma that was asked for...
+  expected <- as.matrix(spatstat.explore::blur(spatstat.geom::as.im(small$ci), sigma = 1))
+  expected <- matrix(scale(as.vector(expected)), 32, 32)
+  expect_equal(small$zmap, expected, ignore_attr = TRUE)
+
+  # ...and not the blur at the sigma stored in the file, which is what it was.
+  expect_false(isTRUE(all.equal(small$zmap, large$zmap, check.attributes = FALSE)))
+})
+
+test_that("autoscale handles masked CIs instead of returning all NA", {
+  # generateCI(mask = ...) sets masked pixels to NA by design, and autoscale()
+  # called a bare range() on the result -- so the scaling constant became NA and
+  # the function aborted with "missing value where TRUE/FALSE needed".
+  # applyScaling() has always guarded its reductions; this path had not.
+  ci <- matrix(seq(-0.2, 0.2, length.out = 64), 8, 8)
+  ci[1:3, 1:3] <- NA
+
+  cis <- list(p1 = list(ci = ci, base = matrix(0.5, 8, 8)))
+  out <- autoscale(cis, save_as_pngs = FALSE)
+
+  # The masked cells stay masked and everything else is scaled into [0, 1].
+  expect_true(all(is.na(out$p1$scaled[1:3, 1:3])))
+  expect_false(anyNA(out$p1$scaled[4:8, 4:8]))
+  expect_gte(min(out$p1$scaled, na.rm = TRUE), 0)
+  expect_lte(max(out$p1$scaled, na.rm = TRUE), 1)
+
+  # The constant must come from the unmasked pixels only, so scaling matches
+  # what the same CI with those cells simply absent would give.
+  constant <- max(abs(range(ci, na.rm = TRUE)))
+  expect_equal(out$p1$scaled, (ci + constant) / (2 * constant))
+})
+
+test_that("autoscale errors clearly on a fully masked CI", {
+  cis <- list(p1 = list(ci = matrix(NA_real_, 8, 8), base = matrix(0.5, 8, 8)))
+  expect_error(autoscale(cis, save_as_pngs = FALSE), "entirely NA")
+})

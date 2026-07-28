@@ -12,3 +12,4 @@
 ^.*\.tar\.gz$
 ^cran-comments\.md$
 ^CONTRIBUTING\.md$
+^tools$

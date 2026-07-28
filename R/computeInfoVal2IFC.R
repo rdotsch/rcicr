@@ -106,7 +106,22 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
   if (!force_gen_ref_dist & !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
-    # Pre-computed reference distribution table (TODO: read from external file)
+    # Pre-computed reference distribution table (TODO: read from external file).
+    #
+    # THIS TABLE IS EMPTY, AND THAT IS CORRECT. The four rows below were
+    # measured under the pre-2018 infoVal formula and were commented out by
+    # commit 01e547e, which adopted the Euclidean norm and scaling factor k from
+    # the erratum to Schmitz et al. (2019). That change redefined the norms these
+    # medians and MADs summarise, so reusing them would silently score every CI
+    # against a null from the wrong formula. Emptying the table was the right
+    # call; the numbers were never re-measured.
+    #
+    # The consequence is that every lookup below misses and the reference
+    # distribution is always regenerated -- correct, just slow. The matching and
+    # prompting machinery is kept rather than deleted so that repopulating the
+    # table is a matter of measuring four numbers, not rebuilding the feature.
+    # To repopulate: run generateReferenceDistribution2IFC() at each parameter
+    # combination and record median(reference_norms) and mad(reference_norms).
     ref_lookup <- tribble(
       ~ref_seed, ~ref_img_size, ~ref_iter, ~ref_n_trials, ~ref_median,   ~ref_mad,
     #  1,         512,           10000,     100,           1097.7394,     52.54232,

@@ -1,0 +1,134 @@
+# Does this tree still produce the numbers the published versions produced?
+#
+# See tools/compare-release-output.R for what is compared and CONTRIBUTING.md
+# ("Releasing") for where this sits in the release checklist. A release must not
+# go out while this is red.
+#
+# Two comparisons, and they answer different questions: v1.0.1 is the version
+# the literature was produced with and stays pinned, while the previous release
+# catches anything that broke since -- and reaches further, because calls that
+# crashed in v1.0.1 return comparable numbers from v1.1.0 on.
+#
+# Everyday PRs run --quick (the 512px config is skipped: ~2 minutes instead of
+# ~20). A release PR -- recognised by DESCRIPTION carrying a clean X.Y.Z instead
+# of the usual X.Y.Z.9000 development version -- and every version tag run the
+# full battery. Nothing to remember and nothing to label: the version bump that
+# defines a release is the same edit that turns the full gate on.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+name: reproducibility
+
+permissions: read-all
+
+concurrency:
+  group: reproducibility-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      # Full history *and tags*: the gate resolves --ref=v1.0.1 and works out the
+      # previous release from the tag list, so a tagless checkout fails outright.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Can this PR possibly move a number? Only if it touched something outside
+      # the inert list below. Everything else -- prose, man pages, vignettes,
+      # tests -- cannot change what the gate compares.
+      #
+      # This is decided *inside* the job rather than with a workflow-level
+      # `paths:` filter, and that is the whole point: `compare` is a required
+      # status check, and a required check that gets skipped never reports at
+      # all. GitHub reads "never reported" as pending forever, so a paths filter
+      # would make every docs-only PR permanently unmergeable. A job that always
+      # runs and exits early still posts a green `compare`.
+      #
+      # The list is an allowlist of things proven unable to affect the
+      # comparison, so anything new or unrecognised runs the gate. Note what is
+      # deliberately absent: DESCRIPTION (its version chooses quick vs full),
+      # NAMESPACE (exports the harness calls), NEWS.md (the gate fails if a
+      # deviation fires while NEWS.md is silent about it), R/, and tools/.
+      - name: Can this change move a number?
+        id: relevant
+        run: |
+          run=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base=$(git merge-base "origin/${{ github.base_ref }}" HEAD)
+            changed=$(git diff --name-only "$base" HEAD)
+            echo "changed files:"; echo "$changed" | sed 's/^/  /'
+            inert='^(man/|vignettes/|tests/|notes/|\.claude/|\.github/ISSUE_|README\.md$|BACKLOG\.md$|CLAUDE\.md$|DECISIONS\.md$|CONTRIBUTING\.md$|ChangeLog$|cran-comments\.md$|codecov\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.Rbuildignore$|LICENSE|.*\.Rproj$)'
+            # Deliberately no `grep -qv`: ugrep and GNU grep disagree on its
+            # exit status, so the emptiness of the list is tested instead. It
+            # also lets the log name the file that forced the run.
+            relevant=$(echo "$changed" | grep -vE "$inert" || true)
+            if [ -n "$changed" ] && [ -z "$relevant" ]; then
+              run=false
+            else
+              echo "files that could move a number:"; echo "$relevant" | sed 's/^/  /'
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          if [ "$run" = "false" ]; then
+            echo "::notice::No file here can change numeric output - skipping the comparison."
+          fi
+
+      - uses: r-lib/actions/setup-r@v2
+        if: steps.relevant.outputs.run == 'true'
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      # This installs the *current* DESCRIPTION's dependencies; the reference
+      # version's extra imports are fetched by the gate itself (--install-deps).
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        if: steps.relevant.outputs.run == 'true'
+
+      - name: Decide scope
+        id: scope
+        if: steps.relevant.outputs.run == 'true'
+        run: |
+          version=$(grep '^Version:' DESCRIPTION | sed 's/^Version:[[:space:]]*//')
+          echo "DESCRIPTION version: $version"
+          if [ "${{ github.event_name }}" = "pull_request" ] && \
+             echo "$version" | grep -q '\.9000$'; then
+            echo "development version -> quick battery"
+            echo "flags=--quick" >> "$GITHUB_OUTPUT"
+          else
+            echo "release version or tag -> full battery"
+            echo "flags=" >> "$GITHUB_OUTPUT"
+          fi
+          # Newest v* tag that is not this very commit, so a tag push compares
+          # against its predecessor rather than against itself.
+          head=$(git rev-parse HEAD^{commit})
+          prev=''
+          for tag in $(git tag --list 'v*' --sort=-v:refname); do
+            if [ "$(git rev-parse "$tag^{commit}")" != "$head" ]; then prev=$tag; break; fi
+          done
+          echo "previous release: ${prev:-none}"
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Compare against v1.0.1, the published baseline
+        if: steps.relevant.outputs.run == 'true'
+        run: Rscript tools/compare-release-output.R --install-deps ${{ steps.scope.outputs.flags }}
+
+      # Runs even if the baseline comparison failed: knowing whether a
+      # difference is old or new is most of the diagnosis.
+      - name: Compare against the previous release
+        if: ${{ !cancelled() && steps.relevant.outputs.run == 'true' && steps.scope.outputs.prev != '' }}
+        run: >
+          Rscript tools/compare-release-output.R --install-deps
+          ${{ steps.scope.outputs.flags }} --ref=${{ steps.scope.outputs.prev }}

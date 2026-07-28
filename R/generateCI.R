@@ -109,8 +109,21 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
                 length(stimuli), ', responses: ', length(responses), ').'))
   }
 
+  # load() assigns straight into this function's frame, so any object stored in
+  # the .Rdata file silently overwrites an argument of the same name (the same
+  # hazard handled in generateReferenceDistribution2IFC()). `sigma` is the live
+  # case: since 1.1.0 the file carries the *noise* sigma - 25 by default - which
+  # replaced this function's z-map blur sigma of 3, so every z-map made from a
+  # 1.1.0-generated stimulus set was smoothed with the wrong constant and the
+  # sigma the caller passed was ignored. Keep private copies of every argument
+  # and restore them after loading, so a field added to the .Rdata later cannot
+  # quietly capture another one.
+  .args <- mget(names(formals()), envir = environment())
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
+
+  list2env(.args, envir = environment())
 
   # Check whether critical variables have been loaded
   if (!exists('s', envir=environment(), inherits=FALSE) &
@@ -167,14 +180,21 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
   # Check whether number of parameters are 4096 (this was the case in older
   # versions of rcicr) and should be truncated to 4092 to work well in this new
-  # version
+  # version. rcicr 0.3.0 stopped drawing 4 random contrasts per trial that no
+  # patch index ever referred to: 6 orientations x 2 phases x sum(4^0..4^4) is
+  # 4092, while pre-0.3.0 allocated a round 4096. See ChangeLog, 0.3.0-29.
   if (!is.vector(params)) {
     if (ncol(params) == 4096) {
       params <- params[, 1:4092]
     }
   } else {
-    # In case we only have a single trial as input
-    if (length(params) == 4092) {
+    # In case we only have a single trial as input. This tested
+    # `length(params) == 4092` and then truncated to 4092 -- a no-op that could
+    # never fire on the 4096-parameter input it exists for, so a single-trial CI
+    # from a pre-0.3.0 file died in generateNoiseImage() with "number of
+    # parameters doesn't equal number of patches". The multi-trial branch above
+    # was always correct.
+    if (length(params) == 4096) {
       params <- params[1:4092]
     }
   }
