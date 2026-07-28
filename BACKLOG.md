@@ -11,8 +11,10 @@ test-intent audit on 2026-07-27**; 23 is now fixed (the mask is applied, and a s
 in its boolean conversion was found and fixed with it), 24 is cosmetic, 25 is a logged
 non-fix. **Items 28–31 were opened by a full source review on 2026-07-28**; 28 and 29 are
 fixed, 30 is a documentation correction with optional follow-up, 31 is an unhandled edge
-case. Items 13–15 are the only substantive untouched work, and are deliberately held until
-after the CRAN submission.
+case. **Item 35 was opened by the first R-hub run on 2026-07-28** — the suite's only
+non-portable assertion, failing on macOS — and is fixed and released as **v1.2.1**, which is
+the tree to submit to CRAN. Items 13–15 are the only substantive untouched work, and are
+deliberately held until after the CRAN submission.
 
 **Reproducibility, verified 2026-07-28 — and re-checkable on demand.**
 `tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last release before 1.1.0) from its
@@ -103,7 +105,7 @@ they are the backlog proper for after CRAN, and are deliberately kept out of the
 | 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
 | 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
 | ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
-| 35 | `test-plotZmap.R:68` fails on macOS — **blocks the CRAN submission** | **Open, P0.** Found by the first R-hub run: `linux`/`windows` R-devel pass, `macos` returns 1 ERROR. `expect_length(unique(as.vector(below)), 1)` asserts exact pixel uniformity of a rendered PNG, and the default `png()` device is quartz on macOS vs cairo elsewhere. The package is fine; the test is not portable. CRAN checks macOS, so this must be fixed first | S |
+| ~~35~~ | ~~`test-plotZmap.R:68` fails on macOS — blocked the CRAN submission~~ | **Done** — released as 1.2.1. The second distinct value was macOS quartz writing an **alpha channel** where cairo writes RGB, not an antialiasing artifact, so every option drafted before a macOS run was wrong. The count now ignores the alpha plane, and the value it compares is an ordering rather than a constant — the first fix pinned the background grey and macOS failed that too, at 0.573 vs 0.502. CI gained macOS and Windows runners, and the z-map is now pinned by the golden master on all three | S |
 | 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 
@@ -582,26 +584,32 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 
 ### 20. CRAN resubmission checklist  **[verified against `R CMD check --as-cran`]**
 
-> **Do not submit a tarball built from the `v1.2.0` tag.** That tree fails `R CMD check`
+> **Submit the `v1.2.1` tag, and not the `v1.2.0` one.** The v1.2.0 tree fails `R CMD check`
 > on macOS: `test-plotZmap.R` asserted properties of a rendered PNG that belong to the
 > graphics device rather than to the drawing, and macOS quartz writes an alpha channel and
 > applies colour management where cairo does not. Found 2026-07-28 by the first R-hub
 > dispatch, which ran against the v1.2.0 tree. `tests/` is not in `.Rbuildignore`, so the
-> tests ship and get run. The fix is on `main` **after** the tag, so the submitted release
-> has to be cut from a later tree — 1.2.1 — and the win-builder results recorded in
-> `cran-comments.md`, which are for the v1.2.0 tarball, need re-running against it.
-> CRAN's incoming checks are mainly Linux and Windows so this might not block acceptance,
-> but macOS binaries are checked on the farm after publication, and a package returning
-> from archival should not arrive already red. See `DECISIONS.md` → Testing for the
-> underlying rule.
+> tests ship and get run. The fix (item 35) landed on `main` **after** that tag, which is why
+> 1.2.1 exists at all. CRAN's incoming checks are mainly Linux and Windows so it might not
+> have blocked acceptance, but macOS binaries are checked on the farm after publication, and a
+> package returning from archival should not arrive already red. See `DECISIONS.md` → Testing
+> for the underlying rule.
+>
+> **The win-builder results in `cran-comments.md` are for the v1.2.0 tarball and were
+> deliberately not carried forward.** win-builder R-devel, win-builder R-release and R-hub all
+> need re-running against the 1.2.1 tarball; the three `<!-- TODO -->` markers there are what
+> is left before the submission.
 
-**Current status — every box below is ticked.** The latest `--as-cran` run, on
-`release-1.1.0` after the version bump, gives **0 errors, 0 warnings, 2 NOTEs**, and
-`Version contains large components` is **gone** — confirmed by reading the incoming-
-feasibility block, not by assuming the bump worked. The two survivors are the
-archived/new-submission pair and the Medium 403, both expected and both explained in
-`cran-comments.md`. Nothing mechanical is left in this item; the go/no-go and the
-submission are Ron's.
+**Current status — every box below is ticked.** The latest `--as-cran` run, on the
+`rcicr_1.2.1.tar.gz` built at the repo root from the `v1.2.1` tree (2026-07-28), gives
+**0 errors, 0 warnings, 2 NOTEs**, with `PDF version of manual ... OK`,
+`HTML version of manual ... OK` and `checking for hidden files and directories ... OK` — the
+last of those being the check the `^\.git$` `.Rbuildignore` entry exists for. The two
+survivors are the archived/new-submission pair (carrying the Medium 403) and the sandbox
+clock, both expected and both explained in `cran-comments.md`. `Version contains large
+components` is gone and cannot return, because the tarball is built from a tag.
+Nothing mechanical is left in this item beyond re-running win-builder and R-hub against the
+1.2.1 tarball; the go/no-go and the submission itself are Ron's.
 
 The run below is the earlier baseline, kept because it is what established the check
 environment. **Re-run 2026-07-27 against `main` @ `5428b79`, in a check environment that
@@ -1166,7 +1174,33 @@ force it. Options, in order of how much they presume:
 - [ ] Or fall back to undecorated with a warning — silently changing what gets rendered,
       which is a behaviour change and needs Ron's call.
 
-### 35. `test-plotZmap.R` fails on macOS — blocks the CRAN submission **[verified]**
+### 35. `test-plotZmap.R` fails on macOS — blocked the CRAN submission **[verified]**  ✅ **FIXED**
+Fixed in #151 (`e0b74a7`) and released as **1.2.1**; the submitted tarball is built from
+`v1.2.1`, not `v1.2.0`. What the fix turned out to be, and what it cost to get right:
+
+- **The cause was the alpha channel, not antialiasing.** cairo (Linux, Windows) writes RGB;
+  macOS quartz writes RGBA. An opaque alpha plane is a solid block of `1`s, so it adds a
+  second distinct value to the array **without a pixel having been painted**. The count now
+  runs over colour channels only, handling 1-, 2-, 3- and 4-channel layouts, verified against
+  synthetic images in each: unpainted still collapses to one value, painted still yields two,
+  so no detection power was given up.
+- **The first fix over-tightened and macOS caught that too.** It also pinned the flat value to
+  the background grey — which fails there, because quartz renders a `0.5` background at ~0.573
+  where cairo gives 0.502 (colour management). That repeated the mistake being corrected, one
+  line below it. The assertion is now an *ordering* — the same render over a darker background
+  must come out darker — which survives any monotone transfer function.
+- **The general rule, now in `DECISIONS.md`:** when a test reads pixels back from a graphics
+  device, *every absolute property of those pixels belongs to the device* — channel count and
+  value alike. Only relationships between renders are portable.
+- **The class of failure cannot recur unseen.** `R-CMD-check.yaml` gained macOS and Windows
+  runners (the matrix had varied only the R version against a hardcoded `ubuntu-latest`, so
+  what read as two-platform coverage was one platform twice), and
+  `test-regression-baseline.R` now pins z-map values for both `zmapmethod`s. The literals were
+  captured on Linux and passed unchanged on macOS ARM64 and Windows — first direct evidence
+  that the z-map arithmetic agrees across platform and architecture.
+
+The original report follows.
+
 Found 2026-07-28 by the **first R-hub run** (`gh run view 30370708485`, branch
 `check/rhub-v1.2.0`, i.e. the `v1.2.0` tree). `linux (R-devel)` and `windows (R-devel)`
 pass; `macos (R-devel)` returns `Status: 1 ERROR`:
@@ -1178,8 +1212,8 @@ Actual length: 2.
 [ FAIL 1 | WARN 0 | SKIP 5 | PASS 220 ]
 ```
 
-**This is a blocker.** CRAN checks on macOS, and a test ERROR there fails the submission —
-so it has to be resolved before the tarball goes in, even though nothing is wrong with the
+**This was a blocker.** CRAN checks on macOS, and a test ERROR there fails the submission —
+so it had to be resolved before the tarball went in, even though nothing was wrong with the
 package itself.
 
 The failing assertion is the uniform-background trick from `CLAUDE.md`'s test conventions:
@@ -1197,7 +1231,8 @@ container, so the exact pixel counts are unknown. **Confirm before fixing** — 
 the test writes to a `withr::local_tempdir()`. Print `table(as.vector(below))` from a macOS
 run first, or add it to the failure message.
 
-Options, cheapest first:
+Options, cheapest first — **none of these was what the fix turned out to need**, because all
+three assumed an edge artifact and the cause was a whole extra channel:
 - [ ] **Assert the interior, not the whole frame** — exclude a one-pixel border and keep the
       exact comparison. Preserves the test's intent; costs nothing if the artifact is at the
       edge, which is what the two-value result suggests.
@@ -1207,15 +1242,19 @@ Options, cheapest first:
 - [ ] **Pin the device** — `png(type = "cairo")` inside the test. Rejected unless the above
       fail: it tests a rendering path users on macOS do not have, which is the opposite of
       what a portability failure is telling us.
+- [x] **Drop the alpha plane before counting** — what was actually done, once a macOS run
+      showed the second value was a solid block of `1`s. Note the instruction above to get
+      `table(as.vector(below))` from a macOS run before fixing was the right call: every
+      option drafted from here was wrong.
 
 Note the same file's other content tests (`the threshold is applied per pixel`, and the mask
 tests from item 23) compare *renders against renders* and so passed — they are device-agnostic
 by construction. Only line 68 asserts absolute uniformity. That is the pattern to copy.
 
-Introduced by #138 (`887aea4`) and extended by #145 (`b2b0d9a`); it has never run on macOS
-before, because CI is `ubuntu-latest` only. Worth deciding separately whether
-`R-CMD-check.yaml` should gain a macOS runner — the whole value of this R-hub run was
-catching what a single-platform CI cannot.
+Introduced by #138 (`887aea4`) and extended by #145 (`b2b0d9a`); it had never run on macOS
+before, because CI was `ubuntu-latest` only. That separate question — whether
+`R-CMD-check.yaml` should gain a macOS runner — was answered yes in the same PR: the whole
+value of this R-hub run was catching what a single-platform CI cannot.
 
 ### 34. `raster` costs four packages and a C++ toolchain for three plotting calls **[verified] [own review]**
 Found 2026-07-28, from watching R-hub: `windows (R-devel)` finished in minutes while
