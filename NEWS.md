@@ -1,4 +1,39 @@
-# rcicr (development version)
+# rcicr 1.2.1 (2026-07-28)
+
+**No user-facing changes.** Nothing this package computes differs from 1.2.0 — no function,
+argument, return value or number has changed, and no analysis script needs revisiting.
+
+The release exists because the 1.2.0 source tree does not pass `R CMD check` on macOS. The
+fault was in the package's own test suite, not in the package: a test asserted properties of
+a rendered PNG that belong to the graphics device rather than to what was drawn, and those
+properties differ between macOS and Linux. No released function was ever affected. A package
+still has to pass its own checks on the platforms CRAN builds for, which is what this
+release restores.
+
+## Documentation
+
+- **`?plotZmap` and the README now describe what is and is not reproducible across operating
+  systems.** Classification images, scaling, informational value and the z-scores themselves
+  are ordinary R arithmetic and do not depend on your platform — as of this release that is
+  verified on Linux, macOS and Windows on every change, rather than assumed. The PNG written
+  by `plotZmap()` is the one exception: it is drawn through a graphics device, and devices
+  differ by platform in colour management and in whether they write an alpha channel, so the
+  same z-map produces visibly identical figures whose files are not byte-identical.
+
+  The practical advice, now stated in both places: **compare numbers, not rendered figures**,
+  when checking that an analysis reproduces. A z-map image that differs pixel-for-pixel on a
+  colleague's machine is not a different result. Every other PNG the package writes —
+  stimuli, classification images, autoscaled classification images — is written directly
+  from the pixel array and carries no such dependence.
+
+## Internal
+
+- `R CMD check` now runs on macOS and Windows as well as Linux, on every change. It
+  previously varied only the R version against a single platform, which is how the macOS
+  failure above went unnoticed.
+- The test suite pins z-map values as well as classification images, scaling and
+  informational value, so cross-platform agreement of the numbers is checked rather than
+  assumed.
 
 # rcicr 1.2.0 (2026-07-28)
 

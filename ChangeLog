@@ -1,3 +1,12 @@
+Changes 1.2.1 [28-Jul-2026]
+
+* See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward.
+* In brief: no user-facing changes. Nothing the package computes differs from 1.2.0.
+  The release exists because the 1.2.0 tree does not pass R CMD check on macOS —
+  a test in the suite asserted properties of a rendered PNG that belong to the
+  graphics device rather than to the drawing. No released function was affected.
+* R CMD check now runs on macOS and Windows as well as Linux on every change.
+
 Changes 1.2.0 [28-Jul-2026]
 
 * See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward.
