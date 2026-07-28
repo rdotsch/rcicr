@@ -103,6 +103,7 @@ they are the backlog proper for after CRAN, and are deliberately kept out of the
 | 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
 | 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
 | ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
+| 35 | `test-plotZmap.R:68` fails on macOS — **blocks the CRAN submission** | **Open, P0.** Found by the first R-hub run: `linux`/`windows` R-devel pass, `macos` returns 1 ERROR. `expect_length(unique(as.vector(below)), 1)` asserts exact pixel uniformity of a rendered PNG, and the default `png()` device is quartz on macOS vs cairo elsewhere. The package is fine; the test is not portable. CRAN checks macOS, so this must be fixed first | S |
 | 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 
@@ -1151,6 +1152,57 @@ force it. Options, in order of how much they presume:
       (`zmapdecoration = FALSE`, or a larger `size`).
 - [ ] Or fall back to undecorated with a warning — silently changing what gets rendered,
       which is a behaviour change and needs Ron's call.
+
+### 35. `test-plotZmap.R` fails on macOS — blocks the CRAN submission **[verified]**
+Found 2026-07-28 by the **first R-hub run** (`gh run view 30370708485`, branch
+`check/rhub-v1.2.0`, i.e. the `v1.2.0` tree). `linux (R-devel)` and `windows (R-devel)`
+pass; `macos (R-devel)` returns `Status: 1 ERROR`:
+
+```
+── Failure ('test-plotZmap.R:68:3'): sub-threshold z-scores are not painted and supra-threshold ones are ──
+Expected `unique(as.vector(below))` to have length 1.
+Actual length: 2.
+[ FAIL 1 | WARN 0 | SKIP 5 | PASS 220 ]
+```
+
+**This is a blocker.** CRAN checks on macOS, and a test ERROR there fails the submission —
+so it has to be resolved before the tarball goes in, even though nothing is wrong with the
+package itself.
+
+The failing assertion is the uniform-background trick from `CLAUDE.md`'s test conventions:
+render a z-map that is entirely below threshold onto a flat grey background, and "nothing was
+painted" becomes `expect_length(unique(as.vector(below)), 1)`. That is exact-equality over
+every pixel of a rendered PNG, which is **not** a portable thing to assert. The default `png()`
+device differs by platform — quartz on macOS (`capabilities("aqua")`), cairo on this box and
+on the Linux runners — and they do not agree pixel-for-pixel on `rasterImage()` interpolation
+and antialiasing. Two distinct values instead of one is consistent with an edge artifact of a
+few pixels, not with the z-map being painted.
+
+Unverified from here: the failure is macOS-only and cannot be reproduced on this Linux
+container, so the exact pixel counts are unknown. **Confirm before fixing** — the artifact
+(`gh run download 30370708485`) has the `.Rcheck` directory but not the rendered PNGs, since
+the test writes to a `withr::local_tempdir()`. Print `table(as.vector(below))` from a macOS
+run first, or add it to the failure message.
+
+Options, cheapest first:
+- [ ] **Assert the interior, not the whole frame** — exclude a one-pixel border and keep the
+      exact comparison. Preserves the test's intent; costs nothing if the artifact is at the
+      edge, which is what the two-value result suggests.
+- [ ] **Assert a dominant value rather than a unique one** — e.g. ≥ 99% of pixels equal the
+      modal value. Honest, but weaker, and it would no longer fail if a faint z-map were
+      painted over the whole frame.
+- [ ] **Pin the device** — `png(type = "cairo")` inside the test. Rejected unless the above
+      fail: it tests a rendering path users on macOS do not have, which is the opposite of
+      what a portability failure is telling us.
+
+Note the same file's other content tests (`the threshold is applied per pixel`, and the mask
+tests from item 23) compare *renders against renders* and so passed — they are device-agnostic
+by construction. Only line 68 asserts absolute uniformity. That is the pattern to copy.
+
+Introduced by #138 (`887aea4`) and extended by #145 (`b2b0d9a`); it has never run on macOS
+before, because CI is `ubuntu-latest` only. Worth deciding separately whether
+`R-CMD-check.yaml` should gain a macOS runner — the whole value of this R-hub run was
+catching what a single-platform CI cannot.
 
 ### 34. `raster` costs four packages and a C++ toolchain for three plotting calls **[verified] [own review]**
 Found 2026-07-28, from watching R-hub: `windows (R-devel)` finished in minutes while
