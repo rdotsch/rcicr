@@ -176,9 +176,17 @@ the tarball in front of a third party.
   on this repository's own Actions rather than uploading anywhere. Trigger it from the
   Actions tab ("R-hub" → Run workflow), which needs nothing but repository access.
   `rhub::rhub_check()` does the same over the API but requires a GitHub PAT with the `repo`
-  scope — `rhub::rhub_doctor()` reports whether yours has it. Because the workflow is
-  `workflow_dispatch`-only, it must be merged to the **default branch** before it can be
-  triggered at all.
+  scope, stored via `gitcreds::gitcreds_set()` — `rhub::rhub_doctor()` reports whether yours
+  has it. Because the workflow is `workflow_dispatch`-only, it must be merged to the
+  **default branch** before it can be triggered at all, and R-hub wants the file on the
+  default branch *and* on whichever branch is being checked.
+
+  **`RHUB_TOKEN` is deliberately unset, and nothing is missing.** The stock workflow passes
+  `secrets.RHUB_TOKEN` to four actions, which makes it look like a prerequisite. It is an
+  optional slot for your own PAT to reach private repositories — not a credential R-hub
+  issues — and as of `r-hub/actions@v1` none of those four actions references the input in
+  any step. This package is public; an unset secret expands to an empty string and the jobs
+  run normally.
 
 **Ron submits to CRAN personally.** CRAN emails the maintainer address to confirm, and for a
 package archived over an undeliverable address, that confirmation *is* the point of the
