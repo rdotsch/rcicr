@@ -1,3 +1,5 @@
+# rcicr (development version)
+
 # rcicr 1.2.0 (2026-07-28)
 
 *Upgrading from the CRAN version?* The last release on CRAN was 0.3.4.1, before the package
