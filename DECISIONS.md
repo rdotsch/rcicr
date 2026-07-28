@@ -271,31 +271,3 @@ It is the only link between the two halves of the package, and nothing about a s
 recoverable without it. The field-by-field table there was written by inspecting a real
 generated file rather than by reading the `save()` call — which is how `trial` was identified
 as a leftover loop counter carrying no information.
-
----
-
-## Corrections — claims that did not survive checking
-
-Kept because each was about to be written somewhere a reader could act on it, and the pattern
-is more useful than any individual case. **Drop an entry when its pattern is already carried
-by another one, or when the mistake has become impossible to repeat — not merely when the
-particular fact has been corrected.**
-
-- **"29x faster."** The benchmark precomputed the weighted patch array *outside* the timed
-  call, so it measured only the step that changed; end-to-end it is **6.1x**, exactly what the
-  original contributor had reported. **Benchmark the whole call, not the step you changed.**
-  Correcting it took a code comment, `NEWS.md`, a PR title and body, and two places on a
-  public thread.
-- **"The manual ERROR/WARNING resolved itself."** That run passed `--no-manual`, which *skips*
-  the check rather than passing it. **Never treat a `--no-manual` run as evidence the manual
-  builds.**
-- **Prose about an artifact is not the artifact.** Four instances, each one step from a reader
-  acting on it: "dependencies cut to 14" was inferred as 27 − 13 while `DESCRIPTION` said 15,
-  in a commit whose purpose was fixing inaccurate docs; `NEWS.md` saying an issue was
-  "addressed" was taken as grounds to close two that were still reproducible when actually run
-  (a progress bar emitting zero characters, and old `.Rdata` files failing on an `exists()`
-  guard added for two sibling variables but not the third, three lines apart); a contributor's
-  PR diff showed broken code while the review thread already held a correct version, posted
-  years earlier and never pushed; and `BACKLOG.md`'s summary table listed five items as
-  outstanding that their own sections marked done. **Count it, run it, read the thread — then
-  write the sentence.**

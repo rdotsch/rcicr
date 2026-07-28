@@ -66,8 +66,6 @@ is in git history up to `887aea4`; do not recreate it.
 - **Edit entries in place** when they stop being true. It is not an append-only log, and it
   carries no dates, state or next-steps sections — `BACKLOG.md` holds what is left to do and
   `NEWS.md` holds what changed for users.
-- Its "Corrections" section records claims that did not survive checking. Add to it when a
-  stated fact turns out wrong; the pattern is more useful than any individual case.
 - **Do not restate in `DECISIONS.md` what this file, `CONTRIBUTING.md` or `BACKLOG.md`
   already says.** Reference it instead. A duplicated rule drifts, and the copy a reader
   happens to hit first is then wrong.
