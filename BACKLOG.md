@@ -15,7 +15,7 @@ case. Items 13–15 are the only substantive untouched work, and are deliberatel
 after the CRAN submission.
 
 **Reproducibility, verified 2026-07-28 — and re-checkable on demand.**
-`tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last CRAN release) from its
+`tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last release before 1.1.0) from its
 own commit and runs it and the current tree through the same battery, then compares every
 output. Coverage: 10 configurations across 64/128/512px, sinusoid and Gabor noise, `nscales`
 3/5/6, `sigma` 10/25, one and two base images with shared and independent parameters,

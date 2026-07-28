@@ -30,12 +30,12 @@ opt <- function(flag, default = NULL) {
   hit <- grep(paste0("^--", flag, "="), args, value = TRUE)
   if (length(hit)) sub(paste0("^--", flag, "="), "", hit[[1]]) else default
 }
-# b6ab269 is v1.0.1, the last version published to CRAN and the one nearly every
-# result in the literature was produced with. It stays pinned there rather than
-# advancing to each new release: moving it would let a tree drift away from the
-# published numbers one tolerated epsilon at a time, each step "identical to the
-# last release". See DECISIONS.md.
-REF     <- opt("ref", "b6ab269")
+# v1.0.1 (b6ab269) is the last version published before 1.1.0 and the one nearly
+# every result in the literature was produced with. It stays pinned there rather
+# than advancing to each new release: moving it would let a tree drift away from
+# the published numbers one tolerated epsilon at a time, each step "identical to
+# the last release". See DECISIONS.md.
+REF     <- opt("ref", "v1.0.1")
 KEEP    <- "--keep"    %in% args
 QUICK   <- "--quick"   %in% args
 VERBOSE <- "--verbose" %in% args
@@ -56,13 +56,13 @@ INSTALL_DEPS <- "--install-deps" %in% args
 #      runs report a stale expectation.
 
 EXPECTED <- list(
-  list(ref = "b6ab269", key = "sinusoid-64-nscales3-infoval/infoval",
+  list(ref = "v1.0.1", key = "sinusoid-64-nscales3-infoval/infoval",
        reason = paste("v1.0.1 did not save nscales/sigma into the .Rdata, so its",
                       "reference distribution was rebuilt at the default nscales = 5",
                       "regardless of how the stimuli were made. At nscales != 5 the old",
                       "InfoVal was computed against the wrong null and is simply wrong."),
        news = "Reproducibility impact"),
-  list(ref = "b6ab269", key = "gabor-64-sigma10-infoval/infoval",
+  list(ref = "v1.0.1", key = "gabor-64-sigma10-infoval/infoval",
        reason = paste("Same cause as the nscales case: v1.0.1's reference distribution",
                       "ignored noise_type and sigma, so InfoVal for Gabor noise (and for",
                       "any non-default sigma) was measured against a sinusoid null."),

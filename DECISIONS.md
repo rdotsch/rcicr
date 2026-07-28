@@ -202,7 +202,8 @@ The obvious move once a release is green is to make it the new reference. It is 
 release would then be compared only against its predecessor, and a tree could walk away from
 the published numbers one tolerated epsilon at a time, every step of the walk "identical to the
 last release". The literature was produced with v1.0.1, so that comparison is the one that
-protects it, and it stays pinned at `b6ab269`.
+protects it, and it stays pinned at `v1.0.1` (tagged retroactively at `b6ab269`, so the
+default reads as a version rather than a bare SHA).
 
 The second run (`--ref=v1.1.0`) answers a different and also useful question — did anything
 break since the last release — and reaches further, because v1.0.1 *crashes* on calls that
