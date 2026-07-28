@@ -405,6 +405,27 @@ the hard way that those entries do not cover:
   takes the other branch down with it. (`gh pr merge --delete-branch` has already removed the
   remote branch anyway.)
 
+### GitHub releases carry notes only — the built tarball is not attached
+Asked and settled at the 1.2.1 release. A release page already offers "Source code (tar.gz)",
+which GitHub generates from the tag, and that is **not** the same artifact `R CMD build`
+produces: the git archive has no built vignettes in `inst/doc/` and does carry every
+`.Rbuildignore`d development file. Attaching the real tarball would put two different
+"source" downloads on one page, which is a support question waiting to happen, and a second
+artifact that can drift from the tag it claims to be.
+
+The convention this follows is r-lib's and the tidyverse's: CRAN hosts the tarball, and
+`remotes::install_github('rdotsch/rcicr@vX.Y.Z')` covers everyone else. That rcicr is
+currently *off* CRAN is the strongest argument the other way, and it was considered — it is
+temporary, and it does not outweigh publishing an artifact the project would then have to
+keep consistent at every release.
+
+What this deliberately gives up: the tarball is **not byte-reproducible from the tag**,
+because `R CMD build` stamps `Packaged: <timestamp>; <user>` into `DESCRIPTION`. So the exact
+bytes sent to CRAN are not archived anywhere and can only be rebuilt, into something
+marginally different. That is accepted: what has to be reproducible is the *tree*, which the
+tag pins exactly, and which is what both the release gate and `R CMD check` actually operate
+on. Nothing about a result depends on the timestamp in a tarball header.
+
 ### `ChangeLog` gets a pointer entry, not a duplicate
 `NEWS.md` supersedes it, but someone opening `ChangeLog` first would otherwise conclude the
 last release is whatever it last recorded. Two changelogs both claiming authority is worse
