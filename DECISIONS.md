@@ -293,6 +293,19 @@ The mechanics are in `CLAUDE.md` and `CONTRIBUTING.md`. What is easy to reintrod
 RStudio-template leftover, so it never shipped to CI or to other contributors at all. Do not
 re-add it.
 
+### R-hub runs on `workflow_dispatch` only, never on push
+The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
+be refreshed from upstream. It is left trigger-on-demand because R-hub answers a question that
+only arises at release time — does this build on Windows, macOS and the odd CRAN compiler
+flags — and the everyday answer is already covered by `R-CMD-check.yaml` on release and devel.
+Running it per-PR would spend a matrix of platforms on a question nobody asked yet, and it
+would compete with the ~11-minute reproducibility gate that *is* required on every code PR.
+
+The cost of `workflow_dispatch`-only is that the workflow is invisible until it reaches the
+**default branch** — GitHub offers no "Run workflow" button for a file that exists only on a
+feature branch. So it merges to `main` ahead of the release it is meant to check, not
+alongside it.
+
 ### The 75,000-line artifact commit
 One branch carried ~75,000 lines of committed `R CMD check` artifacts across three commits,
 unnoticed because only the diffs of edited files were ever read — hence the `git diff --stat

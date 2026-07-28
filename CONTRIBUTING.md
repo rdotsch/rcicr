@@ -161,9 +161,24 @@ NOTEs are expected and explained in `cran-comments.md` — CRAN incoming feasibi
 submission of an archived package) and future file timestamps (no network clock in a
 sandbox).
 
-Then run `devtools::check_win_devel()` and `rhub::rhub_check()`, and record their results in
-the two `<!-- TODO -->` markers in `cran-comments.md`. These upload the tarball to third
-parties and email the maintainer, which is why they are not run casually.
+Then run the two external checks and record their results in the `<!-- TODO -->` markers in
+`cran-comments.md`. Neither is run casually: win-builder mails the maintainer, and both put
+the tarball in front of a third party.
+
+- **win-builder** — `devtools::check_win_devel()` and `devtools::check_win_release()`, run
+  from a checkout of the tag. Each FTPs the tarball to `win-builder.r-project.org` and mails
+  a check log to the maintainer address within the hour. The server **will not overwrite an
+  existing upload**: a second attempt at the same filename fails with a bare
+  `Failed FTP upload: 550`, which means "already queued", not "rejected". Confirm with
+  `curl --list-only ftp://win-builder.r-project.org/R-devel/` before re-uploading, or you
+  will conclude the upload failed when it succeeded.
+- **R-hub** — `.github/workflows/rhub.yaml` is the stock R-hub v2 workflow, so the check runs
+  on this repository's own Actions rather than uploading anywhere. Trigger it from the
+  Actions tab ("R-hub" → Run workflow), which needs nothing but repository access.
+  `rhub::rhub_check()` does the same over the API but requires a GitHub PAT with the `repo`
+  scope — `rhub::rhub_doctor()` reports whether yours has it. Because the workflow is
+  `workflow_dispatch`-only, it must be merged to the **default branch** before it can be
+  triggered at all.
 
 **Ron submits to CRAN personally.** CRAN emails the maintainer address to confirm, and for a
 package archived over an undeliverable address, that confirmation *is* the point of the
