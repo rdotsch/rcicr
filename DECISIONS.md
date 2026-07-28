@@ -293,6 +293,18 @@ The mechanics are in `CLAUDE.md` and `CONTRIBUTING.md`. What is easy to reintrod
 RStudio-template leftover, so it never shipped to CI or to other contributors at all. Do not
 re-add it.
 
+### `^\.git$` is in `.Rbuildignore` because a worktree's `.git` is a *file*
+`R CMD build` drops `.git` on its own, so the entry looks redundant. It is not: the built-in
+exclusion matches a **directory** named `.git`, and in a `git worktree` checkout `.git` is a
+49-byte text file holding a `gitdir:` pointer. It ships. The tarball then draws
+`checking for hidden files and directories ... NOTE`, naming `.git`, from a tree that looks
+identical to a clean one.
+
+This is not hypothetical — it reached win-builder. Building the tag in a worktree (the
+obvious way to honour "never build from `main` HEAD") returned 2 NOTEs where the same commit
+built at the repo root returned 1. Reproduced both ways before believing it: worktree tarball
+contains `rcicr/.git`, repo-root tarball contains no match.
+
 ### R-hub runs on `workflow_dispatch` only, never on push
 The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
 be refreshed from upstream. It is left trigger-on-demand because R-hub answers a question that
