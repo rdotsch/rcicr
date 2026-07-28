@@ -232,6 +232,45 @@ test_that("generateCI truncates 4096-parameter files for a single trial too", {
   expect_equal(single$ci, generateNoiseImage(stimuli_params$base[1, 1:4092], p))
 })
 
+test_that("generateCI's z-map sigma is not overwritten by the .Rdata's noise sigma", {
+  # Found by tools/compare-release-output.R, 2026-07-28. load() assigns into
+  # generateCI()'s own frame, and 1.1.0 started storing the noise `sigma` in the
+  # .Rdata -- which has the same name as the z-map blur argument. So every
+  # z-map from a 1.1.0-generated stimulus set was smoothed with the noise sigma
+  # (25 by default) instead of the requested 3, silently, and passing `sigma`
+  # did nothing at all. v1.0.1 files have no `sigma` field and were unaffected.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+  withr::local_dir(tmp)
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+  # The field doing the shadowing. If this ever stops being saved, the bug is
+  # gone for a different reason and this test stops testing anything.
+  expect_equal(e$sigma, 25)
+
+  zmap_at <- function(s) {
+    ci <- generateCI(
+      stimuli = 1:6, responses = c(1, -1, 1, -1, 1, -1), baseimage = "base",
+      rdata = rdata_path, save_as_png = FALSE, targetpath = tmp,
+      zmap = TRUE, zmapmethod = "quick", zmapdecoration = FALSE,
+      zmaptargetpath = file.path(tmp, "zmaps"), sigma = s, threshold = 0
+    )
+    ci
+  }
+
+  small <- zmap_at(1)
+  large <- zmap_at(e$sigma)
+
+  # The z-map is exactly the blur at the sigma that was asked for...
+  expected <- as.matrix(spatstat.explore::blur(spatstat.geom::as.im(small$ci), sigma = 1))
+  expected <- matrix(scale(as.vector(expected)), 32, 32)
+  expect_equal(small$zmap, expected, ignore_attr = TRUE)
+
+  # ...and not the blur at the sigma stored in the file, which is what it was.
+  expect_false(isTRUE(all.equal(small$zmap, large$zmap, check.attributes = FALSE)))
+})
+
 test_that("autoscale handles masked CIs instead of returning all NA", {
   # generateCI(mask = ...) sets masked pixels to NA by design, and autoscale()
   # called a bare range() on the result -- so the scaling constant became NA and

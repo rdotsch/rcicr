@@ -14,14 +14,26 @@ fixed, 30 is a documentation correction with optional follow-up, 31 is an unhand
 case. Items 13–15 are the only substantive untouched work, and are deliberately held until
 after the CRAN submission.
 
-**Reproducibility, verified 2026-07-28.** The current tree was compared against v1.0.1
-(`b6ab269`, the last GitHub state before 1.1.0) at default settings throughout. The noise
-basis, patch indices, RNG-drawn stimulus parameters and base image are **bit-identical**;
-classification images and all four scaling methods differ by at most **1.11e-16**, below
-machine epsilon, which is the expected signature of the documented `rowMeans(dims = 2)`
-change. Quantised to 8-bit, **0 of 262,144 pixels differ** under any scaling method, and the
-Frobenius norm that InfoVal is built from is identical to all 17 digits. The `.Rdata`
-contract held append-only (gained `nscales`, `sigma`).
+**Reproducibility, verified 2026-07-28 — and re-checkable on demand.**
+`tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last CRAN release) from its
+own commit and runs it and the current tree through the same battery, then compares every
+output. Coverage: 10 configurations across 64/128/512px, sinusoid and Gabor noise, `nscales`
+3/5/6, `sigma` 10/25, one and two base images with shared and independent parameters,
+`antiCI`, masks, non-contiguous stimulus subsets, and every analysis entry point —
+`generateCI()`, `generateCI2IFC()`, `batchGenerateCI()` + `autoscale()`,
+`computeCumulativeCICorrelation()`, both z-map methods and `computeInfoVal2IFC()`.
+
+Result: noise basis, patch indices, RNG-drawn stimulus parameters, base images and the
+stimulus PNGs written to disk are **bit-identical**; classification images and all four
+scaling methods differ by at most **2.22e-16**, one ULP, which is the expected signature of
+the documented `rowMeans(dims = 2)` change, and **0 pixels differ** once quantised to 8-bit.
+Two deviations are on record as deliberate, both InfoVal at non-default `nscales`/`sigma`,
+where v1.0.1 measured against the wrong null (item 2). The `.Rdata` contract held
+append-only (gained `nscales`, `sigma`).
+
+The gate is a **release blocker** — `CONTRIBUTING.md` → "Releasing" — and it earned that on
+its first full run by catching item 32, a regression against v1.0.1 that no test in the
+suite could have found.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -89,6 +101,7 @@ they are the backlog proper for after CRAN, and are deliberately kept out of the
 | ~~29~~ | ~~`autoscale()` aborts on masked classification images~~ | **Done** — a bare `range()` over the `NA`s that `generateCI(mask=)` writes by design. The single-CI `applyScaling()` path had always guarded this; only the batch path did not | S |
 | 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
 | 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
+| ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1082,6 +1095,25 @@ appears far from the cause.
 
 - [ ] Error when `max(img) == min(img)`, naming the file: a base image with no contrast
       cannot be used, and saying so at generation time costs nothing.
+
+### 32. The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma` **[verified]**  ✅ **FIXED**
+Found 2026-07-28 by `tools/compare-release-output.R` on its first full run — the first bug
+the release gate caught, and one no test in the suite could have found, because it is a
+regression *relative to 1.0.1* introduced by a change that was itself correct.
+
+`generateCI()` reads the stimulus set with `load(rdata)`, which assigns into the function's
+own frame. Item 2's fix started saving the noise `sigma` into the `.Rdata` — and
+`generateCI()` has an argument of the same name, the z-map blur width. So from 1.1.0 on, the
+saved value silently replaced the argument: z-maps were blurred with 25 instead of 3, and an
+explicitly passed `sigma` did nothing. Measured at 512px: the number of pixels surviving the
+`threshold = 3` cut moved from 1,157 to 2,439, and the map lost its entire negative tail
+(range `-3.32 .. 4.07` became `3.00 .. 3.88`).
+
+Only z-maps are affected — `sigma` is used for nothing else — and only for stimulus sets
+generated with 1.1.0. Fixed by keeping copies of every argument across the `load()`, the
+same guard `generateReferenceDistribution2IFC()` already carries, so a field added to the
+`.Rdata` later cannot capture another argument. Regression test in `test-fixed-bugs.R`;
+`NEWS.md` carries the reproducibility note.
 
 ---
 

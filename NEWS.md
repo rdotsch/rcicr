@@ -1,5 +1,28 @@
 # rcicr (development version)
 
+## Reproducibility impact — read this if you made z-maps with 1.1.0
+
+- **`generateCI(zmap = TRUE)` smoothed z-maps with the wrong sigma, and ignored the
+  `sigma` you passed.** `generateCI()` reads the stimulus set with `load()`, which assigns
+  straight into the function's own frame, and 1.1.0 started storing the *noise* `sigma` in
+  the `.Rdata` file — the same name as the z-map blur argument. The saved value therefore
+  replaced the argument on every call: z-maps were blurred with 25 (the default noise sigma,
+  or whatever you generated your stimuli with) instead of the documented default of 3, and
+  passing `sigma` explicitly did nothing at all.
+
+  **Who is affected.** Only z-maps, and only from stimulus sets generated with 1.1.0 —
+  `.Rdata` files written by 1.0.1 and earlier have no `sigma` field, so their z-maps were
+  always correct. The classification images themselves, their scaling, InfoVal and every
+  saved number are untouched; `sigma` is used for nothing else. If you produced a z-map from
+  a 1.1.0 stimulus set, regenerate it: the blur it received was roughly eight times wider
+  than intended, which spreads and weakens exactly the localised signal a z-map exists to
+  show.
+
+  Every argument is now kept across the `load()`, so a field added to the `.Rdata` later
+  cannot quietly capture another one. Found by `tools/compare-release-output.R`, the release
+  gate that compares this tree's output against the last published version — this is the
+  first bug it caught.
+
 ## Behaviour change
 
 - **`plotZmap(mask = ...)` now actually masks the z-map.** The argument has been documented
