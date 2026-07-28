@@ -74,6 +74,28 @@ Four choices, each forced by something specific:
   `reference_norms` into the file; caching a one-off Monte Carlo check would redefine what
   every later InfoVal from that stimulus set means.
 
+### 4096 → 4092 parameters: why old stimulus files cannot be regenerated from their seed
+rcicr 0.3.0 (2015-01-23) cut the per-trial random draws from 4096 to 4092. 4092 is the real
+patch count — 6 orientations × 2 phases × `sum(4^0..4^4)` — while 4096 was a round `2^12`
+over-allocation, so four contrasts were drawn per trial that no patch index ever referred to.
+`ChangeLog` calls them "redundant" and says the change "does not affect anything else".
+
+**That last claim is true for analysis and false for regeneration**, which is not obvious and
+matters. Analysing a pre-0.3.0 file reads its *stored* parameters, and dropping four unused
+columns changes nothing. But `runif()` is a stream: at the same seed, trial 1 gets identical
+values either way and **every later trial is shifted by four draws** — verified, trial 1
+identical, trials 2 and 3 not. So a pre-0.3.0 stimulus set can be re-analysed exactly and
+cannot be re-created from its seed.
+
+The same release also fixed `sinIdx` counting from 0 rather than 1, which is what the
+`pre_0.3.0` flag exists for. The two are independent and both live in that boundary.
+
+The truncation this left behind in `generateCI()` had a dead branch for eleven years: the
+single-trial path tested for a length of 4092 and truncated to 4092, so it could never fire
+on the 4096-length input it was written for (`BACKLOG.md` item 28). **A backward-compatibility
+path that nothing exercises is indistinguishable from one that works** — this one had no test
+until 2026-07-28, and neither did the `sinusoids`/`sinIdx` path, which was also broken.
+
 ### `load()` assigns into the calling frame — check every new argument against saved names
 An object in an `.Rdata` file silently overwrites a function argument of the same name.
 `generateReferenceDistribution2IFC()` re-saved its whole frame, so the files it wrote

@@ -9,8 +9,19 @@ and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are clos
 remains in item 1 is the submission decision itself. **Items 23–25 were opened by a
 test-intent audit on 2026-07-27**; 23 is now fixed (the mask is applied, and a second bug
 in its boolean conversion was found and fixed with it), 24 is cosmetic, 25 is a logged
-non-fix. **No known open code bugs remain.** Items 13–15 are the only substantive untouched
-work, and are deliberately held until after the CRAN submission.
+non-fix. **Items 28–31 were opened by a full source review on 2026-07-28**; 28 and 29 are
+fixed, 30 is a documentation correction with optional follow-up, 31 is an unhandled edge
+case. Items 13–15 are the only substantive untouched work, and are deliberately held until
+after the CRAN submission.
+
+**Reproducibility, verified 2026-07-28.** The current tree was compared against v1.0.1
+(`b6ab269`, the last GitHub state before 1.1.0) at default settings throughout. The noise
+basis, patch indices, RNG-drawn stimulus parameters and base image are **bit-identical**;
+classification images and all four scaling methods differ by at most **1.11e-16**, below
+machine epsilon, which is the expected signature of the documented `rowMeans(dims = 2)`
+change. Quantised to 8-bit, **0 of 262,144 pixels differ** under any scaling method, and the
+Frobenius norm that InfoVal is built from is identical to all 17 digits. The `.Rdata`
+contract held append-only (gained `nscales`, `sigma`).
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -1010,6 +1021,61 @@ behavior or the `.Rdata` contract.
 - [ ] Re-measure the ceiling afterwards and document it, so users can size jobs up front.
 - [ ] Only if still needed: chunking, or regenerating noise from `seed` on demand rather
       than storing every parameter vector.
+
+### 28. `generateCI()`'s single-trial 4096-parameter truncation is a no-op **[verified] [own review]**  ✅ **FIXED**
+Found 2026-07-28 in a full source review. `R/generateCI.R` truncates pre-0.3.0 parameter
+matrices from 4096 columns to 4092. The matrix branch tests `ncol(params) == 4096`; the
+vector branch, added by `4a6c58a` ("make generateCI work with a single input trial"), tested
+`length(params) == 4092` and then truncated to `1:4092` — **a no-op that can never fire on
+the 4096-length input it exists for**. Reproduced: with a 4096-parameter `.Rdata`,
+multi-trial returns a CI and single-trial dies with `Stimulus generation aborted: number of
+parameters doesn't equal number of patches!`.
+
+Narrow (pre-0.3.0 files, single-trial CIs) but the failure is total, and it was present in
+1.0.1 and every CRAN release. Fixed with a regression test that also pins the multi-trial
+branch, so the two cannot be inverted.
+
+### 29. `autoscale()` aborts on masked classification images **[verified] [own review]**  ✅ **FIXED**
+Found 2026-07-28 in the same review. `generateCI(mask = ...)` sets masked pixels to `NA` by
+design. `autoscale()` called a bare `range()` on `$ci`, so the scaling constant became `NA`
+and the next line failed with `missing value where TRUE/FALSE needed`.
+
+The telling detail: `applyScaling()` guards **every** reduction with `[!is.na(...)]`, so the
+single-CI scaling path has always handled masked CIs and only the batch path did not.
+Fixed with `na.rm = TRUE` plus an explicit error for a CI that is entirely `NA`, which would
+otherwise produce an infinite constant.
+
+### 30. The InfoVal reference lookup table has been empty since 2018 **[verified] [own review]**
+`R/computeInfoVal2IFC.R` carries a `ref_lookup` tibble whose four rows are all commented
+out. That was correct and deliberate: `01e547e` (2018-07-31) adopted the Euclidean norm and
+scaling factor *k* from the erratum to Schmitz et al. (2019), which redefined the norms
+those medians and MADs summarise. Reusing them would score CIs against a null built from the
+wrong formula.
+
+The consequence is that roughly 55 lines of lookup, matching and interactive-prompt code run
+against an empty table and can never match, and the reference distribution is always
+regenerated — correct, just slow. **`CLAUDE.md` described this as a working cache**, which
+has been corrected. The machinery is deliberately kept rather than deleted so that
+repopulating is a matter of measuring four numbers.
+
+- [ ] Optional: re-measure `median(reference_norms)` and `mad(reference_norms)` under the
+      current formula for seed 1, 512px, 10000 iterations at 100/300/500/1000 trials, and
+      uncomment the rows. Each is one `generateReferenceDistribution2IFC()` run.
+- [ ] If they are not going to be re-measured, delete the matching and prompt machinery
+      instead — but not both halves independently, or the feature becomes unrecoverable.
+
+### 31. A uniform base image silently becomes all-`NaN` **[verified] [own review]**
+`maximize_baseimage_contrast = TRUE` (the default) computes `(img - min(img)) / (max(img) -
+min(img))` in `R/generateStimuli2IFC.R`. On a constant image that is 0/0. Reproduced: the
+`NaN` base image is written into the `.Rdata` with no error and no warning, and every CI
+computed from that stimulus set inherits it.
+
+A photograph is never uniform, so this only bites synthetic or accidentally-blank base
+images — but it fails silently, which is the worst mode, and the symptom (all-`NaN` CIs)
+appears far from the cause.
+
+- [ ] Error when `max(img) == min(img)`, naming the file: a base image with no contrast
+      cannot be used, and saying so at generation time costs nothing.
 
 ---
 

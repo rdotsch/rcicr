@@ -29,10 +29,22 @@
 #' scaled_cis <- autoscale(cis, save_as_pngs = FALSE)
 autoscale <- function(cis, save_as_pngs=TRUE, targetpath='./cis') {
 
-  # Get range of each ci
+  # Get range of each ci.
+  #
+  # na.rm is required, not defensive: generateCI(mask = ...) sets masked pixels
+  # to NA by design, so a masked CI reaching this function used to make the
+  # constant NA and abort with "missing value where TRUE/FALSE needed" one line
+  # below. applyScaling() has always guarded its own reductions the same way --
+  # this was the one scaling path that did not.
   ranges <- matlab::zeros(length(names(cis)), 2)
   for (ciname in names(cis)) {
-    ranges[which(ciname==names(cis)), ] <- range(cis[[ciname]]$ci)
+    ci_values <- cis[[ciname]]$ci
+    if (all(is.na(ci_values))) {
+      stop(paste0('Classification image "', ciname, '" is entirely NA, so there ',
+                  'is no range to scale it against. If it was masked, check that ',
+                  'the mask does not cover the whole image.'))
+    }
+    ranges[which(ciname==names(cis)), ] <- range(ci_values, na.rm = TRUE)
   }
 
   # Determine the lowest possible scaling factor constant

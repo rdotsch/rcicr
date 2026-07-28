@@ -167,14 +167,21 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
   # Check whether number of parameters are 4096 (this was the case in older
   # versions of rcicr) and should be truncated to 4092 to work well in this new
-  # version
+  # version. rcicr 0.3.0 stopped drawing 4 random contrasts per trial that no
+  # patch index ever referred to: 6 orientations x 2 phases x sum(4^0..4^4) is
+  # 4092, while pre-0.3.0 allocated a round 4096. See ChangeLog, 0.3.0-29.
   if (!is.vector(params)) {
     if (ncol(params) == 4096) {
       params <- params[, 1:4092]
     }
   } else {
-    # In case we only have a single trial as input
-    if (length(params) == 4092) {
+    # In case we only have a single trial as input. This tested
+    # `length(params) == 4092` and then truncated to 4092 -- a no-op that could
+    # never fire on the 4096-parameter input it exists for, so a single-trial CI
+    # from a pre-0.3.0 file died in generateNoiseImage() with "number of
+    # parameters doesn't equal number of patches". The multi-trial branch above
+    # was always correct.
+    if (length(params) == 4096) {
       params <- params[1:4092]
     }
   }
