@@ -48,9 +48,9 @@ test_that("decoration = FALSE works on a device too small for default margins", 
 # PNG back and check the thresholding actually took effect. Rendering onto a
 # uniform background makes "nothing was painted" exactly equal to "the output
 # is the background", which is a comparison rather than an eyeball.
-render_zmap <- function(dir, zmap, name, threshold = 3, mask = NULL) {
+render_zmap <- function(dir, zmap, name, threshold = 3, mask = NULL, bg = 0.5) {
   plotZmap(
-    zmap = zmap, bgimage = matrix(0.5, 8, 8), sigma = 3, threshold = threshold,
+    zmap = zmap, bgimage = matrix(bg, 8, 8), sigma = 3, threshold = threshold,
     mask = mask, decoration = FALSE, targetpath = dir, filename = name,
     size = 64
   )
@@ -98,12 +98,21 @@ test_that("sub-threshold z-scores are not painted and supra-threshold ones are",
     )
   )
 
-  # ...and that value is the background grey specifically, not merely uniform.
-  # Without this, a plotZmap() that flooded the image with one flat colour of
-  # its own would satisfy the assertion above. Absolute tolerance, not
-  # expect_equal()'s relative one: the target is 0.5 and the 8-bit quantised
-  # value is 128/255, whose relative difference sits exactly on 1/255.
-  expect_lt(abs(below_values[1] - 0.5), 1 / 255)
+  # ...and that flat value is the background being drawn rather than a colour
+  # of plotZmap()'s own, which the assertion above does not distinguish. Tested
+  # by ordering, not by value: rendering the same call over a darker background
+  # must come out darker.
+  #
+  # The absolute value is deliberately *not* asserted. It is as
+  # device-dependent as the alpha channel above -- cairo renders bgimage 0.5 to
+  # 0.502, macOS to roughly 0.573, a colour-management difference -- so pinning
+  # it repeats exactly the mistake this helper exists to avoid. That version was
+  # written and did fail on macOS (test-plotZmap.R:106, 2026-07-28). Ordering
+  # survives any monotone transfer function, which is all a sane one can be.
+  darker <- render_zmap(tmp, matrix(1, 8, 8), "below_darker", bg = 0.25)
+  darker_values <- unique(as.vector(colour_channels(darker)))
+  expect_length(darker_values, 1)
+  expect_lt(darker_values[1], below_values[1])
 
   # ...and when the z-map does clear the threshold, the output is no longer the
   # background. Without this the assertion above is satisfied by a function

@@ -180,9 +180,21 @@ green because both sides gain the same plane. Prefer the comparison form for new
 
 The replacement keeps the full detection power — verified against synthetic 1-, 2-, 3- and
 4-channel images, painted and unpainted: every unpainted layout collapses to one value, every
-painted one still yields two — and additionally pins the flat value to the background grey,
-which the original did not, so a `plotZmap()` flooding the image with a colour of its own can
-no longer pass.
+painted one still yields two.
+
+**The absolute pixel value is device-dependent too, and must not be asserted.** The first
+attempt at this fix also pinned the flat value to the background grey, on the reasoning that
+"uniform" alone would admit a `plotZmap()` flooding the image with a colour of its own. That
+assertion passed on cairo and failed on macOS, which renders `bgimage` 0.5 to roughly 0.573
+where cairo gives 0.502 — colour management, and precisely the same mistake the alpha fix was
+correcting, made one line below it. The check is now an *ordering*: the same render over a
+darker background must come out darker. Ordering survives any monotone transfer function,
+which is all a colour pipeline can sanely be.
+
+The general form, and the reason this cost two CI rounds rather than one: **when a test reads
+pixels back from a graphics device, every absolute property of those pixels belongs to the
+device.** Channel count and value are both device-dependent; only relationships between
+renders — this differs from that, this is darker than that — are portable.
 
 ### The recovery test uses a permutation null, not a parametric one
 `test-recovery.R` gives a simulated observer a known template and asserts `generateCI()`
