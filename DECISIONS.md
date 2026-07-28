@@ -17,13 +17,8 @@ date, and are edited in place when they stop being true.
 ## The constraint that shapes everything
 
 **Researchers re-run old analysis scripts years later and publish what comes out.** Every
-other decision here is downstream of that.
-
-The rules it implies — no silent changes to call syntax, argument meanings or numeric output;
-the `.Rdata` file is append-only; anything that does change numbers gets a `NEWS.md`
-"Reproducibility impact" entry — are spelled out in `CONTRIBUTING.md` and enforced by the
-golden master in `tests/testthat/test-regression-baseline.R`. **If it goes red, the change
-alters researchers' results.** Document it; never edit the numbers to match.
+other decision here is downstream of that. The rules it implies, and the golden master that
+enforces them, are in `CONTRIBUTING.md`.
 
 ---
 
@@ -63,18 +58,21 @@ guarantee in `?generateReferenceDistribution2IFC`, pinned by a test, with a comm
 `set.seed()` call saying what depends on it.
 
 ### `response_seed`, not `seed`
-`seed` is an *object in the `.Rdata` file* and `generateReferenceDistribution2IFC()` re-saves
-its own frame, so an argument of that name would overwrite the stimulus seed and write it
-back, corrupting the record of how the stimuli were generated.
+Four choices, each forced by something specific:
 
-It seeds the **responses**, applied after the stimulus rebuild rather than forwarded into it:
-forwarding would rebuild a different stimulus set, so the null would describe stimuli the
-participants never saw. `NULL` issues no `set.seed()` call at all, so the default path is
-byte-identical rather than merely equivalent-looking. `computeInfoVal2IFC(response_seed=)`
-additionally **forces regeneration and never caches** — without the former it would be
-silently ignored on every file after the first, since the generator writes `reference_norms`
-into the file; and caching a one-off Monte Carlo check would redefine what every later InfoVal
-from that stimulus set means.
+- **The name.** `seed` is an *object in the `.Rdata` file*, and
+  `generateReferenceDistribution2IFC()` re-saves its own frame, so an argument of that name
+  would overwrite the stimulus seed and write it back — corrupting the record of how the
+  stimuli were generated.
+- **It seeds the responses, applied after the stimulus rebuild**, not forwarded into it.
+  Forwarding would rebuild a different stimulus set, so the null would describe stimuli the
+  participants never saw.
+- **`NULL` issues no `set.seed()` call at all**, so the default path is byte-identical rather
+  than merely equivalent-looking.
+- **`computeInfoVal2IFC(response_seed=)` forces regeneration and never caches.** Without the
+  first it would be silently ignored on every file after the first, since the generator writes
+  `reference_norms` into the file; caching a one-off Monte Carlo check would redefine what
+  every later InfoVal from that stimulus set means.
 
 ### `load()` assigns into the calling frame — check every new argument against saved names
 An object in an `.Rdata` file silently overwrites a function argument of the same name.
@@ -107,13 +105,11 @@ ci$base) / 2`, which is what `save_as_pngs = TRUE` writes.
 **What kept this cheap to undo:** the change was filed under its own "Behaviour change"
 heading rather than slipped in with unambiguous bug fixes. When a fix is debatable, say so.
 
-### `computeInfoVal2IFC`'s test oracle mirrors the implementation — deliberate
-It recomputes `(norm - median)/mad`, the same expression as the implementation, so it pins the
-*implementation* rather than the published definition. Left alone: the formula was
-hand-checked against the Schmitz erratum and the golden master pins the resulting number, so
-the risk is covered from two other directions. Recorded so nobody mistakes it for the
-independent check it resembles — the genuinely independent oracle is in
-`test-generateNoiseImage.R`.
+### `plotZmap(mask = ...)` is dead code, deliberately unfixed for now
+The mask is validated, dimension-checked and booleanised, then never applied. Fixing it
+changes rendered output for anyone currently passing `mask`, which makes it a behaviour change
+rather than a plain bug fix — the `autoscale()`/`$combined` lesson above applies. Awaiting a
+fix-or-deprecate decision; the diagnosis, blast radius and options are in `BACKLOG.md` item 23.
 
 ### `_R_CHECK_LIMIT_CORES_` handling caps cores under check only
 `default_ncores()` returns 2 when that variable is set and `detectCores() - 1` otherwise. Only
@@ -170,10 +166,6 @@ Sensitivity established by mutation: correct pairing 0.71, sign flip −0.74, re
 applied consistently inside `generateNoiseImage()`, because the template is built through the
 same function and the error cancels. The oracle test covers that.
 
-### `NOT_CRAN` makes `skip_on_cran()` unverifiable the easy way
-Both `devtools::test()` and `testthat::test_local()` set `NOT_CRAN=true` themselves, so
-neither can be used to check that a skip fires.
-
 ---
 
 ## Performance and parallelism
@@ -205,10 +197,9 @@ trial's noise.
 
 ## Packaging, CI and tooling
 
-### `styler` and `lintr` are deliberately not in the pre-commit config
-A one-sweep reformat would destroy `git blame`. If the package is ever styled it goes in as
-one clearly-labelled commit of its own, never as a side effect of other work — which is why
-the hooks that do run are minimal and language-agnostic.
+### If the package is ever run through `styler`, it goes in as a commit of its own
+Never as a side effect of other work. (Why the hooks stay minimal and language-agnostic is in
+`CONTRIBUTING.md`.)
 
 ### `fail_ci_if_error: false` on the coverage workflow
 Chosen over getting a Codecov token or deleting the workflow. **This does not make coverage
@@ -228,24 +219,15 @@ unnoticed because only the diffs of edited files were ever read — hence the `g
 main...HEAD` habit in `CONTRIBUTING.md`. `pre-commit.ci` caught it, and both patterns are now
 in `.gitignore` and `.Rbuildignore`.
 
-### CI workflows only trigger on PRs targeting `main`
-A stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`.
-Retargeting an existing PR does **not** re-fire the workflows; close and reopen it.
-
 ---
 
 ## Releases and git
 
-`CLAUDE.md` states the conventions and their rationale — trunk-based with tags and no
-`develop` branch, `.9000` on `main` between releases, squash merges, delete merged branches,
-`NEWS.md` ordered largest-impact first. What those entries do not say:
+The conventions and their rationale are in `CLAUDE.md` — trunk-based with tags and no
+`develop` branch, `.9000` on `main` between releases, tarballs built from the tag, squash
+merges, delete merged branches, `NEWS.md` ordered largest-impact first. Two things learned
+the hard way that those entries do not cover:
 
-- **The `.9000` suffix is safe only because the tarball is built from the tag.** `Version
-  contains large components` is a blocker if and only if the *submitted* tarball carries it.
-  Do not abandon the development-version convention to dodge that NOTE.
-- **Untagged releases cost real clarity.** `main` had moved two PRs past the 1.1.0 awaiting
-  CRAN submission with nothing recording which tree that was; `v1.1.0` is tagged retroactively
-  at `a3904e8`. That is what the tagging convention buys.
 - **Squashing is what made the 75,000-line artifact mistake above cheap** — `main` only ever
   saw the final tree, so no history rewrite was needed.
 - `git push origin --delete a b` is **atomic**: one stale name fails the whole command and
@@ -262,12 +244,11 @@ than one that defers.
 ## Documentation
 
 ### The Medium walkthrough moved into a vignette, and the post stays up
-The post is the tutorial users are sent to; it 403s to `R CMD check`, and outside the repo it
-cannot execute at build time, so it goes stale silently — a premise that proved itself within
-minutes of checking, since two of its lines no longer worked: the `saveasjpegs` argument to
-`autoscale()`, now `save_as_pngs`, and `install_github(..., ref = "development")`, a branch
-that does not exist. The post stays published for nine years of inbound links — this moves the
-canonical copy, it is not a takedown.
+A tutorial outside the repo cannot execute at build time, so it goes stale silently. The
+premise proved itself during the port: two of the post's lines no longer worked —
+`autoscale()`'s `saveasjpegs` argument, now `save_as_pngs`, and `install_github(..., ref =
+"development")`, a branch that does not exist. The post stays published for nine years of inbound links; this
+moves the canonical copy, it is not a takedown.
 
 ### Figures must be checked by looking at them
 Three problems in the walkthrough vignette were caught only by viewing the output:
@@ -283,8 +264,7 @@ Three problems in the walkthrough vignette were caught only by viewing the outpu
   still obviously synthetic.
 
 ### Base images in tests and vignettes are always synthetic
-A `runif()` matrix or a Gaussian blob, never a real photograph — it avoids licensing and
-consent questions entirely, which is worth more than a realistic-looking figure.
+Avoiding licensing and consent questions entirely is worth more than a realistic-looking figure.
 
 ### The `.Rdata` anatomy belongs in `README.md`
 It is the only link between the two halves of the package, and nothing about a stimulus set is
@@ -309,39 +289,13 @@ particular fact has been corrected.**
 - **"The manual ERROR/WARNING resolved itself."** That run passed `--no-manual`, which *skips*
   the check rather than passing it. **Never treat a `--no-manual` run as evidence the manual
   builds.**
-- **"Dependencies cut to 14."** `DESCRIPTION` said 15. The number was inferred (27 − 13)
-  rather than counted, in a commit whose purpose was fixing inaccurate docs. **Numbers copied
-  from neighbouring prose are not verified numbers.**
-- **`NEWS.md` saying an issue is "addressed" is not evidence it can be closed.** Two issues
-  that looked closed by 1.1.0 were still reproducible when actually run: a progress bar
-  emitting zero characters, and old `.Rdata` files still failing because an `exists()` guard
-  was added for two sibling variables but not the third, three lines apart.
-- **A PR's diff is not its state.** One contributor's diff showed broken code while the review
-  thread already held a correct version, posted years earlier and never pushed. Read the
-  comments before summarising a PR.
-- **Check CI before merging, not after.** One merge went ahead with a check still
-  `in_progress`, on the strength of "it's all green" plus three of four passing.
-- **`BACKLOG.md`'s own summary table drifted out of step with its item sections** — five items
-  marked done in their sections were still listed as outstanding in the table a cold session
-  reads first. Update both, or the table becomes a trap.
-
----
-
-## Open decisions — these need Ron, and should not be settled unilaterally
-
-- **`plotZmap(mask = ...)` is dead code** (`BACKLOG.md` item 23). The mask is validated,
-  dimension-checked and booleanised, then never applied. Fixing it changes rendered output for
-  anyone currently passing `mask`, so it is a behaviour change rather than a plain bug fix —
-  the `autoscale()`/`$combined` lesson applies. Fix under a "Behaviour change" heading, or
-  deprecate the argument.
-- **CRAN resubmission** (`BACKLOG.md` item 1). Archived 2021-06-08 for an undeliverable
-  maintainer address; the code was never the problem and the address now works. Every
-  mechanical blocker is cleared. win-builder and R-hub are deliberately unrun because they
-  upload the tarball to third parties and email the maintainer — two `<!-- TODO -->` markers
-  in `cran-comments.md` wait on them. **Ron submits personally**, since CRAN mails the
-  maintainer address to confirm, which is the entire point of the resubmission.
-- **The announcement post** (`BACKLOG.md` item 21). Drafts in `notes/`, held until the CRAN
-  outcome is known so it can say where the package lives. **Do not soften the reproducibility
-  section** when editing: it states both that default results are unchanged *and* that two
-  fixes genuinely change infoVal. "Nothing changed" would be untrue and less useful to the
-  researcher it is written for.
+- **Prose about an artifact is not the artifact.** Four instances, each one step from a reader
+  acting on it: "dependencies cut to 14" was inferred as 27 − 13 while `DESCRIPTION` said 15,
+  in a commit whose purpose was fixing inaccurate docs; `NEWS.md` saying an issue was
+  "addressed" was taken as grounds to close two that were still reproducible when actually run
+  (a progress bar emitting zero characters, and old `.Rdata` files failing on an `exists()`
+  guard added for two sibling variables but not the third, three lines apart); a contributor's
+  PR diff showed broken code while the review thread already held a correct version, posted
+  years earlier and never pushed; and `BACKLOG.md`'s summary table listed five items as
+  outstanding that their own sections marked done. **Count it, run it, read the thread — then
+  write the sentence.**
