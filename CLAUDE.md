@@ -117,6 +117,12 @@ Feature branches → PR → squash onto `main`, and releases are marked by tags.
   the `.9000` suffix safe: `Version contains large components` is only a CRAN blocker if the
   *submitted tarball* carries it, and a tarball built from the tag never does. Do not drop
   the development-version convention to avoid that NOTE.
+- **Never put a version number in a `NEWS.md` section heading.** `R CMD check` parses the
+  file to build the news database, and a `##` heading containing something version-shaped
+  makes it treat `##` as the *version* level — after which every other section title fails
+  to yield a version and the whole file NOTEs with "Cannot extract version info from the
+  following section titles". Name the version in the body text instead. (Cost a real NOTE
+  on 2026-07-28, from a heading reading "read this if you made z-maps with 1.1.0".)
 - **Order `NEWS.md` entries largest-impact first** within each section — changes to numeric
   output or return values, then behaviour changes, then bug fixes that only ever produced
   errors, then message-only fixes. Someone who stops reading after three bullets should have

@@ -1,6 +1,6 @@
 # rcicr (development version)
 
-## Reproducibility impact — read this if you made z-maps with 1.1.0
+## Reproducibility impact — read this if you have made z-maps
 
 - **`generateCI(zmap = TRUE)` smoothed z-maps with the wrong sigma, and ignored the
   `sigma` you passed.** `generateCI()` reads the stimulus set with `load()`, which assigns
