@@ -62,9 +62,10 @@ dependency, toolchain, parallelism, test-coverage and vignette work — all rele
 v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
 remains across them is the go/no-go and the submission itself, which are the maintainer's
 to make. **Item 23, the last open code bug, is fixed** — the `plotZmap()` mask is applied,
-under a "Behaviour change" heading in `NEWS.md`. Items **13, 14 and 15** (modernize the
+under a "Behaviour change" heading in `NEWS.md`. What is left in the table is triage: items
+27, 30 and 31, none of which blocks a submission. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
-they are the backlog proper for after CRAN, and are deliberately not in the table above.
+they are the backlog proper for after CRAN, and are deliberately kept out of the table.
 
 | # | Item | Why | Size |
 |---|---|---|---|
@@ -79,10 +80,15 @@ they are the backlog proper for after CRAN, and are deliberately not in the tabl
 | 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs. Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
-| 23 | `plotZmap(mask=)` validated then never applied | **Open, needs a decision.** A documented argument that silently does nothing; narrow blast radius (`generateCI()` never passes it), but fixing it changes rendered output, so it is a behaviour change rather than a plain bug fix | S |
+| ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
 | 24 | `generateReferenceDistribution2IFC()` litters a `./stimuli` dir | Cosmetic; hidden until now because `stimuli` is git-ignored, so it never showed in `git status` | S |
 | 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
 | ~~26~~ | ~~InfoVal's null is seeded by accident and cannot be varied~~ | **Done** — the determinism is now a documented guarantee with a comment guarding the `set.seed()` it rests on, and `response_seed` makes the null varyable on purpose. Default output verified byte-identical to before the change | S |
+| 27 | `return_as_dataframe = TRUE` drops all but the first base image | **Documented, not fixed.** Correct under the default `use_same_parameters = TRUE`; silent only with `FALSE`. Widening the frame changes the return shape, so it needs a new argument rather than a redefinition — do it only if a user asks | S |
+| ~~28~~ | ~~`generateCI()`'s single-trial 4096-parameter truncation is a no-op~~ | **Done** — the vector branch tested `length(params) == 4092` and then truncated to 4092, so it could never fire on the 4096-length input it existed for. Single-trial analysis of pre-0.3.0 files worked in no released version | S |
+| ~~29~~ | ~~`autoscale()` aborts on masked classification images~~ | **Done** — a bare `range()` over the `NA`s that `generateCI(mask=)` writes by design. The single-CI `applyScaling()` path had always guarded this; only the batch path did not | S |
+| 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
+| 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -882,7 +888,7 @@ function's own roxygen already documents the behaviour as a caveat (with a
 - [ ] Wrap the tests in `withr::local_dir()` so a suite run leaves no directory behind
       either way.
 
-### 26. InfoVal's null is seeded by accident, and cannot be varied **[verified] [own review]**
+### 26. InfoVal's null is seeded by accident, and cannot be varied **[verified] [own review]**  ✅ **DONE**
 Found 2026-07-27. `generateReferenceDistribution2IFC()` has no `seed` argument, yet its
 output is fully deterministic: it rebuilds the stimuli via `generateStimuli2IFC()`, which
 calls `set.seed(seed)` internally (`R/generateStimuli2IFC.R:53`) using the seed stored in
