@@ -1,5 +1,36 @@
 # rcicr (development version)
 
+## Behaviour change
+
+- **`plotZmap(mask = ...)` now actually masks the z-map.** The argument has been documented
+  since 2016 — "if a cell evaluates to TRUE, the corresponding zmap pixel will be masked" —
+  and until now it did nothing at all: the mask was read from its PNG or matrix, checked
+  against the z-map's dimensions, validated as binary, converted to boolean, and then
+  discarded before plotting. A correct mask produced an unmasked z-map, with no error and no
+  warning. Masked cells are now dropped from the z-map exactly as sub-threshold cells are.
+
+  **Who is affected.** Only direct calls to `plotZmap(mask = ...)`. `generateCI()` does not
+  pass `mask` to `plotZmap()` — it masks the classification image itself, via a separate and
+  working code path — so z-maps produced through the normal pipeline are unchanged, and no
+  stored numbers change anywhere. If you have been passing a mask and your z-maps looked
+  unmasked, that is why; they will now come out masked, and the earlier images were wrong
+  about which regions carry signal.
+
+  A second bug is fixed alongside: the conversion to boolean set every cell to `FALSE`
+  whatever you passed, so even once applied the mask would have masked nothing.
+
+- **The `mask` convention is documented correctly for the first time**, in both
+  `?plotZmap` and `?generateCI`. Both said a *matrix* masks where the value is `1`/`TRUE`
+  while a *PNG* masks where it is black (`0`) — two opposite conventions in one sentence.
+  `generateCI()`'s implementation has always masked where the value is `0`, for a matrix and
+  a PNG alike, so the matrix half of the documentation was simply wrong. **The code is
+  unchanged and the documentation now matches it**, since existing masks were built against
+  the behaviour, not the prose. `plotZmap()` follows the same single convention, so one mask
+  can be passed to both functions — which is now asserted by a test rather than assumed.
+
+  If you built a mask by reading `?generateCI` rather than by looking at your output, check
+  it: `0`/black/`FALSE` is the region that gets masked away.
+
 ## New features
 
 - `generateReferenceDistribution2IFC()` and `computeInfoVal2IFC()` gained a
@@ -66,6 +97,13 @@
 - A `CONTRIBUTING.md` sets out how to work on the package, leading with the constraint that
   makes it unusual: researchers re-run old analysis scripts years later and publish the
   results, so numeric output must not change silently.
+
+- `?generateStimuli2IFC` documents a restriction on `return_as_dataframe = TRUE`: the frame
+  holds one noise image per trial, so it is meaningful only under the default
+  `use_same_parameters = TRUE`. With `use_same_parameters = FALSE` and more than one base
+  image, only the first base image's noise comes back — the frame's shape cannot represent
+  trial × base image. Behaviour is unchanged, and the files written to disk were never
+  affected; the restriction simply was not stated.
 
 - `?generateReferenceDistribution2IFC` now documents as a **guarantee** what was previously
   only true by accident: with the default `response_seed`, the reference distribution — and

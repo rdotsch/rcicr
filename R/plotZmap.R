@@ -13,7 +13,7 @@
 #' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI. If not this argument is not given, only the Z-map will be drawn.
 #' @param sigma The sigma of the smoothing that was applied to the CI to create the Z-map.
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
-#' @param mask Optional. A boolean matrix with the same dimensions as zmap. If a cell evaluates to TRUE, the corresponding zmap pixel will be masked. Can also be the filename (as a string) of a black and white PNG image to be converted to a matrix (black = masked).
+#' @param mask Optional. A binary matrix with the same dimensions as zmap: cells that are 0 (or FALSE) are masked, cells that are 1 (or TRUE) are kept. Can also be the filename (as a string) of a black and white PNG image, in which case black (0) is masked and white (1) is kept. This is the same convention \code{generateCI()} uses for its own \code{mask} argument, so a mask can be used with both. Note that earlier versions of this documentation stated the opposite for the matrix form; the description here matches what the code does.
 #' @param decoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param targetpath String specifying path to save the Z-map PNG to.
 #' @param filename Optional string to specify a file name for the Z-map PNG.
@@ -63,13 +63,39 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     } else {
       stop('Error in importing Z-map mask: mask and Z-map are not the same size.')
     }
-    # Convert to boolean
-    mask[mask == 0] <- TRUE
-    mask[mask == 1] <- FALSE
+    # Convert to boolean: 0 (black, FALSE) marks the region to mask, for a
+    # matrix and a PNG alike.
+    #
+    # The single convention is deliberate and was verified against the working
+    # sibling rather than taken from the docs: generateCI()'s applyMask() does
+    # `mask_matrix == 0` unconditionally (R/generateCI.R), so the same mask
+    # passed to generateCI() and plotZmap() must mask the same region. Both
+    # functions' roxygen claimed 1/TRUE meant masked for a matrix while black
+    # (0) meant masked for a PNG -- two opposite conventions in one sentence,
+    # and contradicted by the only implementation that ever ran. The docs were
+    # corrected to match the code, not the other way round: applyMask()'s
+    # behaviour is what users' existing masks were built against.
+    #
+    # This conversion used to be two in-place assignments --
+    # `mask[mask == 0] <- TRUE` then `mask[mask == 1] <- FALSE` -- which set
+    # *every* cell to FALSE whatever the input: the first assignment coerces
+    # TRUE to 1, so the second matches the cells it had just set as well as the
+    # originally-true ones. A swap without a temporary.
+    mask <- mask == 0
   }
 
   # Apply threshold
   zmap[abs(zmap) < threshold] <- NA
+
+  # Apply the mask. Masked cells drop out of the z-map exactly as sub-threshold
+  # cells do, which is what the documentation has promised since 2016 --
+  # commit 18e07cb landed the import half as "add mask import ... (todo:
+  # applying the mask)" and the todo was never picked up, so the argument was
+  # validated and then silently discarded in every released version.
+  # BACKLOG.md item 23.
+  if (!is.null(mask)) {
+    zmap[mask] <- NA
+  }
 
   # Plot
   png(filename = paste0(targetpath, '/', filename, '.png'), width = size, height = size)

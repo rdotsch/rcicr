@@ -4,12 +4,13 @@ A prioritized backlog for bringing `rcicr` to a modern, maintainable state **wit
 breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
-**Last updated:** 2026-07-27 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
+**Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
 and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what
-remains in item 1 is the submission decision itself. **Items 23–25 were opened the same
-day** by a test-intent audit — 23 is a real bug in `plotZmap()` awaiting a
-fix-or-deprecate decision, 24 is cosmetic, 25 is a logged non-fix. Items 13–15 remain the
-only substantive untouched work.
+remains in item 1 is the submission decision itself. **Items 23–25 were opened by a
+test-intent audit on 2026-07-27**; 23 is now fixed (the mask is applied, and a second bug
+in its boolean conversion was found and fixed with it), 24 is cosmetic, 25 is a logged
+non-fix. **No known open code bugs remain.** Items 13–15 are the only substantive untouched
+work, and are deliberately held until after the CRAN submission.
 
 Sources: the GitHub issue tracker (45 open issues), the published literature, and a
 direct review of the codebase. Items marked **[verified]** were reproduced by running the
@@ -49,8 +50,8 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 dependency, toolchain, parallelism, test-coverage and vignette work — all released as
 v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
 remains across them is the go/no-go and the submission itself, which are the maintainer's
-to make. **Item 23 is the one open code bug** — a decision, not a diagnosis, since the
-cause is known and the fix changes rendered output. Items **13, 14 and 15** (modernize the
+to make. **Item 23, the last open code bug, is fixed** — the `plotZmap()` mask is applied,
+under a "Behaviour change" heading in `NEWS.md`. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
 they are the backlog proper for after CRAN, and are deliberately not in the table above.
 
@@ -252,7 +253,7 @@ package explicitly promises for old `.Rdata` files.
 - [x] Move the rename block above the validation.
 - [x] Test with a genuine pre-0.3.3-shaped `p`.
 
-### 23. `plotZmap(mask = ...)` is validated and then never applied **[verified] [own review]**
+### 23. `plotZmap(mask = ...)` is validated and then never applied **[verified] [own review]**  ✅ **FIXED**
 Not in the issue tracker. Found 2026-07-27 while writing content tests for `plotZmap()`.
 
 `R/plotZmap.R:34–69` does real work on the `mask` argument: reads it from a PNG if given a
@@ -276,20 +277,51 @@ for mismatched dimensions, which exercises lines 34–69 and stops there. The te
 alongside this entry check rendered content, but deliberately do not cover `mask` — see
 below.
 
-**This needs a decision before it is a code change.** Fixing it alters rendered output for
-anyone currently passing `mask`, which makes it a behaviour change rather than an
-unambiguous bug fix, and the standing lesson from the `autoscale()` / `$combined` episode
-is to flag those rather than relabel them. Hence no failing test was committed: a knowingly
-red test in the suite is worse than a backlog entry.
+**Decided 2026-07-28: apply it.** The decision needed two facts that were not in hand when
+this was written. First, `git log -S` traces the argument to commit `18e07cb` (2016-11-01),
+whose message is *"add mask import and custom filename to plotZmap (todo: applying the
+mask)"* — the import half was landed with an explicit todo that was never picked up, and two
+weeks later the masking feature was implemented for `generateCI()` instead (PR #56, branch
+`16-adding-masking-feature`). The pre-refactor monolith at `d93cb2b^` confirms the
+application was never there to be lost in the 2017 file split. Second, GitHub code search
+finds **no caller of `plotZmap()` outside this repository** — only a vendored copy in the
+`rcpyci` Python port, which reimplemented `mask` as a translucent overlay, its author's
+guess rather than evidence of intent. (Weak evidence: reverse-correlation analysis scripts
+usually live in OSF supplements, not public repos.)
 
-- [ ] **Decide:** apply the mask (`zmap[mask] <- NA` after the threshold step), or formally
-      deprecate the argument if masking is considered `generateCI()`'s job alone.
-- [ ] If applied: document under a **"Behaviour change"** heading in `NEWS.md`, since
-      existing scripts passing `mask` will start producing different images.
-- [ ] Add the content test that is currently missing — a masked region must come back as
-      background, exactly as the sub-threshold test does.
-- [ ] Check the same argument in any sibling that accepts a mask; item 6 and this one are
-      the same argument mishandled in two different functions.
+So the behaviour-change risk this entry was guarding against cannot materialise: no
+published z-map has ever been masked, so no result depends on the current behaviour. The
+only affected user is one passing a mask today and silently getting it ignored, whose intent
+is unambiguously the masked version. Deprecating instead would have removed a documented
+feature on the grounds that it was never built.
+
+- [x] **Decided:** apply the mask. Landed as `zmap[mask] <- NA` after the threshold step.
+- [x] Documented under a **"Behaviour change"** heading in `NEWS.md`.
+- [x] Content tests added: a half-masked z-map must return that half to background and leave
+      the other half painted, an all-zero mask must blank the map, matrix and PNG inputs must
+      produce identical images, and one mask must remove the same half in `plotZmap()` as in
+      `generateCI()`.
+- [x] **A second bug found while fixing this.** The boolean conversion was
+      `mask[mask == 0] <- TRUE` followed by `mask[mask == 1] <- FALSE` — a swap without a
+      temporary. The first assignment coerces `TRUE` to `1`, so the second unsets exactly
+      what the first set, and **every cell came out `FALSE` for any input**. Applying the
+      mask without fixing this would have masked nothing. Verified in R before fixing, not
+      inferred from reading.
+- [x] **A third bug, and the one that nearly shipped inverted.** Both functions' roxygen said
+      a *matrix* masks where the cell is `1`/`TRUE` while a *PNG* masks where it is black
+      (`0`) — opposite conventions in a single sentence. The first version of this fix
+      believed the docs and implemented the split, which would have made the same mask remove
+      complementary halves in `plotZmap()` and `generateCI()`. `applyMask()` does
+      `mask_matrix == 0` unconditionally (`R/generateCI.R`), verified by running it, so
+      **`0`/black/`FALSE` is the masked region everywhere**. `plotZmap()` now matches, and
+      both `@param mask` descriptions were corrected to the code rather than the reverse —
+      users' existing masks were built against the behaviour. Caught by Ron asking whether
+      the two input forms should really be opposite; the answer was in the sibling
+      implementation, not in the documentation.
+- [x] Checked the same argument in the sibling that accepts a mask. `generateCI()` applies it
+      correctly, and now has a test covering the PNG import path and the masked region, which
+      it previously lacked. The import logic remains duplicated between the two — issue #89,
+      in item 13.
 
 ### Also found and fixed while working through the P0 items
 
@@ -937,8 +969,9 @@ not pass `use_same_parameters`, so the rebuild always uses the default, and the 
 image's parameters are drawn from the same leading block of the RNG stream either way —
 measured identical, max absolute difference 0 across both settings with two base images.
 
-- [ ] Document the restriction on `@param return_as_dataframe`: one noise image per trial,
-      meaningful only under `use_same_parameters = TRUE`.
+- [x] Document the restriction on `@param return_as_dataframe`: one noise image per trial,
+      meaningful only under `use_same_parameters = TRUE`. **Done 2026-07-28**, with a
+      `NEWS.md` entry under Documentation. Behaviour unchanged.
 - [ ] Only if a user actually needs it: widen the returned frame to trial × base image.
       That changes the return shape, so it needs a new argument rather than a redefinition
       — the `.Rdata`/return contract is append-only.
