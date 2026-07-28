@@ -1,0 +1,360 @@
+#!/usr/bin/env Rscript
+#
+# Release gate: compare this tree's numeric output against the last version of
+# rcicr that researchers published results with, across the battery in
+# tools/compare-harness.R.
+#
+# Researchers re-run old analysis scripts and publish what comes out, so the
+# question this answers is the only one that matters at release time: does the
+# tarball we are about to ship still produce the numbers the reference version
+# produced?
+#
+# `tests/testthat/test-regression-baseline.R` cannot answer it. That golden
+# master pins values this repository computed for itself; this runs the actual
+# reference tree, installed from its own commit, and compares.
+#
+#   Rscript tools/compare-release-output.R [--ref=<git-rev>] [--quick]
+#                                          [--install-deps] [--keep] [--verbose]
+#
+# Exit status:  0  every difference is expected and accounted for
+#               1  an unexpected difference, or a stale expectation
+#               2  the comparison could not be run (setup failure)
+#
+# A difference is only tolerated if it is listed in EXPECTED below, with a
+# reason and the NEWS.md heading that documents it for users. Adding an entry is
+# a deliberate, reviewable act -- which is the point. See CONTRIBUTING.md
+# ("Releasing") for where this sits in the release checklist.
+
+args <- commandArgs(trailingOnly = TRUE)
+opt <- function(flag, default = NULL) {
+  hit <- grep(paste0("^--", flag, "="), args, value = TRUE)
+  if (length(hit)) sub(paste0("^--", flag, "="), "", hit[[1]]) else default
+}
+# b6ab269 is v1.0.1, the last version published to CRAN and the one nearly every
+# result in the literature was produced with. It stays pinned there rather than
+# advancing to each new release: moving it would let a tree drift away from the
+# published numbers one tolerated epsilon at a time, each step "identical to the
+# last release". See DECISIONS.md.
+REF     <- opt("ref", "b6ab269")
+KEEP    <- "--keep"    %in% args
+QUICK   <- "--quick"   %in% args
+VERBOSE <- "--verbose" %in% args
+# The reference version's DESCRIPTION lists packages this one dropped, and it
+# will not install without them. --install-deps fetches the missing ones into a
+# throwaway library (what CI does); without it the script says which they are
+# and stops, rather than writing to someone's library uninvited.
+INSTALL_DEPS <- "--install-deps" %in% args
+
+# --- expected deviations ----------------------------------------------------
+#
+# key: "<config>/<output>", or "<config>/*" for a whole config.
+# ref: which reference this applies to -- a deviation from v1.0.1 is not a
+#      deviation from v1.1.0, and listing it for both would make one of the two
+#      runs report a stale expectation.
+
+EXPECTED <- list(
+  list(ref = "b6ab269", key = "sinusoid-64-nscales3-infoval/infoval",
+       reason = paste("v1.0.1 did not save nscales/sigma into the .Rdata, so its",
+                      "reference distribution was rebuilt at the default nscales = 5",
+                      "regardless of how the stimuli were made. At nscales != 5 the old",
+                      "InfoVal was computed against the wrong null and is simply wrong."),
+       news = "Reproducibility impact"),
+  list(ref = "b6ab269", key = "gabor-64-sigma10-infoval/infoval",
+       reason = paste("Same cause as the nscales case: v1.0.1's reference distribution",
+                      "ignored noise_type and sigma, so InfoVal for Gabor noise (and for",
+                      "any non-default sigma) was measured against a sinusoid null."),
+       news = "Reproducibility impact")
+)
+
+expectation_for <- function(key) {
+  cfg <- sub("/.*$", "", key)
+  for (e in EXPECTED) if (identical(e$key, key) || identical(e$key, paste0(cfg, "/*"))) return(e)
+  NULL
+}
+
+# --- tolerances -------------------------------------------------------------
+#
+# Bit-identity is required wherever a difference could only come from a changed
+# random stream, a changed algorithm or a changed file format, rather than from
+# summation order. Everything else is allowed to move by a few ULP *of the
+# values involved* -- an absolute epsilon would be far too tight for z-maps,
+# whose values run to several units, and needlessly loose nowhere.
+
+EXACT_RE  <- "^(patchIdx|stimuli_params_|base_face_|stimulus_pngs)"
+IMAGE_RE  <- "^(patches|noise_image|ci|combined|scaled_|ci2ifc|subset_|participants_|batch_)"
+ULP       <- .Machine$double.eps      # 2.22e-16
+INFOVAL_TOL <- 1e-9
+
+say <- function(...) cat(..., "\n", sep = "")
+die <- function(...) { say("ERROR: ", ...); quit(status = 2L) }
+
+repo <- normalizePath(file.path(dirname(sub("^--file=", "",
+          grep("^--file=", commandArgs(FALSE), value = TRUE)[[1]])), ".."), mustWork = TRUE)
+setwd(repo)
+
+# Deliberately *beside* R's session tempdir, not inside it: R removes its own
+# tempdir when the driver exits, which silently defeated --keep.
+tmp <- file.path(dirname(tempdir()), paste0("rcicr-compare-", Sys.getpid()))
+dir.create(tmp, recursive = TRUE, showWarnings = FALSE)
+worktree <- file.path(tmp, "ref-tree")
+lib_ref  <- file.path(tmp, "lib-ref")
+lib_cur  <- file.path(tmp, "lib-cur")
+lib_deps <- file.path(tmp, "lib-deps")
+basedir  <- file.path(tmp, "base")
+for (d in c(lib_ref, lib_cur, lib_deps, basedir))
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
+
+# Snapshot the harness, so both sides provably run the same battery even if the
+# working copy is edited while a run is in flight.
+harness <- file.path(tmp, "compare-harness.R")
+if (!file.copy(file.path(repo, "tools", "compare-harness.R"), harness, overwrite = TRUE))
+  die("could not copy tools/compare-harness.R into ", tmp)
+
+cleanup <- function() {
+  if (KEEP) { say("\nkept: ", tmp); return(invisible()) }
+  system2("git", c("worktree", "remove", "--force", shQuote(worktree)),
+          stdout = FALSE, stderr = FALSE)
+  unlink(tmp, recursive = TRUE)
+}
+on.exit(cleanup(), add = TRUE)
+
+# --- set up both versions ---------------------------------------------------
+
+resolve <- function(rev) {
+  sha <- suppressWarnings(system2("git", c("rev-parse", "--verify", "--quiet",
+                                           paste0(rev, "^{commit}")), stdout = TRUE))
+  if (length(sha) == 1L) sha else NA_character_
+}
+ref_sha <- resolve(REF)
+if (is.na(ref_sha)) die("cannot resolve --ref=", REF)
+say("reference : ", REF, " (", substr(ref_sha, 1, 7), ")")
+
+for (e in EXPECTED) if (is.na(resolve(e$ref))) die("EXPECTED entry names an unresolvable ref: ", e$ref)
+EXPECTED <- Filter(function(e) identical(resolve(e$ref), ref_sha), EXPECTED)
+say("expected deviations on file for this reference: ", length(EXPECTED))
+say("under test: ", system2("git", c("rev-parse", "--short", "HEAD"), stdout = TRUE),
+    if (length(system2("git", c("status", "--porcelain"), stdout = TRUE))) " + uncommitted changes" else "")
+if (QUICK) say("mode      : QUICK -- 512px config skipped, NOT sufficient for a release")
+
+if (system2("git", c("worktree", "add", "--detach", shQuote(worktree), REF),
+            stdout = FALSE, stderr = FALSE) != 0L) die("git worktree add failed")
+
+# Anything the reference version imports that this one no longer does.
+ref_desc <- read.dcf(file.path(worktree, "DESCRIPTION"))
+ref_version <- unname(ref_desc[1, "Version"])
+ref_deps <- unlist(strsplit(paste(
+  ref_desc[1, intersect(c("Depends", "Imports"), colnames(ref_desc))], collapse = ","), ","))
+ref_deps <- trimws(sub("\\(.*", "", ref_deps))
+missing_deps <- setdiff(ref_deps[nzchar(ref_deps)],
+                        c("R", rownames(utils::installed.packages())))
+if (length(missing_deps)) {
+  if (!INSTALL_DEPS)
+    die(REF, " needs packages this library does not have: ",
+        paste(missing_deps, collapse = ", "),
+        "\n       install them, or re-run with --install-deps to put them in a temporary library.")
+  say("installing ", length(missing_deps), " reference-only dependencies: ",
+      paste(missing_deps, collapse = ", "))
+  repos <- getOption("repos")
+  if (!length(repos) || any(repos == "@CRAN@")) repos <- c(CRAN = "https://cloud.r-project.org")
+  utils::install.packages(missing_deps, lib = lib_deps, repos = repos, quiet = TRUE)
+  still <- setdiff(missing_deps, rownames(utils::installed.packages(lib.loc = lib_deps)))
+  if (length(still)) die("could not install: ", paste(still, collapse = ", "))
+}
+
+libpath <- function(...) paste(c(..., lib_deps, .libPaths()), collapse = .Platform$path.sep)
+
+install_into <- function(src, lib) {
+  say("installing ", basename(src), " -> ", basename(lib))
+  logfile <- file.path(tmp, paste0("install-", basename(lib), ".log"))
+  st <- system2(file.path(R.home("bin"), "R"),
+                c("CMD", "INSTALL", "--no-docs", "--no-help", "--no-byte-compile",
+                  "-l", shQuote(lib), shQuote(src)),
+                env = paste0("R_LIBS=", libpath(lib)),
+                stdout = logfile, stderr = logfile)
+  if (st != 0L) {
+    writeLines(tail(readLines(logfile, warn = FALSE), 30))
+    die("R CMD INSTALL failed for ", src)
+  }
+}
+install_into(worktree, lib_ref)
+install_into(repo, lib_cur)
+
+# Deterministic synthetic base images -- never a real photograph.
+make_base <- function(n, path, shift = 0) {
+  ax <- seq(-1, 1, length.out = n)
+  g <- outer(ax, ax, function(x, y) exp(-((x - shift)^2 + y^2) / 0.5))
+  png::writePNG(g, path)
+}
+# A mask has to be exactly 0/1, and 0 (black) is the region masked away.
+make_mask <- function(n, path) {
+  ax <- seq(-1, 1, length.out = n)
+  png::writePNG(outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6)), path)
+}
+for (sz in c(64, 128, 512)) {
+  make_base(sz, file.path(basedir, sprintf("base1_%d.png", sz)))
+  make_base(sz, file.path(basedir, sprintf("base2_%d.png", sz)), shift = 0.3)
+  make_mask(sz, file.path(basedir, sprintf("mask_%d.png", sz)))
+}
+
+run_side <- function(lib, tag) {
+  out <- file.path(tmp, paste0("out-", tag))
+  wd  <- file.path(tmp, paste0("work-", tag))
+  dir.create(wd, showWarnings = FALSE)
+  logfile <- file.path(tmp, paste0("harness-", tag, ".log"))
+  say("running battery: ", tag, "  (log: ", logfile, ")")
+  libs <- libpath(lib)
+  st <- system2(file.path(R.home("bin"), "Rscript"),
+                c(shQuote(harness), shQuote(out), shQuote(basedir), shQuote(wd)),
+                # The battery is chosen by the *reference* version on both sides:
+                # some calls only became comparable once a crash was fixed.
+                env = c(paste0("R_LIBS=", libs), paste0("R_LIBS_USER=", libs),
+                        paste0("RCICR_COMPARE_REF_VERSION=", ref_version),
+                        if (QUICK) "RCICR_COMPARE_QUICK=1"),
+                stdout = if (VERBOSE) "" else logfile,
+                stderr = if (VERBOSE) "" else logfile)
+  if (st != 0L) {
+    if (!VERBOSE) writeLines(tail(readLines(logfile, warn = FALSE), 30))
+    die("harness failed for ", tag, " -- the ", tag, " version cannot run the battery")
+  }
+  out
+}
+
+ref_dir <- run_side(lib_ref, "ref")
+cur_dir <- run_side(lib_cur, "cur")
+
+ref_meta <- readRDS(file.path(ref_dir, "meta.rds"))
+cur_meta <- readRDS(file.path(cur_dir, "meta.rds"))
+say("versions  : ", ref_meta$version, " (ref) vs ", cur_meta$version, " (under test)")
+if (!identical(ref_meta$configs, cur_meta$configs))
+  die("the two sides ran different config lists -- the harness is not shared")
+
+# --- compare ----------------------------------------------------------------
+
+quantise <- function(x) round(pmin(pmax(x, 0), 1) * 255)
+
+compare_one <- function(name, a, b) {
+  if (!identical(dim(a), dim(b)) || !identical(length(a), length(b)))
+    return(list(status = "DIFF", detail = "different shape"))
+
+  if (grepl(EXACT_RE, name)) {
+    if (identical(a, b)) return(list(status = "OK", detail = "bit-identical"))
+    n <- if (is.character(a)) sum(a != b) else sum(a != b, na.rm = TRUE)
+    return(list(status = "DIFF",
+                detail = sprintf("not bit-identical (%d of %d elements differ)", n, length(a))))
+  }
+
+  if (identical(name, "infoval")) {
+    d <- abs(a - b)
+    return(if (d <= INFOVAL_TOL) list(status = "OK", detail = sprintf("|d| = %.3g", d))
+           else list(status = "DIFF", detail = sprintf("|d| = %.6g (tol %.0e)", d, INFOVAL_TOL)))
+  }
+
+  # NA is meaningful: generateCI(mask=) and the z-map threshold both blank out
+  # pixels, so a moved NA is a changed result even where the numbers agree.
+  if (!identical(is.na(a), is.na(b)))
+    return(list(status = "DIFF",
+                detail = sprintf("NA pattern differs (%d vs %d NA)", sum(is.na(a)), sum(is.na(b)))))
+
+  tol <- ULP * max(1, max(abs(a), na.rm = TRUE))
+  d <- suppressWarnings(max(abs(a - b), na.rm = TRUE))
+  if (!is.finite(d)) d <- 0
+  ok <- d <= tol
+  detail <- sprintf("max|d| = %.3g (tol %.2e)", d, tol)
+
+  if (grepl(IMAGE_RE, name)) {
+    px <- sum(quantise(a) != quantise(b), na.rm = TRUE)
+    ok <- ok && px == 0L
+    detail <- sprintf("%s, %d/%d 8-bit pixels differ", detail, px, length(a))
+  }
+  list(status = if (ok) "OK" else "DIFF", detail = detail)
+}
+
+n_ok <- 0L; unexpected <- list(); accounted <- list()
+
+for (cfg in cur_meta$configs) {
+  ref_file <- file.path(ref_dir, paste0(cfg, ".rds"))
+  cur_file <- file.path(cur_dir, paste0(cfg, ".rds"))
+  if (!file.exists(ref_file) || !file.exists(cur_file)) {
+    unexpected[[length(unexpected) + 1L]] <-
+      list(key = paste0(cfg, "/*"), detail = "config missing from one side's run")
+    next
+  }
+  ref_res <- readRDS(ref_file); cur_res <- readRDS(cur_file)
+  say("\n", cfg)
+
+  only_cur <- setdiff(names(cur_res), names(ref_res))
+  only_ref <- setdiff(names(ref_res), names(cur_res))
+  for (nm in c(only_cur, only_ref))
+    unexpected[[length(unexpected) + 1L]] <-
+      list(key = paste0(cfg, "/", nm),
+           detail = paste("output present on only one side:",
+                          if (nm %in% only_cur) "under test" else REF))
+
+  for (nm in intersect(names(cur_res), names(ref_res))) {
+    key <- paste0(cfg, "/", nm)
+    res <- compare_one(nm, ref_res[[nm]], cur_res[[nm]])
+    exp <- expectation_for(key)
+    if (identical(res$status, "OK")) {
+      n_ok <- n_ok + 1L
+      say(sprintf("  %-24s OK        %s", nm, res$detail))
+    } else if (!is.null(exp)) {
+      accounted[[length(accounted) + 1L]] <- list(key = key, detail = res$detail, exp = exp)
+      say(sprintf("  %-24s EXPECTED  %s", nm, res$detail))
+    } else {
+      unexpected[[length(unexpected) + 1L]] <- list(key = key, detail = res$detail)
+      say(sprintf("  %-24s DIFF      %s", nm, res$detail))
+    }
+  }
+  rm(ref_res, cur_res)
+  invisible(gc(verbose = FALSE))
+}
+
+fired <- vapply(accounted, function(a) a$exp$key, character(1))
+stale <- setdiff(vapply(EXPECTED, function(e) e$key, character(1)), fired)
+
+# "Deliberate" is not enough on its own: a deviation researchers are not told
+# about is still a silent change to their results.
+news <- if (file.exists("NEWS.md")) paste(readLines("NEWS.md", warn = FALSE), collapse = "\n") else ""
+undocumented <- unique(Filter(function(h) !grepl(h, news, fixed = TRUE),
+                              vapply(accounted, function(a) a$exp$news, character(1))))
+
+say("\n", strrep("=", 70))
+say(sprintf("%d checks identical within tolerance, %d expected deviations, %d unexpected",
+            n_ok, length(accounted), length(unexpected)))
+
+if (length(accounted)) {
+  say("\nEXPECTED DEVIATIONS -- these change researchers' numbers, deliberately:")
+  for (a in accounted) {
+    say("  ", a$key, ": ", a$detail)
+    say("    why : ", a$exp$reason)
+    say("    news: ", a$exp$news)
+  }
+}
+
+if (length(undocumented)) {
+  say("\nUNDOCUMENTED DEVIATIONS -- an expectation fired, but NEWS.md does not")
+  say("mention the heading it points at, so users would never hear about it:")
+  for (h in undocumented) say("  missing from NEWS.md: ", h)
+}
+
+if (length(stale)) {
+  say("\nSTALE EXPECTATIONS -- listed in EXPECTED but no longer deviating:")
+  for (k in stale) say("  ", k, " -- remove it from EXPECTED, or find out why it stopped firing")
+}
+
+if (length(unexpected)) {
+  say("\nUNEXPECTED DIFFERENCES -- this tree does not reproduce ", REF, ":")
+  for (u in unexpected) say("  ", u$key, ": ", u$detail)
+  say("\nDo not release. Either fix the change, or -- if the change is intended --")
+  say("document it in NEWS.md under \"Reproducibility impact\" and add it to EXPECTED")
+  say("in this script with a reason. Silence is not an option here.")
+}
+
+if (length(unexpected) || length(stale) || length(undocumented)) quit(status = 1L)
+if (QUICK) {
+  say("\nPASS (quick): this tree reproduces ", REF, " on the configs that were run.")
+  say("Run without --quick before releasing -- the 512px default config was skipped.")
+} else {
+  say("\nPASS: this tree reproduces ", REF, " everywhere it is supposed to.")
+}
+quit(status = 0L)

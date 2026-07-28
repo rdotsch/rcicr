@@ -182,6 +182,57 @@ Sensitivity established by mutation: correct pairing 0.71, sign flip −0.74, re
 applied consistently inside `generateNoiseImage()`, because the template is built through the
 same function and the error cancels. The oracle test covers that.
 
+### The release gate runs the old code; the golden master only re-runs ours
+`test-regression-baseline.R` pins values *this repository computed for itself*. That makes it
+self-referential in one specific way: it can only catch drift away from the moment the numbers
+were written down. Had a P0 fix already changed results before the baseline was recorded, the
+baseline would have pinned the changed values and passed green forever.
+`tools/compare-release-output.R` closes that gap by installing the reference commit into a
+temporary library and running both versions over the same battery — it is the only thing here
+that executes the old code. The two are complements, not substitutes: the golden master is
+cheap enough to run on every commit, the gate costs two package installs and minutes of
+compute, so it runs `--quick` on PRs and in full at release.
+
+The battery is snapshotted into the temp directory before either side runs, so editing the
+working copy mid-run cannot leave the two sides comparing different things — which happened
+here once, and produces a "difference" that is purely an artefact.
+
+### The v1.0.1 reference is pinned; the previous release is a *second* run, not a replacement
+The obvious move once a release is green is to make it the new reference. It is wrong. Each
+release would then be compared only against its predecessor, and a tree could walk away from
+the published numbers one tolerated epsilon at a time, every step of the walk "identical to the
+last release". The literature was produced with v1.0.1, so that comparison is the one that
+protects it, and it stays pinned at `b6ab269`.
+
+The second run (`--ref=v1.1.0`) answers a different and also useful question — did anything
+break since the last release — and reaches further, because v1.0.1 *crashes* on calls that
+v1.1.0 returns numbers for. Hence `EXPECTED` entries name the reference they apply to: a
+deviation from v1.0.1 is not a deviation from v1.1.0, and an entry that fired for one would be
+reported as stale by the other.
+
+### The battery stops where the reference version crashes
+Measured 2026-07-28 against v1.0.1 on R 4.3.3: it can produce a z-map **only** at 512px with
+`zmapdecoration = TRUE`. Undecorated it dies in `if (bgimage != '')` ("the condition has length
+> 1"), and at 64 and 128px in `plot.new()` ("figure margins too large" — 64px decorated fails
+earlier still, on the `plt` graphical parameter). `mask` is unusable for the same class of
+reason. All are fixed here, and none of them can be gated against v1.0.1: **a fix that turns a
+crash into a number has no old number to compare against.** Those paths are covered by the test
+suite, and by the gate only from v1.1.0 onward — the `SINCE` table in `tools/compare-harness.R`
+records which extras need which reference.
+
+### Tolerances: ULP scaled to the values, plus an 8-bit pixel count
+A flat `.Machine$double.eps` is the right bar for a classification image (values around 0.01)
+and far too tight for a z-map, whose values run to several units and whose one-ULP steps are
+therefore ~4× larger. So the tolerance is `eps * max(1, max(abs(reference)))`: a few ULP *of
+the values involved*. Anything that could only come from a changed random stream, algorithm or
+file format — patch indices, drawn stimulus parameters, the base image, the stimulus PNGs — is
+required to be bit-identical instead, with no tolerance at all.
+
+Image-like outputs additionally have to survive quantisation: 0 of N pixels may differ once
+rounded to 8 bits. That is the check that answers the question a researcher actually has, which
+is whether the PNG they publish changes, and it is why a 1.11e-16 difference in the CI is
+reported as a pass rather than argued about.
+
 ---
 
 ## Performance and parallelism
