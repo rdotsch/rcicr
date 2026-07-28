@@ -31,16 +31,15 @@ is complete.
 * GitHub Actions: ubuntu-latest, R release and R devel
 * win-builder, R-devel — Windows Server 2022, R Under development (2026-07-26 r90304 ucrt):
   **1 NOTE**, the CRAN incoming feasibility note below
-* win-builder, R-release — Windows Server 2022, R 4.6.1
-  <!-- TODO: record result of the 2026-07-28 14:57 UTC run -->
+* win-builder, R-release — Windows Server 2022, R 4.6.1: **1 NOTE**, the same one
 * R-hub: Linux, Windows, macOS  <!-- TODO: run and record result -->
 
 ## R CMD check results
 
 0 errors | 0 warnings | 2 notes
 
-The second note below is local to our build machine and did not reproduce on win-builder,
-which reported only the first.
+Both win-builder runs reported **1 NOTE** — only the first of the two below. The second is
+local to our build machine.
 
 ### NOTE 1 — CRAN incoming feasibility
 
