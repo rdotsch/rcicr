@@ -108,23 +108,77 @@ Silently widening a tolerance, deleting a configuration from the battery, or ski
 run is none of those things. The whole point is that a change to researchers' numbers can
 only get out deliberately and loudly.
 
-The rest of the checklist:
+### 1. Prepare the release PR
 
-1. Reproducibility gate green (above), and `devtools::check()` clean.
-2. Rename `NEWS.md`'s `# rcicr (development version)` heading to `# rcicr X.Y.Z (date)`.
-3. Drop the `.9000` from `DESCRIPTION`. This is what makes CI run the *full* battery on the
-   release PR rather than the everyday `--quick` one, so it has to happen before the PR is
-   opened, not after it is approved.
-4. Squash-merge, then `git tag -a vX.Y.Z <commit>` and cut a GitHub release.
-5. **Build the CRAN tarball from the tag, never from `main` HEAD** — that is also what keeps
-   the development suffix out of the submitted version.
-6. Bump `DESCRIPTION` to `X.Y.Z.9000` and start a fresh `# rcicr (development version)`
-   heading in `NEWS.md`.
+Branch from `main` (`release-X.Y.Z` by convention) and make these four edits together:
+
+```sh
+Rscript tools/compare-release-output.R              # both gate runs green
+Rscript tools/compare-release-output.R --ref=vA.B.C # the previous release
+R CMD build . && R CMD check --as-cran rcicr_*.tar.gz
+```
+
+- **`NEWS.md`**: rename `# rcicr (development version)` to `# rcicr X.Y.Z (YYYY-MM-DD)`.
+  Until you do, none of this release's entries are in the news database at all — R indexes
+  only sections under a heading it can read a version from. Keep version numbers *out* of
+  `##` section headings, or the whole file stops parsing and `R CMD check` NOTEs.
+- **`DESCRIPTION`**: drop the `.9000`. This is also what switches CI from the everyday
+  `--quick` gate to the full battery, so it has to happen **before** the PR is opened, not
+  after review.
+- **`ChangeLog`**: add a dated pointer entry deferring to `NEWS.md` — not a duplicate. See
+  `DECISIONS.md` for why.
+- **`cran-comments.md`**: re-read every claim in it rather than trusting it. It has gone
+  stale *within a single day* before, by describing a URL reference that another PR had
+  just removed, one step short of a CRAN reviewer reading it.
+
+Open the PR. The full battery runs on it, takes ~20 minutes, and is a required check.
+
+### 2. Merge and tag
+
+```sh
+gh pr merge <n> --squash --delete-branch
+git checkout main && git pull && git fetch --prune
+git tag -a vX.Y.Z -m "rcicr X.Y.Z" && git push origin vX.Y.Z
+gh release create vX.Y.Z --title "rcicr X.Y.Z" --notes-file <(...)   # NEWS section
+```
+
+The tag push re-runs the full gate against the released tree, which is the copy that
+matters. Squash-merge, always: one commit per PR on `main`, and the squash message is where
+measurements and rejected alternatives have to live, because the branch commits disappear.
+
+### 3. Submit to CRAN
+
+```sh
+git switch --detach vX.Y.Z      # never build from main HEAD
+R CMD build .
+R CMD check --as-cran rcicr_X.Y.Z.tar.gz
+git switch -                    # back to where you were
+```
+
+Building from the tag is what keeps the development suffix out of the submitted version:
+`Version contains large components` is only a CRAN blocker if the *tarball* carries it. Two
+NOTEs are expected and explained in `cran-comments.md` — CRAN incoming feasibility (new
+submission of an archived package) and future file timestamps (no network clock in a
+sandbox).
+
+Then run `devtools::check_win_devel()` and `rhub::rhub_check()`, and record their results in
+the two `<!-- TODO -->` markers in `cran-comments.md`. These upload the tarball to third
+parties and email the maintainer, which is why they are not run casually.
+
+**Ron submits to CRAN personally.** CRAN emails the maintainer address to confirm, and for a
+package archived over an undeliverable address, that confirmation *is* the point of the
+resubmission.
+
+### 4. Reopen development
+
+Bump `DESCRIPTION` to `X.Y.Z.9000` and start a fresh `# rcicr (development version)` heading
+in `NEWS.md`. `main` is protected, so this goes through a small PR like anything else.
 
 `.github/workflows/reproducibility.yaml` runs the gate on every PR to `main` (`--quick`,
 which skips the 512px configuration) and in full on release PRs, version tags and manual
-dispatch. Note it only *blocks* a merge if it is listed as a required status check in the
-repository's branch protection — the workflow cannot enforce that on its own.
+dispatch. The `compare` job is a **required status check** on `main`, alongside
+`R CMD check` on release and devel, so a red gate blocks the merge rather than merely
+reporting. That is a repository ruleset, not something the workflow can enforce on itself.
 
 ## Larger changes
 
