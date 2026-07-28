@@ -105,12 +105,6 @@ ci$base) / 2`, which is what `save_as_pngs = TRUE` writes.
 **What kept this cheap to undo:** the change was filed under its own "Behaviour change"
 heading rather than slipped in with unambiguous bug fixes. When a fix is debatable, say so.
 
-### `plotZmap(mask = ...)` is dead code, deliberately unfixed for now
-The mask is validated, dimension-checked and booleanised, then never applied. Fixing it
-changes rendered output for anyone currently passing `mask`, which makes it a behaviour change
-rather than a plain bug fix — the `autoscale()`/`$combined` lesson above applies. Awaiting a
-fix-or-deprecate decision; the diagnosis, blast radius and options are in `BACKLOG.md` item 23.
-
 ### `_R_CHECK_LIMIT_CORES_` handling caps cores under check only
 `default_ncores()` returns 2 when that variable is set and `detectCores() - 1` otherwise. Only
 the checker ever sets it, so CRAN's two-core policy is met and behaviour at the console is
@@ -247,8 +241,8 @@ than one that defers.
 A tutorial outside the repo cannot execute at build time, so it goes stale silently. The
 premise proved itself during the port: two of the post's lines no longer worked —
 `autoscale()`'s `saveasjpegs` argument, now `save_as_pngs`, and `install_github(..., ref =
-"development")`, a branch that does not exist. The post stays published for nine years of inbound links; this
-moves the canonical copy, it is not a takedown.
+"development")`, a branch that does not exist. The post stays published for nine years of
+inbound links; this moves the canonical copy, it is not a takedown.
 
 ### Figures must be checked by looking at them
 Three problems in the walkthrough vignette were caught only by viewing the output:
@@ -262,6 +256,40 @@ Three problems in the walkthrough vignette were caught only by viewing the outpu
   signal" but means "wrong ruler".
 - A white-noise synthetic base drowned every figure; a crude Gaussian blob is legible and
   still obviously synthetic.
+
+### When the docs and the code disagreed about `mask`, the code was the contract
+Both `?plotZmap` and `?generateCI` said a *matrix* masks where the cell is `1`/`TRUE` while a
+*PNG* masks where it is black (`0`) — two opposite conventions in one sentence. `applyMask()`
+has always done `mask_matrix == 0` unconditionally, so the matrix half was simply wrong.
+
+**The documentation was corrected to the code, not the reverse**, because users build masks
+against observed behaviour: someone whose masked CI came out right has a mask encoding `0` =
+masked, whatever the page said. Changing the code to match the prose would have silently
+inverted every existing mask — the one outcome with real cost, since a mask covers a face and
+an inverted one looks plausible.
+
+**This nearly shipped backwards.** The first version of the `plotZmap` fix believed the docs
+and branched on provenance, masking where `0` for a PNG and where `TRUE` for a matrix. That
+would have made the same mask remove complementary halves in the two functions. It was caught
+by Ron asking whether the two forms should really be opposite, and the answer was in the
+sibling implementation rather than in any documentation. **When two documented conventions
+conflict, run the one that has been executing for a decade.**
+
+### `plotZmap(mask = ...)` was applied rather than deprecated
+It had been documented since 2016 and never worked: commit `18e07cb` landed the import half as
+*"add mask import ... (todo: applying the mask)"*, the todo was never picked up, and the
+feature was implemented for `generateCI()` two weeks later instead. The pre-refactor monolith
+at `d93cb2b^` confirms nothing was lost in the 2017 file split.
+
+Filed as a behaviour change, but the risk that framing guards against could not materialise:
+nothing has ever been masked, so no published z-map depends on the current output. GitHub code
+search finds no caller of `plotZmap()` outside this repository — weak evidence on its own,
+since analysis scripts usually live in OSF supplements, but enough alongside the rest.
+Deprecating would have removed a documented feature on the grounds that it was never built.
+
+**The generalisable part:** "this changes rendered output" is not by itself an argument for
+leaving something broken. Ask who is currently *relying* on the broken output. Here the answer
+was nobody, and the entry sat open a day longer than it needed to.
 
 ### Base images in tests and vignettes are always synthetic
 Avoiding licensing and consent questions entirely is worth more than a realistic-looking figure.
