@@ -24,27 +24,21 @@ the package was off CRAN, and none of them was published anywhere a user could i
 from with `install.packages()`. `NEWS.md` carries their entries, so the record between
 0.3.4.1 and 1.2.1 is complete.
 
-1.2.1 follows 1.2.0 by a short interval and contains no user-facing change. 1.2.0 did not
-pass `R CMD check` on macOS: a test in the package's own suite asserted properties of a
-rendered PNG that belong to the graphics device rather than to what was drawn, and those
-differ between macOS and Linux. No released function was affected and nothing the package
-computes changed, but the tree could not pass its own checks on a platform CRAN builds for,
-so it is not the tree we are asking you to accept.
-
 ## Test environments
 
 * local: Ubuntu 24.04, R 4.3.3 — `R CMD check --as-cran`, with
   `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
 * GitHub Actions: ubuntu-latest on R release and R devel, macos-latest on R release,
   windows-latest on R release — all green
-* win-builder, R-devel  <!-- TODO: re-run against the 1.2.1 tarball and record result -->
-* win-builder, R-release  <!-- TODO: re-run against the 1.2.1 tarball and record result -->
-* R-hub: Linux, Windows, macOS  <!-- TODO: run against 1.2.1 and record result -->
+* win-builder, R-devel — R Under development (unstable) (2026-07-26 r90304 ucrt): 1 NOTE
+  (the incoming feasibility note below)
+* win-builder, R-release — R 4.6.1 (2026-06-24 ucrt): 1 NOTE (the same one)
+* R-hub, all on R-devel — Linux (x86_64-pc-linux-gnu, r90185), Windows
+  (x86_64-w64-mingw32, r90310 ucrt), macOS (x86_64-apple-darwin20, r90190): **Status: OK**
+  on all three, 0 errors, 0 warnings, 0 notes. R-hub does not run the CRAN incoming
+  feasibility check, which is why the note above does not appear there.
 
-The win-builder results previously recorded here were for the **1.2.0** tarball (R-devel
-2026-07-26 r90304 ucrt and R 4.6.1, 1 NOTE each — the incoming feasibility note below).
-They are not carried forward: the submitted tarball has changed, so they are re-run rather
-than assumed still to hold.
+All of the above were run against the tarball being submitted.
 
 ## R CMD check results
 

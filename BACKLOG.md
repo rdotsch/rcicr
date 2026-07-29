@@ -92,7 +92,7 @@ they are the backlog proper for after CRAN, and are deliberately kept out of the
 | ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs. Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
+| 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs, and the external checks are in as of 2026-07-29 (win-builder 1 NOTE on both, R-hub OK on all three platforms). Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
@@ -595,10 +595,10 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 > package returning from archival should not arrive already red. See `DECISIONS.md` → Testing
 > for the underlying rule.
 >
-> **The win-builder results in `cran-comments.md` are for the v1.2.0 tarball and were
-> deliberately not carried forward.** win-builder R-devel, win-builder R-release and R-hub all
-> need re-running against the 1.2.1 tarball; the three `<!-- TODO -->` markers there are what
-> is left before the submission.
+> **All three external checks have now run against the 1.2.1 tarball and are recorded in
+> `cran-comments.md`** (2026-07-29): win-builder R-devel and R-release both `1 NOTE` — the
+> incoming feasibility one — and R-hub `Status: OK` on Linux, Windows and macOS. **The only
+> thing left in this item is the submission itself.**
 
 **Current status — every box below is ticked.** The latest `--as-cran` run, on the
 `rcicr_1.2.1.tar.gz` built at the repo root from the `v1.2.1` tree (2026-07-28), gives
@@ -740,13 +740,14 @@ ships *in the package* and the link is courtesy to nine years of citations.
 
 #### Then, before hitting submit
 
-- [ ] Check on platforms this machine cannot provide: `devtools::check_win_devel()` and
-      `rhub::rhub_check()` (macOS, Windows, R-devel). CRAN tests those and we do not.
+- [x] **Check on platforms this machine cannot provide. Done 2026-07-29**, against the
+      1.2.1 tarball: win-builder R-devel (r90304 ucrt) and R-release (4.6.1), `1 NOTE` each;
+      R-hub Linux, Windows and macOS on R-devel, `Status: OK` on all three. CRAN tests those
+      platforms and we do not.
 - [x] **Write `cran-comments.md`. Done** — at the repo root, `.Rbuildignore`d. It states
       plainly that the 2021-06-08 archival was for an undeliverable maintainer address
       rather than any code or policy problem, that the address now works, and explains both
-      remaining NOTEs. Two `<!-- TODO -->` markers remain for the win-builder and R-hub
-      results, which cannot be filled in until those actually run.
+      remaining NOTEs. The win-builder and R-hub results are filled in as of 2026-07-29.
 - [ ] Submit at <https://cran.r-project.org/submit.html> (or `devtools::release()`).
       **Ron has to do this himself** — CRAN emails the maintainer address for
       confirmation, and that address working again is the entire point.
