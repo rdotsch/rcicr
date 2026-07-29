@@ -1,0 +1,23 @@
+version: 2
+
+# Covers GitHub Actions only. Dependabot has no CRAN ecosystem, so the R
+# dependencies in DESCRIPTION are not watched here and cannot be -- see
+# DECISIONS.md, "Dependabot watches the actions, not the R packages", for why
+# that gap is left open rather than filled with a scanner.
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # One PR for all action updates rather than one each. Every PR to `main`
+    # runs R CMD check on four platforms plus the reproducibility gate, and
+    # `.github/workflows/` is deliberately not on the gate's inert allowlist,
+    # so an ungrouped week of updates would cost several full CI rounds to
+    # bump a few version tags.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: "chore"

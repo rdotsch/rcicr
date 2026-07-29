@@ -346,6 +346,37 @@ obvious way to honour "never build from `main` HEAD") returned 2 NOTEs where the
 built at the repo root returned 1. Reproduced both ways before believing it: worktree tarball
 contains `rcicr/.git`, repo-root tarball contains no match.
 
+### Dependabot watches the actions, not the R packages
+`.github/dependabot.yml` covers `github-actions` and nothing else. That is not an oversight,
+and the asymmetry is the point.
+
+**The R dependencies cannot be watched, and pretending otherwise is worse than the gap.**
+Dependabot has no CRAN ecosystem, and **CRAN publishes no security advisory database** — there
+is no `npm audit` equivalent for R. The nearest thing is Sonatype's OSS Index via `oysteR`,
+which as of 2026-07-29 returns **401 to anonymous requests** and so needs an account to run at
+all. Weighed and rejected: a scanner whose CRAN coverage is thin reports "clean" because its
+database is empty, not because the tree is safe, and a green badge that means nothing is worse
+than a known gap. The realistic dependency failure — an import getting archived — is already
+caught by `R CMD check` on four platforms on every push.
+
+Where the actual CVE surface lives is worth stating, because it is not in R code at all: 29 of
+the 53 packages in the recursive tree need compilation, and their vulnerabilities belong to the
+C libraries they bind to — **libpng** (`png`), **libjpeg** (`jpeg`), **GDAL/GEOS/PROJ**
+(`terra` ← `raster`). Those are patched by the user's operating system, not by CRAN, and
+nothing this package does can affect them. Dropping `raster` (`BACKLOG.md` item 34) is the only
+lever that shrinks it.
+
+**The actions genuinely needed watching.** Thirteen third-party actions were in use, twelve on
+floating major tags (`@v2`, `@v6`) and exactly one — `codecov/codecov-action` — pinned to a
+full SHA, almost certainly a reaction to the Codecov uploader compromise. A floating tag means
+whoever controls that repository can change what runs in CI at any time; that is the
+supply-chain surface here with real incident history, and it is the one Dependabot supports.
+
+Updates are **grouped into a single PR** (`patterns: ["*"]`, limit 1). Every PR to `main` runs
+`R CMD check` on four platforms plus the reproducibility gate, and `.github/workflows/` is
+deliberately *not* on the gate's inert allowlist, so ungrouped updates would spend several full
+CI rounds bumping a handful of version tags.
+
 ### R-hub runs on `workflow_dispatch` only, never on push
 The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
 be refreshed from upstream. It is left trigger-on-demand because R-hub answers a question that
