@@ -81,6 +81,8 @@ heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturin
 left in the table is triage: items 27, 30, 31 and 33, none of which blocks a submission. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
 they are the backlog proper for after CRAN, and are deliberately kept out of the table.
+**Item 36** (tidyverse style as a v2 breaking change) is out of the table too, and is not
+scheduled at all — see "Beyond v1" at the end.
 
 | # | Item | Why | Size |
 |---|---|---|---|
@@ -1324,6 +1326,59 @@ recur. None are blocking; all are meaningful to researchers.
 - [ ] Refactor batch CI generation, deprecating `batchGenerateCI`
       ([#87](https://github.com/rdotsch/rcicr/issues/87)) — must follow the deprecation
       policy above.
+
+---
+
+## Beyond v1 — changes that need a major version
+
+Nothing here is scheduled, and nothing here should be started as a side effect of other
+work. These are collected so the question does not have to be re-derived each time it comes
+up.
+
+### 36. Adopt tidyverse style throughout, as a v2 breaking change
+
+**Not scheduled; no short-term intent.** Logged 2026-07-29 so the shape of the decision is
+on record.
+
+The idea is to drop the current mixed convention — camelCase functions, snake_case
+arguments — for snake_case throughout, enforced by `styler` and gated by `lintr`:
+`generateCI()` → `generate_ci()`, `batchGenerateCI2IFC()` → `batch_generate_ci_2ifc()`, and
+so on across all 17 exports.
+
+**The scope is narrower than "adopt tidyverse style" sounds.** Arguments and saved list
+fields are *already* snake_case (`img_size`, `n_trials`, `noise_type`), so they conform
+today. The break is confined to function names. Everything else — assignment operator,
+indentation, `TRUE`/`FALSE`, `seq_len()` — is either already conformant or is ordinary
+tidying that needs no version bump at all (`CONTRIBUTING.md` → "Code conventions", and item
+13 for the specific cleanups).
+
+**Three things that constrain it:**
+
+- **The `.Rdata` field names must not change, in v2 or ever.** `base_faces`,
+  `stimuli_params`, `p`, `img_size`, `seed`, `noise_type` are a *file format*, not code
+  style. Renaming them breaks every stimulus set generated since 2014, and the contract is
+  append-only. `p` in particular is a poor name and is frozen regardless. A style sweep that
+  treats these as ordinary variables is the most likely way to get this badly wrong.
+- **Deprecated aliases make it survivable, and are themselves permanent.** Keeping every old
+  name as a `lifecycle::deprecate_warn()` shim means old scripts keep running, which is the
+  only acceptable path here. But then both names exist indefinitely, doubling the surface to
+  document and test — so v2 does not actually retire the old names, it just stops
+  recommending them.
+- **The names are in the literature.** Published methods sections and shared analysis
+  scripts say `generateCI()`. Renaming creates two naming worlds in the record permanently;
+  aliases soften that for *running* code but not for *reading* it.
+
+**What is genuinely cheap here:** proving the sweep changed no numbers.
+`tools/compare-release-output.R` installs and runs the released code and compares every
+output, so a pure rename-and-reformat has to come back with zero differences across the
+whole battery. Most projects cannot demonstrate that; this one can. The residual cost is
+`git blame`, which no gate can address — hence `DECISIONS.md`'s rule that a `styler` sweep
+lands as a commit of its own.
+
+**The case still to be made** is why the benefit exceeds all of that. "Consistent with modern
+R" is true and thin. The stronger argument is that the current split invites errors at the
+boundary — `img_size` versus `imgSize` is a real thing users get wrong — and that new
+contributors arrive expecting snake_case. Neither is obviously worth a major version yet.
 
 ---
 

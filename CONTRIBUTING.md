@@ -72,6 +72,49 @@ CI runs `R CMD check` on the current R release and devel, reports coverage to Co
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
 **not** run: they would reformat nearly every file in one sweep and destroy `git blame`.
 
+## Code conventions
+
+These describe what the code already does. **They apply to new and modified code**; there is
+no expectation that anyone reformats untouched files to match, and no sweep is planned — see
+`BACKLOG.md` item 36 for the one that would be, and why it needs a major version.
+
+**Two of these are frozen by the constraint above, not chosen:**
+
+- **Exported functions are camelCase** — `generateCI()`, `batchGenerateCI2IFC()`,
+  `plotZmap()`. This is *not* what a modern R style guide would say, and it cannot be
+  changed: these names are in researchers' stored scripts and in published methods sections.
+- **Arguments and list fields are snake_case** — `img_size`, `n_trials`, `noise_type`,
+  `save_as_png`. Also frozen; people call them by name. Note this means arguments already
+  match tidyverse style and only function names diverge.
+
+The rest are ordinary consistency, and internal helpers are free to change because nothing
+outside the package can call them:
+
+| | Convention | Notes |
+|---|---|---|
+| Assignment | `<-`, never `=` | Already universal — there are zero `=` assignments in `R/`. |
+| Internal helpers | camelCase, matching the exported style | Currently 7 camelCase (`applyMask`, `saveToImage`, `startBackend`, …) against one snake_case (`default_ncores`). New helpers follow the majority. |
+| Strings | single quotes | Roughly 3:2 in favour today; not worth churn to unify, but write new code single-quoted. |
+| Indentation | 2 spaces, no tabs | Already consistent; there are no tabs in `R/`. |
+| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` are rebindable variables, so this is a correctness rule, not a style one. 11 occurrences remain — item 13. |
+| Sequences | `seq_len()`/`seq_along()`, not `1:n` | `1:0` counts *backwards*, so `1:length(x)` on an empty vector iterates twice. |
+| Returns | explicit `return()` at the end of exported functions | The existing style throughout. |
+| Files | one file per exported function, named after it | `R/generateCI.R` holds `generateCI()`. `zzz.R` holds the `globalVariables()` declarations. |
+| Namespacing | prefer `@importFrom pkg fn` over `@import pkg` | `@import matlab` masks `base::sum()` with MATLAB semantics across six files — a live trap, item 13. |
+
+Line length is not enforced; 35 lines in `R/` already exceed 100 characters. Wrap new code
+at something reasonable rather than reflowing what is there.
+
+Two rules that are about this package rather than about R:
+
+- **Add new names loaded from an `.Rdata` file to `R/zzz.R`'s `globalVariables()`**, or
+  `R CMD check` NOTEs about undefined globals.
+- **Check any new function argument against the names saved in the `.Rdata`**, and any new
+  saved field against existing argument names. `load()` assigns into the calling frame, so a
+  collision silently overwrites the argument — this has caused three separate bugs, most
+  recently a saved `sigma` capturing `generateCI()`'s z-map blur `sigma`. `DECISIONS.md` has
+  the details.
+
 ## Releasing
 
 Releases are squash-merged onto `main` and marked with a tag; there is no `develop` branch.
