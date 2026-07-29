@@ -110,6 +110,8 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~35~~ | ~~`test-plotZmap.R:68` fails on macOS — blocked the CRAN submission~~ | **Done** — released as 1.2.1. The second distinct value was macOS quartz writing an **alpha channel** where cairo writes RGB, not an antialiasing artifact, so every option drafted before a macOS run was wrong. The count now ignores the alpha plane, and the value it compares is an ordering rather than a constant — the first fix pinned the background grey and macOS failed that too, at 0.573 vs 0.502. CI gained macOS and Windows runners, and the z-map is now pinned by the golden master on all three | S |
 | 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
+| 37 | Error paths are largely untested | **Open, post-CRAN.** 5 `expect_error()` + 4 `expect_warning()` against 27 `stop()` + 6 `warning()`. The untested ones include the likeliest user error of all (stimuli/responses length mismatch) and the four `.Rdata` guards that returning users hit. An unexercised guard is how items 6, 23 and 28 each stayed broken for years | M |
+| 38 | Two error messages paste the base image matrix, not its label | **Open, post-CRAN.** `base` where `baseimage` was meant, in `generateCI.R:177` and `computeCumulativeCICorrelation.R:83`. Measured: an 8,190-character message at 32px, ~7 MB at 512px. Reachable in the second, latent in the first only because `aggregate()` fails first. Not fixed pre-submission — it would invalidate the checked tarball for an error-message defect | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -859,8 +861,14 @@ checklist at the top of this item, which is the live one.
       for future edits, and it already bit the test suite. Prefer `@importFrom matlab ...`
       over `@import matlab`, importing only what is actually used.
 - [ ] Replace bare `T`/`F` with `TRUE`/`FALSE` (11 occurrences across `autoscale.R`,
-      `generateCI.R`, `generateStimuli2IFC.R`, `plotZmap.R`). `T`/`F` are ordinary
-      rebindable variables, so this is a genuine (if rare) correctness hazard.
+      `generateCI.R`, `generateStimuli2IFC.R`, `plotZmap.R`; two of them are *default
+      argument values* in the public API — `generateCI(zmap = F, zmapdecoration = T)` and
+      `plotZmap(decoration = T)`). **Re-checked 2026-07-29: in package code this is style,
+      not the correctness hazard described here previously.** `T`/`F` are rebindable, but
+      both defaults and function bodies resolve through the function frame → namespace →
+      imports → `base`, which never reaches the user's global environment. A user
+      redefining `T` breaks their own scripts, not this package. Still worth fixing —
+      it is free, and the reasoning above has to be re-derived every time someone notices.
 - [ ] **`lintr` — additive, and separable from `styler`.** It rewrites nothing, so it can
       land as a config plus a CI job with a zero-line diff to `R/`. Worth doing for the
       static analysis rather than the style: this codebase has form for bugs in code that
@@ -1298,6 +1306,66 @@ z-map vertically over a base face that is drawn separately by `rasterImage()`.
 
 Hold until after the CRAN submission — it changes rendered output, so it wants the same care
 item 23 got, and the tarball in front of CRAN should not move under it.
+
+---
+
+### 37. Error paths are largely untested **[verified] [own review]**
+
+Found in the pre-submission review, 2026-07-29. The suite is strong on *intent* for the
+numeric paths — properties rather than stored numbers, grouping actually checked, both
+z-map methods, recovery, parallel equivalence, a golden master. Where it is thin is the
+**failure** side: 5 `expect_error()` and 4 `expect_warning()` against **27 `stop()` and 6
+`warning()` calls** in `R/`.
+
+That matters more than usual here, because the issue tracker is dominated by confusing
+failure modes rather than missing features (item 14 is the general form), and because an
+untested error path is how items 6, 23 and 28 each stayed broken for years — a guard that
+never runs is indistinguishable from one that works.
+
+Untested, roughly in order of how likely a user is to hit them:
+
+- [ ] **`generateCI()` stimuli/responses length mismatch** (`R/generateCI.R:106`). The single
+      most likely user error in the package, and nothing asserts the message.
+- [ ] **The four `.Rdata` "did not contain X" guards** in `generateCI()`
+      (`R/generateCI.R:128–143`: `s`/`p`, `base_faces`, `stimuli_params`, `img_size`). Only
+      the fifth — an unknown base image label — is covered. These are exactly the
+      returning-user path the CRAN reinstatement is for.
+- [ ] **The five equivalents in `computeCumulativeCICorrelation()`**
+      (`R/computeCumulativeCICorrelation.R:53–83`) — none covered.
+- [ ] **All four mask-import failures in `generateCI()`** (`R/generateCI.R:407–431`:
+      non-greyscale PNG, neither string nor matrix, wrong dimensions, values outside
+      {0,1}). `plotZmap()` has one of the four; `generateCI()` has none — and its mask code
+      is the copy that has always been live.
+- [ ] **`generateStimuli2IFC()` on an unreadable base image file** (`:80`) and on a
+      **non-square** base image (`:86`). The related *`img_size` mismatch* is tested
+      (`test-fixed-bugs.R:93`); these two are different branches.
+- [ ] **`computeCumulativeCICorrelation(targetci = ...)` is never exercised.** The only test
+      covers the no-`targetci` path, where the assertion is that the last correlation is 1 —
+      true by construction. Supplying a target CI is what the function is actually for.
+
+### 38. Two error messages paste the base image matrix instead of its label **[verified] [own review]**
+
+`stop(paste0('No parameters found for base image: ', base))` at
+`R/generateCI.R:177` and `R/computeCumulativeCICorrelation.R:83`. In both, `base` is the
+base image **matrix** (assigned a few lines earlier from `base_faces[[baseimage]]`); the
+intended variable is `baseimage`, the label. `paste0()` recycles over every pixel, so the
+message repeats once per pixel.
+
+**Reachable in `computeCumulativeCICorrelation()`**, measured: `stimuli = integer(0)` gives
+an **8,190-character** message at a 32×32 base image, and would give roughly 7 MB at a
+realistic 512×512. **Latent in `generateCI()`** — `aggregate()` fails first with "no rows to
+aggregate", so the branch cannot currently be reached there; fix both anyway, since what
+protects it is an unrelated function's behaviour.
+
+Same shape as the `applyMask()` message that named `img_size` outside its own scope
+(recorded under "Also found and fixed while working through the P0 items"): **an error
+message referring to a variable that is in scope but is not the one meant**. Worth a
+one-time sweep of every `stop()`/`warning()` in `R/` for the same class rather than fixing
+only these two.
+
+Deliberately **not fixed before the 1.2.1 submission**: the checked tarball is built, and
+any change to `R/` invalidates it and forces a fresh round of win-builder and R-hub. For a
+defect that produces no wrong numbers and only a bad error message, that is the wrong trade.
 
 ---
 
