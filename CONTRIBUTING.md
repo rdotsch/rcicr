@@ -129,11 +129,68 @@ R CMD build . && R CMD check --as-cran rcicr_*.tar.gz
   `DECISIONS.md` for why.
 - **`cran-comments.md`**: re-read every claim in it rather than trusting it. It has gone
   stale *within a single day* before, by describing a URL reference that another PR had
-  just removed, one step short of a CRAN reviewer reading it.
+  just removed, one step short of a CRAN reviewer reading it. Leave the test-environment
+  results for step 2; everything else is written now.
 
 Open the PR. The full battery runs on it, takes ~20 minutes, and is a required check.
 
-### 2. Merge and tag
+### 2. Run the external checks — on the release branch, before merging
+
+win-builder and R-hub run against the release branch, and their results go into
+`cran-comments.md` **in the same PR**, so the release commit carries its own evidence.
+
+```sh
+R CMD build .                                # at the repo root, never in a worktree
+R CMD check --as-cran rcicr_X.Y.Z.tar.gz
+curl -T rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-devel/
+curl -T rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-release/
+```
+
+Then trigger R-hub from the Actions tab against the release branch. Two NOTEs are expected
+locally and explained in `cran-comments.md` — CRAN incoming feasibility (new submission of
+an archived package) and future file timestamps (no network clock in a sandbox).
+
+This ordering works because **`cran-comments.md` is `.Rbuildignore`d and never reaches the
+tarball**, so writing the results into it cannot invalidate the checks those results
+describe — the tarball is unchanged. And `DESCRIPTION` on the release branch already carries
+the clean version, so the checks see the exact version string that will be submitted.
+
+Neither check is run casually: win-builder mails the maintainer, and both put the tarball in
+front of a third party.
+
+- **win-builder** — `devtools::check_win_devel()` and `devtools::check_win_release()` do the
+  same thing as the `curl` lines above. Each FTPs the tarball to `win-builder.r-project.org`
+  and mails a check log to the maintainer address within the hour; `226` means the transfer
+  completed. The server **will not overwrite an existing upload**: a second attempt at the
+  same filename fails with a bare `Failed FTP upload: 550`, which means "already queued", not
+  "rejected". Confirm with `curl --list-only ftp://win-builder.r-project.org/R-devel/` before
+  re-uploading, or you will conclude the upload failed when it succeeded. The mail carries a
+  result URL; `curl -s https://win-builder.r-project.org/<key>/00check.log` fetches the full
+  log, which beats transcribing the one-line summary. The pages expire after ~72 hours, so
+  `cran-comments.md` is the durable copy.
+- **R-hub** — `.github/workflows/rhub.yaml` is the stock R-hub v2 workflow, so the check runs
+  on this repository's own Actions rather than uploading anywhere. Trigger it from the
+  Actions tab ("R-hub" → Run workflow), which needs nothing but repository access.
+  `rhub::rhub_check()` does the same over the API but requires a GitHub PAT with the `repo`
+  scope, stored via `gitcreds::gitcreds_set()` — `rhub::rhub_doctor()` reports whether yours
+  has it. Because the workflow is `workflow_dispatch`-only, it must be merged to the
+  **default branch** before it can be triggered at all, and R-hub wants the file on the
+  default branch *and* on whichever branch is being checked.
+
+  To read the results, **download the artifacts — do not use `gh run view --log`**, which
+  truncates long jobs: at 1.2.1 the 38-minute macOS job returned 1548 lines ending four
+  minutes in, with no `Status:` line anywhere. `gh run download <run-id> -D <dir>` and read
+  `*/rcicr.Rcheck/00check.log`. Expect `Status: OK` where win-builder reports 1 NOTE — R-hub
+  does not run the CRAN incoming feasibility check, so that is agreement, not a discrepancy.
+
+  **`RHUB_TOKEN` is deliberately unset, and nothing is missing.** The stock workflow passes
+  `secrets.RHUB_TOKEN` to four actions, which makes it look like a prerequisite. It is an
+  optional slot for your own PAT to reach private repositories — not a credential R-hub
+  issues — and as of `r-hub/actions@v1` none of those four actions references the input in
+  any step. This package is public; an unset secret expands to an empty string and the jobs
+  run normally.
+
+### 3. Merge and tag
 
 ```sh
 gh pr merge <n> --squash --delete-branch
@@ -146,53 +203,35 @@ The tag push re-runs the full gate against the released tree, which is the copy 
 matters. Squash-merge, always: one commit per PR on `main`, and the squash message is where
 measurements and rejected alternatives have to live, because the branch commits disappear.
 
-### 3. Submit to CRAN
+**Confirm the squash did not change the tree** the external checks ran on:
 
 ```sh
-git switch --detach vX.Y.Z      # never build from main HEAD
+git diff <pr-head-sha> vX.Y.Z --stat    # must be empty
+```
+
+Empty output is what lets step 2's results stand for the tagged tree.
+
+### 4. Submit to CRAN
+
+```sh
+git switch --detach vX.Y.Z      # never build from main HEAD, never in a worktree
 R CMD build .
 R CMD check --as-cran rcicr_X.Y.Z.tar.gz
 git switch -                    # back to where you were
 ```
 
 Building from the tag is what keeps the development suffix out of the submitted version:
-`Version contains large components` is only a CRAN blocker if the *tarball* carries it. Two
-NOTEs are expected and explained in `cran-comments.md` — CRAN incoming feasibility (new
-submission of an archived package) and future file timestamps (no network clock in a
-sandbox).
+`Version contains large components` is only a CRAN blocker if the *tarball* carries it.
 
-Then run the two external checks and record their results in the `<!-- TODO -->` markers in
-`cran-comments.md`. Neither is run casually: win-builder mails the maintainer, and both put
-the tarball in front of a third party.
-
-- **win-builder** — `devtools::check_win_devel()` and `devtools::check_win_release()`, run
-  from a checkout of the tag. Each FTPs the tarball to `win-builder.r-project.org` and mails
-  a check log to the maintainer address within the hour. The server **will not overwrite an
-  existing upload**: a second attempt at the same filename fails with a bare
-  `Failed FTP upload: 550`, which means "already queued", not "rejected". Confirm with
-  `curl --list-only ftp://win-builder.r-project.org/R-devel/` before re-uploading, or you
-  will conclude the upload failed when it succeeded.
-- **R-hub** — `.github/workflows/rhub.yaml` is the stock R-hub v2 workflow, so the check runs
-  on this repository's own Actions rather than uploading anywhere. Trigger it from the
-  Actions tab ("R-hub" → Run workflow), which needs nothing but repository access.
-  `rhub::rhub_check()` does the same over the API but requires a GitHub PAT with the `repo`
-  scope, stored via `gitcreds::gitcreds_set()` — `rhub::rhub_doctor()` reports whether yours
-  has it. Because the workflow is `workflow_dispatch`-only, it must be merged to the
-  **default branch** before it can be triggered at all, and R-hub wants the file on the
-  default branch *and* on whichever branch is being checked.
-
-  **`RHUB_TOKEN` is deliberately unset, and nothing is missing.** The stock workflow passes
-  `secrets.RHUB_TOKEN` to four actions, which makes it look like a prerequisite. It is an
-  optional slot for your own PAT to reach private repositories — not a credential R-hub
-  issues — and as of `r-hub/actions@v1` none of those four actions references the input in
-  any step. This package is public; an unset secret expands to an empty string and the jobs
-  run normally.
+Submit at <https://cran.r-project.org/submit.html>, pasting the body of `cran-comments.md`
+into the "Optional comment" field — that file is `.Rbuildignore`d and reaches CRAN only this
+way, never inside the tarball. `devtools::submit_cran()` does the same thing.
 
 **Ron submits to CRAN personally.** CRAN emails the maintainer address to confirm, and for a
 package archived over an undeliverable address, that confirmation *is* the point of the
 resubmission.
 
-### 4. Reopen development
+### 5. Reopen development
 
 Bump `DESCRIPTION` to `X.Y.Z.9000` and start a fresh `# rcicr (development version)` heading
 in `NEWS.md`. `main` is protected, so this goes through a small PR like anything else.

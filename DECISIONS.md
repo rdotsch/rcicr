@@ -405,6 +405,40 @@ the hard way that those entries do not cover:
   takes the other branch down with it. (`gh pr merge --delete-branch` has already removed the
   remote branch anyway.)
 
+### External checks run on the release branch; the tag and `.9000` still precede acceptance
+At 1.2.1 the order was: merge the release PR, tag, publish the GitHub release, bump to
+`.9000` — and only *then* run win-builder and R-hub. So the check results landed on a
+development tree, and the release commit and its tag recorded no evidence that the tree they
+name had passed anything. `usethis:::release_checklist()` puts `check_win_devel()` and
+"Update `cran-comments.md`" under **Prepare for release**, before the version is finalised,
+and leaves the tag (`use_github_release()`) and the `.9000` reopen (`use_dev_version()`)
+until after "Wait for CRAN… Accepted". The checks now run in step 2 of
+`CONTRIBUTING.md` → "Releasing", against the release branch.
+
+**The circularity that appears to force the old order is not real.** It looks as though
+results cannot be recorded in the commit they describe, because writing them changes the
+tree and so invalidates the tarball that was checked. But `cran-comments.md` is
+`.Rbuildignore`d and verifiably absent from the built tarball, so editing it produces the
+same tarball byte for byte. It is not a package artifact at all — it is the text pasted into
+the "Optional comment" field of the CRAN submission form.
+
+**What is deliberately *not* copied from usethis: tagging and reopening `.9000` still happen
+before CRAN accepts.** Two reasons. The `.9000` suffix is what selects `--quick` over the
+full ~20-minute battery, so holding `main` at a clean version across the weeks CRAN can take
+would run the full gate on every unrelated PR in that window. And a rejection means shipping
+X.Y.Z+1 anyway, leaving the tag naming a tree that was never on CRAN — already true of
+`v1.2.0`, so the repository tolerates that outcome cheaply.
+
+This variant is in one respect tighter than usethis's: that checklist runs win-builder while
+`DESCRIPTION` still carries `.9000` and never re-checks after `use_version()`, so the
+recorded results are for a different version string than the one submitted. Checking the
+release branch, where the version is already clean, avoids that.
+
+Not applied retroactively to 1.2.1. `cran-comments.md` never being in the tarball is exactly
+what makes a 1.2.2 unnecessary: the already-checked `rcicr_1.2.1.tar.gz` is what should be
+submitted, and re-cutting a release to carry updated comments would produce an identical
+tarball at the cost of a fresh round of external checks.
+
 ### GitHub releases carry notes only — the built tarball is not attached
 Asked and settled at the 1.2.1 release. A release page already offers "Source code (tar.gz)",
 which GitHub generates from the tag, and that is **not** the same artifact `R CMD build`
