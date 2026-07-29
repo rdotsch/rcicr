@@ -128,7 +128,7 @@ scheduled at all — see "Beyond v1" at the end.
 | 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 | 37 | Error paths are largely untested | **Open, unblocked by the submission — do second.** 5 `expect_error()` + 4 `expect_warning()` against 27 `stop()` + 6 `warning()`. The untested ones include the likeliest user error of all (stimuli/responses length mismatch) and the four `.Rdata` guards that returning users hit. An unexercised guard is how items 6, 23 and 28 each stayed broken for years | M |
-| 38 | Two error messages paste the base image matrix, not its label | **Open, unblocked by the submission — do first.** `base` where `baseimage` was meant, in `generateCI.R:177` and `computeCumulativeCICorrelation.R:83`. Measured: an 8,190-character message at 32px, ~7 MB at 512px. Reachable in the second, latent in the first only because `aggregate()` fails first. Small, and item 37's tests are what would have caught it | S |
+| ~~38~~ | ~~Two error messages paste the base image matrix, not its label~~ | **Done** — both sites now name `baseimage`. The defect was worse than logged: `paste0()` is vectorized, so it built one complete message *per pixel*, and `stop()` concatenated them — 1,024 copies and 8,190 characters at 32px, ~7 MB at 512px. Only error text changed; the gate reports this tree still reproduces v1.2.1 | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1401,15 +1401,27 @@ protects it is an unrelated function's behaviour.
 
 Same shape as the `applyMask()` message that named `img_size` outside its own scope
 (recorded under "Also found and fixed while working through the P0 items"): **an error
-message referring to a variable that is in scope but is not the one meant**. Worth a
-one-time sweep of every `stop()`/`warning()` in `R/` for the same class rather than fixing
-only these two.
+message referring to a variable that is in scope but is not the one meant**.
 
-**Unblocked as of the 2026-07-29 submission.** It was held back only because the checked
-tarball was built and any change to `R/` would have invalidated it, forcing a fresh round of
-win-builder and R-hub — the wrong trade for a defect that produces no wrong numbers and only
-a bad error message. The tarball has now been sent, so nothing in the repo can change what
-CRAN received. Do this one first: it is small, and item 37's tests are what would have caught it.
+✅ **FIXED.** Both sites now name `baseimage`. Only the text of an error changed — the
+release gate reports the tree still reproduces v1.2.1 (135 checks identical, 0 unexpected),
+and the golden master is green. The regression test in `test-fixed-bugs.R` asserts the
+message both matches the intended text and stays under 200 characters; the length bound is
+the discriminating half, since the buggy message exceeded it by 7,990 characters.
+
+**The sweep this item asked for is done, and found nothing else.** All 32 `stop()`/
+`warning()` sites in `R/` were checked, and the ~14 that interpolate a value all interpolate
+a scalar that is the right one: lengths (`generateCI.R:107`), dimensions
+(`generateStimuli2IFC.R:86`, `generateCI.R:423`), filenames and labels
+(`generateStimuli2IFC.R:80`/`:101`, where `base_face` is a name drawn from
+`names(base_face_files)`, not a matrix), a CI name (`autoscale.R:43`), a scaling method
+(`generateCI.R:478`), and `baseimage` at the two `did not contain any reference to base image
+label` guards. **These two were the only instances of the class.** Do not re-run this sweep;
+re-check only when a new message interpolates something.
+
+One unrelated oddity noted in passing, not fixed here: `generateStimuli2IFC.R:68-69` writes
+its message to `stderr()` and then calls a bare `stop()`, so the condition carries an empty
+message. That belongs to item 14, and its error path is one item 37 should cover.
 
 ---
 

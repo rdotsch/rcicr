@@ -298,3 +298,31 @@ test_that("autoscale errors clearly on a fully masked CI", {
   cis <- list(p1 = list(ci = matrix(NA_real_, 8, 8), base = matrix(0.5, 8, 8)))
   expect_error(autoscale(cis, save_as_pngs = FALSE), "entirely NA")
 })
+
+test_that("the 'no parameters' error names the base image label, not the matrix", {
+  # Both call sites pasted `base` -- the base image *matrix* -- into the message
+  # where `baseimage`, the label, was meant. The result was an error message
+  # carrying every pixel of the base face: 8,190 characters at 32px and roughly
+  # 7 MB at the 512px researchers actually use, burying the diagnosis.
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir)
+
+  # An empty stimulus set selects no rows, which is the reachable route here:
+  # computeCumulativeCICorrelation() hits the length-0 guard directly, whereas
+  # in generateCI() aggregate() fails on empty input before the guard is reached.
+  err <- expect_error(
+    computeCumulativeCICorrelation(
+      stimuli = integer(0), responses = integer(0),
+      baseimage = "base", rdata = rdata
+    )
+  )
+
+  expect_match(conditionMessage(err), "No parameters found for base image: base")
+
+  # The discriminating assertion: with the bug the message ran to thousands of
+  # characters of pasted pixel values. Pin a bound far above any label and far
+  # below a 32px matrix, so this cannot pass vacuously.
+  expect_lt(nchar(conditionMessage(err)), 200)
+})
