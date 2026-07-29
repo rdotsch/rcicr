@@ -85,12 +85,18 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # generateReferenceDistribution2IFC() - which saved its own `rdata` argument
   # into the file - would overwrite the path we were called with. This function
   # still uses `rdata` further down (to regenerate and re-load), so it would
-  # then operate on whatever path that file happened to record. Restore ours.
-  .args <- list(rdata = rdata, iter = iter, response_seed = response_seed)
+  # then operate on whatever path that file happened to record.
+  #
+  # Keep every argument rather than the three that were known to collide: the
+  # hazard has bitten from the .Rdata side twice now (item 32 added `sigma` to
+  # the file and captured generateCI()'s z-map argument), so the guard has to
+  # hold for fields that do not exist yet. `target_ci` is the one that would
+  # hurt most here - it is read at the very end to compute the CI norm, so a
+  # file carrying that name would silently score somebody else's classification
+  # image and return a plausible number rather than an error.
+  .args <- mget(names(formals()), envir = environment())
   load(rdata)
-  rdata         <- .args$rdata
-  iter          <- .args$iter
-  response_seed <- .args$response_seed
+  list2env(.args, envir = environment())
 
   # Asking for a specific response seed is asking for a specific reference
   # distribution, so it has to imply regeneration. Without this the argument
@@ -197,8 +203,13 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
       if (cache_ref_dist) {
 
-        # Re-load rdata file
+        # Re-load rdata file, to pick up the reference_norms just written to it.
+        # This load carries the same hazard as the one above and needs the same
+        # restore: `target_ci` is read after this point (line ~230, for the CI
+        # norm), so without it a file containing that name would replace the
+        # caller's classification image between here and the computation of it.
         load(rdata)
+        list2env(.args, envir = environment())
 
         # NB: write() defaults to file = "data", so omitting stdout() here did
         # not print this message - it silently created a file called "data" in

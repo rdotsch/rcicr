@@ -45,8 +45,21 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   stimuli <- unlist(stimuli, use.names = FALSE)
   responses <- unlist(responses, use.names = FALSE)
 
+  # load() assigns straight into this function's frame, so any object stored in
+  # the .Rdata file silently overwrites an argument of the same name - the same
+  # hazard handled in generateCI() and generateReferenceDistribution2IFC(). No
+  # field written today collides with these arguments, so this changes nothing
+  # now; it is here because the collision that actually bit us (item 32) was
+  # created from the .Rdata side, by adding a field, not by adding an argument.
+  #
+  # Captured after the unlist() above, so the coerced vectors are what gets
+  # restored rather than the original tibble columns.
+  .args <- mget(names(formals()), envir = environment())
+
   # Load parameter file (created when generating stimuli)
   load(rdata)
+
+  list2env(.args, envir = environment())
 
   # Check whether critical variables have been loaded
   if (!exists('s', envir=environment(), inherits=FALSE) & !exists('p', envir=environment(), inherits=FALSE) ) {
