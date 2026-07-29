@@ -41,7 +41,7 @@ jobs:
     steps:
       # Full history *and tags*: the gate resolves --ref=v1.0.1 and works out the
       # previous release from the tag list, so a tagless checkout fails outright.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
