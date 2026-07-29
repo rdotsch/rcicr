@@ -174,7 +174,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
   # Check whether parameters were found in this .rdata file
   if (length(params) == 0) {
-    stop(paste0('No parameters found for base image: ', base))
+    stop(paste0('No parameters found for base image: ', baseimage))
   }
 
   # Check whether number of parameters are 4096 (this was the case in older

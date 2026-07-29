@@ -1,5 +1,20 @@
 # rcicr (development version)
 
+## Bug fixes
+
+- **`generateCI()` and `computeCumulativeCICorrelation()` no longer print the entire base
+  image when they cannot find stimulus parameters.** The "No parameters found for base image"
+  error named the base image *matrix* where its label was meant. Because `paste0()` is
+  vectorized, this did not paste one matrix into one message — it built one complete message
+  per pixel, so the error came back as 1,024 concatenated copies at a 32x32 base image (8,190
+  characters) and roughly 7 MB at the 512x512 size researchers actually use, with the reason
+  for the failure buried inside it. The message now reads, in full, `No parameters found for
+  base image: <label>`.
+
+  Only the text of an error changed. No function's return value, arguments or numeric output
+  are affected, and the condition that triggers the error is unchanged — if your analysis
+  script runs today, it behaves identically.
+
 # rcicr 1.2.1 (2026-07-28)
 
 **No user-facing changes.** Nothing this package computes differs from 1.2.0 — no function,
