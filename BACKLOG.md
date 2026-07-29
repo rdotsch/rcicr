@@ -5,15 +5,20 @@ breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
 
-> **State on 2026-07-29.** v1.2.1 is released and tagged, and **all three external
-> pre-submission checks are in and recorded in `cran-comments.md`** — win-builder R-devel and
-> R-release at 1 NOTE each (CRAN incoming feasibility), R-hub `Status: OK` on Linux, Windows
-> and macOS. **The only thing left in the entire CRAN track is the submission itself, which
-> Ron makes personally**, from the `rcicr_1.2.1.tar.gz` already built at the repo root.
-> Nothing in this backlog blocks it. Items **37** and **38** were opened by a final review
-> that same day and are deliberately unfixed: touching `R/` would invalidate that tarball and
-> force the external checks to be re-run. Open items are **1, 20, 21, 24, 25, 27, 30, 31, 33,
-> 34, 37, 38** in the table below, plus **13–15** and **36**, which are kept out of it.
+> **State on 2026-07-29. v1.2.1 has been submitted to CRAN** — released, tagged, and sent from
+> the `rcicr_1.2.1.tar.gz` built at the repo root, with all three external pre-submission
+> checks recorded in `cran-comments.md` (win-builder R-devel and R-release at 1 NOTE each, the
+> CRAN incoming feasibility one; R-hub `Status: OK` on Linux, Windows and macOS). **Item 1 now
+> waits on CRAN's reply, not on us.**
+>
+> **Code work is unblocked again.** Items **37** and **38** were opened by a final review the
+> same day and held unfixed only because touching `R/` would have invalidated the tarball the
+> external checks had already run against; the tarball is now sent, so that reason is gone and
+> they are the natural first pair — 37's tests are what would have caught 38. **Item 21 stays
+> held** until CRAN actually accepts, since it announces availability.
+>
+> Open items are **1, 20, 21, 24, 25, 27, 30, 31, 33, 34, 37, 38** in the table below, plus
+> **13–15** and **36**, which are kept out of it.
 
 **Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
 and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what
@@ -24,8 +29,8 @@ non-fix. **Items 28–31 were opened by a full source review on 2026-07-28**; 28
 fixed, 30 is a documentation correction with optional follow-up, 31 is an unhandled edge
 case. **Item 35 was opened by the first R-hub run on 2026-07-28** — the suite's only
 non-portable assertion, failing on macOS — and is fixed and released as **v1.2.1**, which is
-the tree to submit to CRAN. Items 13–15 are the only substantive untouched work, and are
-deliberately held until after the CRAN submission.
+the tree submitted to CRAN on 2026-07-29. Items 13–15 are the only substantive untouched
+work; they were held until after the submission and are now open.
 
 **Reproducibility, verified 2026-07-28 — and re-checkable on demand.**
 `tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last release before 1.1.0) from its
@@ -84,12 +89,13 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 
 **All seven P0 code bugs (items 2–8) are fixed, along with every P1 *code* item — the
 dependency, toolchain, parallelism, test-coverage and vignette work — all released as
-v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked, so what
-remains across them is the go/no-go and the submission itself, which are the maintainer's
-to make. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
+v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked and **1.2.1
+was submitted on 2026-07-29**, so item 1 now waits on CRAN's reply and item 21 waits on the
+outcome. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
 heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturing
-`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. What is
-left in the table is triage: items 27, 30, 31 and 33, none of which blocks a submission. Items **13, 14 and 15** (modernize the
+`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. **Start
+with items 38 then 37**, which the submission has just unblocked. The rest of the table is
+triage: items 27, 30, 31 and 33. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
 they are the backlog proper for after CRAN, and are deliberately kept out of the table.
 **Item 36** (tidyverse style as a v2 breaking change) is out of the table too, and is not
@@ -100,12 +106,12 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~9~~ | ~~Drop 13 unused `Imports`~~ | **Done** — the 13 unused declarations are gone; `DESCRIPTION` now imports 15 packages. Removed the install-failure risk and the `R CMD check` NOTE that would have blocked resubmission | S |
 | ~~16~~ | ~~Pointless 1.5 GB array exported to every worker~~ | **Done** — the per-worker array copy is gone. Addresses, but does not fully close, issue #12: the `ncores == 1` path and `img_size` scaling remain, which is why #12 stays open | S |
 | ~~10~~ | ~~Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()`~~ | **Done.** The `rbernoulli()` replacement had to preserve the random *stream*, not just the distribution — it is `runif(n) > (1 - p)`, and the obvious `rbinom(n, 1, p)` would have silently changed every infoVal computed from a given seed | S |
-| 1 | CRAN archived | Highest reach of anything here, but a process/decision task rather than a code fix | M |
+| 1 | CRAN archived | **Submitted 2026-07-29**, from the v1.2.1 tarball. Waiting on CRAN's reply; nothing actionable here until it arrives, and only the maintainer can act on it when it does | M |
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | **Every box ticked**; `--as-cran` is 0 errors / 0 warnings / 2 expected NOTEs, and the external checks are in as of 2026-07-29 (win-builder 1 NOTE on both, R-hub OK on all three platforms). Only the submission itself is left, and CRAN mails the maintainer to confirm it | M |
+| 20 | CRAN resubmission checklist | **Complete — every box ticked and the submission made on 2026-07-29.** `--as-cran` was 0 errors / 0 warnings / 2 expected NOTEs, with the external checks in (win-builder 1 NOTE on both, R-hub OK on all three platforms). Keep the checklist: a rejection means running it again for the next version | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
@@ -121,8 +127,8 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~35~~ | ~~`test-plotZmap.R:68` fails on macOS — blocked the CRAN submission~~ | **Done** — released as 1.2.1. The second distinct value was macOS quartz writing an **alpha channel** where cairo writes RGB, not an antialiasing artifact, so every option drafted before a macOS run was wrong. The count now ignores the alpha plane, and the value it compares is an ordering rather than a constant — the first fix pinned the background grey and macOS failed that too, at 0.573 vs 0.502. CI gained macOS and Windows runners, and the z-map is now pinned by the golden master on all three | S |
 | 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
-| 37 | Error paths are largely untested | **Open, post-CRAN.** 5 `expect_error()` + 4 `expect_warning()` against 27 `stop()` + 6 `warning()`. The untested ones include the likeliest user error of all (stimuli/responses length mismatch) and the four `.Rdata` guards that returning users hit. An unexercised guard is how items 6, 23 and 28 each stayed broken for years | M |
-| 38 | Two error messages paste the base image matrix, not its label | **Open, post-CRAN.** `base` where `baseimage` was meant, in `generateCI.R:177` and `computeCumulativeCICorrelation.R:83`. Measured: an 8,190-character message at 32px, ~7 MB at 512px. Reachable in the second, latent in the first only because `aggregate()` fails first. Not fixed pre-submission — it would invalidate the checked tarball for an error-message defect | S |
+| 37 | Error paths are largely untested | **Open, unblocked by the submission — do second.** 5 `expect_error()` + 4 `expect_warning()` against 27 `stop()` + 6 `warning()`. The untested ones include the likeliest user error of all (stimuli/responses length mismatch) and the four `.Rdata` guards that returning users hit. An unexercised guard is how items 6, 23 and 28 each stayed broken for years | M |
+| 38 | Two error messages paste the base image matrix, not its label | **Open, unblocked by the submission — do first.** `base` where `baseimage` was meant, in `generateCI.R:177` and `computeCumulativeCICorrelation.R:83`. Measured: an 8,190-character message at 32px, ~7 MB at 512px. Reachable in the second, latent in the first only because `aggregate()` fails first. Small, and item 37's tests are what would have caught it | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -610,10 +616,11 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 > package returning from archival should not arrive already red. See `DECISIONS.md` → Testing
 > for the underlying rule.
 >
-> **All three external checks have now run against the 1.2.1 tarball and are recorded in
+> **All three external checks ran against the 1.2.1 tarball and are recorded in
 > `cran-comments.md`** (2026-07-29): win-builder R-devel and R-release both `1 NOTE` — the
-> incoming feasibility one — and R-hub `Status: OK` on Linux, Windows and macOS. **The only
-> thing left in this item is the submission itself.**
+> incoming feasibility one — and R-hub `Status: OK` on Linux, Windows and macOS. **The
+> submission was made the same day; this item is complete and the checklist below is kept
+> because a rejection means running it again for the next version.**
 
 **Current status — every box below is ticked.** The latest `--as-cran` run, on the
 `rcicr_1.2.1.tar.gz` built at the repo root from the `v1.2.1` tree (2026-07-28), gives
@@ -763,8 +770,8 @@ ships *in the package* and the link is courtesy to nine years of citations.
       plainly that the 2021-06-08 archival was for an undeliverable maintainer address
       rather than any code or policy problem, that the address now works, and explains both
       remaining NOTEs. The win-builder and R-hub results are filled in as of 2026-07-29.
-- [ ] Submit at <https://cran.r-project.org/submit.html> (or `devtools::release()`).
-      **Ron has to do this himself** — CRAN emails the maintainer address for
+- [x] **Submit at <https://cran.r-project.org/submit.html>. Done 2026-07-29**, by Ron
+      himself, from the 1.2.1 tarball — CRAN emails the maintainer address for
       confirmation, and that address working again is the entire point.
 - [ ] Update `README.md` once the outcome is known.
 
@@ -1336,8 +1343,11 @@ z-map vertically over a base face that is drawn separately by `rasterImage()`.
 - [ ] Drop `raster` from `DESCRIPTION` and the two `importFrom(raster, ...)` lines in
       `NAMESPACE`.
 
-Hold until after the CRAN submission — it changes rendered output, so it wants the same care
-item 23 got, and the tarball in front of CRAN should not move under it.
+The submission on 2026-07-29 lifted the original hold — the tarball is sent, so nothing here
+can move it. **But do not land this while 1.2.1 is in the queue.** If CRAN comes back asking
+for a change, the answer should be a minimal 1.2.2 addressing exactly what they asked, not one
+that also swapped the plotting backend under three rendered outputs. Wait for the verdict,
+then give it the same care item 23 got.
 
 ---
 
@@ -1395,9 +1405,11 @@ message referring to a variable that is in scope but is not the one meant**. Wor
 one-time sweep of every `stop()`/`warning()` in `R/` for the same class rather than fixing
 only these two.
 
-Deliberately **not fixed before the 1.2.1 submission**: the checked tarball is built, and
-any change to `R/` invalidates it and forces a fresh round of win-builder and R-hub. For a
-defect that produces no wrong numbers and only a bad error message, that is the wrong trade.
+**Unblocked as of the 2026-07-29 submission.** It was held back only because the checked
+tarball was built and any change to `R/` would have invalidated it, forcing a fresh round of
+win-builder and R-hub — the wrong trade for a defect that produces no wrong numbers and only
+a bad error message. The tarball has now been sent, so nothing in the repo can change what
+CRAN received. Do this one first: it is small, and item 37's tests are what would have caught it.
 
 ---
 
