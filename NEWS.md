@@ -15,6 +15,23 @@
   are affected, and the condition that triggers the error is unchanged — if your analysis
   script runs today, it behaves identically.
 
+## Internal
+
+- **Every function that reads a stimulus set now keeps its arguments across the
+  `load()`.** `load()` assigns straight into the calling function's frame, so an object
+  stored in an `.Rdata` file silently replaces an argument of the same name. `generateCI()`
+  and `generateReferenceDistribution2IFC()` already guarded against this; `computeInfoVal2IFC()`
+  guarded three of its five arguments, and `computeCumulativeCICorrelation()` none.
+
+  **No file this package has ever written triggers the problem**, so no result changes and
+  no analysis needs revisiting — the guard is preventive. It is worth having because the one
+  collision that did occur (the z-map `sigma`, fixed in 1.2.0) was created by *adding a field
+  to the file*, not by adding an argument, so an argument that is safe today stops being safe
+  without anything in the function changing. The case now closed in `computeInfoVal2IFC()` is
+  the one that would have mattered most: `target_ci` is read at the very end to compute the
+  CI norm, and after a second `load()`, so a file carrying that name would have scored a
+  different classification image and returned a plausible number rather than an error.
+
 # rcicr 1.2.1 (2026-07-28)
 
 **No user-facing changes.** Nothing this package computes differs from 1.2.0 — no function,

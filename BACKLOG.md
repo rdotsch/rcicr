@@ -129,6 +129,7 @@ scheduled at all — see "Beyond v1" at the end.
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
 | 37 | Error paths are largely untested | **Open, unblocked by the submission — do second.** 5 `expect_error()` + 4 `expect_warning()` against 27 `stop()` + 6 `warning()`. The untested ones include the likeliest user error of all (stimuli/responses length mismatch) and the four `.Rdata` guards that returning users hit. An unexercised guard is how items 6, 23 and 28 each stayed broken for years | M |
 | ~~38~~ | ~~Two error messages paste the base image matrix, not its label~~ | **Done** — both sites now name `baseimage`. The defect was worse than logged: `paste0()` is vectorized, so it built one complete message *per pixel*, and `stop()` concatenated them — 1,024 copies and 8,190 characters at 32px, ~7 MB at 512px. Only error text changed; the gate reports this tree still reproduces v1.2.1 | S |
+| ~~39~~ | ~~Two of the four `load(rdata)` sites did not guard their arguments~~ | **Done** — preventive, no live collision. `computeInfoVal2IFC()` restored 3 of its 5 arguments and `computeCumulativeCICorrelation()` none. The one that mattered: `target_ci` is read after a *second* `load()`, so a file carrying that name would have scored a different CI and returned a plausible number, not an error | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1424,6 +1425,35 @@ its message to `stderr()` and then calls a bare `stop()`, so the condition carri
 message. That belongs to item 14, and its error path is one item 37 should cover.
 
 ---
+
+### 39. Two of the four `load(rdata)` sites did not guard their arguments **[verified] [own review]**  ✅ **FIXED**
+
+Found while sweeping for item 38, 2026-07-29. `load()` assigns straight into the calling
+function's frame, so an object in the `.Rdata` file replaces an argument of the same name.
+Of the four functions that read a stimulus set:
+
+| function | state before |
+|---|---|
+| `generateCI()` | guarded — all arguments kept via `mget(names(formals()))` |
+| `generateReferenceDistribution2IFC()` | guarded — each argument restored explicitly |
+| `computeInfoVal2IFC()` | **partial** — 3 of 5 arguments (`rdata`, `iter`, `response_seed`) |
+| `computeCumulativeCICorrelation()` | **none** |
+
+**There was no live bug.** The 15 names `generateStimuli2IFC()` saves do not intersect the
+unguarded arguments, checked rather than assumed. The fix is preventive, and the reason it is
+worth having is the direction the one real collision came from: item 32 was created by *adding
+a field to the file*, not by adding an argument, so an argument that is safe today stops being
+safe with nothing in the function changing.
+
+**The case worth naming** is `computeInfoVal2IFC(target_ci)`. It is read at the very end, to
+compute the CI norm, and after a **second** `load()` on the cache-writing path — so a file
+carrying that name would have scored somebody else's classification image and returned a
+plausible InfoVal rather than an error. Both loads now restore.
+
+Tested by planting the colliding names into a fixture `.Rdata` and asserting the caller's
+values survive; verified to fail without the fix (3 failures). Note the tests pass against
+unguarded code if the collision is *not* planted, which is why each one plants it explicitly.
+
 
 ## P3 — Features requested by users
 
