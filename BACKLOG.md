@@ -11,13 +11,25 @@ breaking the API that researchers depend on**.
 > CRAN incoming feasibility one; R-hub `Status: OK` on Linux, Windows and macOS). **Item 1 now
 > waits on CRAN's reply, not on us.**
 >
-> **Code work is unblocked again.** Items **37** and **38** were opened by a final review the
-> same day and held unfixed only because touching `R/` would have invalidated the tarball the
-> external checks had already run against; the tarball is now sent, so that reason is gone and
-> they are the natural first pair — 37's tests are what would have caught 38. **Item 21 stays
-> held** until CRAN actually accepts, since it announces availability.
+> **CRAN's auto-check came back the same day: 1 NOTE on Windows and Debian both**, the
+> expected incoming-feasibility one, plus `No strong reverse dependencies`. It is now pending
+> **manual inspection, within 10 working days**. That is not acceptance.
 >
-> Open items are **1, 20, 21, 24, 25, 27, 30, 31, 33, 34, 37, 38** in the table below, plus
+> **Code work is unblocked, and items 37, 38 and 39 are done** — the three the submission
+> released. They were held only because touching `R/` would have invalidated the tarball the
+> external checks had run against; the tarball is sent, so nothing here can change what CRAN
+> received. **Two things stay held** for reasons that survive the submission: **item 21**
+> announces availability, which is not yet true, and **item 34** should not land while 1.2.1
+> is in the queue — if CRAN asks for a change, the answer wants to be a minimal 1.2.2, not one
+> that also swapped the plotting backend under three rendered outputs.
+>
+> **While 1.2.1 is in the queue, keep `main` releasable.** The real risk is not a bad merge
+> but time pressure: a CRAN request often carries an implicit deadline, and half-finished work
+> on `main` is what stops you answering one. If a resubmission is needed, branch
+> `release-1.2.2` from `main` when it is clean, or from the **`v1.2.1` tag** when it is not —
+> the tag exists for exactly that. There is still no `develop` branch and should not be one.
+>
+> Open items are **1, 20, 21, 24, 25, 27, 30, 31, 33, 34** in the table below, plus
 > **13–15** and **36**, which are kept out of it.
 
 **Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
@@ -93,9 +105,10 @@ v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked a
 was submitted on 2026-07-29**, so item 1 now waits on CRAN's reply and item 21 waits on the
 outcome. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
 heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturing
-`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. **Start
-with items 38 then 37**, which the submission has just unblocked. The rest of the table is
-triage: items 27, 30, 31 and 33. Items **13, 14 and 15** (modernize the
+`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. **Items 37,
+38 and 39 are all fixed** — the submission unblocked them, and they went in that order: the
+error message, the `load()` guards it exposed, then the tests that would have caught both.
+The rest of the table is triage: items 27, 30, 31, 33 and 34. Items **13, 14 and 15** (modernize the
 R code, better errors, docs and onboarding) are the only substantive work still untouched —
 they are the backlog proper for after CRAN, and are deliberately kept out of the table.
 **Item 36** (tidyverse style as a v2 breaking change) is out of the table too, and is not
@@ -127,7 +140,7 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~35~~ | ~~`test-plotZmap.R:68` fails on macOS — blocked the CRAN submission~~ | **Done** — released as 1.2.1. The second distinct value was macOS quartz writing an **alpha channel** where cairo writes RGB, not an antialiasing artifact, so every option drafted before a macOS run was wrong. The count now ignores the alpha plane, and the value it compares is an ordering rather than a constant — the first fix pinned the background grey and macOS failed that too, at 0.573 vs 0.502. CI gained macOS and Windows runners, and the z-map is now pinned by the golden master on all three | S |
 | 34 | `raster` costs 4 packages and a C++ toolchain for 3 plotting calls | **Open, post-CRAN.** `raster` → `terra` → GDAL/GEOS/PROJ is why R-hub's Linux and macOS jobs spent 30+ minutes installing dependencies while Windows, on binaries, took minutes. Used only by three `raster::plot()` calls in `plotZmap.R`. The release gate compares the z-map *matrix*, so it cannot catch a rendering regression here | M |
 | 33 | A decorated z-map below 256px dies with `figure margins too large` | **Open.** `zmapdecoration = TRUE` is the default, so `generateCI(zmap = TRUE)` on a 128px stimulus set fails from inside base R, naming neither `rcicr` nor the cause. Not a regression — 256px and up are fine. Needs a clear early error, or a documented fallback | S |
-| 37 | Error paths are largely untested | **Open, unblocked by the submission — do second.** 5 `expect_error()` + 4 `expect_warning()` against 27 `stop()` + 6 `warning()`. The untested ones include the likeliest user error of all (stimuli/responses length mismatch) and the four `.Rdata` guards that returning users hit. An unexercised guard is how items 6, 23 and 28 each stayed broken for years | M |
+| ~~37~~ | ~~Error paths are largely untested~~ | **Done** — `test-error-paths.R`, suite 291 → 323. Covers the length mismatch, every `.Rdata` "did not contain X" guard in both functions, all four mask-import failures, unreadable and non-square base images, and the `targetci` path that was never exercised. Each was confirmed to fire *its own* guard rather than an incidental error | M |
 | ~~38~~ | ~~Two error messages paste the base image matrix, not its label~~ | **Done** — both sites now name `baseimage`. The defect was worse than logged: `paste0()` is vectorized, so it built one complete message *per pixel*, and `stop()` concatenated them — 1,024 copies and 8,190 characters at 32px, ~7 MB at 512px. Only error text changed; the gate reports this tree still reproduces v1.2.1 | S |
 | ~~39~~ | ~~Two of the four `load(rdata)` sites did not guard their arguments~~ | **Done** — preventive, no live collision. `computeInfoVal2IFC()` restored 3 of its 5 arguments and `computeCumulativeCICorrelation()` none. The one that mattered: `target_ci` is read after a *second* `load()`, so a file carrying that name would have scored a different CI and returned a plausible number, not an error | S |
 
@@ -1352,7 +1365,7 @@ then give it the same care item 23 got.
 
 ---
 
-### 37. Error paths are largely untested **[verified] [own review]**
+### 37. Error paths are largely untested **[verified] [own review]**  ✅ **FIXED**
 
 Found in the pre-submission review, 2026-07-29. The suite is strong on *intent* for the
 numeric paths — properties rather than stored numbers, grouping actually checked, both
@@ -1423,6 +1436,25 @@ re-check only when a new message interpolates something.
 One unrelated oddity noted in passing, not fixed here: `generateStimuli2IFC.R:68-69` writes
 its message to `stderr()` and then calls a bare `stop()`, so the condition carries an empty
 message. That belongs to item 14, and its error path is one item 37 should cover.
+
+
+✅ **FIXED** in `tests/testthat/test-error-paths.R`. Suite **291 → 323**, 0 skipped. Every
+box above is covered, plus the `base_face_files`-not-a-list guard found during the item 38
+sweep.
+
+**How these were verified, since the usual method does not apply.** This item adds no `R/`
+change, so `git stash push -- R/` proves nothing. The real risk for a test of an error path
+is that it passes on a *different* error than the guard it names. Each of the 13 was
+therefore run directly and its `conditionMessage()` read, confirming it fires its own guard
+— and every assertion matches a distinctive fragment of that message rather than merely
+expecting "an error".
+
+**Two things worth keeping.** `generateStimuli2IFC.R:68-69` writes its explanation to
+`stderr()` and then calls a **bare `stop()`**, so the condition carries an empty message and
+no regexp can match it; the test asserts only that it errors, and giving it a real message
+belongs to item 14. And the assertions deliberately match short fragments (`"same length"`,
+`"did not contain"`, `"other than 0 or 1"`) rather than whole sentences, precisely so item 14
+can rewrite the wording without rewriting the suite.
 
 ---
 

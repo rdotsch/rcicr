@@ -40,3 +40,26 @@ seed_reference_norms <- function(rdata_path, n = 50, seed = 1) {
   save(list = ls(e), file = rdata_path, envir = e)
   invisible(rdata_path)
 }
+
+# Rewrites an existing .Rdata fixture: adds or replaces the objects passed via
+# `...`, and drops the names listed in `.remove`. Both directions are needed --
+# the load()-collision guards are reached by *adding* a colliding name, and the
+# "file did not contain X" guards by *removing* one.
+#
+# The leading dot on `.path` matters. R partially matches named arguments to
+# formals, so a formal called `rdata_path` would swallow a planted
+# `rdata = <decoy>` by prefix and make the helper open the decoy instead of the
+# fixture. That cost a confusing test failure once already.
+mutate_rdata <- function(.path, ..., .remove = character()) {
+  e <- new.env()
+  load(.path, envir = e)
+
+  objs <- list(...)
+  for (nm in names(objs)) assign(nm, objs[[nm]], envir = e)
+
+  present <- intersect(.remove, ls(e))
+  if (length(present)) rm(list = present, envir = e)
+
+  save(list = ls(e), file = .path, envir = e)
+  invisible(.path)
+}
