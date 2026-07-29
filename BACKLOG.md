@@ -4,6 +4,17 @@ A prioritized backlog for bringing `rcicr` to a modern, maintainable state **wit
 breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
+
+> **State on 2026-07-29.** v1.2.1 is released and tagged, and **all three external
+> pre-submission checks are in and recorded in `cran-comments.md`** — win-builder R-devel and
+> R-release at 1 NOTE each (CRAN incoming feasibility), R-hub `Status: OK` on Linux, Windows
+> and macOS. **The only thing left in the entire CRAN track is the submission itself, which
+> Ron makes personally**, from the `rcicr_1.2.1.tar.gz` already built at the repo root.
+> Nothing in this backlog blocks it. Items **37** and **38** were opened by a final review
+> that same day and are deliberately unfixed: touching `R/` would invalidate that tarball and
+> force the external checks to be re-run. Open items are **1, 20, 21, 24, 25, 27, 30, 31, 33,
+> 34, 37, 38** in the table below, plus **13–15** and **36**, which are kept out of it.
+
 **Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
 and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what
 remains in item 1 is the submission decision itself. **Items 23–25 were opened by a
@@ -1283,6 +1294,17 @@ removes four packages nothing else here needs:
 | `raster` | the API actually used |
 | `terra` | C++ against GDAL/GEOS/PROJ — the bulk of the build time |
 | `sp`, `Rcpp` | pulled in behind them; needed by no other `Imports` entry |
+
+**A third argument, measured 2026-07-29: it is why every Linux CI job is at the mercy of an
+apt mirror.** `terra` needs GDAL/GEOS/PROJ as *system* libraries, so
+`r-lib/actions/setup-r-dependencies` fetches **333 apt packages** — `libgdal-dev`,
+`gdal-bin`, `gdal-data`, `gdal-plugins`, `libgdal-grass`, `libgdal34t64` and their
+dependencies — before `R CMD check` can begin. On a fast mirror that is ~6 minutes; on
+2026-07-29 a slow `azure.archive.ubuntu.com` turned the same job into **35m23s**, with
+individual gaps of 321s, 129s and 92s between `Get:` lines. An identical job on another PR
+finished in 6m18s *inside that window*, so the variance is external — but the exposure is
+ours, and it exists for three plotting calls. It also cost real diagnosis time: the stall
+looked like a hung job and was called one before the log was readable.
 
 **A second argument, found 2026-07-29 and not previously recorded: this is also the largest
 security surface in the tree.** Of the 53 non-base packages rcicr pulls in recursively, 29
