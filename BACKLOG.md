@@ -1284,6 +1284,16 @@ removes four packages nothing else here needs:
 | `terra` | C++ against GDAL/GEOS/PROJ — the bulk of the build time |
 | `sp`, `Rcpp` | pulled in behind them; needed by no other `Imports` entry |
 
+**A second argument, found 2026-07-29 and not previously recorded: this is also the largest
+security surface in the tree.** Of the 53 non-base packages rcicr pulls in recursively, 29
+need compilation, and their vulnerabilities are not in R code — they belong to the C
+libraries underneath. `terra` binds **GDAL, GEOS and PROJ**, which carry by far the most CVE
+history of anything here, and they arrive solely so that three `raster::plot()` calls can
+draw a matrix. (`png` → libpng and `jpeg` → libjpeg are the other native bindings, and unlike
+this one they are load-bearing.) Since CRAN publishes no advisory database, shrinking the
+native surface is the only lever available — see `DECISIONS.md`, "Dependabot watches the
+actions, not the R packages".
+
 What has to be replaced is small but not nothing: `main`/`xlab` titling, `axes = F, box = F`,
 `add = TRUE` overlay onto a `rasterImage()` background, and the **colour-bar legend** that
 `raster::plot()` draws by default (the `legend = F` at line 147 is what makes the undecorated
