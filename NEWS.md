@@ -17,6 +17,15 @@
 
 ## Internal
 
+- **The failure paths are tested.** The suite had 9 assertions covering 33 `stop()` and
+  `warning()` calls, so most of the package's error messages had never been run. They now
+  are: the stimuli/responses length mismatch, every "this `.Rdata` file did not contain X"
+  guard in `generateCI()` and `computeCumulativeCICorrelation()`, all four mask-import
+  failures, and base images that are unreadable or not square. No behaviour changed — this
+  is coverage of messages that were already there. It matters because an unexercised guard
+  is indistinguishable from one that works, which is how three separate bugs in this package
+  stayed live for years, the most recent being the one fixed just above.
+
 - **Every function that reads a stimulus set now keeps its arguments across the
   `load()`.** `load()` assigns straight into the calling function's frame, so an object
   stored in an `.Rdata` file silently replaces an argument of the same name. `generateCI()`

@@ -9,17 +9,9 @@
 # the unguarded code too if the collision is not planted -- which is exactly why
 # each one plants it explicitly.
 
-# The leading dot matters: R partially matches named arguments to formals, so a
-# formal called `rdata_path` would swallow a planted `rdata = ...` by prefix and
-# make the helper try to open the decoy instead of the fixture.
-plant_in_rdata <- function(.path, ...) {
-  e <- new.env()
-  load(.path, envir = e)
-  objs <- list(...)
-  for (nm in names(objs)) assign(nm, objs[[nm]], envir = e)
-  save(list = ls(e), file = .path, envir = e)
-  invisible(.path)
-}
+# Planting is done with mutate_rdata() from helper-fixtures.R, which the
+# "did not contain X" tests in test-error-paths.R also use, in its removing
+# direction.
 
 test_that("computeInfoVal2IFC scores the caller's CI, not one found in the .Rdata", {
   skip_if_not_installed("withr")
@@ -35,7 +27,7 @@ test_that("computeInfoVal2IFC scores the caller's CI, not one found in the .Rdat
   # after a *second* load() on the cache-writing path, so both loads need the
   # restore. A file carrying this name would return a plausible number for the
   # wrong image rather than an error, which is the worst shape this can take.
-  plant_in_rdata(rdata, target_ci = decoy)
+  mutate_rdata(rdata, target_ci = decoy)
 
   norms <- local({
     e <- new.env()
@@ -64,7 +56,7 @@ test_that("computeInfoVal2IFC keeps its own rdata path across the load", {
 
   # An older generateReferenceDistribution2IFC() saved its own `rdata` argument
   # into the file, so this name really does occur in the wild.
-  plant_in_rdata(rdata, rdata = file.path(dir, "does-not-exist.Rdata"))
+  mutate_rdata(rdata, rdata = file.path(dir, "does-not-exist.Rdata"))
 
   expect_no_error(
     suppressWarnings(computeInfoVal2IFC(target_ci = list(ci = matrix(0.1, 32, 32)),
@@ -86,8 +78,8 @@ test_that("computeCumulativeCICorrelation keeps its arguments across the load", 
 
   # Plant collisions for three arguments at once: the step size, the label used
   # to look up the parameters, and the stimulus indices themselves.
-  plant_in_rdata(rdata, step = 99L, baseimage = "not-a-real-label",
-                 stimuli = integer(0))
+  mutate_rdata(rdata, step = 99L, baseimage = "not-a-real-label",
+               stimuli = integer(0))
 
   planted <- suppressWarnings(computeCumulativeCICorrelation(
     stimuli = 1:6, responses = responses, baseimage = "base", rdata = rdata
