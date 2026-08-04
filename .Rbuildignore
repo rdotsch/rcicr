@@ -3,7 +3,7 @@
 ^\.Rproj\.user$
 ^\.github$
 ^\.claude$
-^CLAUDE\.md$
+^AGENTS\.md$
 ^DECISIONS\.md$
 ^\.pre-commit-config\.yaml$
 ^codecov\.yml$
