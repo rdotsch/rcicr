@@ -173,6 +173,22 @@ test_that("applyMask rejects a mask that is not binary", {
                "other than 0 or 1")
 })
 
+test_that("applyMask accepts integer and logical matrix masks", {
+  ci <- matrix(seq_len(64), 8, 8)
+
+  integer_mask <- matrix(1L, 8, 8)
+  integer_mask[1, 1] <- 0L
+  integer_masked <- rcicr:::applyMask(ci, mask = integer_mask, img_size = 8)
+  expect_true(is.na(integer_masked[1, 1]))
+  expect_equal(integer_masked[!is.na(integer_masked)], ci[!is.na(integer_masked)])
+
+  logical_mask <- matrix(TRUE, 8, 8)
+  logical_mask[2, 2] <- FALSE
+  logical_masked <- rcicr:::applyMask(ci, mask = logical_mask, img_size = 8)
+  expect_true(is.na(logical_masked[2, 2]))
+  expect_equal(logical_masked[!is.na(logical_masked)], ci[!is.na(logical_masked)])
+})
+
 test_that("applyMask rejects a PNG whose colour channels genuinely differ", {
   skip_if_not_installed("withr")
 

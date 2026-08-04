@@ -96,3 +96,30 @@ test_that("grouping follows the `by` column, not row order", {
   )
   expect_false(isTRUE(all.equal(cis[["base_pid_1"]]$ci, positional$ci)))
 })
+
+test_that("batchGenerateCI ignores rows without a grouping value", {
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  df <- data.frame(
+    pid = c(1, 1, NA, 2, 2, NA),
+    stim = 1:6,
+    resp = c(1, -1, 1, -1, 1, -1)
+  )
+
+  cis <- suppressWarnings(
+    batchGenerateCI(
+      data = df, by = "pid", stimuli = "stim", responses = "resp",
+      baseimage = "base", rdata = rdata_path, save_as_png = FALSE
+    )
+  )
+
+  expect_named(cis, c("base_pid_1", "base_pid_2"))
+
+  rows <- !is.na(df$pid) & df$pid == 1
+  direct <- generateCI(
+    stimuli = df$stim[rows], responses = df$resp[rows], baseimage = "base",
+    rdata = rdata_path, save_as_png = FALSE, scaling = "none"
+  )
+  expect_equal(cis[["base_pid_1"]]$ci, direct$ci)
+})

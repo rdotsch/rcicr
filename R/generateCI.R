@@ -409,7 +409,7 @@ applyMask <- function(ci, mask, img_size = nrow(ci)) {
                     'words, this is not a greyscale image.'))
       }
     }
-  } else if (typeof(mask) == 'double' && length(dim(mask)) == 2) {
+  } else if (is.matrix(mask) && length(dim(mask)) == 2) {
     mask_matrix <- mask
   } else {
     stop('The mask argument is neither a string nor a matrix!')
