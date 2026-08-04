@@ -59,6 +59,10 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
     doAutoscale <- FALSE
   }
 
+  # Match batchGenerateCI2IFC(): rows without a grouping value cannot name
+  # an output CI and should not be turned into a spurious NA group.
+  data <- data[!is.na(data[,by]), ]
+
   # dplyr::progress_estimated() is deprecated; use the base R progress bar
   pb <- txtProgressBar(min = 0, max = length(unique(data[,by])), style = 3)
   cis <- list()
