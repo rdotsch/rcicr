@@ -11,6 +11,7 @@
 ^notes$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
+^Rplots\.pdf$
 ^cran-comments\.md$
 ^CONTRIBUTING\.md$
 ^tools$

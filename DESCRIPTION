@@ -1,14 +1,16 @@
 Package: rcicr
 Type: Package
 Title: Reverse-Correlation Image-Classification Toolbox
-Version: 1.2.1.9000
+Version: 1.2.2
 URL: https://github.com/rdotsch/rcicr
 BugReports: https://github.com/rdotsch/rcicr/issues
 Authors@R:
   person("Ron", "Dotsch", email="rdotsch@gmail.com", role=c("aut", "cre"))
-Description: Functions to generate stimuli and analyze data of reverse
-    correlation image classification experiments (psychophysical tasks aimed at
-    visualizing cognitive mental representations of faces).
+Description: Generate stimuli and analyze data of reverse correlation image
+    classification experiments (psychophysical tasks aimed at visualizing
+    cognitive mental representations of faces). For the method see Dotsch and
+    Todorov (2012) <doi:10.1177/1948550611430272>; for a practical primer see
+    Brinkman, Todorov and Dotsch (2017) <doi:10.1080/10463283.2017.1381469>.
 License: GPL-2
 Encoding: UTF-8
 Depends:

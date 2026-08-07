@@ -13,18 +13,18 @@ generateCI(
   save_individual_cis = FALSE,
   save_as_png = TRUE,
   filename = "",
-  targetpath = "./cis",
+  targetpath,
   antiCI = FALSE,
   scaling = "independent",
   scaling_constant = 0.1,
   individual_scaling = "independent",
   individual_scaling_constant = 0.1,
-  zmap = F,
+  zmap = FALSE,
   zmapmethod = "quick",
-  zmapdecoration = T,
+  zmapdecoration = TRUE,
   sigma = 3,
   threshold = 3,
-  zmaptargetpath = "./zmaps",
+  zmaptargetpath,
   n_cores = default_ncores(),
   mask = NA
 )
@@ -46,7 +46,7 @@ generateCI(
 
 \item{filename}{Optional string to specify a file name for the PNG image.}
 
-\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
+\item{targetpath}{String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE} or \code{save_individual_cis = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
@@ -68,7 +68,7 @@ generateCI(
 
 \item{threshold}{Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.}
 
-\item{zmaptargetpath}{Optional string specifying path to save z-map PNGs to (default: ./zmaps).}
+\item{zmaptargetpath}{String specifying the directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 
 \item{n_cores}{Optional integer specifying the number of CPU cores to use to generate the z-map (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 
@@ -103,7 +103,6 @@ When creating multiple classification images a good strategy is to find the lowe
 classification images. This can be automatized using the \code{autoscale} function.
 }
 \examples{
-\donttest{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -126,5 +125,4 @@ ci <- generateCI(
   stimuli = 1:6, responses = responses, baseimage = "face",
   rdata = rdata_file, save_as_png = FALSE
 )
-}
 }

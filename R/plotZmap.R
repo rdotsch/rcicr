@@ -22,7 +22,7 @@
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
 #' @param mask Optional. A binary matrix with the same dimensions as zmap: cells that are 0 (or FALSE) are masked, cells that are 1 (or TRUE) are kept. Can also be the filename (as a string) of a black and white PNG image, in which case black (0) is masked and white (1) is kept. This is the same convention \code{generateCI()} uses for its own \code{mask} argument, so a mask can be used with both. Note that earlier versions of this documentation stated the opposite for the matrix form; the description here matches what the code does.
 #' @param decoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
-#' @param targetpath String specifying path to save the Z-map PNG to.
+#' @param targetpath String specifying the directory to save the Z-map PNG to. Required: this function exists to write a file, and has no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param filename Optional string to specify a file name for the Z-map PNG.
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
 #' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
@@ -32,10 +32,18 @@
 #' zmap <- matrix(rnorm(64, sd = 5), 8, 8)
 #' plotZmap(zmap, sigma = 3, threshold = 3, decoration = FALSE,
 #'          targetpath = tempdir(), size = 200)
-plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = T, targetpath = 'zmaps', filename = 'zmap', size = 512, ...) {
+plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = TRUE, targetpath, filename = 'zmap', size = 512, ...) {
+
+  # targetpath is required, not defaulted: a default path writes to the user's
+  # filespace uninvited, which CRAN policy does not allow.
+  if (missing(targetpath)) {
+    stop(paste0('No targetpath was given. plotZmap() writes a PNG, so it needs a ',
+                'directory to write it to: supply targetpath = <a directory>. ',
+                'Use tempdir() if you only want to try the function out.'))
+  }
 
   # Create target directory
-  dir.create(targetpath, recursive = T, showWarnings = F)
+  dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
   # If a mask is specified, import and check it
   if (!(is.null(mask))) {
@@ -107,16 +115,20 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   # Plot
   png(filename = paste0(targetpath, '/', filename, '.png'), width = size, height = size)
 
+  # Close the device however this function exits, so a failure while plotting
+  # cannot leak it or leave a half-written PNG behind.
+  on.exit(dev.off())
+
   # With decoration
   if (decoration) {
     # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
-    raster::plot(raster(zmap), axes = F, box = F, main = paste0('Z-map of ', filename),
+    raster::plot(raster(zmap), axes = FALSE, box = FALSE, main = paste0('Z-map of ', filename),
                  xlab = paste0('sigma = ', sigma, ', threshold = ', threshold),
                  col = viridis::viridis(100), ...)
     # Add bgimage (if specified) and superimpose Z-map on top of it
     if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
-      raster::plot(raster(zmap), add = T, ...)
+      raster::plot(raster(zmap), add = TRUE, ...)
     }
     # If no bgimage was specified, draw a boundary box around the Z-map
     if (identical(bgimage, '')) {
@@ -136,7 +148,13 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # img_size, so small stimulus sets could not produce a z-map at all.
     # Rendered output at usual sizes is unchanged: par(mar=) still takes effect
     # before plot.window() either way.
-    par(mar = c(0, 0, 0, 0))
+    #
+    # par() returns the previous values of exactly the parameters being set, so
+    # restoring `oldpar` restores `mar` and nothing else. par(no.readonly=TRUE)
+    # is not usable here: it also captures derived parameters such as `pin`,
+    # which plot.window() below invalidates, and restoring them errors.
+    oldpar <- par(mar = c(0, 0, 0, 0))
+    on.exit(par(oldpar), add = TRUE, after = FALSE)
     plot.new()
     plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = 'i', yaxs = 'i')
 
@@ -151,7 +169,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
       rasterImage(bgimage, 0, 0, 1, 1)
     }
     # Add Z-map
-    raster::plot(raster(zmap), add = T, legend = F)
+    raster::plot(raster(zmap), add = TRUE, legend = FALSE)
   }
-  dev.off()
+  # The device is closed by the on.exit() handler registered after png().
 }

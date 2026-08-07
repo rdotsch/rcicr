@@ -10,8 +10,8 @@ plotZmap(
   sigma,
   threshold = 3,
   mask = NULL,
-  decoration = T,
-  targetpath = "zmaps",
+  decoration = TRUE,
+  targetpath,
   filename = "zmap",
   size = 512,
   ...
@@ -30,7 +30,7 @@ plotZmap(
 
 \item{decoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
 
-\item{targetpath}{String specifying path to save the Z-map PNG to.}
+\item{targetpath}{String specifying the directory to save the Z-map PNG to. Required: this function exists to write a file, and has no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 
 \item{filename}{Optional string to specify a file name for the Z-map PNG.}
 

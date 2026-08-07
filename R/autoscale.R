@@ -5,7 +5,7 @@
 #' @import png
 #' @param cis List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to PNGs, also the base image (\code{$base}).
 #' @param save_as_pngs Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as PNGs (using the key of the list as name).
-#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
+#' @param targetpath String specifying the directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @return The input \code{cis} list, with the \code{$scaled} pixel matrix of each element
 #' replaced by its autoscaled version. The scaling constant that was determined is printed
 #' to the console, not returned.
@@ -27,7 +27,16 @@
 #'   participant2 = list(ci = matrix(runif(64, -0.3, 0.3), 8, 8), base = matrix(0.5, 8, 8))
 #' )
 #' scaled_cis <- autoscale(cis, save_as_pngs = FALSE)
-autoscale <- function(cis, save_as_pngs=TRUE, targetpath='./cis') {
+autoscale <- function(cis, save_as_pngs=TRUE, targetpath) {
+
+  # targetpath is required, not defaulted: a default path writes to the user's
+  # filespace uninvited, which CRAN policy does not allow.
+  if (save_as_pngs && missing(targetpath)) {
+    stop(paste0('save_as_pngs is TRUE but no targetpath was given. Supply ',
+                'targetpath = <a directory> to say where the PNGs should go, ',
+                'or set save_as_pngs = FALSE to autoscale without writing ',
+                'them. Use tempdir() if you only want to try the function out.'))
+  }
 
   # Get range of each ci.
   #
@@ -69,7 +78,7 @@ autoscale <- function(cis, save_as_pngs=TRUE, targetpath='./cis') {
     if (save_as_pngs) {
       ci <- (cis[[ciname]]$scaled + cis[[ciname]]$base) / 2
 
-      dir.create(targetpath, recursive=T, showWarnings = F)
+      dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
       png::writePNG(ci, paste0(targetpath, '/', ciname, '_autoscaled.png'))
     }

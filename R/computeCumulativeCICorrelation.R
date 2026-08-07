@@ -15,7 +15,6 @@
 #' @param step Step size in sequence of trials to compute correlations with.
 #' @return Vector containing correlation between cumulative CI and final/target CI.
 #' @examples
-#' \donttest{
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
 #' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -37,7 +36,6 @@
 #' correlations <- suppressWarnings(computeCumulativeCICorrelation(
 #'   stimuli = 1:6, responses = responses, baseimage = "face", rdata = rdata_file
 #' ))
-#' }
 computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata, targetci=list(), step=1) {
 
   # Coerce to plain vectors: tibble columns stay one-column tibbles rather than
@@ -54,7 +52,7 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   #
   # Captured after the unlist() above, so the coerced vectors are what gets
   # restored rather than the original tibble columns.
-  .args <- mget(names(formals()), envir = environment())
+  .args <- captureArgs(environment())
 
   # Load parameter file (created when generating stimuli)
   load(rdata)

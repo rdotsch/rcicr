@@ -129,7 +129,7 @@ They were duplicated here; read them there rather than maintaining two copies th
 
 ### Notes on conventions in this codebase
 
-- Functions generally use `save_as_png=TRUE` / `save_rdata=TRUE`-style side-effecting defaults — most analysis functions write PNGs to disk (`targetpath`/`stimulus_path` args) in addition to returning data structures.
+- Functions generally use `save_as_png=TRUE` / `save_rdata=TRUE`-style side-effecting defaults — most analysis functions write PNGs to disk in addition to returning data structures. **The destination is always a required argument** (`stimulus_path`, `targetpath`, `zmaptargetpath`): as of 1.2.2 none of them has a default, because a default path writes to the user's filespace uninvited and CRAN policy forbids it. Never reintroduce one — not even `tempdir()`; `DECISIONS.md` records why.
 - Scaling of CI pixel intensities (`none`, `constant`, `matched`, `independent`) is a key user-facing decision, documented at length in `generateCI.R`'s roxygen header — read it before changing scaling logic.
 - `computeInfoVal2IFC()`'s `ref_lookup` tibble looks like a cache for avoiding expensive resimulation, and is not one: **it has been empty since 2018.** Its rows were measured under the pre-erratum infoVal formula and were correctly commented out when `01e547e` adopted the Euclidean norm, so every lookup misses and the reference distribution is always regenerated. Do not describe it as a working cache; the matching machinery is kept only so the table can be repopulated cheaply.
 - `pre_0.3.0` / `generator_version` fields exist to keep backward compatibility with `.Rdata` files produced by older versions of the package (index-counter starts at 0 vs 1) — do not remove without understanding this.

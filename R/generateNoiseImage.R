@@ -5,9 +5,12 @@
 #' @param p 3D patch matrix (generated using \code{generateNoisePattern()}).
 #' @return The noise pattern as pixel matrix.
 #' @examples
-#' #params <- rnorm(4092) # generates 4092 normally distributed random values
-#' #s <- generateNoisePattern(img_size=256)
-#' #noise <- generateNoiseImage(params, p)
+#' p <- generateNoisePattern(img_size = 32, nscales = 2)
+#'
+#' # one contrast weight per patch index
+#' params <- rnorm(max(p$patchIdx))
+#'
+#' noise <- generateNoiseImage(params, p)
 generateNoiseImage <- function(params, p) {
 
   # Normalise a pre-0.3.3 noise pattern before anything reads p$patchIdx. This

@@ -16,7 +16,7 @@
 #' @param base_face_files List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
 #' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).
-#' @param stimulus_path Path to save stimuli and .Rdata file to.
+#' @param stimulus_path String specifying the directory to save the stimuli and the .Rdata file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param label Label to prepend to each file for your convenience.
 #' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
 #' @param seed Integer seeding the random number generator (for reproducibility).
@@ -30,7 +30,6 @@
 #' @param save_rdata Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classification images. This function argument exists primarily for internal rcicr use.
 #' @return Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
 #' @examples
-#' \donttest{
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
 #' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -44,12 +43,33 @@
 #'   ncores = 1,
 #'   nscales = 1
 #' )
-#' }
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path='./stimuli', label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=default_ncores(), return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
+generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path, label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=default_ncores(), return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
+
+  # stimulus_path is required, not defaulted: a default path writes to the
+  # user's filespace uninvited, which CRAN policy does not allow.
+  writes_to_disk <- save_as_png || save_rdata
+  if (writes_to_disk && missing(stimulus_path)) {
+    stop(paste0('No stimulus_path was given. Supply stimulus_path = <a ',
+                'directory> to say where the stimuli and the .Rdata file ',
+                'should go. Use tempdir() if you only want to try the ',
+                'function out.'))
+  }
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
-  dir.create(stimulus_path, recursive=T, showWarnings = F)
+
+  # Only create the directory when something is written to it.
+  # generateReferenceDistribution2IFC() calls this with both save flags FALSE
+  # and used to leave a stray directory behind. BACKLOG.md item 24.
+  if (writes_to_disk) {
+    dir.create(stimulus_path, recursive = TRUE, showWarnings = FALSE)
+  } else if (missing(stimulus_path)) {
+    # Bind it anyway. stimulus_path appears in the %dopar% body below, and
+    # foreach exports every free variable of that body to the workers -- which
+    # means get()ting it, and a missing argument aborts there even though the
+    # branch that uses it cannot run. Never read.
+    stimulus_path <- NA_character_
+  }
 
   # More depends on this call than the stimuli. generateReferenceDistribution2IFC()
   # re-generates stimuli through this function and then draws its simulated

@@ -4,14 +4,14 @@
 \alias{autoscale}
 \title{Determines optimal scaling constant for a list of CIs}
 \usage{
-autoscale(cis, save_as_pngs = TRUE, targetpath = "./cis")
+autoscale(cis, save_as_pngs = TRUE, targetpath)
 }
 \arguments{
 \item{cis}{List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to PNGs, also the base image (\code{$base}).}
 
 \item{save_as_pngs}{Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as PNGs (using the key of the list as name).}
 
-\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
+\item{targetpath}{String specifying the directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 }
 \value{
 The input \code{cis} list, with the \code{$scaled} pixel matrix of each element

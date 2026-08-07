@@ -18,7 +18,10 @@ The noise pattern as pixel matrix.
 Generate single noise image based on parameter vector
 }
 \examples{
-#params <- rnorm(4092) # generates 4092 normally distributed random values
-#s <- generateNoisePattern(img_size=256)
-#noise <- generateNoiseImage(params, p)
+p <- generateNoisePattern(img_size = 32, nscales = 2)
+
+# one contrast weight per patch index
+params <- rnorm(max(p$patchIdx))
+
+noise <- generateNoiseImage(params, p)
 }

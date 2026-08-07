@@ -36,7 +36,6 @@
 #' check cannot change the number every later analysis of that stimulus set reports.
 #' @return Informational value (z-score)
 #' @examples
-#' \donttest{
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
 #' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -56,13 +55,7 @@
 #'
 #' # compute (and cache in rdata_file) a reference distribution; iter is kept
 #' # tiny here for a fast example, in practice use iter >= 10000.
-#' # Run from a temp working directory: generateReferenceDistribution2IFC()
-#' # re-generates stimuli via generateStimuli2IFC() without forwarding a
-#' # stimulus_path, so it always creates a ./stimuli directory relative to the
-#' # working directory.
-#' withr::with_dir(tempdir(), {
-#'   suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-#' })
+#' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #'
 #' responses <- sample(c(1, -1), 6, replace = TRUE)
 #' target_ci <- generateCI(
@@ -71,7 +64,6 @@
 #' )
 #'
 #' computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
-#' }
 
 computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL) {
 
@@ -94,7 +86,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # hurt most here - it is read at the very end to compute the CI norm, so a
   # file carrying that name would silently score somebody else's classification
   # image and return a plausible number rather than an error.
-  .args <- mget(names(formals()), envir = environment())
+  .args <- captureArgs(environment())
   load(rdata)
   list2env(.args, envir = environment())
 

@@ -12,7 +12,7 @@ batchGenerateCI2IFC(
   baseimage,
   rdata,
   save_as_png = TRUE,
-  targetpath = "./cis",
+  targetpath,
   antiCI = FALSE,
   scaling = "autoscale",
   constant = 0.1,
@@ -34,7 +34,7 @@ batchGenerateCI2IFC(
 
 \item{save_as_png}{Boolean stating whether to additionally save the CI as PNG image.}
 
-\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
+\item{targetpath}{String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 
 \item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
 
@@ -54,7 +54,6 @@ Generate classification image for 2 images forced choice reverse correlation tas
 This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 }
 \examples{
-\donttest{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -83,5 +82,4 @@ cis <- suppressWarnings(batchGenerateCI2IFC(
   data = data, by = "participant", stimuli = "stimulus", responses = "response",
   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 ))
-}
 }
