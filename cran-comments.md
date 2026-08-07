@@ -96,9 +96,10 @@ between 0.3.4.1 and 1.2.2 is complete.
   (the incoming feasibility note below). Install 39s, check 408s; examples 24s, tests 80s.
 * win-builder, R-release — R 4.6.1 (2026-06-24 ucrt): 1 NOTE (the same one). Install 37s,
   check 391s; examples 24s, tests 75s.
-* R-hub, all on R-devel — Linux, Windows, macOS:
-  <!-- TODO: fill in from the 1.2.2 run -->. R-hub does not run the CRAN incoming
-  feasibility check, which is why the note below does not appear there.
+* R-hub, all on R-devel — Linux (x86_64-pc-linux-gnu, r90185), Windows
+  (x86_64-w64-mingw32, r90366 ucrt), macOS (x86_64-apple-darwin20, r90190):
+  **Status: OK** on all three, 0 errors, 0 warnings, 0 notes. R-hub does not run the CRAN
+  incoming feasibility check, which is why the note below does not appear there.
 
 All of the above were run against the tarball being submitted.
 
