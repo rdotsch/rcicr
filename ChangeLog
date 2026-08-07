@@ -1,3 +1,16 @@
+Changes 1.2.2 [07-Aug-2026]
+
+* See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward.
+* In brief: answers the seven changes CRAN asked for when reviewing the 1.2.1
+  submission. One is breaking — functions that write files no longer default
+  their destination, so stimulus_path, targetpath and zmaptargetpath are
+  required whenever a call actually writes. A script relying on the old
+  './stimuli', './cis' or './zmaps' now stops with an error naming the argument
+  to supply, rather than writing somewhere new. See NEWS.md for the migration.
+* Nothing the package computes differs from 1.2.1. The release gate reports 163
+  checks identical with no deviations.
+* All examples now run: the \dontrun{} and \donttest{} wrappers are gone.
+
 Changes 1.2.1 [28-Jul-2026]
 
 * See NEWS.md for this release. It is the canonical changelog from 1.1.0 onward.
