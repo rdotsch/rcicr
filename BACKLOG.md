@@ -5,9 +5,16 @@ breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
 
-> **State on 2026-08-07. CRAN reviewed 1.2.1 and asked for changes; 1.2.2 answers them.**
-> The reply was a request, not a rejection on the merits: seven points, all of them
-> mechanical apart from one. `cran-comments.md` opens with a point-by-point response.
+> **State on 2026-08-07. CRAN reviewed 1.2.1 and asked for changes; 1.2.2 answers them and
+> is released.** The reply was a request, not a rejection on the merits: seven points, all
+> of them mechanical apart from one. `cran-comments.md` opens with a point-by-point
+> response.
+>
+> **1.2.2 is tagged `v1.2.2` and published as a GitHub release**, with every external check
+> in and recorded: win-builder 1 NOTE on both R-devel and R-release, R-hub `Status: OK` on
+> all three platforms. **The one step left is the maintainer resubmitting to CRAN
+> personally**, built from the tag rather than from `main` — `main` now carries `.9000`
+> again, which a submitted tarball must never do.
 >
 > **The one that mattered: no function may write to a default path.** `stimulus_path`,
 > `targetpath` and `zmaptargetpath` have lost their defaults (`./stimuli`, `./cis`,
@@ -97,9 +104,9 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 
 **All seven P0 code bugs (items 2–8) are fixed, along with every P1 *code* item — the
 dependency, toolchain, parallelism, test-coverage and vignette work — all released as
-v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist is fully ticked and **1.2.1
-was submitted on 2026-07-29**, so item 1 now waits on CRAN's reply and item 21 waits on the
-outcome. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
+v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist has now been run twice and
+**1.2.2 is tagged and released on GitHub**, so item 1 waits on the maintainer's resubmission
+and then on CRAN's reply, and item 21 waits on the outcome. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
 heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturing
 `generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. **Items 37,
 38 and 39 are all fixed** — the submission unblocked them, and they went in that order: the
@@ -115,12 +122,12 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~9~~ | ~~Drop 13 unused `Imports`~~ | **Done** — the 13 unused declarations are gone; `DESCRIPTION` now imports 15 packages. Removed the install-failure risk and the `R CMD check` NOTE that would have blocked resubmission | S |
 | ~~16~~ | ~~Pointless 1.5 GB array exported to every worker~~ | **Done** — the per-worker array copy is gone. Addresses, but does not fully close, issue #12: the `ncores == 1` path and `img_size` scaling remain, which is why #12 stays open | S |
 | ~~10~~ | ~~Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()`~~ | **Done.** The `rbernoulli()` replacement had to preserve the random *stream*, not just the distribution — it is `runif(n) > (1 - p)`, and the obvious `rbinom(n, 1, p)` would have silently changed every infoVal computed from a given seed | S |
-| 1 | CRAN archived | **Submitted 2026-07-29**, from the v1.2.1 tarball. Waiting on CRAN's reply; nothing actionable here until it arrives, and only the maintainer can act on it when it does | M |
+| 1 | CRAN archived | **1.2.1 was submitted 2026-07-29 and the review asked for seven changes; 1.2.2 answers them and is tagged `v1.2.2`.** All external checks are in and recorded in `cran-comments.md`. What remains is the maintainer resubmitting personally, from the tag's tarball — nothing else here is actionable until CRAN replies | M |
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | **Complete — every box ticked and the submission made on 2026-07-29.** `--as-cran` was 0 errors / 0 warnings / 2 expected NOTEs, with the external checks in (win-builder 1 NOTE on both, R-hub OK on all three platforms). Keep the checklist: a rejection means running it again for the next version | M |
+| 20 | CRAN resubmission checklist | **Run twice now — for 1.2.1 and again for 1.2.2**, which is what the checklist is for. At 1.2.2: `--as-cran` 0 errors / 0 warnings / 2 expected NOTEs, win-builder 1 NOTE on both R-devel and R-release, R-hub `Status: OK` on all three platforms. Keep it: every further round of CRAN review means running it again | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
