@@ -30,13 +30,12 @@
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param save_as_png Boolean stating whether to additionally save the CI as PNG image.
 #' @param filename Optional string to specify a file name for the PNG image.
-#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
+#' @param targetpath String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default).
 #' @param constant Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
 #' @examples
-#' \donttest{
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
 #' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -59,8 +58,17 @@
 #'   stimuli = 1:6, responses = responses, baseimage = "face",
 #'   rdata = rdata_file, save_as_png = FALSE
 #' )
-#' }
-generateCI2IFC <- function(stimuli, responses, baseimage, rdata, save_as_png=TRUE, filename='', targetpath="./cis", antiCI=FALSE, scaling='independent', constant=0.1) {
+generateCI2IFC <- function(stimuli, responses, baseimage, rdata, save_as_png=TRUE, filename='', targetpath, antiCI=FALSE, scaling='independent', constant=0.1) {
+
+  # targetpath is required, not defaulted: a default path writes to the user's
+  # filespace uninvited, which CRAN policy does not allow.
+  if (save_as_png && missing(targetpath)) {
+    stop(paste0('save_as_png is TRUE but no targetpath was given. Supply ',
+                'targetpath = <a directory> to say where the PNGs should go, ',
+                'or set save_as_png = FALSE to compute the classification ',
+                'image without writing it. Use tempdir() if you only want to ',
+                'try the function out.'))
+  }
 
   # For backwards compatibility
   return(generateCI(

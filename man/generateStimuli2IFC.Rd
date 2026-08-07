@@ -8,7 +8,7 @@ generateStimuli2IFC(
   base_face_files,
   n_trials = 770,
   img_size = 512,
-  stimulus_path = "./stimuli",
+  stimulus_path,
   label = "rcic",
   use_same_parameters = TRUE,
   seed = 1,
@@ -29,7 +29,7 @@ generateStimuli2IFC(
 
 \item{img_size}{Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).}
 
-\item{stimulus_path}{Path to save stimuli and .Rdata file to.}
+\item{stimulus_path}{String specifying the directory to save the stimuli and the .Rdata file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 
 \item{label}{Label to prepend to each file for your convenience.}
 
@@ -64,7 +64,6 @@ Will save the stimuli as PNGs to a folder, including .Rdata file needed for anal
 after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
 }
 \examples{
-\donttest{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -78,5 +77,4 @@ generateStimuli2IFC(
   ncores = 1,
   nscales = 1
 )
-}
 }

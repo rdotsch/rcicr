@@ -318,6 +318,34 @@ trial's noise.
 
 ## Packaging, CI and tooling
 
+### Write paths are required arguments, not defaults of `tempdir()`
+CRAN's review of 1.2.1 asked us to "omit any default path in writing functions". Two answers
+would satisfy the letter of that: default the paths to `tempdir()`, or remove the defaults.
+We removed them.
+
+`tempdir()` was rejected because it is the more dangerous of the two for this package's
+users. A researcher whose script relied on `./cis` would keep running, silently writing
+classification images into a directory that is deleted when the session ends — the failure
+surfaces days later as missing output, with nothing to connect it to an upgrade. Removing
+the default turns the same script into an immediate error naming the argument to supply. A
+breaking change that announces itself beats a silent relocation of somebody's results.
+
+It also cost nothing to verify: the release gate reports `max|d| = 0` across 135 checks
+against v1.2.1, because `tools/compare-harness.R` already passed every path explicitly.
+
+### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
+The `load()` guard snapshots a function's arguments and restores them after reading an
+`.Rdata` file. Once paths became required, `mget(names(formals()))` started aborting: it
+forces the promise, and a wrapper forwarding its own missing argument — `batchGenerateCI()`
+passing `targetpath = targetpath` — makes that promise a missing symbol.
+
+The fix must not over-correct. `missing()` reports a *defaulted* argument missing too when
+the caller did not supply it, and skipping those would silently reopen the hazard the guard
+exists for: a default is the value the function goes on to use, and is exactly as
+replaceable by a field in the `.Rdata` as one passed explicitly. Dropping them removed the
+`step` guard in `computeCumulativeCICorrelation()` and the test caught it. The predicate is
+therefore *required* (no default in `formals()`) **and** absent — not absent alone.
+
 ### If the package is ever run through `styler`, it goes in as a commit of its own
 Never as a side effect of other work. (Why the hooks stay minimal and language-agnostic is in
 `CONTRIBUTING.md`.)

@@ -38,7 +38,7 @@
 #' @param save_as_png Optional boolean stating whether to additionally save the CI as PNG image.
 #' @param participants Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.
 #' @param save_individual_cis Optional boolean specifying whether individual CIs should be save as PNG images when the \code{participants} parameter is used.
-#' @param targetpath Optional string specifying path to save PNGs to (default: ./cis).
+#' @param targetpath String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE} or \code{save_individual_cis = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param filename Optional string to specify a file name for the PNG image.
 #' @param antiCI Optional boolean specifying whether antiCI instead of CI should be computed.
 #' @param scaling Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, or \code{independent} (default). This scaling applies to the group-level CIs if both individual-level and group-level CIs are being generated.
@@ -51,11 +51,10 @@
 #' @param zmapdecoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
-#' @param zmaptargetpath Optional string specifying path to save z-map PNGs to (default: ./zmaps).
+#' @param zmaptargetpath String specifying the directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param n_cores Optional integer specifying the number of CPU cores to use to generate the z-map (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @return List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.
 #' @examples
-#' \donttest{
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
 #' png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -78,19 +77,36 @@
 #'   stimuli = 1:6, responses = responses, baseimage = "face",
 #'   rdata = rdata_file, save_as_png = FALSE
 #' )
-#' }
 
 # Main function -----------------------------------------------------------
 generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
                        save_individual_cis=FALSE, save_as_png=TRUE, filename='',
-                       targetpath='./cis', antiCI=FALSE, scaling='independent',
+                       targetpath, antiCI=FALSE, scaling='independent',
                        scaling_constant=0.1, individual_scaling='independent',
-                       individual_scaling_constant=0.1, zmap = F,
-                       zmapmethod = 'quick', zmapdecoration = T, sigma = 3,
-                       threshold = 3, zmaptargetpath = './zmaps',
+                       individual_scaling_constant=0.1, zmap = FALSE,
+                       zmapmethod = 'quick', zmapdecoration = TRUE, sigma = 3,
+                       threshold = 3, zmaptargetpath,
                        n_cores = default_ncores(), mask=NA) {
 
   # Preprocessing -----------------------------------------------------------
+
+  # targetpath and zmaptargetpath are required, not defaulted: a default path
+  # writes to the user's filespace uninvited, which CRAN policy does not allow.
+  # Both checks must run before the load(rdata) below, which assigns into this
+  # frame and can replace an argument with a value from the file.
+  if ((save_as_png || save_individual_cis) && missing(targetpath)) {
+    stop(paste0('save_as_png or save_individual_cis is TRUE but no targetpath ',
+                'was given. Supply targetpath = <a directory> to say where the ',
+                'PNGs should go, or set both to FALSE to compute the ',
+                'classification image without writing it. Use tempdir() if you ',
+                'only want to try the function out.'))
+  }
+  if (isTRUE(zmap) && missing(zmaptargetpath)) {
+    stop(paste0('zmap is TRUE but no zmaptargetpath was given. Supply ',
+                'zmaptargetpath = <a directory> to say where the z-map PNG ',
+                'should go. Use tempdir() if you only want to try the function ',
+                'out.'))
+  }
 
   # Coerce stimuli/responses to plain vectors. Data read with readr or
   # manipulated with dplyr comes back as a tibble, where tbl[, "col"] stays a
@@ -117,7 +133,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   # sigma the caller passed was ignored. Keep private copies of every argument
   # and restore them after loading, so a field added to the .Rdata later cannot
   # quietly capture another one.
-  .args <- mget(names(formals()), envir = environment())
+  .args <- captureArgs(environment())
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
@@ -349,7 +365,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   }
 
   # Return data
-  if (zmapbool == T) {
+  if (zmapbool) {
     return(list(ci=ci, scaled=scaled, base=base, combined=combined, zmap=zmap))
   } else {
     return(list(ci=ci, scaled=scaled, base=base, combined=combined))
@@ -510,7 +526,7 @@ saveToImage <- function(baseimage, combined, targetpath, filename, antiCI) {
   filename <- paste0(filename, '.png')
 
   # Create output directory
-  dir.create(targetpath, recursive = T, showWarnings = F)
+  dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
   # Write CI to image file
   png::writePNG(combined, paste0(targetpath, '/', filename))

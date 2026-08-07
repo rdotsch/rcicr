@@ -36,7 +36,6 @@ Computes cumulative trial CIs correlations with final/target CI.
 Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
 }
 \examples{
-\donttest{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -58,5 +57,4 @@ responses <- sample(c(1, -1), 6, replace = TRUE)
 correlations <- suppressWarnings(computeCumulativeCICorrelation(
   stimuli = 1:6, responses = responses, baseimage = "face", rdata = rdata_file
 ))
-}
 }

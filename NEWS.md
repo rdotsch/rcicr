@@ -1,6 +1,48 @@
-# rcicr (development version)
+# rcicr 1.2.2 (2026-08-07)
+
+This release exists to answer the changes CRAN asked for when reviewing the previous
+submission. Nothing it changes affects a number this package computes: classification
+images, scaling, z-maps and informational value are identical to 1.2.1, and the release
+gate confirms that against both 1.2.1 and 1.0.1.
+
+## Breaking changes
+
+- **Functions that write files now require you to say where.** `stimulus_path`
+  (`generateStimuli2IFC()`), `targetpath` (`generateCI()`, `generateCI2IFC()`,
+  `batchGenerateCI()`, `batchGenerateCI2IFC()`, `autoscale()`, `plotZmap()`) and
+  `zmaptargetpath` (`generateCI()`) have lost their defaults. They used to be `./stimuli`,
+  `./cis` and `./zmaps`, which meant a default call created directories in whatever your
+  working directory happened to be — writing to your filespace without being asked, which
+  CRAN policy does not permit.
+
+  **What to change in your scripts.** If you relied on the old defaults, name them:
+
+  ``` r
+  # before
+  generateCI(stimuli, responses, "face", rdata)
+
+  # after
+  generateCI(stimuli, responses, "face", rdata, targetpath = "./cis")
+  ```
+
+  You will not silently get files somewhere new — a call that would have written to a
+  default path now stops with an error naming the argument to supply. If you do not want
+  files at all, `save_as_png = FALSE` (or `save_as_pngs = FALSE` for `autoscale()`) needs
+  no path.
 
 ## Bug fixes
+
+- **`batchGenerateCI()` no longer produces a spurious CI for rows with no group.** Rows
+  whose `by` column was `NA` were kept and collapsed into an extra group named after `NA`,
+  so a data frame with any missing grouping value returned one more classification image
+  than it had groups — computed from whatever rows happened to be missing that value.
+  `batchGenerateCI2IFC()` has always dropped those rows; the two now agree.
+
+- **`generateCI(mask = )` accepts a logical matrix.** The matrix branch tested
+  `typeof(mask) == 'double'`, so a mask built the obvious way — as `TRUE`/`FALSE` rather
+  than `1`/`0` — fell through to `The mask argument is neither a string nor a matrix!`,
+  despite the documentation describing exactly that form. It is now tested with
+  `is.matrix()`.
 
 - **`generateCI()` and `computeCumulativeCICorrelation()` no longer print the entire base
   image when they cannot find stimulus parameters.** The "No parameters found for base image"
@@ -15,7 +57,46 @@
   are affected, and the condition that triggers the error is unchanged — if your analysis
   script runs today, it behaves identically.
 
+- **`generateReferenceDistribution2IFC()` no longer leaves a stray `stimuli` directory
+  behind.** It re-derives the noise basis by calling `generateStimuli2IFC()` with both save
+  options off, purely to work in memory — but the directory was created before either
+  option was consulted, so every call to it, and to `computeInfoVal2IFC()` when no
+  reference distribution was cached, created an empty `./stimuli` wherever you happened to
+  be working. `BACKLOG.md` item 24.
+
+- **`plotZmap()` restores the graphics parameters it changes.** The undecorated branch set
+  `par(mar = ...)` and left it set. It also now closes its PNG device through `on.exit()`,
+  so a failure part-way through plotting can no longer leak the device or leave a
+  half-written file.
+
+## Documentation
+
+- The `DESCRIPTION` description no longer opens with the redundant "Functions to", and
+  cites the two method references: Dotsch and Todorov (2012)
+  <doi:10.1177/1948550611430272> and Brinkman, Todorov and Dotsch (2017)
+  <doi:10.1080/10463283.2017.1381469>.
+
+- **Every example runs.** The `\donttest{}` wrappers are gone from all eight examples that
+  carried them, `simulateNoiseIntensities()`'s `\dontrun{}` is gone, and
+  `generateNoiseImage()`'s example is real code rather than three commented-out lines that
+  would not have worked (`p` was never defined, and `params` was the wrong length for the
+  pattern). The whole example set now runs in about nine seconds.
+
+- `simulateNoiseIntensities()`'s note claiming the function always errors is removed. It
+  described two bugs that were fixed in 1.1.0; the note was left behind.
+
 ## Internal
+
+- Bare `T` and `F` are replaced by `TRUE` and `FALSE` throughout `R/`. Two of these were
+  public API defaults visible in the documentation (`generateCI(zmap =, zmapdecoration =)`
+  and `plotZmap(decoration =)`); the values are unchanged.
+
+- The guard that keeps a function's arguments across `load()` is now a shared helper,
+  `captureArgs()`. It skips required arguments that were not supplied — necessary once
+  paths became required, since `mget()` forces the promise and a wrapper forwarding its own
+  missing argument would abort there. Defaulted arguments are still captured: `missing()`
+  reports those missing too, and their default is exactly as vulnerable to being replaced
+  by a field in the `.Rdata` file as a value passed explicitly.
 
 - **The failure paths are tested.** The suite had 9 assertions covering 33 `stop()` and
   `warning()` calls, so most of the package's error messages had never been run. They now

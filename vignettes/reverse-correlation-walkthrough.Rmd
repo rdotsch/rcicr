@@ -32,6 +32,10 @@ instruction pointed at a branch that no longer exists.
 
 ```{r setup}
 library(rcicr)
+
+# Graphical parameters are changed below to draw the images without margins;
+# this records the originals so the last chunk can put them back.
+old_par <- par(no.readonly = TRUE)
 ```
 
 One small helper, used throughout to display an image matrix:
@@ -45,11 +49,11 @@ One small helper, used throughout to display an image matrix:
 # which is what you want when only the structure matters.
 show <- function(m, title, zlim = range(m, na.rm = TRUE)) {
   op <- par(mar = c(0, 0, 1.4, 0))
-  on.exit(par(op))
   # image() takes [x, y] with y increasing upwards, so a matrix indexed
   # [row, col] has to be transposed and flipped to display the right way up.
   image(t(m[nrow(m):1, ]), col = gray.colors(256), axes = FALSE, asp = 1,
         main = title, zlim = zlim, useRaster = TRUE)
+  par(op)
 }
 ```
 
@@ -413,3 +417,7 @@ citation("rcicr")
 
 If you use the technique, cite the method papers as well as the software — see the
 package's `CITATION` file and the README for the relevant references.
+
+```{r reset-par, include = FALSE}
+par(old_par)
+```

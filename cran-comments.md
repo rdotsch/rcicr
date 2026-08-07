@@ -1,5 +1,67 @@
 # CRAN comments
 
+## Response to your review of 1.2.1
+
+Thank you for the review. This is version 1.2.2, addressing each point.
+
+**"Please omit the redundant 'Functions to' at the start of your description."** Done.
+
+**References in the description field.** Added, in the requested form:
+
+> ... For the method see Dotsch and Todorov (2012) <doi:10.1177/1948550611430272>; for a
+> practical primer see Brinkman, Todorov and Dotsch (2017)
+> <doi:10.1080/10463283.2017.1381469>.
+
+**"Please write TRUE and FALSE instead of T and F."** Done — all 11 occurrences in `R/`
+are gone, including the four that were public argument defaults and therefore visible in
+`man/generateCI.Rd` and `man/plotZmap.Rd`, the two files you quoted. The values are
+unchanged.
+
+**"Some code lines in examples are commented out."** `generateNoiseImage()`'s example was
+three commented-out lines and is now working code. On `generateNoisePattern.Rd` we could
+not find a commented example — its `\examples` section contains the single live call
+`generateNoisePattern(256)`, in the 1.2.1 tarball as well as in this one. If we have
+misread which line you meant, please say and we will fix it.
+
+**"`\dontrun{}` should only be used if the example really cannot be executed... Please
+unwrap the examples if they are executable in < 5 sec."** The one `\dontrun{}`
+(`simulateNoiseIntensities`) is gone, and so are all eight `\donttest{}` wrappers. **Every
+example in the package now runs**, the complete set in about nine seconds. The wrappers
+were inherited from a time when the examples ran at full stimulus size; they already ran at
+32 pixels over six trials and were simply never revisited.
+
+**"Please ensure that your functions do not write by default... Please omit any default
+path in writing functions."** Done, and this is the largest change in the release. Every
+argument naming a directory to write to — `stimulus_path`, `targetpath`, `zmaptargetpath` —
+has lost its default. They were `./stimuli`, `./cis` and `./zmaps`. A call that would
+previously have written to one of those now stops with an error naming the argument to
+supply, so no user gets files somewhere new without noticing. This is a breaking change and
+`NEWS.md` opens with it and the one-line migration.
+
+Fixing it also removed a related violation you did not see:
+`generateReferenceDistribution2IFC()` re-derives its noise basis in memory and wrote nothing,
+but created an empty `./stimuli` on every call regardless.
+
+All examples, tests and vignettes write only to `tempdir()`.
+
+**"Please make sure that you do not change the user's options, par or working directory...
+-> R/plotZmap.R."** Fixed. `plotZmap()` now captures the previous value at the point of
+change and restores it through an immediate `on.exit()`, and closes its PNG device the same
+way so a failure mid-plot cannot leak it.
+
+One deviation from the pattern in your mail, deliberately: we restore with
+`oldpar <- par(mar = ...)` / `on.exit(par(oldpar))` rather than
+`par(no.readonly = TRUE)`. `par()` returns the previous values of exactly the parameters
+being set, which is what needs restoring here; `no.readonly = TRUE` additionally captures
+derived parameters such as `pin`, which the subsequent `plot.window()` call invalidates, so
+restoring them raises `invalid value specified for graphical parameter "pin"`. This is the
+second form shown in your mail (`oldpar <- par(mfrow = c(1,2)) ... par(oldpar)`).
+
+**"inst/doc/reverse-correlation-walkthrough.R, please reset the par()."** Done. The
+vignette now records `old_par <- par(no.readonly = TRUE)` in its setup chunk and restores
+it in a final chunk, and its plotting helper restores `par()` directly instead of through
+`on.exit()`.
+
 ## Submission type
 
 This is a **resubmission of an archived package**, not a routine update.
@@ -19,10 +81,10 @@ found by a systematic source review, adds a test suite (previously there was non
 continuous integration, and removes 13 unused dependencies.
 
 **On the version number.** The archived CRAN version is 0.3.4.1 and this submission is
-1.2.1. Nothing is missing: 1.0.1, 1.1.0 and 1.2.0 exist only as GitHub releases, made while
-the package was off CRAN, and none of them was published anywhere a user could install it
-from with `install.packages()`. `NEWS.md` carries their entries, so the record between
-0.3.4.1 and 1.2.1 is complete.
+1.2.2. Nothing is missing: 1.0.1, 1.1.0, 1.2.0 and 1.2.1 exist only as GitHub releases,
+made while the package was off CRAN, and none of them was published anywhere a user could
+install it from with `install.packages()`. `NEWS.md` carries their entries, so the record
+between 0.3.4.1 and 1.2.2 is complete.
 
 ## Test environments
 
@@ -30,13 +92,11 @@ from with `install.packages()`. `NEWS.md` carries their entries, so the record b
   `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
 * GitHub Actions: ubuntu-latest on R release and R devel, macos-latest on R release,
   windows-latest on R release — all green
-* win-builder, R-devel — R Under development (unstable) (2026-07-26 r90304 ucrt): 1 NOTE
-  (the incoming feasibility note below)
-* win-builder, R-release — R 4.6.1 (2026-06-24 ucrt): 1 NOTE (the same one)
-* R-hub, all on R-devel — Linux (x86_64-pc-linux-gnu, r90185), Windows
-  (x86_64-w64-mingw32, r90310 ucrt), macOS (x86_64-apple-darwin20, r90190): **Status: OK**
-  on all three, 0 errors, 0 warnings, 0 notes. R-hub does not run the CRAN incoming
-  feasibility check, which is why the note above does not appear there.
+* win-builder, R-devel — <!-- TODO: fill in from the 1.2.2 run -->
+* win-builder, R-release — <!-- TODO: fill in from the 1.2.2 run -->
+* R-hub, all on R-devel — Linux, Windows, macOS:
+  <!-- TODO: fill in from the 1.2.2 run -->. R-hub does not run the CRAN incoming
+  feasibility check, which is why the note below does not appear there.
 
 All of the above were run against the tarball being submitted.
 
@@ -101,9 +161,15 @@ on it.
 
 ## Notes for the reviewer
 
-* Examples that generate stimuli are wrapped in `\donttest{}` and run at a much reduced
-  image size and trial count. A realistic run for a researcher is 512x512 pixels over
-  several hundred trials, which is far too slow for a check.
+* No example is wrapped in `\dontrun{}` or `\donttest{}` any more; all of them run. The
+  ones that generate stimuli do so at 32x32 pixels over six trials, against a synthetic
+  base image built in the example itself, so the whole set takes about nine seconds. A
+  realistic run for a researcher is 512x512 pixels over several hundred trials, which is
+  why the reduced parameters are there.
+* `simulateNoiseIntensities()`'s example draws a boxplot, so running the examples
+  non-interactively produces an `Rplots.pdf` in the check directory. That is R's default
+  device rather than anything the package writes; no function in the package opens a file
+  the caller has not named.
 * The package uses `parallel`/`doParallel`. All defaults respect
   `_R_CHECK_LIMIT_CORES_`: `default_ncores()` returns 2 when that variable is set and
   `parallel::detectCores() - 1` otherwise, so no example, test or vignette uses more than

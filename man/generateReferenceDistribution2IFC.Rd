@@ -63,7 +63,6 @@ noise basis the null is built on, are unaffected.
 }
 
 \examples{
-\donttest{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -82,11 +81,5 @@ generateStimuli2IFC(
 rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TRUE)[1]
 
 # iter is kept tiny here for a fast example; in practice use iter >= 10000.
-# Run from a temp working directory: this function re-generates stimuli via
-# generateStimuli2IFC() without forwarding a stimulus_path, so it always
-# creates a ./stimuli directory relative to the working directory.
-withr::with_dir(tempdir(), {
-  suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-})
-}
+suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 }

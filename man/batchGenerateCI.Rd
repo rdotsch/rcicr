@@ -12,7 +12,7 @@ batchGenerateCI(
   baseimage,
   rdata,
   save_as_png = TRUE,
-  targetpath = "./cis",
+  targetpath,
   label = "",
   antiCI = FALSE,
   scaling = "autoscale",
@@ -34,7 +34,7 @@ batchGenerateCI(
 
 \item{save_as_png}{Boolean stating whether to additionally save the CI as PNG image.}
 
-\item{targetpath}{Optional string specifying path to save PNGs to (default: ./cis).}
+\item{targetpath}{String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
 
 \item{label}{Optional string to insert in file names of PNGs to make them easier to identify.}
 
@@ -54,7 +54,6 @@ Generate classification image for any reverse correlation task that displays ind
 This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
 }
 \examples{
-\donttest{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
@@ -83,5 +82,4 @@ cis <- suppressWarnings(batchGenerateCI(
   data = data, by = "participant", stimuli = "stimulus", responses = "response",
   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 ))
-}
 }

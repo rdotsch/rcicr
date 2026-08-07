@@ -17,14 +17,8 @@ Matrix with range of noise intensities for each replication
 \description{
 Simulate pixel intensity range for noise
 }
-\note{
-This function currently always errors: it references undefined \code{data}/\code{by}
-variables when sizing its progress bar (apparently copy-pasted from \code{\link{batchGenerateCI}}),
-and it also ignores the \code{img_size} argument internally, always simulating at 512px. Not fixed
-here; the example below is not run.
-}
 \examples{
-\dontrun{
-simulateNoiseIntensities(nrep = 10, img_size = 512)
-}
+# nrep and img_size are kept small here so the example is fast; the defaults
+# (1000 replications at 512px) are what you want for a real estimate.
+simulateNoiseIntensities(nrep = 10, img_size = 64)
 }

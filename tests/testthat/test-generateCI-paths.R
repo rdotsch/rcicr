@@ -87,7 +87,8 @@ test_that("zmapmethod = 'quick' returns a thresholded z-map", {
   res <- generateCI(
     stimuli = 1:12, responses = rep(c(1, -1), 6), baseimage = "base",
     rdata = rdata, save_as_png = FALSE, zmap = TRUE, zmapmethod = "quick",
-    threshold = 1, zmapdecoration = FALSE, n_cores = 1
+    threshold = 1, zmapdecoration = FALSE, n_cores = 1,
+    zmaptargetpath = file.path(tmp, "zmaps")
   )
 
   expect_true("zmap" %in% names(res))
@@ -107,7 +108,8 @@ test_that("zmapmethod = 't.test' returns a z-map of per-pixel test statistics", 
   res <- generateCI(
     stimuli = 1:12, responses = rep(c(1, -1), 6), baseimage = "base",
     rdata = rdata, save_as_png = FALSE, zmap = TRUE, zmapmethod = "t.test",
-    zmapdecoration = FALSE, n_cores = 1
+    zmapdecoration = FALSE, n_cores = 1,
+    zmaptargetpath = file.path(tmp, "zmaps")
   )
 
   expect_equal(dim(res$zmap), c(32, 32))

@@ -41,12 +41,18 @@ generateStimuli2IFC(
 # 2. After running the task and collecting responses (1 = original chosen,
 #    -1 = inverted chosen), compute the classification image:
 generateCI(
-  stimuli   = 1:770,                # stimulus numbers, in presentation order
-  responses = my_responses,         # 1 / -1 vector, same order as `stimuli`
-  baseimage = "face",               # key used in base_face_files above
-  rdata     = "./stimuli/rcic_seed_1_time_....Rdata"
+  stimuli    = 1:770,               # stimulus numbers, in presentation order
+  responses  = my_responses,        # 1 / -1 vector, same order as `stimuli`
+  baseimage  = "face",              # key used in base_face_files above
+  rdata      = "./stimuli/rcic_seed_1_time_....Rdata",
+  targetpath = "./cis"              # where to write the CI PNG
 )
 ```
+
+Every function that writes files takes its destination explicitly: `stimulus_path`,
+`targetpath` and `zmaptargetpath` have no defaults, so nothing is ever written to a
+directory you did not name. Pass `save_as_png = FALSE` to compute a classification
+image without writing anything.
 
 ## Documentation
 

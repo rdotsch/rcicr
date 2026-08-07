@@ -38,6 +38,30 @@ startBackend <- function(ncores) {
   cl
 }
 
+# Snapshot a function's arguments so they can be restored after load(), which
+# assigns straight into the calling frame and silently overwrites an argument
+# that shares a name with an object in the .Rdata file.
+#
+# Only arguments that are *required* and were not supplied are skipped. mget()
+# forces the promise, and for those it raises "argument is missing, with no
+# default" -- which happens whenever a wrapper forwards its own missing
+# argument, as batchGenerateCI() does with targetpath. Skipping them is also
+# correct: an argument with no value cannot be overwritten into a wrong one.
+#
+# Defaulted arguments that were not supplied must NOT be skipped, even though
+# missing() reports them missing too. Their default is the value the function
+# goes on to use, and it is exactly as vulnerable to being replaced by the
+# .Rdata file as one the caller passed explicitly.
+captureArgs <- function(env) {
+  fmls <- formals(sys.function(sys.parent()))
+  nms <- names(fmls)
+  required <- vapply(fmls, function(d) identical(d, quote(expr = )), logical(1))
+  absent <- vapply(nms,
+                   function(nm) eval(bquote(missing(.(as.name(nm)))), env),
+                   logical(1))
+  mget(nms[!(required & absent)], envir = env)
+}
+
 # CRAN Note avoidance
 
 

@@ -5,31 +5,27 @@ breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
 
-> **State on 2026-07-29. v1.2.1 has been submitted to CRAN** — released, tagged, and sent from
-> the `rcicr_1.2.1.tar.gz` built at the repo root, with all three external pre-submission
-> checks recorded in `cran-comments.md` (win-builder R-devel and R-release at 1 NOTE each, the
-> CRAN incoming feasibility one; R-hub `Status: OK` on Linux, Windows and macOS). **Item 1 now
-> waits on CRAN's reply, not on us.**
+> **State on 2026-08-07. CRAN reviewed 1.2.1 and asked for changes; 1.2.2 answers them.**
+> The reply was a request, not a rejection on the merits: seven points, all of them
+> mechanical apart from one. `cran-comments.md` opens with a point-by-point response.
 >
-> **CRAN's auto-check came back the same day: 1 NOTE on Windows and Debian both**, the
-> expected incoming-feasibility one, plus `No strong reverse dependencies`. It is now pending
-> **manual inspection, within 10 working days**. That is not acceptance.
+> **The one that mattered: no function may write to a default path.** `stimulus_path`,
+> `targetpath` and `zmaptargetpath` have lost their defaults (`./stimuli`, `./cis`,
+> `./zmaps`) and are now required whenever the call actually writes. This is a **breaking
+> change**, the first this package has made, and `NEWS.md` leads with it and the migration.
+> It closes **item 24** for free. Numerically inert: the release gate reports 135 checks
+> identical against v1.2.1, `max|d| = 0` everywhere.
 >
-> **Code work is unblocked, and items 37, 38 and 39 are done** — the three the submission
-> released. They were held only because touching `R/` would have invalidated the tarball the
-> external checks had run against; the tarball is sent, so nothing here can change what CRAN
-> received. **Two things stay held** for reasons that survive the submission: **item 21**
-> announces availability, which is not yet true, and **item 34** should not land while 1.2.1
-> is in the queue — if CRAN asks for a change, the answer wants to be a minimal 1.2.2, not one
-> that also swapped the plotting backend under three rendered outputs.
+> The rest: the `DESCRIPTION` description reworded and given two DOI references; all 11 bare
+> `T`/`F` replaced (part of item 13); every `\dontrun{}` and `\donttest{}` removed so that
+> **every example now runs**, in about nine seconds total; `plotZmap()` restores `par()`;
+> the walkthrough vignette resets `par()` without `on.exit()`.
 >
-> **While 1.2.1 is in the queue, keep `main` releasable.** The real risk is not a bad merge
-> but time pressure: a CRAN request often carries an implicit deadline, and half-finished work
-> on `main` is what stops you answering one. If a resubmission is needed, branch
-> `release-1.2.2` from `main` when it is clean, or from the **`v1.2.1` tag** when it is not —
-> the tag exists for exactly that. There is still no `develop` branch and should not be one.
+> **Item 34 stays held**, for the same reason as before: a CRAN request is answered by a
+> version addressing what was asked, not one that also swaps the plotting backend under
+> three rendered outputs. **Item 21** still announces availability, which is not yet true.
 >
-> Open items are **1, 20, 21, 24, 25, 27, 30, 31, 33, 34** in the table below, plus
+> Open items are **1, 20, 21, 25, 27, 30, 31, 33, 34** in the table below, plus
 > **13–15** and **36**, which are kept out of it.
 
 **Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
@@ -128,7 +124,7 @@ scheduled at all — see "Beyond v1" at the end.
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
-| 24 | `generateReferenceDistribution2IFC()` litters a `./stimuli` dir | Cosmetic; hidden until now because `stimuli` is git-ignored, so it never showed in `git status` | S |
+| ~~24~~ | ~~`generateReferenceDistribution2IFC()` litters a `./stimuli` dir~~ | **Done in 1.2.2** — fell out of removing the default write paths CRAN objected to. The directory is now created only when something is written to it, and this caller writes nothing. Not merely cosmetic after all: writing to the working directory uninvited is a CRAN policy violation | S |
 | 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
 | ~~26~~ | ~~InfoVal's null is seeded by accident and cannot be varied~~ | **Done** — the determinism is now a documented guarantee with a comment guarding the `set.seed()` it rests on, and `response_seed` makes the null varyable on purpose. Default output verified byte-identical to before the change | S |
 | 27 | `return_as_dataframe = TRUE` drops all but the first base image | **Documented, not fixed.** Correct under the default `use_same_parameters = TRUE`; silent only with `FALSE`. Widening the frame changes the return shape, so it needs a new argument rather than a redefinition — do it only if a user asks | S |
@@ -892,7 +888,10 @@ checklist at the top of this item, which is the live one.
       two `sum()` calls are on vectors, where the two agree), but this is a silent trap
       for future edits, and it already bit the test suite. Prefer `@importFrom matlab ...`
       over `@import matlab`, importing only what is actually used.
-- [ ] Replace bare `T`/`F` with `TRUE`/`FALSE` (11 occurrences across `autoscale.R`,
+- [x] ✅ **DONE in 1.2.2** — CRAN asked for it in the review of the 1.2.1 submission, so it
+      was done there rather than waiting for this item. All 11 replaced; `tests/` and
+      `vignettes/` were already clean.
+      Replace bare `T`/`F` with `TRUE`/`FALSE` (11 occurrences across `autoscale.R`,
       `generateCI.R`, `generateStimuli2IFC.R`, `plotZmap.R`; two of them are *default
       argument values* in the public API — `generateCI(zmap = F, zmapdecoration = T)` and
       `plotZmap(decoration = T)`). **Re-checked 2026-07-29: in package code this is style,
@@ -959,7 +958,16 @@ The GitHub issues are dominated by confusing failure modes, not missing features
 - [ ] Add a `CITATION.cff` so GitHub renders a "Cite this repository" button; keep it in
       sync with `inst/CITATION`.
 
-### 24. `generateReferenceDistribution2IFC()` writes a stray `./stimuli` directory **[verified] [own review]**
+### 24. `generateReferenceDistribution2IFC()` writes a stray `./stimuli` directory **[verified] [own review]**  ✅ **FIXED**
+Fixed in 1.2.2, as a side effect of CRAN's request to remove default write paths.
+`generateStimuli2IFC()` now creates its directory only when `save_as_png` or `save_rdata`
+is set, and this caller passes neither — so it needs no path at all and writes nothing.
+The `withr::with_dir()` workaround is gone from both affected examples, and
+`test-required-paths.R` asserts the working directory is untouched. The empty
+`tests/testthat/stimuli/` that a suite run used to leave behind was still present in the
+checkout when this was fixed.
+
+
 Found 2026-07-27. The function re-generates the stimulus set by calling
 `generateStimuli2IFC()` (`R/generateReferenceDistribution.R:81`) **without forwarding a
 `stimulus_path`**, so that call falls back to its own default and creates a `stimuli`
