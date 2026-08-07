@@ -146,6 +146,8 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~37~~ | ~~Error paths are largely untested~~ | **Done** — `test-error-paths.R`, suite 291 → 323. Covers the length mismatch, every `.Rdata` "did not contain X" guard in both functions, all four mask-import failures, unreadable and non-square base images, and the `targetci` path that was never exercised. Each was confirmed to fire *its own* guard rather than an incidental error | M |
 | ~~38~~ | ~~Two error messages paste the base image matrix, not its label~~ | **Done** — both sites now name `baseimage`. The defect was worse than logged: `paste0()` is vectorized, so it built one complete message *per pixel*, and `stop()` concatenated them — 1,024 copies and 8,190 characters at 32px, ~7 MB at 512px. Only error text changed; the gate reports this tree still reproduces v1.2.1 | S |
 | ~~39~~ | ~~Two of the four `load(rdata)` sites did not guard their arguments~~ | **Done** — preventive, no live collision. `computeInfoVal2IFC()` restored 3 of its 5 arguments and `computeCumulativeCICorrelation()` none. The one that mattered: `target_ci` is read after a *second* `load()`, so a file carrying that name would have scored a different CI and returned a plausible number, not an error | S |
+| 41 | `generateStimuli2IFC()` leaves the user's RNG stream where it landed | **Open, triage.** `set.seed(seed)` is never undone, so a script's next `runif()` differs depending on whether it generated stimuli first. Same family as CRAN's "do not change the user's state", though here the user asked, via a documented `seed` argument. Restoring `.Random.seed` on exit changes nothing this package computes — but it does change what a user's *next* draw returns, so it needs the gate run and a `NEWS.md` note | S |
+| 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1529,6 +1531,65 @@ recur. None are blocking; all are meaningful to researchers.
       policy above.
 
 ---
+
+### 41. `generateStimuli2IFC()` leaves the user's RNG stream where it landed **[verified] [own review]**
+
+**Open, triage. Size S.** Found 2026-08-07 by the package-wide sweep of CRAN's seven
+review points, as the one thing adjacent to their point 7 ("do not change the user's
+options, `par` or working directory") that is still true.
+
+`generateStimuli2IFC()` calls `set.seed(seed)` at `R/generateStimuli2IFC.R:82` and never
+restores the stream. So in a script that generates stimuli and then does anything else
+random, the "anything else" depends on whether stimulus generation ran — and on its
+`seed` argument.
+
+**This is not the usual version of that bug.** The seed is a *documented, user-supplied
+argument*, and reproducible stimuli are the package's central promise, so the user asked
+for the state change. Nothing is silent. Risk of a reviewer raising it is low, and it has
+been this way since the CRAN-era 0.x versions.
+
+**Why it was not fixed in 1.2.3:** the fix is to capture `.Random.seed` and restore it
+under `on.exit()`, which changes **nothing this package computes** — every stimulus,
+classification image, z-map and InfoVal is drawn before the restore, so the release gate
+would report no deviation. What it changes is what the *user's next* `runif()` returns.
+That is a reproducibility change for any analysis script that draws randomly after
+generating stimuli, and it belongs in a version that says so in `NEWS.md` under
+"Reproducibility impact", not in one whose entire claim is that nothing computed differs.
+
+Do it with the gate run and a `NEWS.md` entry, once CRAN settles.
+
+### 40. Retire `ChangeLog` as a live file **[verified] [own review]**
+
+**Open, triage. Size S.** Raised 2026-08-07: if `NEWS.md` exists, does `ChangeLog` need to?
+
+**It is not mandatory.** R indexes `NEWS.md`, `NEWS` and `inst/NEWS.Rd` for
+`news(package = "rcicr")` and `utils::readNEWS()`; it does not parse `ChangeLog` at all,
+so nothing a user or CRAN reads comes from it. It is a GNU convention rather than an R
+one. It ships in the tarball and is *not* `.Rbuildignore`d, and `R CMD check --as-cran`
+has never NOTEd it — confirming it is on R's list of known top-level files, so it is
+permitted, just unused.
+
+**But it cannot simply be deleted.** Its 27 entries run back to 2014 and cover **0.2.2
+through 1.0.1**, and `NEWS.md` starts at 1.1.0. Deleting the file would destroy the only
+record of the package's first seven years, including the entire CRAN-era history up to the
+0.3.4.1 that was archived.
+
+Only the 1.1.0-and-later entries are duplication, and they are already thin — each is a
+pointer saying "see `NEWS.md`" plus a three-line summary.
+
+**Proposed:** freeze it. Retitle it as the historical changelog for versions up to 1.0.1,
+delete the 1.1.0–1.2.3 pointer entries, and stop adding to it. That leaves each file doing
+exactly one job — `ChangeLog` the pre-`NEWS.md` archive, `NEWS.md` everything since — and
+removes a per-release step that currently has to be remembered. Three places document the
+current convention and would need updating with it: `AGENTS.md`, `CONTRIBUTING.md` and
+`DECISIONS.md`.
+
+The alternative, migrating all 27 entries into `NEWS.md` and deleting the file outright,
+gives users the full history through `news()` but bloats `NEWS.md` with 2014-era detail in
+a format that would have to be converted by hand. Not worth it unless someone asks for it.
+
+**Do this after the CRAN submission settles**, not before: it touches a file inside the
+tarball, so doing it now would invalidate the external checks for no benefit CRAN can see.
 
 ## Beyond v1 — changes that need a major version
 
