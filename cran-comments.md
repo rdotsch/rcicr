@@ -92,8 +92,10 @@ between 0.3.4.1 and 1.2.2 is complete.
   `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
 * GitHub Actions: ubuntu-latest on R release and R devel, macos-latest on R release,
   windows-latest on R release — all green
-* win-builder, R-devel — <!-- TODO: fill in from the 1.2.2 run -->
-* win-builder, R-release — <!-- TODO: fill in from the 1.2.2 run -->
+* win-builder, R-devel — R Under development (unstable) (2026-08-06 r90366 ucrt): 1 NOTE
+  (the incoming feasibility note below). Install 39s, check 408s; examples 24s, tests 80s.
+* win-builder, R-release — R 4.6.1 (2026-06-24 ucrt): 1 NOTE (the same one). Install 37s,
+  check 391s; examples 24s, tests 75s.
 * R-hub, all on R-devel — Linux, Windows, macOS:
   <!-- TODO: fill in from the 1.2.2 run -->. R-hub does not run the CRAN incoming
   feasibility check, which is why the note below does not appear there.
@@ -125,6 +127,8 @@ Found the following (possibly) invalid URLs:
 This URL is valid and resolves normally in a browser. `medium.com` returns 403 to
 requests originating from datacenter networks — this is a block by network origin rather
 than by user agent, so it reproduces from CI machines and not from an ordinary desktop.
+Consistent with that, it appears on our build machine but on **neither** win-builder run
+for this version, nor in CRAN's own incoming pretest of 1.2.1.
 
 It points to the original tutorial walkthrough of the method. That walkthrough has been
 ported into this release as the `reverse-correlation-walkthrough` vignette, so it is no
@@ -137,12 +141,19 @@ win-builder additionally reports, under the same note:
 
 ```
 Possibly misspelled words in DESCRIPTION:
-  psychophysical (10:51)
+  Brinkman (13:5)
+  Dotsch (11:68, 13:27)
+  Todorov (12:5, 13:15)
+  psychophysical (10:33)
 ```
 
-`psychophysical` is spelled correctly. It is the standard adjective for psychophysics, the
-field this package's method comes from, and it is used in the sense of "psychophysical
-task" — the 2-image forced-choice procedure the package generates stimuli for.
+All four are correct. `Brinkman`, `Dotsch` and `Todorov` are the surnames of the authors of
+the two references you asked us to add — `Dotsch` is also the maintainer's own name. They
+appear only in the citations.
+
+`psychophysical` is the standard adjective for psychophysics, the field this package's
+method comes from, and is used in the sense of "psychophysical task" — the 2-image
+forced-choice procedure the package generates stimuli for.
 
 ### NOTE 2 — future file timestamps
 
