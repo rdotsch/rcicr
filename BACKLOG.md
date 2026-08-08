@@ -587,12 +587,12 @@ package's public health signal and it currently understates the state of the cod
       did not, and leave it open, or close it explicitly scoped to the array copy.
 - [ ] **Sweep the remaining 25 open issues the same way — prerequisite for item 44.** All 25
       date from 2016–2017 and none is a bug report — the real bugs were the batch above.
-      **Triage written and verified against the working tree for all 25**, in
-      `notes/issue-triage.md`: six recommended for closure (three implemented, two moot, one
-      superseded), one for a corrective comment, the rest to keep. Nothing has been posted
-      and nothing may be — comments and closes notify subscribers and are outward-facing, so
-      the maintainer approves or rejects issue by issue first. The item closes when the
-      approved set is posted, not when the triage was written.
+      **Triage written, verified against the working tree, and approved by the maintainer
+      2026-08-08** — `notes/issue-triage.md` holds the verdict and the approved comment text
+      for all 25. Nine postings remain: close #43, #27, #13, #92, #52, #53, #68, #9, and a
+      corrective comment on #87. **Blocked on tooling, not on judgment** — `gh issue close`
+      and `gh issue comment` are refused by the agent permission classifier, so they need the
+      maintainer or a Bash allowlist rule for `gh issue`. Item 44 unblocks when they are out.
 
 Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
 

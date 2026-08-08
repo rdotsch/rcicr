@@ -4,9 +4,10 @@ Prerequisite for `BACKLOG.md` item 44 (move the backlog to GitHub Issues). Item 
 eight issues the modernization fixed directly; these 25 are the remainder. All date from
 2016–2017, none is a bug report.
 
-**Nothing here has been posted.** Comments and closes notify subscribers and are
-outward-facing, so this file is a proposal for the maintainer to approve, edit or reject
-issue by issue. Verified against the working tree at `1.2.3.9000`.
+**Approved by the maintainer 2026-08-08; not yet posted.** Every verdict below is approved as
+written. Posting is blocked in the agent environment — `gh issue close` and `gh issue comment`
+are denied by the permission classifier — so the nine postings need the maintainer or an
+allowlist rule. Verified against the working tree at `1.2.3.9000`.
 
 ## Summary
 
@@ -14,10 +15,14 @@ issue by issue. Verified against the working tree at `1.2.3.9000`.
 |---|---|---|
 | **Close — implemented, verified in code** | #43, #27, #13 | 3 |
 | **Close — moot, the premise no longer holds** | #92, #52 | 2 |
+| **Close — no actionable specification** | #68, #9 | 2 |
+| **Close — nothing in the package to attach it to** | #53 | 1 |
 | **Keep open, rescope** — most of it shipped | #87 | 1 |
 | **Keep open — real, specified, unimplemented** | #71, #76, #85, #15, #35, #37, #38, #46, #47, #54, #22, #69 | 12 |
-| **Keep open — no specification** (title only, empty body) | #6, #7, #68, #9, #10 | 5 |
-| **Judgment call — aspirational since 2017** | #74, #53 | 2 |
+| **Keep open — thin, but the scope is clear** | #6, #7, #10 | 3 |
+| **Keep open — aspirational, and still intended** | #74 | 1 |
+
+Eight closes and one corrective comment (#87) — nine notifications, best sent in one sitting.
 
 ---
 
@@ -201,41 +206,76 @@ Verified as genuinely absent from the code; each has enough of a specification t
 | #22 | CI database + community building | Large, unimplemented, and a scope question rather than a coding one. |
 | #69 | small tutorials | Two vignettes now ship, but neither covers the noise-only recipe in this issue's body. Narrow enough to keep as "document generating noise-only images". |
 
-## Keep open — no specification
+## The thin issues — title only, empty body, no discussion
 
-Title only, empty body, no discussion. Each names a plausible feature but nothing that can be
-verified as done or not-done. Recommend either a one-line specification from the maintainer or
-closure — carrying an unspecified issue for nine years is worse than either.
+Five issues name a plausible feature with nothing that can be verified as done or not-done.
+Split on whether the title alone is a specification:
 
-| issue | title |
-|---|---|
-| #6 | direct support for 4AFC and other variants |
-| #7 | (masked) correlations between lists of CIs |
-| #68 | adaptive reverse correlation |
-| #9 | save analysis metadata to a log file (has a one-line body) |
-| #10 | meta-reverse correlation (has a real, short specification — arguably belongs in the group above) |
+**Kept.** #6 (direct support for 4AFC and other variants) — the package is 2IFC-only end to
+end, so the scope is unambiguous even with no body. #7 ((masked) correlations between lists of
+CIs) — the title is nearly a function signature, and `mask` already exists to build on. #10
+(meta-reverse correlation) — its body does specify the function: list of CIs + weights → a
+weighted-average CI, plus an optional anti-image.
 
-#10 is the borderline case: its body does specify the function (list of CIs + weights → a
-weighted-average CI, plus an optional anti-image). I would keep #10 and treat the other four
-as needing a specification.
+**Closed.** #68 and #9, below.
 
-## Judgment call — aspirational since 2017
+### #68 — adaptive reverse correlation
 
-Not stale in the sense of being done or wrong; stale in the sense that nothing has moved in
-nine years and neither is a small piece of work.
+A research direction rather than a feature: adaptive RC is a decision about the whole task
+loop — how stimuli are selected from trial to trial — not something checkable against the
+code. Nine years with no body and no discussion.
 
-- **#74 — GUI.** The maintainer wanted it in 2017 and floated a jamovi module. Closing it says
-  the package is a library, not an application; keeping it says a GUI is still intended.
-- **#53 — MDS plots with CIs on tooltip in Shiny.** A neat exploratory tool with a screenshot
-  attached, but no MDS functionality exists in the package to attach it to.
+> Draft comment:
+> Closing as unspecified. This is a title with no body and no discussion, and adaptive reverse
+> correlation is a research direction rather than a feature — it is a decision about the whole
+> task loop (how stimuli are selected from trial to trial), not something that can be checked
+> off against the code. Whatever eventually gets built will not come from this issue.
+>
+> Reopening or filing fresh with a concrete design in mind is welcome.
 
-Both call for the maintainer's intent, not a code check.
+### #9 — save analysis metadata to a log file?
+
+Asked as a question ("Such as scaling method, scaling factor?"), and answered by the design
+that shipped: `generateCI()` returns the scaling method and constant, and the `.Rdata` carries
+the generation parameters. A log file would duplicate state already travelling with the
+results.
+
+> Draft comment:
+> Closing: the question has been answered elsewhere in the design. `generateCI()` returns the
+> scaling method and the scaling constant it used as part of its return value, and the
+> `.Rdata` file written at stimulus-generation time records the generation parameters —
+> including the seed, the number of scales, and the generator version. A separate log file
+> would duplicate state that is already carried with the results, and would be one more thing
+> to keep in sync.
+>
+> If there is specific metadata that is *not* recoverable from either of those, that is worth a
+> fresh issue naming it.
+
+## Aspirational since 2017
+
+Neither is stale in the sense of being done or wrong; stale in the sense that nothing moved in
+nine years. Both were the maintainer's call, not a code check.
+
+- **#74 — GUI. Kept.** Wanted in 2017, with a jamovi module floated. Still intended.
+- **#53 — MDS plots with CIs on tooltip in Shiny. Closed.** A neat exploratory tool with a
+  screenshot attached, but no MDS functionality exists in the package to attach it to.
+
+> Draft comment for #53:
+> Closing. The package has no MDS functionality for this to attach to, and adding one is a
+> larger question than the viewer itself — rcicr computes classification images and leaves the
+> downstream analysis to the user's own tooling, where `ggplot2`/`plotly` already do image
+> tooltips well. The screenshot is still a good demonstration of the idea for anyone building
+> it outside the package.
 
 ---
 
 ## Sequencing note for item 44
 
-Six issues carry a recommended close and one a corrective comment; that is seven notifications
-to subscribers, all on issues those people filed or followed years ago. Worth doing in one
-sitting rather than spread across days, and worth doing **before** ~18 new issues are opened
-from `BACKLOG.md`, per item 44's prerequisite.
+Nine postings — eight closes and the #87 correction — all to people who filed or followed
+these years ago. Worth doing in one sitting rather than spread across days, and **before** ~18
+new issues are opened from `BACKLOG.md`, per item 44's prerequisite.
+
+The comment bodies are approved as written above. They were not posted from the agent
+environment: `gh issue close` and `gh issue comment` are both refused by the permission
+classifier, so this needs the maintainer running them, or a Bash allowlist rule for `gh issue`
+in `.claude/settings.json`.
