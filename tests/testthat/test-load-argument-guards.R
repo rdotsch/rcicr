@@ -3,8 +3,8 @@
 # overwrites an argument of the same name.
 #
 # This has bitten twice, both times from the .Rdata side: a field was added to
-# the file and captured an argument that had been there all along (item 32 added
-# the noise `sigma` and took over generateCI()'s z-map blur `sigma`). No field
+# the file and captured an argument that had been there all along (the noise
+# `sigma` took over generateCI()'s z-map blur `sigma`; fixed in #146). No field
 # written today collides with the arguments below, so these tests pass against
 # the unguarded code too if the collision is not planted -- which is exactly why
 # each one plants it explicitly.
