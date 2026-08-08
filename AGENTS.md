@@ -81,8 +81,8 @@ replaced a chronological session log; do not recreate one.
 - **Read the Codex review before squashing, and answer it.** It is easy to merge past: it
   never blocks — not a required check, submits as `COMMENTED` — and neither `gh pr checks` nor
   `gh pr view --comments` shows the findings. They are inline review comments, at
-  `gh api repos/rdotsch/rcicr/pulls/<n>/comments`. An empty list means "not reviewed yet" as
-  often as "clean", and a push does not re-trigger the review. Mechanics, including how to
+  `gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments`. An empty list means "not reviewed
+  yet" as often as "clean", and a push does not re-trigger the review. Mechanics, including how to
   tell those two apart: `CONTRIBUTING.md` → "The Codex review".
 - Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
   clears stale remote refs locally.

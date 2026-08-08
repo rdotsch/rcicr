@@ -93,18 +93,24 @@ merge path makes you notice it, so read it deliberately before squashing.
   `reviewDecision` stays empty; it is not a required check; no approval is required. If it has
   been switched off, or simply is not answering, merge on the other checks.
 - **Findings are inline review comments**, badged `P1`–`P3`. `gh pr checks` stays green
-  regardless, and `gh pr view --comments` shows only the review wrapper. One surface has them:
+  regardless, and `gh pr view --comments` shows only the review wrapper. One surface has them,
+  and it pages at 30 — a review-heavy PR truncates silently without `--paginate`:
   ```sh
-  gh api repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
+  gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
   ```
+  Keep to that streaming form: `--paginate` applies `--jq` per page, so `--jq 'length'` counts
+  each page separately instead of totalling them.
 - **An empty list is not an all-clear** — it is identical to not-reviewed-yet. What tells them
   apart is the reaction on the PR body, `gh api repos/rdotsch/rcicr/issues/<n>/reactions`: 👀
-  while the review runs, replaced by 👍 when it finishes with nothing to say. It is replaced
-  rather than added to, so compare its `created_at` against your last commit.
+  while the review runs, replaced by 👍 when it finishes with nothing to say. Do not try to
+  date that against your commits: a commit timestamp is when it was authored locally, not when
+  it was pushed, and a review that began before a push can land its reaction after it. Either
+  way a stale 👍 reads as current.
 - **A push does not re-trigger it.** Only opening the PR, marking a draft ready, or an
   `@codex review` comment does, so it stays pinned to the commit it named and later fixes go
-  unreviewed. Comment `@codex review` once the branch is final, then answer each thread —
-  fixing it, or saying why not — before you squash.
+  unreviewed. That ordering is the only dependable freshness check — push last, *then* comment
+  `@codex review`, then read the result and answer each thread, fixing it or saying why not,
+  before you squash.
 
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
