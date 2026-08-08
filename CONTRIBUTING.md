@@ -84,6 +84,49 @@ attaching a real face photo.
   measurements, rejected alternatives, reproducibility impact — in the PR description or
   `NEWS.md`, not only in individual branch commits.
 
+### The Codex review
+
+Codex reviews pull requests here and has caught real errors (#170, #172, #173). Nothing in the
+merge path makes you notice it, so read it deliberately before squashing.
+
+- **It never blocks, and must not become something that can.** It submits as `COMMENTED`, so
+  `reviewDecision` stays empty; it is not a required check; no approval is required. If it has
+  been switched off, or simply is not answering, merge on the other checks.
+The findings are inline review comments badged `P1`–`P3`. `gh pr checks` stays green
+regardless and `gh pr view --comments` shows only the review wrapper, so neither surface tells
+you anything. What does:
+
+1. **Push everything first, then comment `@codex review`.** A push does not re-trigger the
+   review — only that comment, opening the PR, or marking a draft ready does — so anything
+   pushed afterwards goes unreviewed against a review pinned to an older commit.
+2. **Wait for a review submitted against your head.** The previous round's comments are
+   returned immediately and look exactly like a result, so an unfiltered read cannot tell a
+   finished re-review from a running one. Reviews and comments both carry `commit_id`:
+   ```sh
+   head=$(git rev-parse HEAD)
+   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/reviews |
+     jq --arg head "$head" '[.[] | select(.commit_id == $head and (.user.login|test("codex")))] | length'
+   ```
+   Zero means it has not finished. The other completion signal is the reaction on the PR body
+   (`.../issues/<n>/reactions`): 👀 while the review runs, replaced by 👍 when it finishes with
+   nothing to say. Do not try to date that reaction against a commit — a commit timestamp
+   records local authoring, not the push, so a stale 👍 can look current.
+3. **Read only the findings at that head**, then answer each thread — fixing it, or saying why
+   not — before you squash:
+   ```sh
+   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments |
+     jq -r --arg head "$head" '.[] | select(.commit_id == $head) | "\(.path):\(.line)  \(.body)"'
+   ```
+Both commands need `--paginate`: these endpoints page at 30, and a review-heavy PR truncates
+silently without it. Both also pipe to `jq` rather than passing `--jq`, and that distinction is
+load-bearing — `gh api`'s own filter runs once per page, so `--jq 'length'` reports a count per
+page rather than a total. **Piped output does not have that problem**, whatever `gh api --help`
+suggests when it says "Each page is a separate JSON array": that describes `--jq` and
+`--template`, and `gh` merges the pages before writing to stdout. Measured against 197 issues —
+piped, one array of 197; `--jq 'length'`, `100` then `97`. Do not "fix" these commands by adding
+`--slurp` on the strength of the help text; it would wrap the merged array in another array and
+break the filters.
+
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
 **not** run: they would reformat nearly every file in one sweep and destroy `git blame`.

@@ -10,6 +10,19 @@ loads only `CLAUDE.md`. Keep this file under 200 lines; adherence drops above th
 
 `rcicr` is an R package (CRAN-style) implementing the **reverse correlation image classification** technique from psychophysics: generating noise-based stimuli for 2-image-forced-choice (2IFC) perceptual tasks and computing "classification images" (CIs) from participant response data to visualize internal mental representations (e.g., of faces).
 
+## Check, don't assume
+
+**Verify a claim against the thing itself before writing it down or acting on it.** Several
+rules below are scar tissue from not doing that — the branch-protection API, answering CRAN
+from a summary, quoting this machine's clock — and each keeps its detail where someone doing
+that task will hit it. The general form:
+
+- **Run the command, read the file, query the API.** No "should be" or "as expected"; if a
+  check was not run, say so rather than predicting its result.
+- **An empty result may mean you asked the wrong question** — wrong endpoint, branch, path or
+  scope. Rule that out before reporting nothing found.
+- **Put the evidence next to the claim**: the command, the file and line, the actual output.
+
 ## Common commands
 
 A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`, GitHub Actions CI — so the usual `roxygen2::roxygenise()` / `devtools::load_all()` / `test()` / `check()` / `install()` workflow applies unchanged, run from the package root. Two things about it are *not* standard:
@@ -65,6 +78,12 @@ replaced a chronological session log; do not recreate one.
 - The squash commit message is the place to preserve *why* a change was made — the per-commit
   detail on the branch disappears, so measurements, rejected alternatives and reproducibility
   impact belong in the squash message or in `NEWS.md`, not only in the branch commits.
+- **Read the Codex review before squashing, and answer it.** It is easy to merge past: it
+  never blocks — not a required check, submits as `COMMENTED` — and neither `gh pr checks` nor
+  `gh pr view --comments` shows its findings. Nor is reading them as simple as listing the
+  PR's comments: a push does not re-trigger the review, and the previous round's findings come
+  back looking current, so what you read has to be filtered to your head commit. Follow
+  `CONTRIBUTING.md` → "The Codex review".
 - Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
   clears stale remote refs locally.
 
