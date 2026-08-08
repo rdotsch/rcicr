@@ -90,11 +90,12 @@ replaced a chronological session log; do not recreate one.
   them is `gh api repos/rdotsch/rcicr/pulls/<n>/comments`. It has been right about
   substantive things (#170, #172, #173) — reply on each thread, fixing it or saying why not,
   before squashing.
-- **An empty comment list is not an all-clear** — it also looks exactly like not-reviewed-yet,
-  and the review lands a few minutes after the PR opens. The distinguisher is the reaction:
-  with findings it comments, without them it reacts 👍 on the PR body. Check
-  `gh api repos/rdotsch/rcicr/issues/<n>/reactions`, and compare its `created_at` against your
-  last commit — an older 👍 cleared an earlier version of the branch, not this one.
+- **An empty comment list is not an all-clear** — it also looks exactly like not-reviewed-yet.
+  What distinguishes them is the reaction on the PR body, via
+  `gh api repos/rdotsch/rcicr/issues/<n>/reactions`: 👀 while the review runs, replaced by 👍
+  if it finishes with nothing to say. Findings arrive as comments instead, with no 👍. The
+  reaction is replaced rather than added to, so compare its `created_at` against your last
+  commit — an older one cleared an earlier version of the branch, not this one.
 - **A push does not re-trigger it.** Only opening the PR, marking a draft ready, or an
   `@codex review` comment does. The review stays pinned to the commit it names, so every fix
   pushed afterwards is unreviewed; comment `@codex review` once the branch is final.
