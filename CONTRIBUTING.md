@@ -84,6 +84,28 @@ attaching a real face photo.
   measurements, rejected alternatives, reproducibility impact — in the PR description or
   `NEWS.md`, not only in individual branch commits.
 
+### The Codex review
+
+Codex reviews pull requests here and has caught real errors (#170, #172, #173). Nothing in the
+merge path makes you notice it, so read it deliberately before squashing.
+
+- **It never blocks, and must not become something that can.** It submits as `COMMENTED`, so
+  `reviewDecision` stays empty; it is not a required check; no approval is required. If it has
+  been switched off, or simply is not answering, merge on the other checks.
+- **Findings are inline review comments**, badged `P1`–`P3`. `gh pr checks` stays green
+  regardless, and `gh pr view --comments` shows only the review wrapper. One surface has them:
+  ```sh
+  gh api repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
+  ```
+- **An empty list is not an all-clear** — it is identical to not-reviewed-yet. What tells them
+  apart is the reaction on the PR body, `gh api repos/rdotsch/rcicr/issues/<n>/reactions`: 👀
+  while the review runs, replaced by 👍 when it finishes with nothing to say. It is replaced
+  rather than added to, so compare its `created_at` against your last commit.
+- **A push does not re-trigger it.** Only opening the PR, marking a draft ready, or an
+  `@codex review` comment does, so it stays pinned to the commit it named and later fixes go
+  unreviewed. Comment `@codex review` once the branch is final, then answer each thread —
+  fixing it, or saying why not — before you squash.
+
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
 **not** run: they would reformat nearly every file in one sweep and destroy `git blame`.
