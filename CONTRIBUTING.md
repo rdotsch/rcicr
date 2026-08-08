@@ -99,26 +99,43 @@ you anything. What does:
 1. **Push everything first, then comment `@codex review`.** A push does not re-trigger the
    review — only that comment, opening the PR, or marking a draft ready does — so anything
    pushed afterwards goes unreviewed against a review pinned to an older commit.
-2. **Wait for a review submitted against your head.** The previous round's comments are
-   returned immediately and look exactly like a result, so an unfiltered read cannot tell a
-   finished re-review from a running one. Reviews and comments both carry `commit_id`:
+2. **Wait for a result newer than your own trigger comment.** On a PR reviewed once already —
+   the normal case, since you only ask again after fixing something — the previous round's
+   findings, 👍 and announcement are all still sitting there, and a re-review that has not
+   started yet looks exactly like one that finished clean. Two things make that hard to get
+   right. **Codex creates a review object only when it finds something**, so counting reviews
+   can never confirm a clean run; and **no timestamp on the review side can be compared to a
+   commit's**, because a commit records local authoring rather than the push. Your trigger
+   comment solves both: it is a server-side timestamp on the same clock as the bot's, and it
+   necessarily postdates your push.
+   ```sh
+   trig=$(gh api --paginate repos/rdotsch/rcicr/issues/<n>/comments |
+     jq -r '[.[] | select((.user.type != "Bot") and (.body|test("@codex review")))] | last | .created_at')
+
+   # finished with nothing to say -> a new "Codex Review: Didn't find any major issues"
+   gh api --paginate repos/rdotsch/rcicr/issues/<n>/comments |
+     jq --arg t "$trig" '[.[] | select((.user.type=="Bot") and .created_at > $t)] | length'
+
+   # found something -> a new review object
+   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/reviews |
+     jq --arg t "$trig" '[.[] | select((.user.type=="Bot") and .submitted_at > $t)] | length'
+   ```
+   Non-zero on the first means clean; non-zero on the second means there are findings to read;
+   both zero means it is still running. Filter on `.user.type` rather than matching the comment
+   body alone — the bot quotes the string `@codex review` in its own help text, so a naive
+   match picks up its announcement as your trigger and dates the wait from the wrong event.
+   The 👀/👍 reaction on the PR body is the same signal in glanceable form, and fine for a human
+   reading the page.
+3. **Read only the findings at your head**, then answer each thread — fixing it, or saying why
+   not — before you squash. The findings carry `commit_id`, so the earlier rounds' comments
+   filter themselves out:
    ```sh
    head=$(git rev-parse HEAD)
-   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/reviews |
-     jq --arg head "$head" '[.[] | select(.commit_id == $head and (.user.login|test("codex")))] | length'
-   ```
-   Zero means it has not finished. The other completion signal is the reaction on the PR body
-   (`.../issues/<n>/reactions`): 👀 while the review runs, replaced by 👍 when it finishes with
-   nothing to say. Do not try to date that reaction against a commit — a commit timestamp
-   records local authoring, not the push, so a stale 👍 can look current.
-3. **Read only the findings at that head**, then answer each thread — fixing it, or saying why
-   not — before you squash:
-   ```sh
    gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments |
      jq -r --arg head "$head" '.[] | select(.commit_id == $head) | "\(.path):\(.line)  \(.body)"'
    ```
-Both commands need `--paginate`: these endpoints page at 30, and a review-heavy PR truncates
-silently without it. Both also pipe to `jq` rather than passing `--jq`, and that distinction is
+All of these need `--paginate`: these endpoints page at 30, and a review-heavy PR truncates
+silently without it. They also all pipe to `jq` rather than passing `--jq`, and that distinction is
 load-bearing — `gh api`'s own filter runs once per page, so `--jq 'length'` reports a count per
 page rather than a total. **Piped output does not have that problem**, whatever `gh api --help`
 suggests when it says "Each page is a separate JSON array": that describes `--jq` and
