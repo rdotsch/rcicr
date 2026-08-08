@@ -60,9 +60,7 @@ submission; `NEWS.md` carries their entries.
 0 errors | 0 warnings | 2 notes.
 
 **CRAN incoming feasibility** — `New submission`, `Package was archived on CRAN`, both
-expected for a reinstatement. It also reports a 403 on the `medium.com` link in
-`README.md`: that site returns 403 to datacenter networks but resolves normally in a
-browser, and it flagged on neither win-builder run nor in your pretest of 1.2.1.
+expected for a reinstatement.
 win-builder flags four spellings in `DESCRIPTION` — `Brinkman`, `Dotsch` and `Todorov` are
 the author surnames from the references you asked us to add, and `psychophysical` is the
 standard adjective for the field the method comes from.

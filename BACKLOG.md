@@ -32,7 +32,7 @@ breaking the API that researchers depend on**.
 > version addressing what was asked, not one that also swaps the plotting backend under
 > three rendered outputs. **Item 21** still announces availability, which is not yet true.
 >
-> Open items are **1, 20, 21, 25, 27, 30, 31, 33, 34** in the table below, plus
+> Open items are **1, 20, 21, 25, 27, 30, 31, 33, 34, 40, 41, 42** in the table below, plus
 > **13–15** and **36**, which are kept out of it.
 
 **Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
@@ -148,6 +148,7 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~39~~ | ~~Two of the four `load(rdata)` sites did not guard their arguments~~ | **Done** — preventive, no live collision. `computeInfoVal2IFC()` restored 3 of its 5 arguments and `computeCumulativeCICorrelation()` none. The one that mattered: `target_ci` is read after a *second* `load()`, so a file carrying that name would have scored a different CI and returned a plausible number, not an error | S |
 | 41 | `generateStimuli2IFC()` leaves the user's RNG stream where it landed | **Open, triage.** `set.seed(seed)` is never undone, so a script's next `runif()` differs depending on whether it generated stimuli first. Same family as CRAN's "do not change the user's state", though here the user asked, via a documented `seed` argument. Restoring `.Random.seed` on exit changes nothing this package computes — but it does change what a user's *next* draw returns, so it needs the gate run and a `NEWS.md` note | S |
 | 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
+| 42 | The superseded Medium link is the only URL that ever 403s a checker | **Open, triage.** `README.md:68`. Local `--as-cran` flags it; for 1.2.3 no external check did — clean on both win-builder runs and all three R-hub platforms — but win-builder *did* flag it on 1.2.1, so it tracks the checker's network, not the version. The README already calls the post superseded by the vignette. Not done now because `README.md` ships in the tarball, so removing it would force every external check to re-run | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1590,6 +1591,36 @@ a format that would have to be converted by hand. Not worth it unless someone as
 
 **Do this after the CRAN submission settles**, not before: it touches a file inside the
 tarball, so doing it now would invalidate the external checks for no benefit CRAN can see.
+
+### 42. The superseded Medium link is the only URL that ever 403s a checker **[verified] [own review]**
+
+**Open, triage. Size S.** Raised 2026-08-07, on the question of whether `cran-comments.md`
+needed a paragraph explaining the 403.
+
+`README.md:68` links to the 2016 Medium post. Local `R CMD check --as-cran` reports a 403
+on it, from inside the CRAN incoming feasibility NOTE: the site refuses datacenter
+networks and resolves normally in a browser.
+
+**It is intermittent, not fixed and not gone.** For 1.2.3 it appeared on *no* external
+check — absent from both win-builder runs and from all three R-hub platforms. It was also
+absent from CRAN's own pretest of 1.2.1. But win-builder *did* flag it on 1.2.1, so it is
+a property of which network the checker sits on, not of the version.
+
+The awkward part is that the README already calls the post superseded: the sentence
+carrying the link says the vignette "supersedes it and is the version kept current with
+the code". So the package ships a link it tells you not to use, which is the only URL in
+it capable of failing a check.
+
+**Why it was not done for 1.2.3:** `README.md` ships inside the tarball, so removing the
+link invalidates `rcicr_1.2.3.tar.gz` and forces win-builder and R-hub to be re-run — a
+real cost for a note no CRAN-side check has ever raised. `cran-comments.md` is
+`.Rbuildignore`d and costs nothing to edit, which is why the *paragraph* went and the
+*link* stayed.
+
+**Decide after CRAN settles**, and note the decision is not obvious: dropping the link
+removes the only URL that can 403, but the post is the version most existing users will
+have bookmarked, so a pointer saying it is superseded has some value. Keeping it costs
+nothing as long as nobody explains it in a submission again.
 
 ## Beyond v1 — changes that need a major version
 
