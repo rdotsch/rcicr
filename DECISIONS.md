@@ -142,8 +142,9 @@ string and a `package_version`, and compare with `numeric_version()` semantics �
 field; it detects the old `sinusoids`/`sinIdx` layout structurally. Just as well.
 
 ### `return_as_dataframe = TRUE` returns one noise image per trial, not per trial × base image
-`generateNoiseImage()`'s `return()` sits *inside* the per-base-image loop, so with several base
-images it fires on the first and the rest never run. Under the default
+`generateStimuli2IFC()`'s early `return()` (`R/generateStimuli2IFC.R:231`) sits *inside* the
+per-base-image loop at `:193`, so with several base images it fires on the first and the rest
+never run. Under the default
 `use_same_parameters = TRUE` that is correct — every base image shares one parameter set, so one
 noise image per trial is all there is — and the returned frame has one column per trial, so it
 could not represent the alternative anyway. Documented on `@param return_as_dataframe` rather

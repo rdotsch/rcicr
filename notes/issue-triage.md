@@ -1,12 +1,13 @@
 # Issue triage — the 25 open issues not touched by the modernization pass
 
-Prerequisite for `BACKLOG.md` item 44 (move the backlog to GitHub Issues). Item 19 closed the
+Prerequisite for the backlog's migration to GitHub Issues (done; see `backlog-migration.md`). Item 19 closed the
 eight issues the modernization fixed directly; these 25 are the remainder. All date from
 2016–2017, none is a bug report.
 
 **Approved and posted 2026-08-08.** Every comment below went out as written: eight closes and
-the correction on #87, which stays open. **One of those closes was wrong** — #9, see below;
-it rests on a claim about `generateCI()`'s return value that is false, and needs reopening. Verdicts were verified against the working tree at `1.2.3.9000`; this file is the record
+the correction on #87, which stays open. **One of those closes was wrong** — #9, see below.
+It rested on a claim about `generateCI()`'s return value that is false; it was reopened the
+same day with a public correction. Verdicts were verified against the working tree at `1.2.3.9000`; this file is the record
 of what was posted and why, not a live view of the tracker.
 
 ## Summary
@@ -17,7 +18,7 @@ of what was posted and why, not a live view of the tracker.
 | **Close — moot, the premise no longer holds** | #92, #52 | 2 |
 | **Close — no actionable specification** | #68 | 1 |
 | **Close — nothing in the package to attach it to** | #53 | 1 |
-| ⚠️ **Closed in error, needs reopening** | #9 | 1 |
+| ⚠️ **Closed in error, since reopened** | #9 | 1 |
 | **Keep open, rescope** — most of it shipped | #87 | 1 |
 | **Keep open — real, specified, unimplemented** | #71, #76, #85, #15, #35, #37, #38, #46, #47, #54, #22, #69 | 12 |
 | **Keep open — thin, but the scope is clear** | #6, #7, #10 | 3 |
@@ -138,8 +139,8 @@ monoculture) one argument away. The `.Rdata` file also records the seed, so a se
 reproducible even when a non-default one was used.
 
 Note there is a **separate, live** defect nearby — `set.seed(seed)` is never undone, so the
-user's RNG stream is left where stimulus generation put it (`BACKLOG.md` item 41). That should
-be its own issue under item 44; it is not what this one asks.
+user's RNG stream is left where stimulus generation put it. That is now #189; it is not what
+this one asks.
 
 > Draft comment:
 > Closing as answered by what shipped. `generateStimuli2IFC()` has a documented `seed`
@@ -234,9 +235,10 @@ code. Nine years with no body and no discussion.
 >
 > Reopening or filing fresh with a concrete design in mind is welcome.
 
-### #9 — save analysis metadata to a log file? ⚠️ **Closed on a false premise — reopen**
+### #9 — save analysis metadata to a log file? ⚠️ **Closed on a false premise — since reopened**
 
-**The verdict below was wrong, and the comment stating it was posted.** It claimed
+**The verdict below was wrong, the comment stating it was posted, and the issue has since
+been reopened with a correction.** It claimed
 `generateCI()` returns the scaling method and constant. It does not:
 [`generateCI.R:369-371`](../R/generateCI.R#L369-L371) returns `ci`, `scaled`, `base`,
 `combined` and optionally `zmap`, and `applyScaling()`
@@ -252,7 +254,7 @@ The lesson is the one this file was supposed to embody: every *other* verdict he
 file and line, and this one asserted a return value from memory. An unverified claim reads
 exactly like a verified one once it is written down.
 
-> Correction to post, and reopen:
+> Correction posted on reopening:
 > Reopening — I closed this on a claim that is simply wrong. `generateCI()` returns `ci`,
 > `scaled`, `base`, `combined` and optionally `zmap`; neither the scaling method nor the
 > computed scaling constant is among them, and `applyScaling()` discards both.
@@ -283,7 +285,7 @@ nine years. Both were the maintainer's call, not a code check.
 ## Sequencing note for item 44
 
 All nine postings went out together on 2026-08-08 — one sitting, as intended, and **before**
-the ~18 new issues item 44 opens from `BACKLOG.md`. That prerequisite is now met.
+the 21 new issues opened from the backlog as #174–#194. That prerequisite was met.
 
 The tracker afterwards: **17 open** — #6, #7, #10, #15, #22, #35, #37, #38, #46, #47, #54,
-#69, #71, #74, #76, #85, #87 — becoming 18 once #9 is reopened.
+#69, #71, #74, #76, #85, #87 — and 18 after #9 was reopened.
