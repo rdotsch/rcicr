@@ -37,6 +37,22 @@ devtools::check()
 touching it needs the package **actually installed**. Under `devtools::load_all()` alone the
 workers fail with `there is no package called 'rcicr'`.
 
+**An `--as-cran` run needs a complete check environment, or it reports failures the package
+does not have.** Install `texlive` and `tidy`, and set both incoming variables:
+
+```sh
+_R_CHECK_CRAN_INCOMING_=TRUE _R_CHECK_CRAN_INCOMING_REMOTE_=TRUE \
+  R CMD check --as-cran rcicr_X.Y.Z.tar.gz
+```
+
+Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely
+the sandbox — no `pdflatex`, no `tidy`, and a leftover `rcicr-manual.tex` from the failed PDF
+build. Installing it was the only change needed to reach 2 NOTEs. **Do not reach for
+`--no-manual` to make the manual checks go away**: it skips them rather than passing them,
+and a note here once recorded that as the problem being *resolved*. A clean run shows
+`checking PDF version of manual ... OK` and `checking HTML version of manual ... OK` — if
+you do not see those lines, you have not checked the manual.
+
 ## Reporting a bug
 
 The most useful report includes the `.Rdata` file's `img_size`, `nscales`, `noise_type` and

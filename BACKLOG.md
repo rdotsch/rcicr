@@ -89,18 +89,15 @@ breaking change) is out of it too and is not scheduled at all — see "Beyond v1
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
-| ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | **Never closes.** The checklist lives in `CONTRIBUTING.md` → Releasing and is re-run in full for every submission — local `--as-cran`, win-builder on both R-devel and R-release, and R-hub on all three platforms, with the results recorded in `cran-comments.md` in the release PR itself. Every further round of CRAN review means running it again | M |
+| ~~19~~ | ~~Close the 8 issues already fixed in `main`, then sweep the rest~~ | **Done** — 7 closed plus #12 commented and left open as only partly fixed; then all 25 remaining issues triaged, 8 closed and #87 corrected. 17 open, none untriaged | S |
+| 20 | CRAN reinstatement | **Open, waiting on CRAN.** The 1.2.3 tarball is submitted; the reply closes this or starts another round. The checklist itself lives in `CONTRIBUTING.md` → Releasing and is re-run in full for every submission, so what is left here is logging the reply and updating `README.md` once the outcome is known | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
 | ~~24~~ | ~~`generateReferenceDistribution2IFC()` litters a `./stimuli` dir~~ | **Done in 1.2.2** — fell out of removing the default write paths CRAN objected to. The directory is now created only when something is written to it, and this caller writes nothing. Not merely cosmetic after all: writing to the working directory uninvited is a CRAN policy violation | S |
-| 25 | InfoVal test oracle mirrors the implementation | **Deliberately left** — risk already covered by the hand-check against the erratum and the golden master. Logged so it is not mistaken for an independent check | S |
 | ~~26~~ | ~~InfoVal's null is seeded by accident and cannot be varied~~ | **Done** — the determinism is now a documented guarantee with a comment guarding the `set.seed()` it rests on, and `response_seed` makes the null varyable on purpose. Default output verified byte-identical to before the change | S |
-| 27 | `return_as_dataframe = TRUE` drops all but the first base image | **Documented, not fixed.** Correct under the default `use_same_parameters = TRUE`; silent only with `FALSE`. Widening the frame changes the return shape, so it needs a new argument rather than a redefinition — do it only if a user asks | S |
 | ~~28~~ | ~~`generateCI()`'s single-trial 4096-parameter truncation is a no-op~~ | **Done** — the vector branch tested `length(params) == 4092` and then truncated to 4092, so it could never fire on the 4096-length input it existed for. Single-trial analysis of pre-0.3.0 files worked in no released version | S |
 | ~~29~~ | ~~`autoscale()` aborts on masked classification images~~ | **Done** — a bare `range()` over the `NA`s that `generateCI(mask=)` writes by design. The single-CI `applyScaling()` path had always guarded this; only the batch path did not | S |
-| 30 | InfoVal `ref_lookup` table empty since 2018 | **Open, triage.** Empty *correctly* — the erratum formula redefined the norms its rows summarised. Either repopulate (four measurements) or remove ~55 lines of matching machinery; the machinery is kept for now so repopulating stays cheap | S |
 | 31 | A uniform base image silently becomes all-`NaN` | **Open.** `maximize_baseimage_contrast` computes 0/0 on a constant image and writes the `NaN` base into the `.Rdata` with no warning. Only bites synthetic or blank bases, but fails silently | S |
 | ~~32~~ | ~~The `.Rdata`'s noise `sigma` overwrote `generateCI()`'s z-map blur `sigma`~~ | **Done** — `load()` assigns into the function's frame, so the `sigma` item 2 added to the file replaced the z-map argument of the same name from 1.1.0 on. Every argument is now kept across the `load()`. Caught by the release gate, not by the test suite | S |
 | ~~35~~ | ~~`test-plotZmap.R:68` fails on macOS — blocked the CRAN submission~~ | **Done** — released as 1.2.1. The second distinct value was macOS quartz writing an **alpha channel** where cairo writes RGB, not an antialiasing artifact, so every option drafted before a macOS run was wrong. The count now ignores the alpha plane, and the value it compares is an ordering rather than a constant — the first fix pinned the background grey and macOS failed that too, at 0.573 vs 0.502. CI gained macOS and Windows runners, and the z-map is now pinned by the golden master on all three | S |
@@ -113,7 +110,7 @@ breaking change) is out of it too and is not scheduled at all — see "Beyond v1
 | 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
 | 42 | The superseded Medium link is the only URL that ever 403s a checker | **Open, triage.** `README.md:68`. Local `--as-cran` flags it; for 1.2.3 no external check did — clean on both win-builder runs and all three R-hub platforms — but win-builder *did* flag it on 1.2.1, so it tracks the checker's network, not the version. The README already calls the post superseded by the vignette. Not done now because `README.md` ships in the tarball, so removing it would force every external check to re-run | S |
 | 43 | The vignette's `par()` bookend restores what nothing changed | **Open, triage.** `old_par <- par(no.readonly = TRUE)` at the top of the walkthrough and `par(old_par)` at the end, when the only `par()` mutation is inside the `show()` helper, which already saves and restores narrowly. It is also the form whose restore can error on `pin`. `on.exit()` is not an option — chunk code is top level, not a function. Kept for now because the echoed setup chunk teaches the pattern; CRAN named this file, so any change must still visibly reset `par()` | S |
-| 44 | **Move the backlog to GitHub Issues and delete this file** | **Open, P1 — highest-priority non-CRAN item.** All 25 open issues date from 2016–2017 and none comes from the modernization, so the tracker reads as a package abandoned in 2017. This file's status also lives in two hand-maintained places that have now disagreed six times. **Prerequisite: item 19's remaining sweep** — triaging 25 stale issues after opening ~18 new ones makes the tracker worse first. Items 17, 25, 27 and 30 go to `DECISIONS.md` instead of becoming issues. Held until item 1 settles | M |
+| 44 | **Move the backlog to GitHub Issues and delete this file** | **In progress, P1 — highest-priority non-CRAN item.** Its prerequisite is met: the tracker is triaged and at 17 open. This file's status still lives in two hand-maintained places that have disagreed six times, which is the failure mode the move ends. Done so far: P0–P3 labels created, the four settled non-fixes rehomed to `DECISIONS.md`, item 20 cut to 22 lines. Left: open one issue per remaining item, then delete this file | M |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -476,7 +473,7 @@ two turned up three previously unknown bugs in `plotZmap()`, which is the argume
 writing tests for code that "obviously works":
 
 - [x] **Lock in the InfoVal formula.** Done — pinned in `test-regression-baseline.R`.
-      See the note under item #17 — the implementation is
+      See [`DECISIONS.md`](DECISIONS.md#the-infoval-formula-is-already-correct--do-not-fix-it) — the implementation is
       currently correct per the published erratum, but *nothing tests it*, so a future
       refactor could silently regress a published metric.
 - [x] **Cover the `scaling` methods. Done** — `test-scaling.R`, 15 assertions. Each method
@@ -552,10 +549,10 @@ reporting is wanted later, add the token and set this back to `true` — the fir
 above is the recipe. The point of this change is narrower: a red `main` should mean the
 package is broken, and it now does.
 
-### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**, except the sweep
+### 19. Issues fixed in `main` but still open on the tracker  ✅ **DONE**
 
-> **The remaining sweep is the prerequisite for item 44.** The eight below are closed; the
-> other ~25 open issues have never been triaged, and item 44 cannot start until they are.
+> **Fully done 2026-08-08, including the sweep that gated item 44.** The eight below were
+> closed first; the remaining 25 were then triaged in one batch. Tracker at 17 open.
 
 Not a code task, but it is the largest gap between what the package *is* and what a
 prospective user *sees*. As of 2026-07-27 the tracker has 30 open issues, and at least
@@ -595,177 +592,27 @@ package's public health signal and it currently understates the state of the cod
 
 Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
 
-### 20. CRAN resubmission checklist  **[verified against `R CMD check --as-cran`]**
+### 20. CRAN reinstatement — the submission is in, the outcome is not
 
-> **Submit the `v1.2.1` tag, and not the `v1.2.0` one.** The v1.2.0 tree fails `R CMD check`
-> on macOS: `test-plotZmap.R` asserted properties of a rendered PNG that belong to the
-> graphics device rather than to the drawing, and macOS quartz writes an alpha channel and
-> applies colour management where cairo does not. Found 2026-07-28 by the first R-hub
-> dispatch, which ran against the v1.2.0 tree. `tests/` is not in `.Rbuildignore`, so the
-> tests ship and get run. The fix (item 35) landed on `main` **after** that tag, which is why
-> 1.2.1 exists at all. CRAN's incoming checks are mainly Linux and Windows so it might not
-> have blocked acceptance, but macOS binaries are checked on the farm after publication, and a
-> package returning from archival should not arrive already red. See [`DECISIONS.md`](DECISIONS.md#the-release-gate-runs-the-old-code-the-golden-master-only-re-runs-ours)
-> for the underlying rule.
->
-> **All three external checks ran against the 1.2.1 tarball and are recorded in
-> `cran-comments.md`** (2026-07-29): win-builder R-devel and R-release both `1 NOTE` — the
-> incoming feasibility one — and R-hub `Status: OK` on Linux, Windows and macOS. **The
-> submission was made the same day; this item is complete and the checklist below is kept
-> because a rejection means running it again for the next version.**
+**The mechanical checklist lives in [`CONTRIBUTING.md`](CONTRIBUTING.md) → "Releasing"**, which
+covers the gate runs, the four release-PR edits, the external checks and the submission itself.
+This item carries only what is specific to *reinstating an archived package*, and it is nearly
+empty because the work is done.
 
-**Current status — every box below is ticked.** The latest `--as-cran` run, on the
-`rcicr_1.2.1.tar.gz` built at the repo root from the `v1.2.1` tree (2026-07-28), gives
-**0 errors, 0 warnings, 2 NOTEs**, with `PDF version of manual ... OK`,
-`HTML version of manual ... OK` and `checking for hidden files and directories ... OK` — the
-last of those being the check the `^\.git$` `.Rbuildignore` entry exists for. The two
-survivors are the archived/new-submission pair (carrying the Medium 403) and the sandbox
-clock, both expected and both explained in `cran-comments.md`. `Version contains large
-components` is gone and cannot return, because the tarball is built from a tag.
-Nothing mechanical is left in this item beyond re-running win-builder and R-hub against the
-1.2.1 tarball; the go/no-go and the submission itself are Ron's.
+The 1.2.3 tarball was submitted from its tag. What is left is CRAN's reply.
 
-The run below is the earlier baseline, kept because it is what established the check
-environment. **Re-run 2026-07-27 against `main` @ `5428b79`, in a check environment that
-genuinely matches CRAN's.** `texlive` and `tidy` are installed, and the run set
-`_R_CHECK_CRAN_INCOMING_=TRUE` / `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`, so the incoming
-checks CRAN actually performs on submission ran for real.
+- [ ] **Log the reply verbatim in `notes/cran-review-1.2.3.md`** when it arrives, and answer
+      from that file rather than from a summary of it — a summary has already cost three
+      drafts here. If it is an acceptance, this item closes.
+- [ ] **Update `README.md` once the outcome is known.** It currently leads with
+      `install.packages('rcicr')`, which has not worked since the 2021 archival.
 
-Result: **2 NOTEs, no ERRORs, no WARNINGs.**
-
-- `checking PDF version of manual ... OK`
-- `checking HTML version of manual ... OK`
-- `checking tests ... [8s/37s] OK`  (was `[8s/126s]`, see item 11)
-- `checking examples with --run-donttest ... [12s/13s] OK`  (was `[15s/75s]`)
-
-This supersedes an earlier run that reported 1 ERROR + 1 WARNING + 4 NOTEs. **Those were
-all this sandbox, not the package** — no `pdflatex`, no `tidy`, and a leftover
-`rcicr-manual.tex` from the failed PDF build. Installing the real toolchain was the only
-change needed. Worth recording because an earlier note here claimed the ERROR/WARNING had
-been *resolved* between runs; it had not — that run simply passed `--no-manual`, which
-skips the check rather than passing it.
-
-**The two remaining NOTEs:**
-
-1. **`checking for future file timestamps`** — `unable to verify current time`. The
-   sandbox cannot reach `worldclockapi.com`. Environmental; will not appear on CRAN.
-2. **`checking CRAN incoming feasibility`** — the one that matters:
-
-```
-New submission
-Package was archived on CRAN
-Version contains large components (1.0.1.9000)
-CRAN repository db overrides:
-  X-CRAN-Comment: Archived on 2021-06-08 as email to the maintainer was undeliverable.
-Found the following (possibly) invalid URLs:
-  URL: https://medium.com/@rondotsch/...  Status: 403 Forbidden
-    From: inst/doc/getting-started.html, README.md
-```
-
-Of these, only **"Version contains large components"** was ever an actual blocker, and the
-1.1.0 bump closed it — see the first ticked box below; it no longer appears in the output.
-"New submission" and "Package was archived" are expected for a reinstatement and are what
-`cran-comments.md` exists to explain. The `codecov.io` URL that this NOTE previously also
-flagged is gone.
-
-Two details of the block above are pre-1.1.0 and should not be read as current. The
-version string is now `1.1.0`. And the URL NOTE now reads `From: README.md` only — item 22
-moved the walkthrough into a vignette, so `inst/doc/getting-started.html` no longer carries
-the Medium link. That narrowing is what lets `cran-comments.md` tell a reviewer the content
-ships *in the package* and the link is courtesy to nine years of citations.
-
-#### Must do before submitting
-
-- [x] **Bump the version to `1.1.0`. Done.** `1.0.1.9000` tripped "Version contains large
-      components" — the `.9000` development suffix is not acceptable in a submission.
-      `DESCRIPTION` now reads `1.1.0`, the `NEWS.md` heading is dated `2026-07-27`, and
-      `ChangeLog` gained a 1.1.0 entry pointing at `NEWS.md` as the canonical changelog
-      from this release onward. Minor rather than patch because some changes alter
-      behaviour; not major because the public API is untouched.
-      **This closes the last mechanical CRAN blocker** — what remains in this item is
-      the go/no-go and the submission itself, which are Ron's.
-- [x] **Fix the two flagged URLs — partly done.** The `codecov.io` one is **gone**: the
-      badge rendered `unknown` (nothing has ever been uploaded, there being no token), so
-      it was removed rather than repointed — a badge that reports nothing while looking
-      like it reports something is worse than no badge. Re-verified by a second
-      `--as-cran` run: it no longer appears.
-
-      The **Medium link still flags, and that is fine.** It is out of `DESCRIPTION` now but
-      remains in `README.md:51` and `vignettes/getting-started.Rmd:36`, where it is a
-      genuinely useful pointer to the method walkthrough. **Do not delete it to silence the
-      NOTE** — explain it in `cran-comments.md` instead.
-
-      Be precise about *why* in that explanation. An earlier draft here said Medium "returns
-      403 to non-browser user agents", which is wrong: retested with
-      `curl -A "Mozilla/5.0"` and it still returns 403. Medium blocks by network origin
-      (datacenter IPs), not by user agent, so spoofing a browser UA does not help and
-      neither would any change on our side. The link resolves normally from a residential
-      browser. Claiming the wrong cause to a CRAN reviewer who can check it is worse than
-      claiming none.
-
-      Item 22 (port the walkthrough into a vignette) is the durable fix: once the content
-      lives in the package, the external link becomes a courtesy pointer rather than the
-      only copy, and can be dropped from the vignette if a reviewer objects.
-- [x] **Add `BugReports:` and a repo `URL:` to `DESCRIPTION`. Done.** There is currently no
-      `BugReports` field at all, and `URL:` points only at the Medium article rather than
-      the repository. Suggested:
-      `URL: https://github.com/rdotsch/rcicr`,
-      `BugReports: https://github.com/rdotsch/rcicr/issues`.
-- [x] **Cap the core count under check. Done** via `default_ncores()` in `R/zzz.R`;
-      verified to return `detectCores() - 1` normally and `2` when `_R_CHECK_LIMIT_CORES_`
-      is set. Original text: `generateStimuli2IFC()`,
-      `generateReferenceDistribution2IFC()` and `generateCI(n_cores=)` all default to
-      `parallel::detectCores() - 1`. **CRAN policy allows at most 2 cores** in examples,
-      tests and vignettes, and reviewers frequently object to `detectCores()` defaults on
-      their own. The standard idiom keeps user-facing behaviour identical:
-      ```r
-      ncores = if (nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_"))) 2L else parallel::detectCores() - 1
-      ```
-      Note this is *not* a behaviour change for researchers — only under `R CMD check`.
-- [x] **Get the test time down. Partly done, and the diagnosis changed** —
-      `skip_on_cran()` on three files. **Verified it fires**: under a real `R CMD check`
-      the suite reports `SKIP 3 | PASS 119` (vs 145 in development).
-
-      But the saving is only **148s → 126s**, not the large drop expected, because those
-      three were not as dominant as assumed. The real finding is in the ratio:
-      `checking tests ... [8s/126s]` — **8 seconds of CPU against 126 seconds elapsed.**
-      Nearly all of it is waiting, not computing. `testthat.Rout` shows **22 PSOCK cluster
-      spawns**, each starting a fresh R process that runs `library(rcicr)`. The same shape
-      appears in `--run-donttest`: `[15s/75s]`.
-
-      **This makes item 11 (the `ncores == 1` serial fast path) the single biggest lever on
-      check time**, not a nicety — every test already passes `ncores = 1`, and every one of
-      them still builds a one-worker cluster to run a sequential loop. Do item 11 before
-      worrying further about check duration.
-      Note the trap found while verifying this: `devtools::test()` and
-      `testthat::test_local()` **set `NOT_CRAN=true` themselves**, so `skip_on_cran()` can
-      never fire under them and they cannot be used to check that a skip works. Only a
-      real `R CMD check` shows it. Original text: `checking tests` took **`[10s/148s]`**. CRAN wants the
-      whole check comfortably under ~10 minutes on hardware slower than this. Put
-      `skip_on_cran()` on the three slowest files — `test-recovery.R`,
-      `test-smoke-pipeline.R`, `test-regression-baseline.R`. All three are development
-      guards; none of them protects a CRAN *user*, and they keep running in GitHub CI.
-- [x] **Guard the interactive prompt. Done.** Non-interactive callers now decline and
-      regenerate with the requested iteration count rather than silently substituting a
-      distribution built with a different one. Original text: `computeInfoVal2IFC()` calls `yesno::yesno()` at
-      `R/computeInfoVal2IFC.R:118` with no `interactive()` check around it. In a
-      non-interactive session — CRAN's checks, or anybody's batch script — that either
-      hangs or errors instead of taking a sensible default.
-
-#### Then, before hitting submit
-
-- [x] **Check on platforms this machine cannot provide. Done 2026-07-29**, against the
-      1.2.1 tarball: win-builder R-devel (r90304 ucrt) and R-release (4.6.1), `1 NOTE` each;
-      R-hub Linux, Windows and macOS on R-devel, `Status: OK` on all three. CRAN tests those
-      platforms and we do not.
-- [x] **Write `cran-comments.md`. Done** — at the repo root, `.Rbuildignore`d. It states
-      plainly that the 2021-06-08 archival was for an undeliverable maintainer address
-      rather than any code or policy problem, that the address now works, and explains both
-      remaining NOTEs. The win-builder and R-hub results are filled in as of 2026-07-29.
-- [x] **Submit at <https://cran.r-project.org/submit.html>. Done 2026-07-29**, by Ron
-      himself, from the 1.2.1 tarball — CRAN emails the maintainer address for
-      confirmation, and that address working again is the entire point.
-- [ ] Update `README.md` once the outcome is known.
+**What a reviewer sees that a normal submission does not:** the incoming-feasibility NOTE
+carries `New submission` *and* `Package was archived on CRAN`, with the CRAN db override
+recording the 2021-06-08 archival for an undeliverable maintainer address. Both are expected
+for a reinstatement and neither is a defect — explaining them is what `cran-comments.md` is
+for. The archival reason no longer applies: `Authors@R` carries a working address, and that
+address receiving the confirmation email is the whole point of the exercise.
 
 ### 21. Announcement post — drafted, waiting on the CRAN outcome
 
@@ -877,32 +724,36 @@ tidyverse run this way. An in-repo backlog is a solo-project pattern.
 | Job | Destination | Roughly |
 |---|---|---|
 | Open work items | **GitHub Issues** | ~750 lines |
-| "Already correct — do not re-fix", and why | **`DECISIONS.md`** | items 17, 25, 27, 30 |
+| "Already correct — do not re-fix", and why | **`DECISIONS.md`** | four entries, now moved |
 | Record of finished work | **`NEWS.md`, git, closed issues** | ~834 lines |
 
-Item 17 is the tell: "InfoVal formula, verified correct, do not re-fix" is already an entry
-in `DECISIONS.md`. It was never backlog, and neither are its neighbours.
+The InfoVal formula was the tell: "verified correct, do not re-fix" was *already* an entry in
+`DECISIONS.md` while also sitting here as a backlog item. It was never backlog, and neither
+were its neighbours.
 
 **Preparation, in order:**
 
-- [ ] **Item 19's remaining sweep — the hard prerequisite.** Triaging 25 stale issues *after*
-      opening ~18 new ones means the tracker gets worse before it gets better. The triage is
-      written for all 25 in `notes/issue-triage.md`; what remains is the maintainer's
-      approval and the posting. Nothing may be posted without that approval.
+- [x] **Item 19's remaining sweep — the hard prerequisite. Done 2026-08-08.** Triaging 25
+      stale issues *after* opening ~18 new ones would have meant the tracker got worse before
+      it got better. Eight closed, #87 corrected, 17 left open; see `notes/issue-triage.md`.
 - [ ] **Create priority labels.** P0–P3 exist only as prose here; without them, priority is
       the one thing the migration would lose.
-- [ ] **Rehome items 17, 25, 27 and 30 to `DECISIONS.md`** rather than opening issues for
-      them — they are settled non-fixes, not work.
-- [ ] **Rehome item 20's accumulated check results.** At 172 lines it is the largest section
-      in this file and roughly two-thirds of it duplicates `cran-comments.md` and
-      `notes/cran-review-*.md`. Keep the checklist, drop the per-submission record.
+- [x] **Rehome the four settled non-fixes to `DECISIONS.md`. Done** — the InfoVal formula
+      (already there), `return_as_dataframe`'s one-image-per-trial shape, the emptied
+      `ref_lookup` rows, and the infoVal test oracle that mirrors its implementation. They are
+      decisions, not work, so none of them becomes an issue.
+- [x] **Cut item 20 down to what is specific to reinstating an archived package. Done** —
+      172 lines to 22. The mechanical checklist was already in `CONTRIBUTING.md` → Releasing
+      and the per-submission record in `cran-comments.md` and `notes/cran-review-*.md`; the
+      one thing found nowhere else, how to run `--as-cran` in an environment that does not
+      invent failures, moved to `CONTRIBUTING.md` → Getting set up.
 - [ ] Then open one issue per remaining open item, delete this file, and leave a one-line
       pointer in `AGENTS.md`.
 
-**Gated on the sweep, not on CRAN.** The maintainer's sequencing is sweep → cleanup →
-migrate. The sweep itself is outward-facing — comments and closes notify people who filed
-these in 2016 — so the proposed text for all 25 goes to the maintainer for approval before
-anything is posted, per the convention already recorded on item 19.
+**Was gated on the sweep, not on CRAN**, and the sweep is done. The maintainer's sequencing
+was sweep → cleanup → migrate, and opening the issues is the last step. It is outward-facing
+in the same way the sweep was, so the proposed set goes to the maintainer for approval before
+anything is opened.
 
 **What it costs, honestly:** a change to the plan stops going through a reviewed PR, since
 issue edits are not reviewable. For a single maintainer that is close to zero, but it is a
@@ -1096,46 +947,6 @@ silently ignored on every file that already had `reference_norms`, which is ever
 the first call, the same shape as item 23's dead `mask` argument — and never caches its
 result.
 
-### 25. `computeInfoVal2IFC`'s test oracle mirrors the implementation **[own review]**
-Found 2026-07-27 during the test-intent audit. `test-computeInfoVal2IFC.R:24` recomputes
-`(norm(ci, "f") - median(reference_norms)) / mad(reference_norms)` — the same expression as
-the implementation. It therefore pins the *implementation*, not the published definition: a
-formula that is wrong but consistently wrong in both places passes.
-
-Deliberately **not** changed. The formula was hand-checked against the Schmitz et al.
-erratum (item 17), and the golden master pins the resulting number, so the risk is already
-covered from two other directions. Recorded here so that a future reader does not mistake
-this test for the independent check it resembles — the genuinely independent oracle in the
-suite is the one in `test-generateNoiseImage.R`.
-
-- [ ] If ever revisited: assert against a worked example taken from the paper, or a
-      hand-computed case with a fixed 2×2 CI and a known reference vector.
-
-### 27. `return_as_dataframe = TRUE` silently drops all but the first base image **[verified] [own review]**
-Found 2026-07-27 while fixing issue [#82](https://github.com/rdotsch/rcicr/issues/82). The
-`return()` that hands back a trial's noise sits *inside* the per-base-image loop, so with
-several base images it fires on the first one and the rest never run. The returned data
-frame has one column per trial, not per trial × base image, so the shape cannot represent
-them anyway.
-
-With the default `use_same_parameters = TRUE` this is correct — every base image shares one
-parameter set, so one noise image per trial is all there is. With
-`use_same_parameters = FALSE` the caller silently receives only the first base image's
-noise.
-
-**InfoVal is not affected, checked rather than assumed.**
-`generateReferenceDistribution2IFC()` is the only in-package caller of this path. It does
-not pass `use_same_parameters`, so the rebuild always uses the default, and the first base
-image's parameters are drawn from the same leading block of the RNG stream either way —
-measured identical, max absolute difference 0 across both settings with two base images.
-
-- [x] Document the restriction on `@param return_as_dataframe`: one noise image per trial,
-      meaningful only under `use_same_parameters = TRUE`. **Done 2026-07-28**, with a
-      `NEWS.md` entry under Documentation. Behaviour unchanged.
-- [ ] Only if a user actually needs it: widen the returned frame to trial × base image.
-      That changes the return shape, so it needs a new argument rather than a redefinition
-      — the `.Rdata`/return contract is append-only.
-
 ### 16. Memory ceiling on large stimulus sets — concrete root cause found **[own review]**  ✅ **FIXED**
 Issue [#12](https://github.com/rdotsch/rcicr/issues/12) reports that large stimulus sets
 exhaust memory, with the suggested fix being "distribute stimulus matrices over multiple
@@ -1193,25 +1004,6 @@ The telling detail: `applyScaling()` guards **every** reduction with `[!is.na(..
 single-CI scaling path has always handled masked CIs and only the batch path did not.
 Fixed with `na.rm = TRUE` plus an explicit error for a CI that is entirely `NA`, which would
 otherwise produce an infinite constant.
-
-### 30. The InfoVal reference lookup table has been empty since 2018 **[verified] [own review]**
-`R/computeInfoVal2IFC.R` carries a `ref_lookup` tibble whose four rows are all commented
-out. That was correct and deliberate: `01e547e` (2018-07-31) adopted the Euclidean norm and
-scaling factor *k* from the erratum to Schmitz et al. (2019), which redefined the norms
-those medians and MADs summarise. Reusing them would score CIs against a null built from the
-wrong formula.
-
-The consequence is that roughly 55 lines of lookup, matching and interactive-prompt code run
-against an empty table and can never match, and the reference distribution is always
-regenerated — correct, just slow. **`CLAUDE.md` described this as a working cache**, which
-has been corrected. The machinery is deliberately kept rather than deleted so that
-repopulating is a matter of measuring four numbers.
-
-- [ ] Optional: re-measure `median(reference_norms)` and `mad(reference_norms)` under the
-      current formula for seed 1, 512px, 10000 iterations at 100/300/500/1000 trials, and
-      uncomment the rows. Each is one `generateReferenceDistribution2IFC()` run.
-- [ ] If they are not going to be re-measured, delete the matching and prompt machinery
-      instead — but not both halves independently, or the feature becomes unrecoverable.
 
 ### 31. A uniform base image silently becomes all-`NaN` **[verified] [own review]**
 `maximize_baseimage_contrast = TRUE` (the default) computes `(img - min(img)) / (max(img) -
@@ -1762,26 +1554,3 @@ contributors arrive expecting snake_case. Neither is obviously worth a major ver
   `generateCI()` already defaults to exactly that. **Verify and close.** (Note the
   *separate*, still-open problem in item #11: `generateReferenceDistribution2IFC()` has no
   `ncores` argument at all.)
-
-### <a name="17"></a>17. InfoVal formula — verified correct, now pinned by a test  ✅
-
-Worth recording so it isn't "re-fixed" by someone reading only the comment paper:
-
-Schmitz et al. (2019) published a
-[comment](https://link.springer.com/article/10.3758/s13428-019-01295-1) identifying two
-discrepancies in the original infoVal metric (Brinkman et al., 2019): use of the **one
-norm** instead of the **Euclidean norm**, and omission of the **k constant** in the
-denominator. The subsequent
-[erratum](https://link.springer.com/article/10.3758/s13428-020-01367-7) established that
-the k-constant point was *not* an error — R's `mad()` already applies `constant = 1.4826`
-by default — leaving only the norm issue, of minor impact.
-
-**rcicr already implements the corrected version**: `computeInfoVal2IFC()` uses
-`norm(matrix(target_ci[["ci"]]), "f")` (Frobenius = Euclidean on a vectorized CI), and
-`mad()` supplies k. Git history confirms both were addressed deliberately —
-`01e547e "Euclidean norm and scaling factor k (#97)"` and
-`ae8fa9c "Removed k constant, since it is already included in the R mad function."`
-
-- [x] Add a regression test pinning infoVal to a hand-computed expected value, so this
-      cannot silently regress. **Done** — `test-regression-baseline.R` pins both the
-      formula (recomputed independently) and a literal expected value.

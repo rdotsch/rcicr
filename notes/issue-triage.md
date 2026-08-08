@@ -5,8 +5,8 @@ eight issues the modernization fixed directly; these 25 are the remainder. All d
 2016–2017, none is a bug report.
 
 **Approved and posted 2026-08-08.** Every comment below went out as written: eight closes and
-the correction on #87, which stays open. 17 issues remain open, and item 44's prerequisite is
-met. Verdicts were verified against the working tree at `1.2.3.9000`; this file is the record
+the correction on #87, which stays open. **One of those closes was wrong** — #9, see below;
+it rests on a claim about `generateCI()`'s return value that is false, and needs reopening. Verdicts were verified against the working tree at `1.2.3.9000`; this file is the record
 of what was posted and why, not a live view of the tracker.
 
 ## Summary
@@ -15,8 +15,9 @@ of what was posted and why, not a live view of the tracker.
 |---|---|---|
 | **Close — implemented, verified in code** | #43, #27, #13 | 3 |
 | **Close — moot, the premise no longer holds** | #92, #52 | 2 |
-| **Close — no actionable specification** | #68, #9 | 2 |
+| **Close — no actionable specification** | #68 | 1 |
 | **Close — nothing in the package to attach it to** | #53 | 1 |
+| ⚠️ **Closed in error, needs reopening** | #9 | 1 |
 | **Keep open, rescope** — most of it shipped | #87 | 1 |
 | **Keep open — real, specified, unimplemented** | #71, #76, #85, #15, #35, #37, #38, #46, #47, #54, #22, #69 | 12 |
 | **Keep open — thin, but the scope is clear** | #6, #7, #10 | 3 |
@@ -217,7 +218,7 @@ CIs) — the title is nearly a function signature, and `mask` already exists to 
 (meta-reverse correlation) — its body does specify the function: list of CIs + weights → a
 weighted-average CI, plus an optional anti-image.
 
-**Closed.** #68 and #9, below.
+**Closed.** #68 below. #9 was also closed, in error — see below.
 
 ### #68 — adaptive reverse correlation
 
@@ -233,23 +234,33 @@ code. Nine years with no body and no discussion.
 >
 > Reopening or filing fresh with a concrete design in mind is welcome.
 
-### #9 — save analysis metadata to a log file?
+### #9 — save analysis metadata to a log file? ⚠️ **Closed on a false premise — reopen**
 
-Asked as a question ("Such as scaling method, scaling factor?"), and answered by the design
-that shipped: `generateCI()` returns the scaling method and constant, and the `.Rdata` carries
-the generation parameters. A log file would duplicate state already travelling with the
-results.
+**The verdict below was wrong, and the comment stating it was posted.** It claimed
+`generateCI()` returns the scaling method and constant. It does not:
+[`generateCI.R:369-371`](../R/generateCI.R#L369-L371) returns `ci`, `scaled`, `base`,
+`combined` and optionally `zmap`, and `applyScaling()`
+([`:463-499`](../R/generateCI.R#L463-L499)) discards both the method and the computed constant
+— `autoscale()` *prints* its constant to the console rather than returning it. The `.Rdata`
+carries stimulus-*generation* parameters, not analysis settings, so it does not hold them
+either.
 
-> Draft comment:
-> Closing: the question has been answered elsewhere in the design. `generateCI()` returns the
-> scaling method and the scaling constant it used as part of its return value, and the
-> `.Rdata` file written at stimulus-generation time records the generation parameters —
-> including the seed, the number of scales, and the generator version. A separate log file
-> would duplicate state that is already carried with the results, and would be one more thing
-> to keep in sync.
+So the metadata #9 asks for is genuinely not recoverable from the results, and the issue
+describes real missing functionality. Caught by the Codex review on PR #172, after posting.
+
+The lesson is the one this file was supposed to embody: every *other* verdict here cites a
+file and line, and this one asserted a return value from memory. An unverified claim reads
+exactly like a verified one once it is written down.
+
+> Correction to post, and reopen:
+> Reopening — I closed this on a claim that is simply wrong. `generateCI()` returns `ci`,
+> `scaled`, `base`, `combined` and optionally `zmap`; neither the scaling method nor the
+> computed scaling constant is among them, and `applyScaling()` discards both.
+> `autoscale()` prints its constant to the console rather than returning it, and the `.Rdata`
+> file holds stimulus-generation parameters, not analysis settings.
 >
-> If there is specific metadata that is *not* recoverable from either of those, that is worth a
-> fresh issue naming it.
+> So the metadata this issue asks for is not recoverable from the results today, and the
+> request stands as originally filed.
 
 ## Aspirational since 2017
 
@@ -275,4 +286,4 @@ All nine postings went out together on 2026-08-08 — one sitting, as intended, 
 the ~18 new issues item 44 opens from `BACKLOG.md`. That prerequisite is now met.
 
 The tracker afterwards: **17 open** — #6, #7, #10, #15, #22, #35, #37, #38, #46, #47, #54,
-#69, #71, #74, #76, #85, #87.
+#69, #71, #74, #76, #85, #87 — becoming 18 once #9 is reopened.
