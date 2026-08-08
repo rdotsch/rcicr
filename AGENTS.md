@@ -113,7 +113,11 @@ Feature branches → PR → squash onto `main`, and releases are marked by tags.
 
 ## Backlog
 
-`BACKLOG.md` is the prioritized modernization backlog — read it before starting substantial work, and update it when you close something out. It was compiled from the open GitHub issues, the published literature, and a direct source review, and it records:
+`BACKLOG.md` is the prioritized modernization backlog — read it before starting substantial work, and update it when you close something out.
+
+**It carries what is left to do, never where the project currently stands.** No "state as of" block, no release narrative, no next-steps list. That information belongs to `NEWS.md` (what changed for users), `cran-comments.md` (the submission), `CONTRIBUTING.md` → Releasing (the steps), and the open PRs and `git log` (what is in flight) — and a copy here drifts from all four. It did, four times, each time within a day of a release. A hold condition *is* backlog information and belongs on the item it holds; the project's current position is not.
+
+It was compiled from the open GitHub issues, the published literature, and a direct source review, and it records:
 
 - The **guiding constraint**: researchers re-run old analysis scripts years later, so never change existing call syntax, argument meanings, or the numeric output of a function silently. Deprecate rather than delete; treat the `.Rdata` contract as append-only.
 - Several **verified** bugs (reproduced, not inferred) — including that the package is archived on CRAN, that `mask` is unusable on R >= 4.2, that base images must already equal `img_size` (root cause of issue #124), and that `nscales`/`sigma` are missing from the saved `.Rdata` in a way that silently corrupts InfoVal.
