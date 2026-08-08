@@ -10,6 +10,22 @@ loads only `CLAUDE.md`. Keep this file under 200 lines; adherence drops above th
 
 `rcicr` is an R package (CRAN-style) implementing the **reverse correlation image classification** technique from psychophysics: generating noise-based stimuli for 2-image-forced-choice (2IFC) perceptual tasks and computing "classification images" (CIs) from participant response data to visualize internal mental representations (e.g., of faces).
 
+## Check, don't assume
+
+**Verify a claim against the thing itself before writing it down or acting on it.** Three rules
+below are scar tissue from not doing that — the branch-protection API under "Testing and CI",
+and answering CRAN from a summary and quoting this machine's clock under "Releases and
+versioning". Each produced a confident wrong answer, and each keeps its detail there, where
+someone doing that task will hit it. This is the general form, for the cases not yet listed:
+
+- **Run the command, read the file, query the API.** No "should be", "presumably", "as
+  expected". If a check was not run, say so rather than predicting its result.
+- **An empty result may mean you asked the wrong question.** Nothing found can mean the thing
+  is absent *or* that the endpoint, branch, path or scope was wrong — rule out the second
+  before reporting the first.
+- **Put the evidence next to the claim** — the command, the file and line, the actual output —
+  so the next reader can recheck it instead of re-deriving it.
+
 ## Common commands
 
 A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`, GitHub Actions CI — so the usual `roxygen2::roxygenise()` / `devtools::load_all()` / `test()` / `check()` / `install()` workflow applies unchanged, run from the package root. Two things about it are *not* standard:
