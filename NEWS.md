@@ -1,5 +1,52 @@
 # rcicr (development version)
 
+## Behaviour changes
+
+- **`generateStimuli2IFC()` now checks `base_face_files` before it generates anything,
+  and names the entry it cannot use.** Four inputs used to get past the old check and
+  fail from inside a parallel worker with `attempt to select less than one element in
+  get1index`, which names neither the argument nor the file: a list with no names, a
+  list with some names missing, an empty list, and an element that is not a single file
+  name. They now stop immediately with a message saying which entry is wrong and why.
+
+  One of them could previously appear to work. **A `base_face_files` with two entries
+  under the same name silently dropped all but the first** — the loop looked each name
+  up by string, so `list(face = 'a.png', face = 'b.png')` produced one set of stimuli,
+  from `a.png`, and nothing at all from `b.png`. That is now an error naming the
+  duplicated name. If you have a script that relies on it, the stimuli it produced were
+  never what the call asked for; give each base image its own name.
+
+- **The PNG-or-JPEG test now looks at the file extension rather than anywhere in the
+  path.** It was `grepl('png|PNG', filename)` against the whole path, so a JPEG stored
+  under a directory called `png` was handed to `png::readPNG()` and died with `file is
+  not in PNG format`, blaming the file for a choice the package had made. Files are now
+  recognised by a `.png`, `.jpg` or `.jpeg` extension, case-insensitively. A base image
+  whose *extension* does not say what it is is rejected up front, by name, instead of
+  reaching a reader that cannot parse it.
+
+## Bug fixes
+
+- **The `base_face_files` type check raises an error you can actually read.** It wrote
+  its explanation to `stderr()` and then called `stop()` with no arguments, so the
+  condition it raised carried an empty message: `conditionMessage()` returned `""`, and
+  anything wrapping the call — a Shiny app, a batch script, knitr — caught an error it
+  could not report. Under `sink()` or `capture.output(type = "message")` the explanation
+  could be separated from the failure entirely. The text now travels with the condition.
+
+- **A base image that cannot be read is reported with the file it came from.** The
+  reader's own complaint (`file is not in PNG format`, and the like) is kept and
+  prefixed with the entry's name and path, and a file that does not exist is now
+  reported as missing rather than as unopenable.
+
+- **Base images are validated before the noise basis is built and before the output
+  directory is created.** A mistyped path used to cost the full noise-pattern
+  computation — appreciable at the default 512px — and left an empty stimulus directory
+  behind before reporting the problem.
+
+  No numeric output changes. Every check here either replaces an error with a clearer
+  error, or rejects input that could not have produced correct stimuli; a call that
+  succeeds today produces exactly what it did before.
+
 # rcicr 1.2.3 (2026-08-07)
 
 **Documentation only. Nothing this package computes has changed** — no function,

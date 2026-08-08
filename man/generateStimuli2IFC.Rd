@@ -23,7 +23,7 @@ generateStimuli2IFC(
 )
 }
 \arguments{
-\item{base_face_files}{List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.}
+\item{base_face_files}{Named list of base face file names used as base images for stimuli, e.g. \code{list(aName = 'baseface.jpg')}. Accepts JPEG and PNG images, recognised by a \code{.png}, \code{.jpg} or \code{.jpeg} extension. Each name labels that base image's stimulus files and indexes the .Rdata file that \code{\link{generateCI}} reads back, so every element must be named, and named uniquely. Each image must be square and exactly \code{img_size} by \code{img_size} pixels: rcicr does not resize base images. All of this is checked before any stimuli are generated, and the message names the offending entry.}
 
 \item{n_trials}{Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).}
 
