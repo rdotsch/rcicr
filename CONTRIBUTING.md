@@ -184,6 +184,14 @@ outside the package can call them:
 Line length is not enforced; 35 lines in `R/` already exceed 100 characters. Wrap new code
 at something reasonable rather than reflowing what is there.
 
+**Comments: as few as will do, and only where the code cannot speak for itself.** Write one
+when the reason would otherwise have to be re-derived — a rejected alternative, a constraint,
+a measured number, a trap. Never narrate what the next line does, restate the error message
+below it, or re-tell an issue's history. The long comments already in `R/` are the first kind
+and earn their length; the test is whether a reader would otherwise get it wrong, not whether
+the code looks bare. Where the explanation is about the package rather than about the line, it
+belongs in [`DECISIONS.md`](DECISIONS.md).
+
 Two rules that are about this package rather than about R:
 
 - **Add new names loaded from an `.Rdata` file to `R/zzz.R`'s `globalVariables()`**, or
