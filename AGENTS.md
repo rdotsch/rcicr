@@ -81,6 +81,18 @@ replaced a chronological session log; do not recreate one.
 - The squash commit message is the place to preserve *why* a change was made — the per-commit
   detail on the branch disappears, so measurements, rejected alternatives and reproducibility
   impact belong in the squash message or in `NEWS.md`, not only in the branch commits.
+- **Read the bot review before merging, and answer it.** Codex
+  (`chatgpt-codex-connector[bot]`) reviews on PR open, on ready-for-review and on a
+  `@codex review` comment, posting findings as inline review comments badged `P1`–`P3`.
+  Nothing makes you notice them: it submits as `COMMENTED`, so it never blocks a merge and
+  `reviewDecision` stays empty; `gh pr checks` is green regardless; and `gh pr view
+  --comments` shows only the review wrapper, **not the findings**. The one surface that has
+  them is `gh api repos/rdotsch/rcicr/pulls/<n>/comments`. It has been right about
+  substantive things (#170, #172, #173) — reply on each thread, fixing it or saying why not,
+  before squashing.
+- **No findings and not-reviewed-yet look identical.** The review lands a few minutes after
+  the PR opens, so an empty result right after `gh pr create` means nothing; and it names the
+  commit it reviewed, so pushing again leaves it stale. Re-check after your last push.
 - Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
   clears stale remote refs locally.
 
