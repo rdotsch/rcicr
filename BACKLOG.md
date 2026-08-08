@@ -881,7 +881,7 @@ checklist at the top of this item, which is the live one.
       report; take it as a to-fix list, not a gate, and set the gate at "no new lints".
 - [ ] **`styler` — all-or-nothing, and still deliberately deferred.** It would reformat
       nearly every file in one sweep and destroy `git blame`. If it ever happens it goes in
-      as a commit of its own, changing nothing else — see `DECISIONS.md`. Neither tool is
+      as a commit of its own, changing nothing else — see `DECISIONS.md` → "Packaging, CI and tooling". Neither tool is
       in the pre-commit config, and that is why.
 - [ ] `generateCI()` is ~440 lines mixing CI computation, masking, scaling, PNG writing,
       z-maps, and parallelism. Extract the internal helpers (`applyMask`, `applyScaling`,
@@ -1212,7 +1212,7 @@ Fixed in #151 (`e0b74a7`) and released as **1.2.1**; the submitted tarball is bu
   where cairo gives 0.502 (colour management). That repeated the mistake being corrected, one
   line below it. The assertion is now an *ordering* — the same render over a darker background
   must come out darker — which survives any monotone transfer function.
-- **The general rule, now in `DECISIONS.md`:** when a test reads pixels back from a graphics
+- **The general rule, now in `DECISIONS.md` → "Testing":** when a test reads pixels back from a graphics
   device, *every absolute property of those pixels belongs to the device* — channel count and
   value alike. Only relationships between renders are portable.
 - **The class of failure cannot recur unseen.** `R-CMD-check.yaml` gained macOS and Windows
@@ -1546,7 +1546,7 @@ delete the 1.1.0–1.2.3 pointer entries, and stop adding to it. That leaves eac
 exactly one job — `ChangeLog` the pre-`NEWS.md` archive, `NEWS.md` everything since — and
 removes a per-release step that currently has to be remembered. Three places document the
 current convention and would need updating with it: `AGENTS.md`, `CONTRIBUTING.md` and
-`DECISIONS.md`.
+`DECISIONS.md` → "Releases and git".
 
 The alternative, migrating all 27 entries into `NEWS.md` and deleting the file outright,
 gives users the full history through `news()` but bloats `NEWS.md` with 2014-era detail in
@@ -1663,7 +1663,7 @@ tidying that needs no version bump at all (`CONTRIBUTING.md` → "Code conventio
 `tools/compare-release-output.R` installs and runs the released code and compares every
 output, so a pure rename-and-reformat has to come back with zero differences across the
 whole battery. Most projects cannot demonstrate that; this one can. The residual cost is
-`git blame`, which no gate can address — hence `DECISIONS.md`'s rule that a `styler` sweep
+`git blame`, which no gate can address — hence the rule in `DECISIONS.md` → "Packaging, CI and tooling" that a `styler` sweep
 lands as a commit of its own.
 
 **The case still to be made** is why the benefit exceeds all of that. "Consistent with modern
