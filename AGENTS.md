@@ -98,6 +98,13 @@ onto `main`, and releases are marked by tags.
   to build the news database, and a `##` heading containing something version-shaped makes it
   treat `##` as the *version* level — after which every other section title fails to yield a
   version and the whole file NOTEs. Name the version in the body text instead.
+- **Write claims that survive on someone else's machine.** A bare wall-clock number measured
+  here ("the example set runs in about nine seconds") can be contradicted by the reader's own
+  log, and has been. Give a ratio, a comparison to a fixed bar (CRAN's five-second
+  per-example limit), or just "faster". Absolute times are fine where the ratio is the point
+  — "about 6x faster, 1.66s to 0.28s per call" — and where a user will feel the difference;
+  they are noise when they only describe our hardware. Same rule for `cran-comments.md`,
+  where the reviewer *has* their own log.
 - **Order `NEWS.md` entries largest-impact first** within each section — changes to numeric
   output or return values, then behaviour changes, then bug fixes that only ever produced
   errors, then message-only fixes. Someone who stops reading after three bullets should have
