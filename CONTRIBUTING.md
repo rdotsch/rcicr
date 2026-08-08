@@ -130,12 +130,9 @@ Two conditions clear a squash.
    gate: on a PR with more it would report nothing while an unresolved thread sat on page two.
    GitHub is the gate; this is a convenience.
 
-`--paginate` on the findings listing is not optional: that endpoint pages at 30 and a
-review-heavy PR truncates silently without it. Pipe to `jq` rather than passing `--jq`, whose
-filter runs once per page. Piped output is merged into one array despite `gh api --help` saying
-"Each page is a separate JSON array" — that describes `--jq` and `--template`. Do not add
-`--slurp` on the strength of that sentence; it wraps the merged array in another array and
-breaks the filter.
+`--paginate` on the findings listing is not optional: that endpoint pages at 30, and a
+review-heavy PR truncates silently without it. The filter there is per-element, so it prints
+every finding whichever way the pages arrive.
 
 One green state, everything else not green: anything other than a 👍 newer than your trigger
 sends you to read the findings, whose worst case is a wasted look. Earlier versions of this
