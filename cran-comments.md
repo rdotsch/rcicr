@@ -7,7 +7,10 @@ Thank you for the review. This is 1.2.3, addressing each point.
 1. **"Functions to" at the start of the description** — removed.
 2. **References in the description** — added, as
    `Dotsch and Todorov (2012) <doi:10.1177/1948550611430272>` and
-   `Brinkman, Todorov and Dotsch (2017) <doi:10.1080/10463283.2017.1381469>`.
+   `Brinkman, Todorov and Dotsch (2017) <doi:10.1080/10463283.2017.1381469>`. The package
+   help page, regenerated for point 4 below, cites those two and a third, Dotsch, Wigboldus,
+   Langner and Van Knippenberg (2008) `<doi:10.1111/j.1467-9280.2008.02186.x>`, which the
+   previous page carried. All three DOIs were verified against CrossRef.
 3. **`T`/`F` → `TRUE`/`FALSE`** — all 11 occurrences, including the four argument defaults
    visible in the two `.Rd` files you quoted. No value changed.
 4. **Commented-out example lines** — removed. On `generateNoisePattern.Rd` we found none;
@@ -27,11 +30,15 @@ Thank you for the review. This is 1.2.3, addressing each point.
    removed one you did not see: `generateReferenceDistribution2IFC()` created an empty
    `./stimuli` on every call while writing nothing to it. Examples, tests and vignettes
    write only to `tempdir()`.
-7. **`par()` in `R/plotZmap.R` and in the vignette** — both restore now, through an
-   immediate `on.exit()`; `plotZmap()` closes its PNG device the same way. We use
-   `oldpar <- par(mar = ...)` rather than `par(no.readonly = TRUE)`, which additionally
-   captures derived parameters such as `pin` that the subsequent `plot.window()`
-   invalidates, so restoring them errors. This is the second form shown in your mail.
+7. **`par()` in `R/plotZmap.R` and in the vignette** — both restore now, using the two forms
+   your mail shows. `plotZmap()` takes the second: `oldpar <- par(mar = ...)` captures only
+   the parameter it sets, restored under an immediate `on.exit()` that also closes the PNG
+   device the function opens. We prefer that form in package code, because
+   `par(no.readonly = TRUE)` additionally captures derived parameters such as `pin`, which a
+   subsequent `plot.window()` invalidates, so restoring them errors. The vignette takes the
+   first: it records `par(no.readonly = TRUE)` in its setup chunk and restores it in a final
+   chunk, with an inner `par(mar = ...)` and restore around the one figure that needs
+   different margins.
 
 ## Submission type
 
