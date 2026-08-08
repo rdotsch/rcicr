@@ -2,7 +2,7 @@
 
 Why `rcicr` is the way it is: the measurement that ruled an option out, the alternative that
 looked obvious and was wrong, the thing that looks like a bug and is not. `NEWS.md` holds what
-changed for users, `BACKLOG.md` what is left, `CLAUDE.md` and `CONTRIBUTING.md` the
+changed for users, `BACKLOG.md` what is left, `AGENTS.md` and `CONTRIBUTING.md` the
 conventions — none of them has room for *why*.
 
 **Add an entry when a decision was not obvious**: a plausible alternative rejected, something
@@ -182,29 +182,21 @@ block of 1s, so it adds a second distinct value to the array while nothing has b
 The original `expect_length(unique(as.vector(png)), 1)` therefore measured the backend as much
 as the drawing, and `test-plotZmap.R` now drops any alpha plane before counting.
 
-This is not theoretical: it is the only assertion that failed when the suite first ran on
-macOS (R-hub R-devel, 2026-07-28) — 220 passed, that one reported 2 distinct values where it
-wanted 1. It was also the only assertion in the suite counting distinct values rather than
-comparing two renders, which is why nothing else moved; every image-to-image comparison stays
-green because both sides gain the same plane. Prefer the comparison form for new tests.
-
-The replacement keeps the full detection power — verified against synthetic 1-, 2-, 3- and
-4-channel images, painted and unpainted: every unpainted layout collapses to one value, every
-painted one still yields two.
+It was the *only* assertion in the suite counting distinct values rather than comparing two
+renders, which is why it was also the only one that failed when the suite first ran on macOS:
+every image-to-image comparison stays green because both sides gain the same plane. Prefer
+the comparison form for new tests.
 
 **The absolute pixel value is device-dependent too, and must not be asserted.** The first
-attempt at this fix also pinned the flat value to the background grey, on the reasoning that
-"uniform" alone would admit a `plotZmap()` flooding the image with a colour of its own. That
-assertion passed on cairo and failed on macOS, which renders `bgimage` 0.5 to roughly 0.573
-where cairo gives 0.502 — colour management, and precisely the same mistake the alpha fix was
-correcting, made one line below it. The check is now an *ordering*: the same render over a
-darker background must come out darker. Ordering survives any monotone transfer function,
-which is all a colour pipeline can sanely be.
+attempt at this fix pinned the flat value to the background grey — and failed on macOS, which
+renders `bgimage` 0.5 at ~0.573 where cairo gives 0.502. That is colour management, and
+precisely the same mistake the alpha fix was correcting, made one line below it. The check is
+now an *ordering*: the same render over a darker background must come out darker, which
+survives any monotone transfer function.
 
-The general form, and the reason this cost two CI rounds rather than one: **when a test reads
-pixels back from a graphics device, every absolute property of those pixels belongs to the
-device.** Channel count and value are both device-dependent; only relationships between
-renders — this differs from that, this is darker than that — are portable.
+**The general form:** when a test reads pixels back from a graphics device, every absolute
+property of those pixels belongs to the device — channel count and value alike. Only
+relationships between renders are portable.
 
 ### The recovery test uses a permutation null, not a parametric one
 `test-recovery.R` gives a simulated observer a known template and asserts `generateCI()`
@@ -356,12 +348,6 @@ reporting work** — no token means no badge, no per-PR comments, and `codecov.y
 stay inert. What it buys is narrower and more useful: a red `main` now means the package is
 broken. The `token:` input is left wired so adding the secret later restores reporting.
 
-### `.Rbuildignore` was itself git-ignored for a decade
-The mechanics are in `CLAUDE.md` and `CONTRIBUTING.md`. What is easy to reintroduce:
-`.Rbuildignore` was listed in `.gitignore` from 2016 until 2026, an unintentional
-RStudio-template leftover, so it never shipped to CI or to other contributors at all. Do not
-re-add it.
-
 ### `^\.git$` is in `.Rbuildignore` because a worktree's `.git` is a *file*
 `R CMD build` drops `.git` on its own, so the entry looks redundant. It is not: the built-in
 exclusion matches a **directory** named `.git`, and in a `git worktree` checkout `.git` is a
@@ -373,6 +359,9 @@ This is not hypothetical — it reached win-builder. Building the tag in a workt
 obvious way to honour "never build from `main` HEAD") returned 2 NOTEs where the same commit
 built at the repo root returned 1. Reproduced both ways before believing it: worktree tarball
 contains `rcicr/.git`, repo-root tarball contains no match.
+
+Separately: `.Rbuildignore` was itself listed in `.gitignore` from 2016 until 2026, an
+RStudio-template leftover, so it never reached CI or other contributors. Do not re-add it.
 
 ### Dependabot watches the actions, not the R packages
 `.github/dependabot.yml` covers `github-actions` and nothing else. That is not an oversight,
@@ -394,16 +383,11 @@ C libraries they bind to — **libpng** (`png`), **libjpeg** (`jpeg`), **GDAL/GE
 nothing this package does can affect them. Dropping `raster` (`BACKLOG.md` item 34) is the only
 lever that shrinks it.
 
-**The actions genuinely needed watching.** Thirteen third-party actions were in use, twelve on
-floating major tags (`@v2`, `@v6`) and exactly one — `codecov/codecov-action` — pinned to a
-full SHA, almost certainly a reaction to the Codecov uploader compromise. A floating tag means
-whoever controls that repository can change what runs in CI at any time; that is the
-supply-chain surface here with real incident history, and it is the one Dependabot supports.
-
-Updates are **grouped into a single PR** (`patterns: ["*"]`, limit 1). Every PR to `main` runs
-`R CMD check` on four platforms plus the reproducibility gate, and `.github/workflows/` is
-deliberately *not* on the gate's inert allowlist, so ungrouped updates would spend several full
-CI rounds bumping a handful of version tags.
+**The actions genuinely needed watching.** Twelve of the thirteen in use were on floating
+major tags, so whoever controls those repositories could change what runs in CI at any time —
+the one supply-chain surface here with real incident history, and the one Dependabot supports.
+Updates are **grouped into a single PR**, because `.github/workflows/` is deliberately not on
+the gate's inert allowlist, so ungrouped bumps would each spend a full CI round.
 
 ### R-hub runs on `workflow_dispatch` only, never on push
 The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
@@ -413,90 +397,64 @@ odd platforms nobody develops on — and running it per-PR would spend a matrix 
 a question nobody asked yet, competing with the ~11-minute reproducibility gate that *is*
 required on every code PR.
 
-This entry used to justify that by saying the everyday answer was "already covered by
-`R-CMD-check.yaml` on release and devel". That was wrong, and expensively so: the matrix
-varied only the *R version* and pinned `runs-on: ubuntu-latest`, so what it actually covered
-was one platform twice. The hole stayed invisible until the first R-hub dispatch, on
-2026-07-28 while preparing the CRAN resubmission, failed a `plotZmap()` test on macOS that
-had been green on Linux since `b7cb6d9` — see the alpha-channel entry under Testing. CRAN
-builds on macOS, so a platform-specific failure would have landed as a submission ERROR.
-Both platforms CRAN gates on are now in the everyday matrix on release — `macos-latest`, then
-`windows-latest` — and R-hub no longer stands in for per-platform coverage at all.
+**R-hub does not stand in for per-platform coverage, and once wrongly appeared to.** This
+entry used to justify the per-PR gap by saying the everyday answer was "already covered by
+`R-CMD-check.yaml` on release and devel". That matrix varied only the *R version* against a
+pinned `ubuntu-latest` — one platform twice. The hole stayed invisible until the first R-hub
+dispatch failed a `plotZmap()` test on macOS that had been green on Linux for months (see
+the alpha-channel entry under Testing); CRAN builds on macOS, so it would have landed as a
+submission ERROR. **The lesson generalises: "already covered by X" is a claim about what X
+runs, and worth reading X to check rather than repeating.**
 
-Windows was added on different grounds from macOS, and the distinction is the useful part.
-macOS had never been run; Windows had, and passed, on that same R-hub dispatch and on
-win-builder twice. So Windows was never an untested hole — it was a *late* one, checked only
-at release, which is the same lateness the macOS row exists to fix. Adding it also puts the
-pinned z-map values in `test-regression-baseline.R` in front of a third platform and a
-different BLAS.
-
-The lesson generalises past this workflow: "already covered by X" is a claim about what X
-runs, and it is worth reading X to check rather than repeating.
-
-Adding to that matrix is safe; renaming in it is not. `ubuntu-latest (release)` and
-`ubuntu-latest (devel)` are required status checks matched **by name**, so a rename makes the
-required check never report — which GitHub reads as pending forever, blocking every PR. Same
-trap as the `paths:` filter on the reproducibility gate.
+Both platforms CRAN gates on are now in the everyday matrix. Windows was added on different
+grounds from macOS, and the distinction is the useful part: macOS had never been run, whereas
+Windows had passed on R-hub and win-builder — it was not an untested hole but a *late* one,
+checked only at release.
 
 The cost of `workflow_dispatch`-only is that the workflow is invisible until it reaches the
 **default branch** — GitHub offers no "Run workflow" button for a file that exists only on a
-feature branch. So it merges to `main` ahead of the release it is meant to check, not
-alongside it.
-
-### The 75,000-line artifact commit
-One branch carried ~75,000 lines of committed `R CMD check` artifacts across three commits,
-unnoticed because only the diffs of edited files were ever read — hence the `git diff --stat
-main...HEAD` habit in `CONTRIBUTING.md`. `pre-commit.ci` caught it, and both patterns are now
-in `.gitignore` and `.Rbuildignore`.
+feature branch. So it merges to `main` ahead of the release it is meant to check.
 
 ---
 
 ## Releases and git
 
-The conventions and their rationale are in `CLAUDE.md` — trunk-based with tags and no
+The conventions and their rationale are in `AGENTS.md` — trunk-based with tags and no
 `develop` branch, `.9000` on `main` between releases, tarballs built from the tag, squash
 merges, delete merged branches, `NEWS.md` ordered largest-impact first. Two things learned
 the hard way that those entries do not cover:
 
-- **Squashing is what made the 75,000-line artifact mistake above cheap** — `main` only ever
-  saw the final tree, so no history rewrite was needed.
+- **Squash merging is what makes a bad commit cheap.** One branch here carried ~75,000 lines
+  of committed `R CMD check` artifacts across three commits; `main` only ever saw the final
+  tree, so no history rewrite was needed. (Both patterns are now in `.gitignore` and
+  `.Rbuildignore`, and the `git diff --stat main...HEAD` habit is in `CONTRIBUTING.md`.)
 - `git push origin --delete a b` is **atomic**: one stale name fails the whole command and
   takes the other branch down with it. (`gh pr merge --delete-branch` has already removed the
   remote branch anyway.)
 
 ### External checks run on the release branch; the tag and `.9000` still precede acceptance
-At 1.2.1 the order was: merge the release PR, tag, publish the GitHub release, bump to
-`.9000` — and only *then* run win-builder and R-hub. So the check results landed on a
-development tree, and the release commit and its tag recorded no evidence that the tree they
-name had passed anything. `usethis:::release_checklist()` puts `check_win_devel()` and
-"Update `cran-comments.md`" under **Prepare for release**, before the version is finalised,
-and leaves the tag (`use_github_release()`) and the `.9000` reopen (`use_dev_version()`)
-until after "Wait for CRAN… Accepted". The checks now run in step 2 of
-`CONTRIBUTING.md` → "Releasing", against the release branch.
+The procedure is in `CONTRIBUTING.md` → "Releasing", step 2. What is not obvious is why it
+can work at all.
 
-**The circularity that appears to force the old order is not real.** It looks as though
-results cannot be recorded in the commit they describe, because writing them changes the
-tree and so invalidates the tarball that was checked. But `cran-comments.md` is
+**The circularity that appears to force checks after the tag is not real.** It looks as
+though results cannot be recorded in the commit they describe, because writing them changes
+the tree and so invalidates the tarball that was checked. But `cran-comments.md` is
 `.Rbuildignore`d and verifiably absent from the built tarball, so editing it produces the
 same tarball byte for byte. It is not a package artifact at all — it is the text pasted into
-the "Optional comment" field of the CRAN submission form.
+the "Optional comment" field of the CRAN submission form. At 1.2.1 the checks ran *after* the
+tag and the `.9000` reopen, so the results landed on a development tree and the tag recorded
+no evidence that the tree it names had passed anything.
 
-**What is deliberately *not* copied from usethis: tagging and reopening `.9000` still happen
-before CRAN accepts.** Two reasons. The `.9000` suffix is what selects `--quick` over the
-full ~20-minute battery, so holding `main` at a clean version across the weeks CRAN can take
-would run the full gate on every unrelated PR in that window. And a rejection means shipping
-X.Y.Z+1 anyway, leaving the tag naming a tree that was never on CRAN — already true of
-`v1.2.0`, so the repository tolerates that outcome cheaply.
+**Deliberately *not* copied from `usethis:::release_checklist()`: tagging and reopening
+`.9000` still happen before CRAN accepts.** The `.9000` suffix is what selects `--quick` over
+the full ~20-minute battery, so holding `main` at a clean version across the weeks CRAN can
+take would run the full gate on every unrelated PR in that window. And a rejection means
+shipping X.Y.Z+1 anyway, leaving the tag naming a tree that was never on CRAN — already true
+of `v1.2.0` and `v1.2.2`, so the repository tolerates that cheaply.
 
-This variant is in one respect tighter than usethis's: that checklist runs win-builder while
-`DESCRIPTION` still carries `.9000` and never re-checks after `use_version()`, so the
-recorded results are for a different version string than the one submitted. Checking the
-release branch, where the version is already clean, avoids that.
-
-Not applied retroactively to 1.2.1. `cran-comments.md` never being in the tarball is exactly
-what makes a 1.2.2 unnecessary: the already-checked `rcicr_1.2.1.tar.gz` is what should be
-submitted, and re-cutting a release to carry updated comments would produce an identical
-tarball at the cost of a fresh round of external checks.
+This variant is in one respect tighter than usethis's, which runs win-builder while
+`DESCRIPTION` still carries `.9000` and never re-checks after `use_version()` — recording
+results for a different version string than the one submitted.
 
 ### GitHub releases carry notes only — the built tarball is not attached
 Asked and settled at the 1.2.1 release. A release page already offers "Source code (tar.gz)",
@@ -518,6 +476,84 @@ bytes sent to CRAN are not archived anywhere and can only be rebuilt, into somet
 marginally different. That is accepted: what has to be reproducible is the *tree*, which the
 tag pins exactly, and which is what both the release gate and `R CMD check` actually operate
 on. Nothing about a result depends on the timestamp in a tarball header.
+
+### Answer CRAN from the review text, and never send them a question a sweep can answer
+CRAN's review of 1.2.1 listed two `.Rd` files under "some code lines in examples are
+commented out". Working from a summary that had kept one of them, 1.2.2 replied that we could
+not find the commented line and **asked the reviewer which line she meant** — while the fix
+for the file she had named correctly sat in the same commit, made under a different point.
+Two further drafts repeated it.
+
+Three rules came out of that, and the first two are in `AGENTS.md`: log every reply verbatim
+in `notes/cran-review-<version>.md` and answer from the file; re-verify every claim in
+`cran-comments.md` against the tree rather than carrying it forward. The third is a matter of
+tone: **a question to the reviewer costs a round trip measured in weeks, and a sweep costs
+minutes.** Sweep everything the point could apply to, then report what was found.
+
+The same instinct applies in reverse — **do not explain a note the reviewer does not have.**
+`cran-comments.md` carried a paragraph answering a `medium.com` 403 that appears only on our
+local check, on no external check for 1.2.3, and not in CRAN's own pretest of 1.2.1. It was
+removed; the link stays in `README.md`, because `README.md` ships and removing it would
+invalidate the built tarball and force all five external checks to re-run for something no
+CRAN-side check has ever raised (`BACKLOG.md` item 42).
+
+### Claims must survive on someone else's machine
+`cran-comments.md` twice stated a total runtime for the example set — "about nine seconds",
+then "about fifteen" — measured here. Both win-builder runs report 18s, so the reviewer's own
+log would have contradicted the letter arguing for the package. The rule is in `AGENTS.md`;
+what it is *not* is a ban on numbers. A ratio survives, and so does a comparison to a fixed
+bar such as CRAN's five-second per-example limit; `NEWS.md`'s "about 6x faster, 1.66s to
+0.28s per call" earns its place because a user feels that difference and the ratio holds
+anywhere. A bare absolute describes our hardware to a reader who has their own.
+
+### `BACKLOG.md` carries no project state
+It held a "state as of" block plus a "Last updated" narrative — some 78 lines describing where
+the release stood. Every fact in them lived somewhere with a better claim: `NEWS.md`,
+`cran-comments.md`, `CONTRIBUTING.md` → "Releasing", and the open PRs. **It drifted four
+times, each within a day of a release**, which is what a duplicated fact does rather than what
+a careless author does; the fourth fix was to write it more carefully, and it was wrong within
+the hour. Deleted, and replaced by four lines that name no facts. A *hold condition* is
+backlog information and stays on the item it holds; the project's current position is not.
+
+Same reasoning as deleting the hand-maintained `Version:`/`Date:` table from
+`man/rcicr-package.Rd` in 1.2.3: the way to keep a fact current is to stop writing it twice.
+
+### The backlog moves to GitHub Issues, after the stale issues are triaged
+Approved 2026-08-08. `BACKLOG.md` becomes the issue tracker; `BACKLOG.md` itself goes.
+The work is `BACKLOG.md` item 44, gated on item 19's remaining sweep.
+
+**The tracker is treated as a working surface, not a curated public product surface** — so
+internal maintenance work belongs in it alongside user-visible bugs, as in r-lib repos. The
+alternative considered was keeping the tracker for things a researcher would recognise as
+affecting them and holding chores elsewhere; rejected because two backlogs is the same
+duplication problem one layer up, and because the drift this file produced came precisely
+from status living somewhere a human has to remember to update.
+
+**The ordering is not incidental.** All 25 open issues date from 2016–2017, and opening ~18
+new ones into that would bury the triage under the migration. It also matters which half of
+this carries the value: **the sweep alone fixes the thing that actually costs something** —
+a tracker that reads as abandoned in 2017 while the package is being resubmitted to CRAN.
+The migration is the smaller remaining gain, which is why it is sequenced second rather than
+bundled.
+
+What deliberately does **not** become an issue: the "already correct — do not re-fix" entries
+(items 17, 25, 27, 30). Those are decisions and belong here. Item 17 was already duplicated
+in this file, which is what made the misfiling visible.
+
+**Known cost, accepted:** changes to the plan stop going through a reviewed PR, because issue
+edits are not reviewable. For a single maintainer that is close to zero.
+
+### `CLAUDE.md` is a stub that imports `AGENTS.md`, not a symlink
+Claude Code reads `CLAUDE.md` and does not read `AGENTS.md`, so renaming the conventions file
+in #166 silently stopped it loading in every agent session until 2026-08-08 — including the
+rules on `NEWS.md` headings, `.Rbuildignore` and `test-fixed-bugs.R`, each of which costs a
+release when broken.
+
+The documented fixes are a `CLAUDE.md` containing `@AGENTS.md`, or `ln -s AGENTS.md
+CLAUDE.md`. **The symlink was rejected**: it requires Administrator privileges or Developer
+Mode on Windows, and this package has Windows contributors and a Windows CI runner. The
+import is a plain file that git and every platform treat identically, and it leaves room for
+Claude-specific instructions below it. `AGENTS.md` stays the single source of truth.
 
 ### `ChangeLog` gets a pointer entry, not a duplicate
 `NEWS.md` supersedes it, but someone opening `ChangeLog` first would otherwise conclude the
@@ -567,16 +603,11 @@ sibling implementation rather than in any documentation. **When two documented c
 conflict, run the one that has been executing for a decade.**
 
 ### `plotZmap(mask = ...)` was applied rather than deprecated
-It had been documented since 2016 and never worked: commit `18e07cb` landed the import half as
-*"add mask import ... (todo: applying the mask)"*, the todo was never picked up, and the
-feature was implemented for `generateCI()` two weeks later instead. The pre-refactor monolith
-at `d93cb2b^` confirms nothing was lost in the 2017 file split.
-
-Filed as a behaviour change, but the risk that framing guards against could not materialise:
-nothing has ever been masked, so no published z-map depends on the current output. GitHub code
-search finds no caller of `plotZmap()` outside this repository — weak evidence on its own,
-since analysis scripts usually live in OSF supplements, but enough alongside the rest.
-Deprecating would have removed a documented feature on the grounds that it was never built.
+It had been documented since 2016 and never worked — the import half landed with an explicit
+"todo: applying the mask" that was never picked up. Filed as a behaviour change, but the risk
+that framing guards against could not materialise: nothing has ever been masked, so no
+published z-map depends on the current output. Deprecating would have removed a documented
+feature on the grounds that it was never built.
 
 **The generalisable part:** "this changes rendered output" is not by itself an argument for
 leaving something broken. Ask who is currently *relying* on the broken output. Here the answer

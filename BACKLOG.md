@@ -5,47 +5,10 @@ breaking the API that researchers depend on**.
 
 **Compiled:** 2026-07-26, against `main` @ `b6ab269` (v1.0.1).
 
-> **State on 2026-08-07. CRAN reviewed 1.2.1 and asked for changes; 1.2.2 answers them and
-> is released.** The reply was a request, not a rejection on the merits: seven points, all
-> of them mechanical apart from one. `cran-comments.md` opens with a point-by-point
-> response.
->
-> **1.2.2 is tagged `v1.2.2` and published as a GitHub release**, with every external check
-> in and recorded: win-builder 1 NOTE on both R-devel and R-release, R-hub `Status: OK` on
-> all three platforms. **The one step left is the maintainer resubmitting to CRAN
-> personally**, built from the tag rather than from `main` — `main` now carries `.9000`
-> again, which a submitted tarball must never do.
->
-> **The one that mattered: no function may write to a default path.** `stimulus_path`,
-> `targetpath` and `zmaptargetpath` have lost their defaults (`./stimuli`, `./cis`,
-> `./zmaps`) and are now required whenever the call actually writes. This is a **breaking
-> change**, the first this package has made, and `NEWS.md` leads with it and the migration.
-> It closes **item 24** for free. Numerically inert: the release gate reports 135 checks
-> identical against v1.2.1, `max|d| = 0` everywhere.
->
-> The rest: the `DESCRIPTION` description reworded and given two DOI references; all 11 bare
-> `T`/`F` replaced (part of item 13); every `\dontrun{}` and `\donttest{}` removed so that
-> **every example now runs**, in about nine seconds total; `plotZmap()` restores `par()`;
-> the walkthrough vignette resets `par()` without `on.exit()`.
->
-> **Item 34 stays held**, for the same reason as before: a CRAN request is answered by a
-> version addressing what was asked, not one that also swaps the plotting backend under
-> three rendered outputs. **Item 21** still announces availability, which is not yet true.
->
-> Open items are **1, 20, 21, 25, 27, 30, 31, 33, 34** in the table below, plus
-> **13–15** and **36**, which are kept out of it.
-
-**Last updated:** 2026-07-28 — P0 items 2–8, plus 9, 10, 11, 12, 16, 18, 19 and 22, fixed
-and released as **v1.1.0**; see `NEWS.md`. All mechanical CRAN blockers are closed; what
-remains in item 1 is the submission decision itself. **Items 23–25 were opened by a
-test-intent audit on 2026-07-27**; 23 is now fixed (the mask is applied, and a second bug
-in its boolean conversion was found and fixed with it), 24 is cosmetic, 25 is a logged
-non-fix. **Items 28–31 were opened by a full source review on 2026-07-28**; 28 and 29 are
-fixed, 30 is a documentation correction with optional follow-up, 31 is an unhandled edge
-case. **Item 35 was opened by the first R-hub run on 2026-07-28** — the suite's only
-non-portable assertion, failing on macOS — and is fixed and released as **v1.2.1**, which is
-the tree submitted to CRAN on 2026-07-29. Items 13–15 are the only substantive untouched
-work; they were held until after the submission and are now open.
+> **What is in flight:** see the newest section of `NEWS.md`, the open pull requests,
+> and `cran-comments.md` for the state of the CRAN submission. Hold conditions are
+> recorded on the items themselves, not here — this file carries what is left to do,
+> not where the project currently stands.
 
 **Reproducibility, verified 2026-07-28 — and re-checkable on demand.**
 `tools/compare-release-output.R` installs v1.0.1 (`b6ab269`, the last release before 1.1.0) from its
@@ -102,32 +65,32 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 
 ## Suggested order of attack
 
-**All seven P0 code bugs (items 2–8) are fixed, along with every P1 *code* item — the
-dependency, toolchain, parallelism, test-coverage and vignette work — all released as
-v1.1.0.** Items 1, 20 and 21 are not code: item 20's checklist has now been run twice and
-**1.2.2 is tagged and released on GitHub**, so item 1 waits on the maintainer's resubmission
-and then on CRAN's reply, and item 21 waits on the outcome. **Item 23 is fixed** — the `plotZmap()` mask is applied, under a "Behaviour change"
-heading in `NEWS.md` — as is **item 32**, the `.Rdata` field that was capturing
-`generateCI()`'s z-map `sigma`, caught by the release gate on its first full run. **Items 37,
-38 and 39 are all fixed** — the submission unblocked them, and they went in that order: the
-error message, the `load()` guards it exposed, then the tests that would have caught both.
-The rest of the table is triage: items 27, 30, 31, 33 and 34. Items **13, 14 and 15** (modernize the
-R code, better errors, docs and onboarding) are the only substantive work still untouched —
-they are the backlog proper for after CRAN, and are deliberately kept out of the table.
-**Item 36** (tidyverse style as a v2 breaking change) is out of the table too, and is not
-scheduled at all — see "Beyond v1" at the end.
+**Every P0 code bug and every P1 *code* item is fixed and released** — the table below
+carries each one struck through with what it turned out to be; `NEWS.md` has the
+user-facing version.
+
+**Open and actionable:** **item 44 is the highest-priority non-CRAN item** — move this file to
+GitHub Issues, gated on item 19's remaining issue sweep. Items **27, 30, 31, 33** and **34**
+are triage, and **40** through **43** are small; 27, 30 and 25 should become `DECISIONS.md`
+entries under 44 rather than issues. Items **1, 20** and **21** are not code — 1 and 21 wait on
+CRAN, and 20 is a checklist that is re-run for every submission rather than closed.
+
+Items **13, 14 and 15** (modernize the R code, better errors, docs and onboarding) are the
+only substantive work still untouched. They are deliberately kept out of the table: they are
+the backlog proper for after CRAN, not a queue position. **Item 36** (tidyverse style as a v2
+breaking change) is out of it too and is not scheduled at all — see "Beyond v1" at the end.
 
 | # | Item | Why | Size |
 |---|---|---|---|
 | ~~9~~ | ~~Drop 13 unused `Imports`~~ | **Done** — the 13 unused declarations are gone; `DESCRIPTION` now imports 15 packages. Removed the install-failure risk and the `R CMD check` NOTE that would have blocked resubmission | S |
 | ~~16~~ | ~~Pointless 1.5 GB array exported to every worker~~ | **Done** — the per-worker array copy is gone. Addresses, but does not fully close, issue #12: the `ncores == 1` path and `img_size` scaling remain, which is why #12 stays open | S |
 | ~~10~~ | ~~Replace deprecated `progress_estimated()` / `rbernoulli()` / `citEntry()`~~ | **Done.** The `rbernoulli()` replacement had to preserve the random *stream*, not just the distribution — it is `runif(n) > (1 - p)`, and the obvious `rbinom(n, 1, p)` would have silently changed every infoVal computed from a given seed | S |
-| 1 | CRAN archived | **1.2.1 was submitted 2026-07-29 and the review asked for seven changes; 1.2.2 answers them and is tagged `v1.2.2`.** All external checks are in and recorded in `cran-comments.md`. What remains is the maintainer resubmitting personally, from the tag's tarball — nothing else here is actionable until CRAN replies | M |
+| 1 | CRAN archived | **Reinstatement is in progress and is not a code task.** `cran-comments.md` carries the response to CRAN's review and the external check results; `CONTRIBUTING.md` → Releasing carries the steps. Only the maintainer can submit, and nothing else here is actionable until CRAN replies | M |
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
 | ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | **Run twice now — for 1.2.1 and again for 1.2.2**, which is what the checklist is for. At 1.2.2: `--as-cran` 0 errors / 0 warnings / 2 expected NOTEs, win-builder 1 NOTE on both R-devel and R-release, R-hub `Status: OK` on all three platforms. Keep it: every further round of CRAN review means running it again | M |
+| 20 | CRAN resubmission checklist | **Never closes.** The checklist lives in `CONTRIBUTING.md` → Releasing and is re-run in full for every submission — local `--as-cran`, win-builder on both R-devel and R-release, and R-hub on all three platforms, with the results recorded in `cran-comments.md` in the release PR itself. Every further round of CRAN review means running it again | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
@@ -146,6 +109,11 @@ scheduled at all — see "Beyond v1" at the end.
 | ~~37~~ | ~~Error paths are largely untested~~ | **Done** — `test-error-paths.R`, suite 291 → 323. Covers the length mismatch, every `.Rdata` "did not contain X" guard in both functions, all four mask-import failures, unreadable and non-square base images, and the `targetci` path that was never exercised. Each was confirmed to fire *its own* guard rather than an incidental error | M |
 | ~~38~~ | ~~Two error messages paste the base image matrix, not its label~~ | **Done** — both sites now name `baseimage`. The defect was worse than logged: `paste0()` is vectorized, so it built one complete message *per pixel*, and `stop()` concatenated them — 1,024 copies and 8,190 characters at 32px, ~7 MB at 512px. Only error text changed; the gate reports this tree still reproduces v1.2.1 | S |
 | ~~39~~ | ~~Two of the four `load(rdata)` sites did not guard their arguments~~ | **Done** — preventive, no live collision. `computeInfoVal2IFC()` restored 3 of its 5 arguments and `computeCumulativeCICorrelation()` none. The one that mattered: `target_ci` is read after a *second* `load()`, so a file carrying that name would have scored a different CI and returned a plausible number, not an error | S |
+| 41 | `generateStimuli2IFC()` leaves the user's RNG stream where it landed | **Open, triage.** `set.seed(seed)` is never undone, so a script's next `runif()` differs depending on whether it generated stimuli first. Same family as CRAN's "do not change the user's state", though here the user asked, via a documented `seed` argument. Restoring `.Random.seed` on exit changes nothing this package computes — but it does change what a user's *next* draw returns, so it needs the gate run and a `NEWS.md` note | S |
+| 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
+| 42 | The superseded Medium link is the only URL that ever 403s a checker | **Open, triage.** `README.md:68`. Local `--as-cran` flags it; for 1.2.3 no external check did — clean on both win-builder runs and all three R-hub platforms — but win-builder *did* flag it on 1.2.1, so it tracks the checker's network, not the version. The README already calls the post superseded by the vignette. Not done now because `README.md` ships in the tarball, so removing it would force every external check to re-run | S |
+| 43 | The vignette's `par()` bookend restores what nothing changed | **Open, triage.** `old_par <- par(no.readonly = TRUE)` at the top of the walkthrough and `par(old_par)` at the end, when the only `par()` mutation is inside the `show()` helper, which already saves and restores narrowly. It is also the form whose restore can error on `pin`. `on.exit()` is not an option — chunk code is top level, not a function. Kept for now because the echoed setup chunk teaches the pattern; CRAN named this file, so any change must still visibly reset `par()` | S |
+| 44 | **Move the backlog to GitHub Issues and delete this file** | **Open, P1 — highest-priority non-CRAN item.** All 25 open issues date from 2016–2017 and none comes from the modernization, so the tracker reads as a package abandoned in 2017. This file's status also lives in two hand-maintained places that have now disagreed six times. **Prerequisite: item 19's remaining sweep** — triaging 25 stale issues after opening ~18 new ones makes the tracker worse first. Items 17, 25, 27 and 30 go to `DECISIONS.md` instead of becoming issues. Held until item 1 settles | M |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -584,7 +552,10 @@ reporting is wanted later, add the token and set this back to `true` — the fir
 above is the recipe. The point of this change is narrower: a red `main` should mean the
 package is broken, and it now does.
 
-### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**
+### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**, except the sweep
+
+> **The remaining sweep is the prerequisite for item 44.** The eight below are closed; the
+> other ~25 open issues have never been triaged, and item 44 cannot start until they are.
 
 Not a code task, but it is the largest gap between what the package *is* and what a
 prospective user *sees*. As of 2026-07-27 the tracker has 30 open issues, and at least
@@ -614,9 +585,12 @@ package's public health signal and it currently understates the state of the cod
       was the dominant cost, but the `ncores == 1` serial path in item 11 is still open and
       per-worker memory still scales with `img_size`. Comment with what changed and what
       did not, and leave it open, or close it explicitly scoped to the array copy.
-- [ ] Sweep the remaining ~22 open issues the same way — some are likely stale or already
-      resolved by earlier releases. This has not been done; the eight above are only the
-      ones this modernization pass touched directly.
+- [ ] **Sweep the remaining 25 open issues the same way — prerequisite for item 44.** Some
+      are likely stale or already resolved by earlier releases. Not done; the eight above
+      are only the ones this modernization pass touched directly. All 25 date from 2016–2017
+      and none is a bug report — the real bugs were the batch above. A partial triage exists
+      in `notes/issue-triage.md` (9 of 25 read). **Post nothing without the maintainer's
+      approval**: comments and closes notify subscribers and are outward-facing.
 
 Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
 
@@ -630,7 +604,7 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 > tests ship and get run. The fix (item 35) landed on `main` **after** that tag, which is why
 > 1.2.1 exists at all. CRAN's incoming checks are mainly Linux and Windows so it might not
 > have blocked acceptance, but macOS binaries are checked on the farm after publication, and a
-> package returning from archival should not arrive already red. See `DECISIONS.md` → Testing
+> package returning from archival should not arrive already red. See [`DECISIONS.md`](DECISIONS.md#the-release-gate-runs-the-old-code-the-golden-master-only-re-runs-ours)
 > for the underlying rule.
 >
 > **All three external checks ran against the 1.2.1 tarball and are recorded in
@@ -871,6 +845,69 @@ checklist at the top of this item, which is the live one.
 
 ---
 
+### 44. Move the backlog to GitHub Issues and delete this file **[verified] [own review]**
+
+**Approved 2026-08-08, P1 — the highest-priority non-CRAN item. Size M.** Sequenced *after*
+item 19's sweep and the cleanup of the existing issues; see
+[`DECISIONS.md`](DECISIONS.md#the-backlog-moves-to-github-issues-after-the-stale-issues-are-triaged)
+for the decision and what was weighed. The tracker is treated as a **working surface**, so
+internal maintenance work belongs in it alongside user-visible bugs.
+
+**The tracker currently misrepresents the project.** All **25** open issues date from
+2016–2017; **not one** comes from the modernization. 77 are closed, the labels are GitHub's
+defaults, and there is no priority scheme. Someone landing on rcicr's issues sees a package
+abandoned in 2017 — no CRAN resubmission, no 43-item plan, no sign of this year's work. That
+is a worse public signal than item 19 described, and item 19 was called "the largest gap
+between what the package *is* and what a prospective user *sees*".
+
+**This file also keeps drifting, structurally.** Its status lives in two hand-maintained
+places — the order-of-attack table and each item's own heading — and they have disagreed
+**six times**, most recently item 38's heading reading open for a fix released days earlier,
+and item 19's ✅ sitting above an unchecked box. In a tracker, status is not a field someone
+remembers to update; it is the issue's state. The failure mode disappears rather than being
+managed.
+
+**Standard practice agrees.** For OSS R packages the near-universal split is Issues for work
+items, with in-repo files for conventions, decisions and user-facing history. r-lib and the
+tidyverse run this way. An in-repo backlog is a solo-project pattern.
+
+**Three jobs, three destinations.** This file is not one thing:
+
+| Job | Destination | Roughly |
+|---|---|---|
+| Open work items | **GitHub Issues** | ~750 lines |
+| "Already correct — do not re-fix", and why | **`DECISIONS.md`** | items 17, 25, 27, 30 |
+| Record of finished work | **`NEWS.md`, git, closed issues** | ~834 lines |
+
+Item 17 is the tell: "InfoVal formula, verified correct, do not re-fix" is already an entry
+in `DECISIONS.md`. It was never backlog, and neither are its neighbours.
+
+**Preparation, in order:**
+
+- [ ] **Item 19's remaining sweep — the hard prerequisite.** Triaging 25 stale issues *after*
+      opening ~18 new ones means the tracker gets worse before it gets better. Partial work in
+      `notes/issue-triage.md`. Nothing may be posted without the maintainer's approval.
+- [ ] **Create priority labels.** P0–P3 exist only as prose here; without them, priority is
+      the one thing the migration would lose.
+- [ ] **Rehome items 17, 25, 27 and 30 to `DECISIONS.md`** rather than opening issues for
+      them — they are settled non-fixes, not work.
+- [ ] **Rehome item 20's accumulated check results.** At 172 lines it is the largest section
+      in this file and roughly two-thirds of it duplicates `cran-comments.md` and
+      `notes/cran-review-*.md`. Keep the checklist, drop the per-submission record.
+- [ ] Then open one issue per remaining open item, delete this file, and leave a one-line
+      pointer in `AGENTS.md`.
+
+**Gated on the sweep, not on CRAN.** The maintainer's sequencing is sweep → cleanup →
+migrate. The sweep itself is outward-facing — comments and closes notify people who filed
+these in 2016 — so the proposed text for all 25 goes to the maintainer for approval before
+anything is posted, per the convention already recorded on item 19.
+
+**What it costs, honestly:** a change to the plan stops going through a reviewed PR, since
+issue edits are not reviewable. For a single maintainer that is close to zero, but it is a
+real property being given up. Agent access also becomes `gh issue list --json ...` rather
+than one file read — which is arguably better, since it queries real state instead of a table
+that has been wrong six times.
+
 ## P2 — Usability and maintainability
 
 ### 13. Modernize the R code itself
@@ -916,7 +953,7 @@ checklist at the top of this item, which is the live one.
       report; take it as a to-fix list, not a gate, and set the gate at "no new lints".
 - [ ] **`styler` — all-or-nothing, and still deliberately deferred.** It would reformat
       nearly every file in one sweep and destroy `git blame`. If it ever happens it goes in
-      as a commit of its own, changing nothing else — see `DECISIONS.md`. Neither tool is
+      as a commit of its own, changing nothing else — see [`DECISIONS.md`](DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own). Neither tool is
       in the pre-commit config, and that is why.
 - [ ] `generateCI()` is ~440 lines mixing CI computation, masking, scaling, PNG writing,
       z-maps, and parallelism. Extract the internal helpers (`applyMask`, `applyScaling`,
@@ -1247,7 +1284,7 @@ Fixed in #151 (`e0b74a7`) and released as **1.2.1**; the submitted tarball is bu
   where cairo gives 0.502 (colour management). That repeated the mistake being corrected, one
   line below it. The assertion is now an *ordering* — the same render over a darker background
   must come out darker — which survives any monotone transfer function.
-- **The general rule, now in `DECISIONS.md`:** when a test reads pixels back from a graphics
+- **The general rule, now in [`DECISIONS.md`](DECISIONS.md#to-test-a-rendered-image-render-onto-a-uniform-background):** when a test reads pixels back from a graphics
   device, *every absolute property of those pixels belongs to the device* — channel count and
   value alike. Only relationships between renders are portable.
 - **The class of failure cannot recur unseen.** `R-CMD-check.yaml` gained macOS and Windows
@@ -1349,7 +1386,7 @@ libraries underneath. `terra` binds **GDAL, GEOS and PROJ**, which carry by far 
 history of anything here, and they arrive solely so that three `raster::plot()` calls can
 draw a matrix. (`png` → libpng and `jpeg` → libjpeg are the other native bindings, and unlike
 this one they are load-bearing.) Since CRAN publishes no advisory database, shrinking the
-native surface is the only lever available — see `DECISIONS.md`, "Dependabot watches the
+native surface is the only lever available — see [`DECISIONS.md`](DECISIONS.md#dependabot-watches-the-actions-not-the-r-packages), "Dependabot watches the
 actions, not the R packages".
 
 What has to be replaced is small but not nothing: `main`/`xlab` titling, `axes = F, box = F`,
@@ -1373,10 +1410,11 @@ z-map vertically over a base face that is drawn separately by `rasterImage()`.
       `NAMESPACE`.
 
 The submission on 2026-07-29 lifted the original hold — the tarball is sent, so nothing here
-can move it. **But do not land this while 1.2.1 is in the queue.** If CRAN comes back asking
-for a change, the answer should be a minimal 1.2.2 addressing exactly what they asked, not one
-that also swapped the plotting backend under three rendered outputs. Wait for the verdict,
-then give it the same care item 23 got.
+can move it. **But do not land this while a version is in the queue.** CRAN came back asking
+for changes, and the answer to that is a minimal release addressing exactly what they asked
+— 1.2.2, then 1.2.3 — not one that also swapped the plotting backend under three rendered
+outputs. That reasoning holds for each further round. Wait for the verdict, then give it the
+same care item 23 got.
 
 ---
 
@@ -1414,7 +1452,7 @@ Untested, roughly in order of how likely a user is to hit them:
       covers the no-`targetci` path, where the assertion is that the last correlation is 1 —
       true by construction. Supplying a target CI is what the function is actually for.
 
-### 38. Two error messages paste the base image matrix instead of its label **[verified] [own review]**
+### 38. Two error messages paste the base image matrix instead of its label **[verified] [own review]**  ✅ **FIXED**
 
 `stop(paste0('No parameters found for base image: ', base))` at
 `R/generateCI.R:177` and `R/computeCumulativeCICorrelation.R:83`. In both, `base` is the
@@ -1530,6 +1568,130 @@ recur. None are blocking; all are meaningful to researchers.
 
 ---
 
+### 41. `generateStimuli2IFC()` leaves the user's RNG stream where it landed **[verified] [own review]**
+
+**Open, triage. Size S.** Found 2026-08-07 by the package-wide sweep of CRAN's seven
+review points, as the one thing adjacent to their point 7 ("do not change the user's
+options, `par` or working directory") that is still true.
+
+`generateStimuli2IFC()` calls `set.seed(seed)` at `R/generateStimuli2IFC.R:82` and never
+restores the stream. So in a script that generates stimuli and then does anything else
+random, the "anything else" depends on whether stimulus generation ran — and on its
+`seed` argument.
+
+**This is not the usual version of that bug.** The seed is a *documented, user-supplied
+argument*, and reproducible stimuli are the package's central promise, so the user asked
+for the state change. Nothing is silent. Risk of a reviewer raising it is low, and it has
+been this way since the CRAN-era 0.x versions.
+
+**Why it was not fixed in 1.2.3:** the fix is to capture `.Random.seed` and restore it
+under `on.exit()`, which changes **nothing this package computes** — every stimulus,
+classification image, z-map and InfoVal is drawn before the restore, so the release gate
+would report no deviation. What it changes is what the *user's next* `runif()` returns.
+That is a reproducibility change for any analysis script that draws randomly after
+generating stimuli, and it belongs in a version that says so in `NEWS.md` under
+"Reproducibility impact", not in one whose entire claim is that nothing computed differs.
+
+Do it with the gate run and a `NEWS.md` entry, once CRAN settles.
+
+### 40. Retire `ChangeLog` as a live file **[verified] [own review]**
+
+**Open, triage. Size S.** Raised 2026-08-07: if `NEWS.md` exists, does `ChangeLog` need to?
+
+**It is not mandatory.** R indexes `NEWS.md`, `NEWS` and `inst/NEWS.Rd` for
+`news(package = "rcicr")` and `utils::readNEWS()`; it does not parse `ChangeLog` at all,
+so nothing a user or CRAN reads comes from it. It is a GNU convention rather than an R
+one. It ships in the tarball and is *not* `.Rbuildignore`d, and `R CMD check --as-cran`
+has never NOTEd it — confirming it is on R's list of known top-level files, so it is
+permitted, just unused.
+
+**But it cannot simply be deleted.** Its 27 entries run back to 2014 and cover **0.2.2
+through 1.0.1**, and `NEWS.md` starts at 1.1.0. Deleting the file would destroy the only
+record of the package's first seven years, including the entire CRAN-era history up to the
+0.3.4.1 that was archived.
+
+Only the 1.1.0-and-later entries are duplication, and they are already thin — each is a
+pointer saying "see `NEWS.md`" plus a three-line summary.
+
+**Proposed:** freeze it. Retitle it as the historical changelog for versions up to 1.0.1,
+delete the 1.1.0–1.2.3 pointer entries, and stop adding to it. That leaves each file doing
+exactly one job — `ChangeLog` the pre-`NEWS.md` archive, `NEWS.md` everything since — and
+removes a per-release step that currently has to be remembered. Three places document the
+current convention and would need updating with it: `AGENTS.md`, `CONTRIBUTING.md` and
+[`DECISIONS.md`](DECISIONS.md#changelog-gets-a-pointer-entry-not-a-duplicate).
+
+The alternative, migrating all 27 entries into `NEWS.md` and deleting the file outright,
+gives users the full history through `news()` but bloats `NEWS.md` with 2014-era detail in
+a format that would have to be converted by hand. Not worth it unless someone asks for it.
+
+**Do this after the CRAN submission settles**, not before: it touches a file inside the
+tarball, so doing it now would invalidate the external checks for no benefit CRAN can see.
+
+### 42. The superseded Medium link is the only URL that ever 403s a checker **[verified] [own review]**
+
+**Open, triage. Size S.** Raised 2026-08-07, on the question of whether `cran-comments.md`
+needed a paragraph explaining the 403.
+
+`README.md:68` links to the 2016 Medium post. Local `R CMD check --as-cran` reports a 403
+on it, from inside the CRAN incoming feasibility NOTE: the site refuses datacenter
+networks and resolves normally in a browser.
+
+**It is intermittent, not fixed and not gone.** For 1.2.3 it appeared on *no* external
+check — absent from both win-builder runs and from all three R-hub platforms. It was also
+absent from CRAN's own pretest of 1.2.1. But win-builder *did* flag it on 1.2.1, so it is
+a property of which network the checker sits on, not of the version.
+
+The awkward part is that the README already calls the post superseded: the sentence
+carrying the link says the vignette "supersedes it and is the version kept current with
+the code". So the package ships a link it tells you not to use, which is the only URL in
+it capable of failing a check.
+
+**Why it was not done for 1.2.3:** `README.md` ships inside the tarball, so removing the
+link invalidates `rcicr_1.2.3.tar.gz` and forces win-builder and R-hub to be re-run — a
+real cost for a note no CRAN-side check has ever raised. `cran-comments.md` is
+`.Rbuildignore`d and costs nothing to edit, which is why the *paragraph* went and the
+*link* stayed.
+
+**Decide after CRAN settles**, and note the decision is not obvious: dropping the link
+removes the only URL that can 403, but the post is the version most existing users will
+have bookmarked, so a pointer saying it is superseded has some value. Keeping it costs
+nothing as long as nobody explains it in a submission again.
+
+### 43. The vignette's `par()` bookend restores what nothing changed **[verified] [own review]**
+
+**Open, triage. Size S.** Raised 2026-08-08, from the question of why the vignette restores
+`par()` differently from `plotZmap()`.
+
+Half the difference is forced and half is not. **`on.exit()` is a function-exit hook**, and
+vignette chunk code runs at top level, so there is no function exit to attach to — the
+trailing `reset-par` chunk is the only mechanism available. That part cannot change.
+
+**The `par(no.readonly = TRUE)` bookend is the part that can.** The vignette's only `par()`
+mutation is inside the `show()` helper, which already does the narrow paired thing —
+`op <- par(mar = ...)` … `par(op)`. Every other chunk plots through `show()` or through
+package functions that clean up after themselves. So `old_par` at the top and
+`par(old_par)` at the bottom restore parameters nothing left modified.
+
+It is also the form with the known failure mode: `no.readonly = TRUE` captures derived
+parameters such as `pin` that a later `plot.window()` invalidates, so the restore itself can
+error. It never has here — clean on five external checks and four CI platforms — but it
+carries that risk without doing work.
+
+**The argument for leaving it exactly as is:** the `setup` chunk is echoed, not
+`include = FALSE`, and carries a comment explaining itself, so it *teaches* readers to
+bookend `par()` around an analysis. That is good practice to model even where this document
+does not need it.
+
+**Constraint on any change:** CRAN named this file explicitly — *"inst/doc/reverse-
+correlation-walkthrough.R, please reset the par()."* Whatever is done must still visibly
+reset `par()`, and a reviewer comparing versions should not see the reset disappear.
+
+**The payoff if it goes:** one `par()` discipline across the whole package, and point 7 of
+`cran-comments.md` collapses to a single sentence about `plotZmap()`.
+
+**Not before CRAN settles** — the vignette ships in the tarball, so touching it invalidates
+the built package and forces all five external checks to re-run.
+
 ## Beyond v1 — changes that need a major version
 
 Nothing here is scheduled, and nothing here should be started as a side effect of other
@@ -1573,7 +1735,7 @@ tidying that needs no version bump at all (`CONTRIBUTING.md` → "Code conventio
 `tools/compare-release-output.R` installs and runs the released code and compares every
 output, so a pure rename-and-reformat has to come back with zero differences across the
 whole battery. Most projects cannot demonstrate that; this one can. The residual cost is
-`git blame`, which no gate can address — hence `DECISIONS.md`'s rule that a `styler` sweep
+`git blame`, which no gate can address — hence the rule in [`DECISIONS.md`](DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own) that a `styler` sweep
 lands as a commit of its own.
 
 **The case still to be made** is why the benefit exceeds all of that. "Consistent with modern

@@ -4,6 +4,7 @@
 ^\.github$
 ^\.claude$
 ^AGENTS\.md$
+^CLAUDE\.md$
 ^DECISIONS\.md$
 ^\.pre-commit-config\.yaml$
 ^codecov\.yml$

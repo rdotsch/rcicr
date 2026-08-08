@@ -112,7 +112,7 @@ Two rules that are about this package rather than about R:
 - **Check any new function argument against the names saved in the `.Rdata`**, and any new
   saved field against existing argument names. `load()` assigns into the calling frame, so a
   collision silently overwrites the argument — this has caused three separate bugs, most
-  recently a saved `sigma` capturing `generateCI()`'s z-map blur `sigma`. `DECISIONS.md` has
+  recently a saved `sigma` capturing `generateCI()`'s z-map blur `sigma`. [`DECISIONS.md`](DECISIONS.md#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names) has
   the details.
 
 ## Releasing
@@ -169,7 +169,7 @@ R CMD build . && R CMD check --as-cran rcicr_*.tar.gz
   `--quick` gate to the full battery, so it has to happen **before** the PR is opened, not
   after review.
 - **`ChangeLog`**: add a dated pointer entry deferring to `NEWS.md` — not a duplicate. See
-  `DECISIONS.md` for why.
+  [`DECISIONS.md`](DECISIONS.md#changelog-gets-a-pointer-entry-not-a-duplicate) for why.
 - **`cran-comments.md`**: re-read every claim in it rather than trusting it. It has gone
   stale *within a single day* before, by describing a URL reference that another PR had
   just removed, one step short of a CRAN reviewer reading it. Leave the test-environment
