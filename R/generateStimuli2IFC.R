@@ -13,7 +13,7 @@
 #' @import doParallel
 #' @importFrom stats setNames runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
-#' @param base_face_files List containing base face file names used as base images for stimuli. Accepts JPEG and PNG images.
+#' @param base_face_files Named list of base face file names used as base images for stimuli, e.g. \code{list(aName = 'baseface.jpg')}. Accepts JPEG and PNG images, recognised by a \code{.png}, \code{.jpg} or \code{.jpeg} extension. Each name labels that base image's stimulus files and indexes the .Rdata file that \code{\link{generateCI}} reads back, so every element must be named, and named uniquely. Each image must be square and exactly \code{img_size} by \code{img_size} pixels: rcicr does not resize base images. All of this is checked before any stimuli are generated, and the message names the offending entry.
 #' @param n_trials Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).
 #' @param img_size Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).
 #' @param stimulus_path String specifying the directory to save the stimuli and the .Rdata file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
@@ -55,56 +55,32 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
                 'function out.'))
   }
 
-  # Initialize #
-  p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
+  validateBaseFaceFiles(base_face_files)
 
-  # Only create the directory when something is written to it.
-  # generateReferenceDistribution2IFC() calls this with both save flags FALSE
-  # and used to leave a stray ./stimuli directory behind.
-  if (writes_to_disk) {
-    dir.create(stimulus_path, recursive = TRUE, showWarnings = FALSE)
-  } else if (missing(stimulus_path)) {
-    # Bind it anyway. stimulus_path appears in the %dopar% body below, and
-    # foreach exports every free variable of that body to the workers -- which
-    # means get()ting it, and a missing argument aborts there even though the
-    # branch that uses it cannot run. Never read.
-    stimulus_path <- NA_character_
-  }
-
-  # More depends on this call than the stimuli. generateReferenceDistribution2IFC()
-  # re-generates stimuli through this function and then draws its simulated
-  # responses with runif(), *after* this set.seed() has run - which is what makes
-  # every Informational Value reproducible from the stimulus file alone, and is
-  # documented as a guarantee in ?generateReferenceDistribution2IFC.
-  #
-  # So moving or removing this line, or reseeding after it, changes every InfoVal
-  # ever computed with this package without touching computeInfoVal2IFC() at all.
-  set.seed(seed)
-
-  stimuli_params <- list()
+  # Read and check the base images before anything expensive or side-effecting
+  # runs. The noise basis below takes real time at the default 512px and the
+  # directory is created after it, so a base image that cannot be used is worth
+  # finding out about first.
   base_faces <- list()
-
-  if (!is.list(base_face_files)) {
-    write("Please provide base face file name as named list, e.g. base_face_files=list(aName='baseface.jpg')", stderr())
-    stop()
-  }
 
   for (base_face in names(base_face_files)) {
     # Read base face
     filename <- base_face_files[[base_face]]
-    if (grepl('png|PNG', filename)) {
-      img <- png::readPNG(filename)
-    } else if (grepl('jpeg|JPEG|jpg|JPG', filename)) {
-      img <- jpeg::readJPEG(filename)
-    } else {
-      stop(paste0('Error in reading base image file ',
-                  filename, ': must be a PNG or JPEG file.'))
-    }
+    img_format <- baseImageFormat(filename)
+
+    img <- tryCatch(
+      if (img_format == 'png') png::readPNG(filename) else jpeg::readJPEG(filename),
+      error = function(e) {
+        stop(paste0('Base image "', base_face, '" (', filename, ') could not ',
+                    'be read as ', img_format, ': ', conditionMessage(e)),
+             call. = FALSE)
+      })
 
     # Check if base face is square. If not, throw an error
     if (dim(img)[1] != dim(img)[2]) {
-      stop(paste0('Base face is not square! It\'s ', dim(img)[1], ' by ',
-                  dim(img)[2], ' pixels. Please use a square base face.'))
+      stop(paste0('Base image "', base_face, '" (', filename, ') is not ',
+                  'square! It\'s ', dim(img)[1], ' by ', dim(img)[2],
+                  ' pixels. Please use a square base face.'))
     }
 
     # Change base face to greyscale if necessary
@@ -134,6 +110,34 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # Save base image to list
     base_faces[[base_face]] <- img
   }
+
+  # Initialize #
+  p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
+
+  # Only create the directory when something is written to it.
+  # generateReferenceDistribution2IFC() calls this with both save flags FALSE
+  # and used to leave a stray ./stimuli directory behind.
+  if (writes_to_disk) {
+    dir.create(stimulus_path, recursive = TRUE, showWarnings = FALSE)
+  } else if (missing(stimulus_path)) {
+    # Bind it anyway. stimulus_path appears in the %dopar% body below, and
+    # foreach exports every free variable of that body to the workers -- which
+    # means get()ting it, and a missing argument aborts there even though the
+    # branch that uses it cannot run. Never read.
+    stimulus_path <- NA_character_
+  }
+
+  # More depends on this call than the stimuli. generateReferenceDistribution2IFC()
+  # re-generates stimuli through this function and then draws its simulated
+  # responses with runif(), *after* this set.seed() has run - which is what makes
+  # every Informational Value reproducible from the stimulus file alone, and is
+  # documented as a guarantee in ?generateReferenceDistribution2IFC.
+  #
+  # So moving or removing this line, or reseeding after it, changes every InfoVal
+  # ever computed with this package without touching computeInfoVal2IFC() at all.
+  set.seed(seed)
+
+  stimuli_params <- list()
 
   # Compute number of parameters needed  #
   nparams <- sum(6*2*(2^(0:(nscales-1)))^2)
@@ -265,4 +269,89 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   if (return_as_dataframe) {
     return(stims)
   }
+}
+
+# Which reader a base image file needs, from its extension: 'png', 'jpeg', or
+# NA for anything else.
+#
+# Anchored to the extension deliberately. This test used to be
+# grepl('png|PNG', filename) against the whole path, which matches anywhere in
+# it -- so a JPEG under a directory named "png" was handed to png::readPNG() and
+# failed with a format error that named neither the real problem nor the choice
+# this code had made on the user's behalf.
+baseImageFormat <- function(filename) {
+  if (grepl('\\.png$', filename, ignore.case = TRUE)) {
+    return('png')
+  }
+  if (grepl('\\.jpe?g$', filename, ignore.case = TRUE)) {
+    return('jpeg')
+  }
+  NA_character_
+}
+
+# Check base_face_files before generateStimuli2IFC() does any expensive or
+# side-effecting work, and name the offending entry when something is wrong.
+#
+# Every branch here used to surface far from its cause. A non-list wrote its
+# explanation to stderr() and then called a bare stop(), so the condition it
+# raised carried an *empty* message: anything wrapping the call -- a Shiny app,
+# a batch script, knitr -- caught an error it could not report, and under sink()
+# or capture.output(type = 'message') the explanation could be separated from
+# the failure entirely. An unnamed or empty list passed that check and got as
+# far as the parallel workers, failing there with "attempt to select less than
+# one element in get1index", which names neither the argument nor the file.
+# See issues #124 and #180.
+validateBaseFaceFiles <- function(base_face_files) {
+  example <- 'e.g. base_face_files = list(aName = "baseface.jpg")'
+
+  if (!is.list(base_face_files)) {
+    stop(paste0('base_face_files must be a named list, ', example,
+                '. It is of class ',
+                paste(class(base_face_files), collapse = '/'), '.'))
+  }
+
+  if (length(base_face_files) == 0) {
+    stop(paste0('base_face_files is empty. Supply at least one base image, ',
+                example, '.'))
+  }
+
+  nms <- names(base_face_files)
+  if (is.null(nms) || any(is.na(nms) | nms == '')) {
+    stop(paste0('Every element of base_face_files must be named. The names ',
+                'label the stimulus files and index the .Rdata file that ',
+                'generateCI() reads back, so they cannot be left off: ',
+                example, '.'))
+  }
+
+  if (anyDuplicated(nms)) {
+    stop(paste0('base_face_files has duplicate names (',
+                paste(unique(nms[duplicated(nms)]), collapse = ', '),
+                '). Only the first entry under each name would be used, and ',
+                'the rest would be silently skipped, so give every base image ',
+                'its own name.'))
+  }
+
+  for (base_face in nms) {
+    filename <- base_face_files[[base_face]]
+
+    if (!is.character(filename) || length(filename) != 1 || is.na(filename)) {
+      stop(paste0('Base image "', base_face, '" must be a single file name, ',
+                  'but it is of class ', paste(class(filename), collapse = '/'),
+                  ' and length ', length(filename), '. ', example, '.'))
+    }
+
+    if (is.na(baseImageFormat(filename))) {
+      stop(paste0('Base image "', base_face, '" (', filename, ') must be a ',
+                  'PNG or JPEG file, named with a .png, .jpg or .jpeg ',
+                  'extension.'))
+    }
+
+    if (!file.exists(filename)) {
+      stop(paste0('Base image "', base_face, '" does not exist: ', filename,
+                  '. Paths are resolved relative to the working directory, ',
+                  getwd(), '.'))
+    }
+  }
+
+  invisible(TRUE)
 }

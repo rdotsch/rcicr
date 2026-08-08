@@ -262,16 +262,92 @@ test_that("generateStimuli2IFC rejects base_face_files that is not a list", {
   dir <- withr::local_tempdir()
   png <- make_square_png(file.path(dir, "base.png"), size = 32)
 
-  # This one calls stop() with no arguments after writing its explanation to
-  # stderr(), so the condition carries an *empty* message and no regexp can
-  # match it. Asserting only that it errors is the most this path allows;
-  # giving it a real message is the same class of work as #180.
-  expect_error(
-    suppressWarnings(
-      generateStimuli2IFC(base_face_files = png, n_trials = 2, img_size = 32,
-                          stimulus_path = dir, ncores = 1,
-                          save_as_png = FALSE, save_rdata = FALSE)
-    )
+  # This used to write its explanation to stderr() and then call stop() with no
+  # arguments, so the condition carried an *empty* message: a caller could not
+  # report why it failed, and this test could assert nothing beyond "it errors".
+  # Match on the message, not just the failure -- an unpatterned expect_error()
+  # passes when the function breaks for an entirely unrelated reason (#180).
+  err <- expect_error(
+    generateStimuli2IFC(base_face_files = png, n_trials = 2, img_size = 32,
+                        stimulus_path = dir, ncores = 1,
+                        save_as_png = FALSE, save_rdata = FALSE),
+    "base_face_files must be a named list"
+  )
+  expect_match(conditionMessage(err), "character")
+})
+
+test_that("generateStimuli2IFC rejects an unnamed or empty base_face_files", {
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  png <- make_square_png(file.path(dir, "base.png"), size = 32)
+
+  gen <- function(files) {
+    generateStimuli2IFC(base_face_files = files, n_trials = 2, img_size = 32,
+                        stimulus_path = dir, ncores = 1,
+                        save_as_png = FALSE, save_rdata = FALSE)
+  }
+
+  # All three used to get past the type check and fail inside the parallel
+  # workers with "attempt to select less than one element in get1index", naming
+  # neither the argument nor the file -- issue #124's shape.
+  expect_error(gen(list()), "base_face_files is empty")
+  expect_error(gen(list(png)), "must be named")
+  expect_error(gen(list(base = png, png)), "must be named")
+
+  # A duplicate name silently dropped every entry after the first.
+  expect_error(gen(list(base = png, base = png)), "duplicate names")
+})
+
+test_that("generateStimuli2IFC names the base image it cannot use", {
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  ok <- make_square_png(file.path(dir, "base.png"), size = 32)
+
+  gen <- function(files) {
+    generateStimuli2IFC(base_face_files = files, n_trials = 2, img_size = 32,
+                        stimulus_path = dir, ncores = 1,
+                        save_as_png = FALSE, save_rdata = FALSE)
+  }
+
+  # Every message identifies the offending entry by its name, so a run over
+  # several base images says which one is wrong.
+  expect_error(gen(list(good = ok, oblong = 42)),
+               'Base image "oblong" must be a single file name')
+
+  missing <- file.path(dir, "absent.png")
+  err <- expect_error(gen(list(good = ok, gone = missing)),
+                      'Base image "gone" does not exist')
+  expect_match(conditionMessage(err), "absent\\.png")
+
+  # Present, correctly named, and not actually a PNG: the reader's own
+  # complaint is kept, with the file it came from attached.
+  corrupt <- file.path(dir, "corrupt.png")
+  writeLines("not a PNG", corrupt)
+  err <- expect_error(gen(list(bad = corrupt)), 'Base image "bad"')
+  expect_match(conditionMessage(err), "could not be read")
+  expect_match(conditionMessage(err), "not in PNG format")
+})
+
+test_that("generateStimuli2IFC picks the reader from the extension, not the path", {
+  skip_if_not_installed("withr")
+  skip_if_not_installed("jpeg")
+
+  dir <- withr::local_tempdir()
+
+  # A JPEG under a directory called "png". The old test was
+  # grepl('png|PNG', filename) against the whole path, so this file was handed
+  # to png::readPNG() and died with "file is not in PNG format".
+  sub <- file.path(dir, "png")
+  dir.create(sub)
+  path <- file.path(sub, "face.jpg")
+  jpeg::writeJPEG(matrix(0.5, 32, 32), path)
+
+  expect_no_error(
+    generateStimuli2IFC(base_face_files = list(base = path), n_trials = 2,
+                        img_size = 32, stimulus_path = dir, ncores = 1,
+                        save_as_png = FALSE, save_rdata = FALSE)
   )
 })
 

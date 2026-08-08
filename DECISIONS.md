@@ -127,6 +127,23 @@ ci$base) / 2`, which is what `save_as_pngs = TRUE` writes.
 **What kept this cheap to undo:** the change was filed under its own "Behaviour change"
 heading rather than slipped in with unambiguous bug fixes. When a fix is debatable, say so.
 
+### `base_face_files` validation rejects two inputs that used to run
+Duplicate names, and a list element that is not a single file name, now stop the call. Both
+ran before, so this is a considered exception to the constraint above rather than a plain bug
+fix — and it is allowed because neither ever produced what the call asked for. `list(face =
+'a.png', face = 'b.png')` looks each name up by string, so it wrote **one** set of stimuli,
+from `a.png`, and nothing from `b.png`; verified against the pre-fix code, four files for two
+trials. A script that "worked" this way was generating stimuli for a base image it never
+named. Every other new check rejects input that already failed, just further downstream —
+inside a parallel worker, as `attempt to select less than one element in get1index`.
+
+**Readability is checked by attempting the read, not by `file.access()`.** The obvious version
+— `file.access(filename, 4)` — is documented as unreliable on Windows and on networked
+filesystems, so it can reject a file that reads fine. `png::readPNG()` / `jpeg::readJPEG()`
+inside `tryCatch()` cannot be wrong about it, and keeping the reader's own message means the
+distinction between "not a PNG" and "permission denied" survives instead of being flattened
+into one guess.
+
 ### `_R_CHECK_LIMIT_CORES_` handling caps cores under check only
 `default_ncores()` returns 2 when that variable is set and `detectCores() - 1` otherwise. Only
 the checker ever sets it, so CRAN's two-core policy is met and behaviour at the console is
