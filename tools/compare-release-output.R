@@ -74,7 +74,7 @@ EXPECTED <- list(
                "sinusoid-128-nscales3/zmap_plain"),
        reason = paste("The .Rdata's noise sigma was overwriting generateCI()'s z-map blur",
                       "sigma via load(), so 1.1.0 blurred z-maps with 25 instead of 3 and",
-                      "ignored the sigma the caller passed (backlog item 32). Fixed here,",
+                      "ignored the sigma the caller passed. Fixed here,",
                       "which changes every blur-based z-map made from a 1.1.0 stimulus set.",
                       "zmap_ttest is deliberately absent: that method does not blur, so it",
                       "must still match."),

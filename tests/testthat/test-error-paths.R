@@ -1,8 +1,9 @@
-# Backlog item 37. The suite was strong on the numeric paths and thin on the
-# failure side: 9 assertions against 33 stop()/warning() calls. An unexercised
-# guard is indistinguishable from one that works, which is how items 6, 23 and
-# 28 each stayed broken for years -- and item 38 was a guard nothing ran that
-# pasted 8,190 characters of pixel values into its own message.
+# The suite was strong on the numeric paths and thin on the failure side:
+# 9 assertions against 33 stop()/warning() calls. An unexercised guard is
+# indistinguishable from one that works, which is how the `mask` argument, the
+# plotZmap() mask and the single-trial 4096-parameter truncation each stayed
+# broken for years -- and how a guard nothing ran came to paste 8,190
+# characters of pixel values into its own error message.
 #
 # Two conventions here, both deliberate:
 #
