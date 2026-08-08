@@ -141,6 +141,33 @@ string and a `package_version`, and compare with `numeric_version()` semantics �
 `'0.10.0' < '0.4.0'` is `TRUE`. The `pre_0.3.0` compatibility path does **not** key off this
 field; it detects the old `sinusoids`/`sinIdx` layout structurally. Just as well.
 
+### `return_as_dataframe = TRUE` returns one noise image per trial, not per trial × base image
+`generateNoiseImage()`'s `return()` sits *inside* the per-base-image loop, so with several base
+images it fires on the first and the rest never run. Under the default
+`use_same_parameters = TRUE` that is correct — every base image shares one parameter set, so one
+noise image per trial is all there is — and the returned frame has one column per trial, so it
+could not represent the alternative anyway. Documented on `@param return_as_dataframe` rather
+than changed.
+
+InfoVal is unaffected, checked rather than assumed:
+`generateReferenceDistribution2IFC()` is the only in-package caller, it never passes
+`use_same_parameters`, and the first base image's parameters come from the same leading block of
+the RNG stream either way — measured identical, max absolute difference 0. Widening the frame to
+trial × base image would change the return shape, so it needs a **new argument**, never a
+redefinition.
+
+### The empty `ref_lookup` rows were emptied deliberately, and both halves stand or fall together
+`01e547e` (2018-07-31) adopted the Euclidean norm and *k* from the Schmitz et al. erratum, which
+redefined the norms those medians and MADs summarise. Scoring CIs against a null built from the
+superseded formula would be worse than regenerating one, so the rows were commented out and the
+reference distribution has been rebuilt on every call since — correct, just slow.
+
+Repopulating means measuring four numbers: `median(reference_norms)` and `mad(reference_norms)`
+under the current formula for seed 1, 512px, 10000 iterations at 100/300/500/1000 trials, one
+`generateReferenceDistribution2IFC()` run each. The alternative is deleting the matching and
+prompt machinery. **Do not do half of either** — delete the rows' machinery while intending to
+re-measure, and the feature becomes unrecoverable rather than merely dormant.
+
 ---
 
 ## Testing
@@ -169,6 +196,18 @@ rule: **before pinning a summary statistic, ask what the transformation guarante
 Anything a normalisation fixes carries no information about the values that went in. They are
 still asserted, labelled as a check that the standardisation happened, alongside statistics
 that actually vary.
+
+### `computeInfoVal2IFC`'s test oracle mirrors the implementation, and is kept anyway
+`test-computeInfoVal2IFC.R` recomputes `(norm(ci, "f") - median(reference_norms)) /
+mad(reference_norms)` — the implementation's own expression — so it pins the *implementation*,
+not the published definition. A formula wrong in both places passes.
+
+Left as it is: the formula was hand-checked against the erratum and the golden master pins the
+resulting number, so the risk is covered from two other directions. Recorded so nobody mistakes
+this test for the independent check it resembles — the genuinely independent oracle in the suite
+is in `test-generateNoiseImage.R`. If it is ever revisited, the replacement is a worked example
+from the paper or a hand-computed 2×2 CI with a known reference vector, not a tidier
+restatement of the same expression.
 
 ### To test a rendered image, render onto a uniform background
 Then "drew nothing" is "the image is one flat value" — a comparison rather than an eyeball.
@@ -536,9 +575,11 @@ a tracker that reads as abandoned in 2017 while the package is being resubmitted
 The migration is the smaller remaining gain, which is why it is sequenced second rather than
 bundled.
 
-What deliberately does **not** become an issue: the "already correct — do not re-fix" entries
-(items 17, 25, 27, 30). Those are decisions and belong here. Item 17 was already duplicated
-in this file, which is what made the misfiling visible.
+What deliberately does **not** become an issue: the "already correct — do not re-fix" entries.
+Those are decisions and belong here, and four moved into this file rather than onto the
+tracker — the InfoVal formula, `return_as_dataframe`'s one-image-per-trial shape, the emptied
+`ref_lookup` rows, and the infoVal test oracle that mirrors its implementation. The formula one
+was *already* duplicated here, which is what made the misfiling visible in the first place.
 
 **Known cost, accepted:** changes to the plan stop going through a reviewed PR, because issue
 edits are not reviewable. For a single maintainer that is close to zero.
