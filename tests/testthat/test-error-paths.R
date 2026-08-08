@@ -330,6 +330,50 @@ test_that("generateStimuli2IFC names the base image it cannot use", {
   expect_match(conditionMessage(err), "not in PNG format")
 })
 
+test_that("generateStimuli2IFC rejects a base image with no contrast", {
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  flat <- file.path(dir, "flat.png")
+  png::writePNG(matrix(0.5, 32, 32), flat)
+
+  # (img - min) / (max - min) is 0/0 on a uniform image. The all-NaN base face
+  # used to be saved into the .Rdata and inherited by every CI computed from
+  # the set, with no error and no warning (#176).
+  err <- expect_error(
+    generateStimuli2IFC(base_face_files = list(flat = flat), n_trials = 2,
+                        img_size = 32, stimulus_path = dir, ncores = 1,
+                        save_as_png = FALSE, save_rdata = FALSE),
+    "no contrast"
+  )
+  expect_match(conditionMessage(err), "maximize_baseimage_contrast = FALSE")
+
+  # The way out named in the message has to actually work: with the rescale
+  # off, a flat base image is usable and its stimuli are finite.
+  stims <- expect_no_error(
+    generateStimuli2IFC(base_face_files = list(flat = flat), n_trials = 2,
+                        img_size = 32, stimulus_path = dir, ncores = 1,
+                        maximize_baseimage_contrast = FALSE,
+                        return_as_dataframe = TRUE,
+                        save_as_png = FALSE, save_rdata = FALSE)
+  )
+  expect_true(all(is.finite(as.matrix(stims))))
+})
+
+test_that("generateStimuli2IFC saves a base image the CI pipeline can use", {
+  skip_if_not_installed("withr")
+
+  # The NaN in #176 was invisible at generation time and surfaced only in the
+  # saved .Rdata, so assert on what was actually written rather than on the
+  # error alone.
+  dir <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir)
+
+  env <- new.env()
+  load(rdata, envir = env)
+  expect_true(all(is.finite(env$base_faces[["base"]])))
+})
+
 test_that("generateStimuli2IFC picks the reader from the extension, not the path", {
   skip_if_not_installed("withr")
   skip_if_not_installed("jpeg")
@@ -342,7 +386,9 @@ test_that("generateStimuli2IFC picks the reader from the extension, not the path
   sub <- file.path(dir, "png")
   dir.create(sub)
   path <- file.path(sub, "face.jpg")
-  jpeg::writeJPEG(matrix(0.5, 32, 32), path)
+  # A ramp, not a flat field: a uniform base image is rejected for having no
+  # contrast to maximize (#176), which would fail this test for the wrong reason.
+  jpeg::writeJPEG(matrix(rep(seq(0, 1, length.out = 32), each = 32), 32, 32), path)
 
   expect_no_error(
     generateStimuli2IFC(base_face_files = list(base = path), n_trials = 2,

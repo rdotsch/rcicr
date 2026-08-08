@@ -26,6 +26,19 @@
 
 ## Bug fixes
 
+- **A base image with no contrast no longer becomes an all-`NaN` base image.** Under
+  `maximize_baseimage_contrast = TRUE`, the default, `generateStimuli2IFC()` rescales
+  with `(img - min(img)) / (max(img) - min(img))` — which is 0/0 when every pixel is the
+  same value. The resulting `NaN` base face was written into the `.Rdata` with no error
+  and no warning, every classification image computed from that stimulus set inherited
+  it, and the stimuli themselves came out uniformly black, `png::writePNG()` clamping
+  `NaN` to zero. It now stops with an error naming the file.
+
+  A photograph is never uniform, so this bit synthetic and accidentally-blank base
+  images — but it failed silently, and the symptom appeared a long way from the cause.
+  The error fires only under `maximize_baseimage_contrast = TRUE`: a flat base image is
+  perfectly usable with the rescale switched off, and the message says so.
+
 - **The `base_face_files` type check raises an error you can actually read.** It wrote
   its explanation to `stderr()` and then called `stop()` with no arguments, so the
   condition it raised carried an empty message: `conditionMessage()` returned `""`, and
