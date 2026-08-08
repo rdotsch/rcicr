@@ -585,12 +585,13 @@ package's public health signal and it currently understates the state of the cod
       was the dominant cost, but the `ncores == 1` serial path in item 11 is still open and
       per-worker memory still scales with `img_size`. Comment with what changed and what
       did not, and leave it open, or close it explicitly scoped to the array copy.
-- [ ] **Sweep the remaining 25 open issues the same way — prerequisite for item 44.** Some
-      are likely stale or already resolved by earlier releases. Not done; the eight above
-      are only the ones this modernization pass touched directly. All 25 date from 2016–2017
-      and none is a bug report — the real bugs were the batch above. A partial triage exists
-      in `notes/issue-triage.md` (9 of 25 read). **Post nothing without the maintainer's
-      approval**: comments and closes notify subscribers and are outward-facing.
+- [x] **Sweep the remaining 25 open issues — done 2026-08-08.** All 25 dated from 2016–2017
+      and none was a bug report; the real bugs were the batch above. `notes/issue-triage.md`
+      holds the verdict and the posted text for each, verified against the working tree.
+      Closed #43, #27 and #13 (implemented or superseded), #92 and #52 (premise no longer
+      holds), #53 (no MDS functionality to attach it to), #68 and #9 (no actionable
+      specification); #87 got a correction — two of its checkboxes were ticked for work that
+      is not in the code — and stays open. **17 open, and item 44 is unblocked.**
 
 Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
 
@@ -885,8 +886,9 @@ in `DECISIONS.md`. It was never backlog, and neither are its neighbours.
 **Preparation, in order:**
 
 - [ ] **Item 19's remaining sweep — the hard prerequisite.** Triaging 25 stale issues *after*
-      opening ~18 new ones means the tracker gets worse before it gets better. Partial work in
-      `notes/issue-triage.md`. Nothing may be posted without the maintainer's approval.
+      opening ~18 new ones means the tracker gets worse before it gets better. The triage is
+      written for all 25 in `notes/issue-triage.md`; what remains is the maintainer's
+      approval and the posting. Nothing may be posted without that approval.
 - [ ] **Create priority labels.** P0–P3 exist only as prose here; without them, priority is
       the one thing the migration would lose.
 - [ ] **Rehome items 17, 25, 27 and 30 to `DECISIONS.md`** rather than opening issues for
