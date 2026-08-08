@@ -112,18 +112,28 @@ you anything. What does:
    trig=$(gh api --paginate repos/rdotsch/rcicr/issues/<n>/comments |
      jq -r '[.[] | select((.user.type != "Bot") and (.body|test("@codex review")))] | last | .created_at')
 
-   # finished with nothing to say -> a new "Codex Review: Didn't find any major issues"
+   # finished with nothing to say -> a new "Didn't find any major issues" comment
    gh api --paginate repos/rdotsch/rcicr/issues/<n>/comments |
-     jq --arg t "$trig" '[.[] | select((.user.type=="Bot") and .created_at > $t)] | length'
+     jq --arg t "$trig" '[.[] | select((.user.login|test("codex")) and .created_at > $t
+                          and (.body|test("Didn.t find any major issues")))] | length'
 
    # found something -> a new review object
    gh api --paginate repos/rdotsch/rcicr/pulls/<n>/reviews |
-     jq --arg t "$trig" '[.[] | select((.user.type=="Bot") and .submitted_at > $t)] | length'
+     jq --arg t "$trig" '[.[] | select((.user.login|test("codex")) and .submitted_at > $t)] | length'
    ```
    Non-zero on the first means clean; non-zero on the second means there are findings to read;
-   both zero means it is still running. Filter on `.user.type` rather than matching the comment
-   body alone — the bot quotes the string `@codex review` in its own help text, so a naive
-   match picks up its announcement as your trigger and dates the wait from the wrong event.
+   both zero means it is still running. Each predicate is narrow on purpose, and both ways of
+   loosening it have already produced a wrong answer here:
+
+   - **Match the trigger by author, not by body text alone.** Codex quotes the string
+     `@codex review` in its own help text, so a body match selects its announcement as your
+     trigger and dates the wait from the wrong event.
+   - **Match the response to Codex specifically, and the clean verdict to its wording.** "Any
+     bot" is too broad in both directions: `codecov.yml` enables PR comments, and Codex itself
+     posts issue comments that are not verdicts — on the PR that added this paragraph it left
+     a `### Summary` comment while a `P2` finding was open, which an "any bot comment" test
+     read as a clean run.
+
    The 👀/👍 reaction on the PR body is the same signal in glanceable form, and fine for a human
    reading the page.
 3. **Read only the findings at your head**, then answer each thread — fixing it, or saying why
