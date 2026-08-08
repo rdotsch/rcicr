@@ -69,8 +69,8 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 carries each one struck through with what it turned out to be; `NEWS.md` has the
 user-facing version.
 
-**Open and actionable:** items **27, 30, 31, 33** and **34** are triage, and **40, 41** and
-**42** are the newest, all small. Items **1, 20** and **21** are not code — 1 and 21 wait on
+**Open and actionable:** items **27, 30, 31, 33** and **34** are triage, and **40** through
+**43** are the newest, all small. Items **1, 20** and **21** are not code — 1 and 21 wait on
 CRAN, and 20 is a checklist that is re-run for every submission rather than closed.
 
 Items **13, 14 and 15** (modernize the R code, better errors, docs and onboarding) are the
@@ -110,6 +110,7 @@ breaking change) is out of it too and is not scheduled at all — see "Beyond v1
 | 41 | `generateStimuli2IFC()` leaves the user's RNG stream where it landed | **Open, triage.** `set.seed(seed)` is never undone, so a script's next `runif()` differs depending on whether it generated stimuli first. Same family as CRAN's "do not change the user's state", though here the user asked, via a documented `seed` argument. Restoring `.Random.seed` on exit changes nothing this package computes — but it does change what a user's *next* draw returns, so it needs the gate run and a `NEWS.md` note | S |
 | 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
 | 42 | The superseded Medium link is the only URL that ever 403s a checker | **Open, triage.** `README.md:68`. Local `--as-cran` flags it; for 1.2.3 no external check did — clean on both win-builder runs and all three R-hub platforms — but win-builder *did* flag it on 1.2.1, so it tracks the checker's network, not the version. The README already calls the post superseded by the vignette. Not done now because `README.md` ships in the tarball, so removing it would force every external check to re-run | S |
+| 43 | The vignette's `par()` bookend restores what nothing changed | **Open, triage.** `old_par <- par(no.readonly = TRUE)` at the top of the walkthrough and `par(old_par)` at the end, when the only `par()` mutation is inside the `show()` helper, which already saves and restores narrowly. It is also the form whose restore can error on `pin`. `on.exit()` is not an option — chunk code is top level, not a function. Kept for now because the echoed setup chunk teaches the pattern; CRAN named this file, so any change must still visibly reset `par()` | S |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -1583,6 +1584,41 @@ real cost for a note no CRAN-side check has ever raised. `cran-comments.md` is
 removes the only URL that can 403, but the post is the version most existing users will
 have bookmarked, so a pointer saying it is superseded has some value. Keeping it costs
 nothing as long as nobody explains it in a submission again.
+
+### 43. The vignette's `par()` bookend restores what nothing changed **[verified] [own review]**
+
+**Open, triage. Size S.** Raised 2026-08-08, from the question of why the vignette restores
+`par()` differently from `plotZmap()`.
+
+Half the difference is forced and half is not. **`on.exit()` is a function-exit hook**, and
+vignette chunk code runs at top level, so there is no function exit to attach to — the
+trailing `reset-par` chunk is the only mechanism available. That part cannot change.
+
+**The `par(no.readonly = TRUE)` bookend is the part that can.** The vignette's only `par()`
+mutation is inside the `show()` helper, which already does the narrow paired thing —
+`op <- par(mar = ...)` … `par(op)`. Every other chunk plots through `show()` or through
+package functions that clean up after themselves. So `old_par` at the top and
+`par(old_par)` at the bottom restore parameters nothing left modified.
+
+It is also the form with the known failure mode: `no.readonly = TRUE` captures derived
+parameters such as `pin` that a later `plot.window()` invalidates, so the restore itself can
+error. It never has here — clean on five external checks and four CI platforms — but it
+carries that risk without doing work.
+
+**The argument for leaving it exactly as is:** the `setup` chunk is echoed, not
+`include = FALSE`, and carries a comment explaining itself, so it *teaches* readers to
+bookend `par()` around an analysis. That is good practice to model even where this document
+does not need it.
+
+**Constraint on any change:** CRAN named this file explicitly — *"inst/doc/reverse-
+correlation-walkthrough.R, please reset the par()."* Whatever is done must still visibly
+reset `par()`, and a reviewer comparing versions should not see the reset disappear.
+
+**The payoff if it goes:** one `par()` discipline across the whole package, and point 7 of
+`cran-comments.md` collapses to a single sentence about `plotZmap()`.
+
+**Not before CRAN settles** — the vignette ships in the tarball, so touching it invalidates
+the built package and forces all five external checks to re-run.
 
 ## Beyond v1 — changes that need a major version
 

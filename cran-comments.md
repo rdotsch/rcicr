@@ -30,15 +30,11 @@ Thank you for the review. This is 1.2.3, addressing each point.
    removed one you did not see: `generateReferenceDistribution2IFC()` created an empty
    `./stimuli` on every call while writing nothing to it. Examples, tests and vignettes
    write only to `tempdir()`.
-7. **`par()` in `R/plotZmap.R` and in the vignette** — both restore now, using the two forms
-   your mail shows. `plotZmap()` takes the second: `oldpar <- par(mar = ...)` captures only
-   the parameter it sets, restored under an immediate `on.exit()` that also closes the PNG
-   device the function opens. We prefer that form in package code, because
-   `par(no.readonly = TRUE)` additionally captures derived parameters such as `pin`, which a
-   subsequent `plot.window()` invalidates, so restoring them errors. The vignette takes the
-   first: it records `par(no.readonly = TRUE)` in its setup chunk and restores it in a final
-   chunk, with an inner `par(mar = ...)` and restore around the one figure that needs
-   different margins.
+7. **`par()` in `R/plotZmap.R` and in
+   `inst/doc/reverse-correlation-walkthrough.R`** — both reset now. `plotZmap()` saves the
+   one parameter it sets and restores it under an immediate `on.exit()`, which also closes
+   the PNG device the function opens. The vignette records `par(no.readonly = TRUE)` in its
+   setup chunk and restores it in a final chunk.
 
 ## Submission type
 
