@@ -89,8 +89,8 @@ breaking change) is out of it too and is not scheduled at all — see "Beyond v1
 | ~~11~~ | ~~Cluster cleanup (`on.exit`), serial fallback~~ | **Done.** `on.exit` cleanup in #130; the `ncores == 1` serial fast path landed via `startBackend()`. Test suite 140s → 4s, and serial/parallel output verified bit-identical | M |
 | ~~12~~ | ~~Widen test coverage (scaling methods, z-maps, `participants`)~~ | **Done** — suite at 180 tests, 0 skips. It found three real `plotZmap()` bugs in code that read fine, one of which made `zmapdecoration = FALSE` entirely dead since R 4.2 | M |
 | ~~18~~ | ~~Codecov step fails for want of a token~~ | **Done** — `fail_ci_if_error: false`; a red `main` now means the package is broken | S |
-| ~~19~~ | ~~Close the 8 issues already fixed in `main`~~ | **Done** — 7 closed, #12 commented and left open as only partly fixed. ~22 remaining issues still unswept | S |
-| 20 | CRAN resubmission checklist | **Never closes.** The checklist lives in `CONTRIBUTING.md` → Releasing and is re-run in full for every submission — local `--as-cran`, win-builder on both R-devel and R-release, and R-hub on all three platforms, with the results recorded in `cran-comments.md` in the release PR itself. Every further round of CRAN review means running it again | M |
+| ~~19~~ | ~~Close the 8 issues already fixed in `main`, then sweep the rest~~ | **Done** — 7 closed plus #12 commented and left open as only partly fixed; then all 25 remaining issues triaged, 8 closed and #87 corrected. 17 open, none untriaged | S |
+| 20 | CRAN reinstatement | **Open, waiting on CRAN.** The 1.2.3 tarball is submitted; the reply closes this or starts another round. The checklist itself lives in `CONTRIBUTING.md` → Releasing and is re-run in full for every submission, so what is left here is logging the reply and updating `README.md` once the outcome is known | M |
 | 21 | Announcement post | Drafted in `notes/`; hold until the CRAN outcome is known | S |
 | ~~22~~ | ~~Move the Medium walkthrough into a vignette~~ | **Done** — `vignettes/reverse-correlation-walkthrough.Rmd`. It now executes at build time, which proved its own premise: two lines of the published tutorial had already stopped working | M |
 | ~~23~~ | ~~`plotZmap(mask=)` validated then never applied~~ | **Done** — the mask is applied, under a "Behaviour change" heading in `NEWS.md`. It had never worked in any released version, so no published result depended on the old output. Two more bugs sat behind it, including a boolean conversion that set every cell `FALSE` | S |
@@ -110,7 +110,7 @@ breaking change) is out of it too and is not scheduled at all — see "Beyond v1
 | 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
 | 42 | The superseded Medium link is the only URL that ever 403s a checker | **Open, triage.** `README.md:68`. Local `--as-cran` flags it; for 1.2.3 no external check did — clean on both win-builder runs and all three R-hub platforms — but win-builder *did* flag it on 1.2.1, so it tracks the checker's network, not the version. The README already calls the post superseded by the vignette. Not done now because `README.md` ships in the tarball, so removing it would force every external check to re-run | S |
 | 43 | The vignette's `par()` bookend restores what nothing changed | **Open, triage.** `old_par <- par(no.readonly = TRUE)` at the top of the walkthrough and `par(old_par)` at the end, when the only `par()` mutation is inside the `show()` helper, which already saves and restores narrowly. It is also the form whose restore can error on `pin`. `on.exit()` is not an option — chunk code is top level, not a function. Kept for now because the echoed setup chunk teaches the pattern; CRAN named this file, so any change must still visibly reset `par()` | S |
-| 44 | **Move the backlog to GitHub Issues and delete this file** | **Open, P1 — highest-priority non-CRAN item.** All 25 open issues date from 2016–2017 and none comes from the modernization, so the tracker reads as a package abandoned in 2017. This file's status also lives in two hand-maintained places that have now disagreed six times. **Prerequisite: item 19's remaining sweep** — triaging 25 stale issues after opening ~18 new ones makes the tracker worse first. Items 17, 25, 27 and 30 go to `DECISIONS.md` instead of becoming issues. Held until item 1 settles | M |
+| 44 | **Move the backlog to GitHub Issues and delete this file** | **In progress, P1 — highest-priority non-CRAN item.** Its prerequisite is met: the tracker is triaged and at 17 open. This file's status still lives in two hand-maintained places that have disagreed six times, which is the failure mode the move ends. Done so far: P0–P3 labels created, the four settled non-fixes rehomed to `DECISIONS.md`, item 20 cut to 22 lines. Left: open one issue per remaining item, then delete this file | M |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -549,10 +549,10 @@ reporting is wanted later, add the token and set this back to `true` — the fir
 above is the recipe. The point of this change is narrower: a red `main` should mean the
 package is broken, and it now does.
 
-### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**, except the sweep
+### 19. Issues fixed in `main` but still open on the tracker  ✅ **DONE**
 
-> **The remaining sweep is the prerequisite for item 44.** The eight below are closed; the
-> other ~25 open issues have never been triaged, and item 44 cannot start until they are.
+> **Fully done 2026-08-08, including the sweep that gated item 44.** The eight below were
+> closed first; the remaining 25 were then triaged in one batch. Tracker at 17 open.
 
 Not a code task, but it is the largest gap between what the package *is* and what a
 prospective user *sees*. As of 2026-07-27 the tracker has 30 open issues, and at least
@@ -750,10 +750,10 @@ were its neighbours.
 - [ ] Then open one issue per remaining open item, delete this file, and leave a one-line
       pointer in `AGENTS.md`.
 
-**Gated on the sweep, not on CRAN.** The maintainer's sequencing is sweep → cleanup →
-migrate. The sweep itself is outward-facing — comments and closes notify people who filed
-these in 2016 — so the proposed text for all 25 goes to the maintainer for approval before
-anything is posted, per the convention already recorded on item 19.
+**Was gated on the sweep, not on CRAN**, and the sweep is done. The maintainer's sequencing
+was sweep → cleanup → migrate, and opening the issues is the last step. It is outward-facing
+in the same way the sweep was, so the proposed set goes to the maintainer for approval before
+anything is opened.
 
 **What it costs, honestly:** a change to the plan stops going through a reviewed PR, since
 issue edits are not reviewable. For a single maintainer that is close to zero, but it is a

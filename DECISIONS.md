@@ -156,17 +156,15 @@ the RNG stream either way — measured identical, max absolute difference 0. Wid
 trial × base image would change the return shape, so it needs a **new argument**, never a
 redefinition.
 
-### The empty `ref_lookup` rows were emptied deliberately, and both halves stand or fall together
-`01e547e` (2018-07-31) adopted the Euclidean norm and *k* from the Schmitz et al. erratum, which
-redefined the norms those medians and MADs summarise. Scoring CIs against a null built from the
-superseded formula would be worse than regenerating one, so the rows were commented out and the
-reference distribution has been rebuilt on every call since — correct, just slow.
+### Repopulating `ref_lookup` costs four measurements — and the two halves stand or fall together
+`AGENTS.md` covers what the table is (not a cache, empty since 2018, every lookup misses). What
+belongs here is the way out, because either half done alone is worse than the status quo.
 
 Repopulating means measuring four numbers: `median(reference_norms)` and `mad(reference_norms)`
 under the current formula for seed 1, 512px, 10000 iterations at 100/300/500/1000 trials, one
-`generateReferenceDistribution2IFC()` run each. The alternative is deleting the matching and
-prompt machinery. **Do not do half of either** — delete the rows' machinery while intending to
-re-measure, and the feature becomes unrecoverable rather than merely dormant.
+`generateReferenceDistribution2IFC()` run each. The alternative is deleting the ~55 lines of
+matching and prompt machinery. **Do not do half of either** — delete the machinery while
+intending to re-measure and the feature becomes unrecoverable rather than merely dormant.
 
 ---
 
