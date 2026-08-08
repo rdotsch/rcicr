@@ -18,8 +18,8 @@ Thank you for the review. This is 1.2.3, addressing each point.
    generated and has no `\examples` section, and **every `.Rd` in the package is now
    generated.**
 5. **`\dontrun{}` / `\donttest{}`** — all nine wrappers removed. Every example now runs,
-   at 32x32 pixels over six trials. The slowest single example takes under two seconds
-   against your five-second guideline, and the complete set about fifteen.
+   at 32x32 pixels over six trials, and no single example comes close to your five-second
+   guideline.
 6. **Writing to a default path** — `stimulus_path`, `targetpath` and `zmaptargetpath` have
    lost their defaults (`./stimuli`, `./cis`, `./zmaps`) and are required whenever a call
    writes, so a call that would previously have written now errors naming the argument to
@@ -50,9 +50,10 @@ submission; `NEWS.md` carries their entries.
   `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
 * GitHub Actions: ubuntu-latest on R release and R devel, macos-latest and windows-latest
   on R release — all green
-* win-builder, R-devel — <!-- TODO: result -->
-* win-builder, R-release — <!-- TODO: result -->
-* R-hub, R-devel on Linux, Windows and macOS — <!-- TODO: result -->
+* win-builder, R-devel (2026-08-06 r90366 ucrt) — 1 NOTE, the incoming feasibility one below
+* win-builder, R-release (4.6.1) — 1 NOTE, the same one
+* R-hub, R-devel on Linux (r90185), Windows (r90366 ucrt) and macOS (r90190) —
+  `Status: OK` on all three, no notes
 
 ## R CMD check results
 
