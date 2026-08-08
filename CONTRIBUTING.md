@@ -117,9 +117,15 @@ you anything. What does:
    gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments |
      jq -r --arg head "$head" '.[] | select(.commit_id == $head) | "\(.path):\(.line)  \(.body)"'
    ```
-   `--paginate` matters: the endpoint pages at 30 and a review-heavy PR truncates silently
-   without it. Pipe to `jq` rather than passing `--jq`, which is applied per page — `--jq
-   'length'` counts each page separately instead of totalling them.
+Both commands need `--paginate`: these endpoints page at 30, and a review-heavy PR truncates
+silently without it. Both also pipe to `jq` rather than passing `--jq`, and that distinction is
+load-bearing — `gh api`'s own filter runs once per page, so `--jq 'length'` reports a count per
+page rather than a total. **Piped output does not have that problem**, whatever `gh api --help`
+suggests when it says "Each page is a separate JSON array": that describes `--jq` and
+`--template`, and `gh` merges the pages before writing to stdout. Measured against 197 issues —
+piped, one array of 197; `--jq 'length'`, `100` then `97`. Do not "fix" these commands by adding
+`--slurp` on the strength of the help text; it would wrap the merged array in another array and
+break the filters.
 
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
