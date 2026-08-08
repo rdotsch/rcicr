@@ -34,7 +34,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 - **The workflows only trigger on PRs targeting `main`**, so a stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`. Retargeting an existing PR does *not* re-fire them; close and reopen it.
 - `.github/workflows/test-coverage.yaml` uploads to Codecov (needs a `CODECOV_TOKEN` secret); `codecov.yml` sets lenient thresholds because coverage is deliberately partial. `.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only — `styler`/`lintr`/`roxygenize` were left out because `styler` would reformat nearly every file and destroy `git blame`.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package, or `R CMD check` NOTEs "non-standard file/directory found at top level" (and a separate NOTE for dotfiles). Add it in the same commit as the file. It is a set of *regexes anchored with `^`*, not globs (e.g. `^BACKLOG\.md$`); read the file for the current list.
-  - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see `DECISIONS.md` → "Packaging, CI and tooling". Build the release tarball at the repo root, not in a `git worktree`.
+  - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see [`DECISIONS.md`](DECISIONS.md#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file). Build the release tarball at the repo root, not in a `git worktree`.
   - `.Rbuildignore` and `.gitignore` are **not** interchangeable. `R CMD build` works from the *working directory*, not from git, so a file that is git-ignored but present on disk still ships in the tarball unless `.Rbuildignore` also excludes it. Untracking a file is never a substitute for `.Rbuildignore`ing it.
 
 ## DECISIONS.md
@@ -78,7 +78,7 @@ onto `main`, and releases are marked by tags.
 
 - **The reproducibility gate is a release blocker.** `CONTRIBUTING.md` → "Releasing" holds the
   full checklist. The v1.0.1 reference is **pinned and does not advance** with each release —
-  see `DECISIONS.md` → "Testing".
+  see [`DECISIONS.md`](DECISIONS.md#the-v101-reference-is-pinned-the-previous-release-is-a-second-run-not-a-replacement).
 - **`main` carries a `.9000` development version between releases.** Right after a release,
   `DESCRIPTION` goes to `<released>.9000`; the release commit drops it to the clean number.
   `NEWS.md` accumulates entries under a `# rcicr (development version)` heading, renamed to
@@ -127,7 +127,7 @@ of the `.RData` file live in `README.md` — sections "How it works" and "Anatom
 
 ### Notes on conventions in this codebase
 
-- Functions use `save_as_png=TRUE` / `save_rdata=TRUE`-style side-effecting defaults — most analysis functions write PNGs to disk in addition to returning data structures. **The destination is always a required argument** (`stimulus_path`, `targetpath`, `zmaptargetpath`): none has a default, because a default path writes to the user's filespace uninvited and CRAN policy forbids it. Never reintroduce one — not even `tempdir()`; `DECISIONS.md` → "Packaging, CI and tooling" records why.
+- Functions use `save_as_png=TRUE` / `save_rdata=TRUE`-style side-effecting defaults — most analysis functions write PNGs to disk in addition to returning data structures. **The destination is always a required argument** (`stimulus_path`, `targetpath`, `zmaptargetpath`): none has a default, because a default path writes to the user's filespace uninvited and CRAN policy forbids it. Never reintroduce one — not even `tempdir()`; [`DECISIONS.md`](DECISIONS.md#write-paths-are-required-arguments-not-defaults-of-tempdir) records why.
 - Scaling of CI pixel intensities (`none`, `constant`, `matched`, `independent`) is a key user-facing decision, documented at length in `generateCI.R`'s roxygen header — read it before changing scaling logic.
 - `computeInfoVal2IFC()`'s `ref_lookup` tibble looks like a cache and is not one: **it has been empty since 2018**, its rows having been measured under the pre-erratum infoVal formula. Every lookup misses and the reference distribution is always regenerated. Do not describe it as a working cache; the matching machinery is kept only so the table can be repopulated cheaply.
 - `pre_0.3.0` / `generator_version` fields keep backward compatibility with `.Rdata` files from older versions (index-counter starts at 0 vs 1) — do not remove without understanding this.

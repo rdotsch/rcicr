@@ -595,7 +595,7 @@ Best done as one batch after #131 merges, so #122 closes with it rather than by 
 > tests ship and get run. The fix (item 35) landed on `main` **after** that tag, which is why
 > 1.2.1 exists at all. CRAN's incoming checks are mainly Linux and Windows so it might not
 > have blocked acceptance, but macOS binaries are checked on the farm after publication, and a
-> package returning from archival should not arrive already red. See `DECISIONS.md` → Testing
+> package returning from archival should not arrive already red. See [`DECISIONS.md`](DECISIONS.md#the-release-gate-runs-the-old-code-the-golden-master-only-re-runs-ours)
 > for the underlying rule.
 >
 > **All three external checks ran against the 1.2.1 tarball and are recorded in
@@ -881,7 +881,7 @@ checklist at the top of this item, which is the live one.
       report; take it as a to-fix list, not a gate, and set the gate at "no new lints".
 - [ ] **`styler` — all-or-nothing, and still deliberately deferred.** It would reformat
       nearly every file in one sweep and destroy `git blame`. If it ever happens it goes in
-      as a commit of its own, changing nothing else — see `DECISIONS.md` → "Packaging, CI and tooling". Neither tool is
+      as a commit of its own, changing nothing else — see [`DECISIONS.md`](DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own). Neither tool is
       in the pre-commit config, and that is why.
 - [ ] `generateCI()` is ~440 lines mixing CI computation, masking, scaling, PNG writing,
       z-maps, and parallelism. Extract the internal helpers (`applyMask`, `applyScaling`,
@@ -1212,7 +1212,7 @@ Fixed in #151 (`e0b74a7`) and released as **1.2.1**; the submitted tarball is bu
   where cairo gives 0.502 (colour management). That repeated the mistake being corrected, one
   line below it. The assertion is now an *ordering* — the same render over a darker background
   must come out darker — which survives any monotone transfer function.
-- **The general rule, now in `DECISIONS.md` → "Testing":** when a test reads pixels back from a graphics
+- **The general rule, now in [`DECISIONS.md`](DECISIONS.md#to-test-a-rendered-image-render-onto-a-uniform-background):** when a test reads pixels back from a graphics
   device, *every absolute property of those pixels belongs to the device* — channel count and
   value alike. Only relationships between renders are portable.
 - **The class of failure cannot recur unseen.** `R-CMD-check.yaml` gained macOS and Windows
@@ -1314,7 +1314,7 @@ libraries underneath. `terra` binds **GDAL, GEOS and PROJ**, which carry by far 
 history of anything here, and they arrive solely so that three `raster::plot()` calls can
 draw a matrix. (`png` → libpng and `jpeg` → libjpeg are the other native bindings, and unlike
 this one they are load-bearing.) Since CRAN publishes no advisory database, shrinking the
-native surface is the only lever available — see `DECISIONS.md`, "Dependabot watches the
+native surface is the only lever available — see [`DECISIONS.md`](DECISIONS.md#dependabot-watches-the-actions-not-the-r-packages), "Dependabot watches the
 actions, not the R packages".
 
 What has to be replaced is small but not nothing: `main`/`xlab` titling, `axes = F, box = F`,
@@ -1380,7 +1380,7 @@ Untested, roughly in order of how likely a user is to hit them:
       covers the no-`targetci` path, where the assertion is that the last correlation is 1 —
       true by construction. Supplying a target CI is what the function is actually for.
 
-### 38. Two error messages paste the base image matrix instead of its label **[verified] [own review]**
+### 38. Two error messages paste the base image matrix instead of its label **[verified] [own review]**  ✅ **FIXED**
 
 `stop(paste0('No parameters found for base image: ', base))` at
 `R/generateCI.R:177` and `R/computeCumulativeCICorrelation.R:83`. In both, `base` is the
@@ -1546,7 +1546,7 @@ delete the 1.1.0–1.2.3 pointer entries, and stop adding to it. That leaves eac
 exactly one job — `ChangeLog` the pre-`NEWS.md` archive, `NEWS.md` everything since — and
 removes a per-release step that currently has to be remembered. Three places document the
 current convention and would need updating with it: `AGENTS.md`, `CONTRIBUTING.md` and
-`DECISIONS.md` → "Releases and git".
+[`DECISIONS.md`](DECISIONS.md#changelog-gets-a-pointer-entry-not-a-duplicate).
 
 The alternative, migrating all 27 entries into `NEWS.md` and deleting the file outright,
 gives users the full history through `news()` but bloats `NEWS.md` with 2014-era detail in
@@ -1663,7 +1663,7 @@ tidying that needs no version bump at all (`CONTRIBUTING.md` → "Code conventio
 `tools/compare-release-output.R` installs and runs the released code and compares every
 output, so a pure rename-and-reformat has to come back with zero differences across the
 whole battery. Most projects cannot demonstrate that; this one can. The residual cost is
-`git blame`, which no gate can address — hence the rule in `DECISIONS.md` → "Packaging, CI and tooling" that a `styler` sweep
+`git blame`, which no gate can address — hence the rule in [`DECISIONS.md`](DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own) that a `styler` sweep
 lands as a commit of its own.
 
 **The case still to be made** is why the benefit exceeds all of that. "Consistent with modern
