@@ -148,6 +148,7 @@ of the `.RData` file live in `README.md` — sections "How it works" and "Anatom
 
 ### Notes on conventions in this codebase
 
+- **Comment sparingly.** Only where the reason would otherwise have to be re-derived, never to narrate the next line. This is the convention most often broken here — full rule in `CONTRIBUTING.md` → "Code conventions".
 - Functions use `save_as_png=TRUE` / `save_rdata=TRUE`-style side-effecting defaults — most analysis functions write PNGs to disk in addition to returning data structures. **The destination is always a required argument** (`stimulus_path`, `targetpath`, `zmaptargetpath`): none has a default, because a default path writes to the user's filespace uninvited and CRAN policy forbids it. Never reintroduce one — not even `tempdir()`; [`DECISIONS.md`](DECISIONS.md#write-paths-are-required-arguments-not-defaults-of-tempdir) records why.
 - Scaling of CI pixel intensities (`none`, `constant`, `matched`, `independent`) is a key user-facing decision, documented at length in `generateCI.R`'s roxygen header — read it before changing scaling logic.
 - `computeInfoVal2IFC()`'s `ref_lookup` tibble looks like a cache and is not one: **it has been empty since 2018**, its rows having been measured under the pre-erratum infoVal formula. Every lookup misses and the reference distribution is always regenerated. Do not describe it as a working cache; the matching machinery is kept only so the table can be repopulated cheaply.
