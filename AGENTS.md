@@ -3,12 +3,8 @@
 This file provides guidance to AI coding agents when working with code in this repository.
 It is the single source of truth for them; put conventions here.
 
-**`CLAUDE.md` at the repo root is a two-line stub that `@`-imports this file, and must not
-be deleted.** Claude Code reads `CLAUDE.md` and does not read `AGENTS.md`
-([docs](https://code.claude.com/docs/en/memory#agents-md)), so without the stub none of this
-loads — which was the case between the rename in #166 and 2026-08-08, and is why a session
-could miss the rules below on `NEWS.md` headings, `.Rbuildignore` and `test-fixed-bugs.R`.
-Keep this file under 200 lines; adherence drops above that.
+**Do not delete `CLAUDE.md`** — it is a stub that `@`-imports this file, and Claude Code
+loads only `CLAUDE.md`. Keep this file under 200 lines; adherence drops above that.
 
 ## What this is
 
@@ -123,7 +119,7 @@ Feature branches → PR → squash onto `main`, and releases are marked by tags.
 
 `BACKLOG.md` is the prioritized modernization backlog — read it before starting substantial work, and update it when you close something out.
 
-**It carries what is left to do, never where the project currently stands.** No "state as of" block, no release narrative, no next-steps list. That information belongs to `NEWS.md` (what changed for users), `cran-comments.md` (the submission), `CONTRIBUTING.md` → Releasing (the steps), and the open PRs and `git log` (what is in flight) — and a copy here drifts from all four. It did, four times, each time within a day of a release. A hold condition *is* backlog information and belongs on the item it holds; the project's current position is not.
+**It carries what is left to do, never where the project currently stands.** No "state as of" block, no release narrative, no next-steps list — that belongs to `NEWS.md`, `cran-comments.md`, `CONTRIBUTING.md` → Releasing, and the open PRs. A hold condition belongs on the item it holds; the project's position does not.
 
 It was compiled from the open GitHub issues, the published literature, and a direct source review, and it records:
 
