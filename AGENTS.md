@@ -99,6 +99,12 @@ replaced a chronological session log; do not recreate one.
 - **A push does not re-trigger it.** Only opening the PR, marking a draft ready, or an
   `@codex review` comment does. The review stays pinned to the commit it names, so every fix
   pushed afterwards is unreviewed; comment `@codex review` once the branch is final.
+- **If it never answers, merge without it.** The integration is not a required check and needs
+  no approval — the ruleset requires the five checks in "Testing and CI" and
+  `required_approving_review_count` is 0 — so it can be switched off or lapse with nothing to
+  announce it. Reviews here land in a couple of minutes; neither reaction nor comment well
+  after that means treat it as unavailable and merge on the other checks. This is a habit to
+  catch cheap mistakes, not a gate, and it must never become one an outage can hold shut.
 - Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
   clears stale remote refs locally.
 
