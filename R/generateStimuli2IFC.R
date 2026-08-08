@@ -20,7 +20,7 @@
 #' @param label Label to prepend to each file for your convenience.
 #' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
 #' @param seed Integer seeding the random number generator (for reproducibility).
-#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast.
+#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all — every pixel the same value — has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
@@ -57,10 +57,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   validateBaseFaceFiles(base_face_files)
 
-  # Read and check the base images before anything expensive or side-effecting
-  # runs. The noise basis below takes real time at the default 512px and the
-  # directory is created after it, so a base image that cannot be used is worth
-  # finding out about first.
+  # Before the noise basis, which is slow at the default 512px, and before the
+  # directory is created.
   base_faces <- list()
 
   for (base_face in names(base_face_files)) {
@@ -104,6 +102,19 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
     # If necessary, rescale to maximize contrast
     if (maximize_baseimage_contrast) {
+      # (img - min) / (max - min) is 0/0 on a uniform image, and the all-NaN
+      # base face went into the .Rdata unremarked (#176). Only an error here:
+      # with the rescale off a flat base image is usable and produces valid
+      # stimuli, so rejecting it outright would break a legitimate call.
+      if (max(img) == min(img)) {
+        stop(paste0('Base image "', base_face, '" (', filename, ') has no ',
+                    'contrast: every pixel is ', min(img), '. Contrast cannot ',
+                    'be maximized on a uniform image, and doing so would make ',
+                    'the base image entirely NaN. Use a base image with some ',
+                    'variation, or call generateStimuli2IFC() with ',
+                    'maximize_baseimage_contrast = FALSE.'))
+      }
+
       img <- (img - min(img)) / (max(img) - min(img))
     }
 
@@ -271,14 +282,10 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   }
 }
 
-# Which reader a base image file needs, from its extension: 'png', 'jpeg', or
-# NA for anything else.
+# Which reader a base image needs: 'png', 'jpeg', or NA.
 #
-# Anchored to the extension deliberately. This test used to be
-# grepl('png|PNG', filename) against the whole path, which matches anywhere in
-# it -- so a JPEG under a directory named "png" was handed to png::readPNG() and
-# failed with a format error that named neither the real problem nor the choice
-# this code had made on the user's behalf.
+# Anchored to the extension. The old grepl('png|PNG', filename) matched anywhere
+# in the path, so a JPEG under a directory named "png" went to png::readPNG().
 baseImageFormat <- function(filename) {
   if (grepl('\\.png$', filename, ignore.case = TRUE)) {
     return('png')
@@ -289,18 +296,11 @@ baseImageFormat <- function(filename) {
   NA_character_
 }
 
-# Check base_face_files before generateStimuli2IFC() does any expensive or
-# side-effecting work, and name the offending entry when something is wrong.
+# Check base_face_files up front and name the offending entry.
 #
-# Every branch here used to surface far from its cause. A non-list wrote its
-# explanation to stderr() and then called a bare stop(), so the condition it
-# raised carried an *empty* message: anything wrapping the call -- a Shiny app,
-# a batch script, knitr -- caught an error it could not report, and under sink()
-# or capture.output(type = 'message') the explanation could be separated from
-# the failure entirely. An unnamed or empty list passed that check and got as
-# far as the parallel workers, failing there with "attempt to select less than
-# one element in get1index", which names neither the argument nor the file.
-# See issues #124 and #180.
+# Each of these used to surface far from its cause: a bare stop() carrying an
+# empty message, or "attempt to select less than one element in get1index" from
+# inside a parallel worker. See issues #124 and #180.
 validateBaseFaceFiles <- function(base_face_files) {
   example <- 'e.g. base_face_files = list(aName = "baseface.jpg")'
 

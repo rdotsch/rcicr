@@ -37,7 +37,7 @@ generateStimuli2IFC(
 
 \item{seed}{Integer seeding the random number generator (for reproducibility).}
 
-\item{maximize_baseimage_contrast}{Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast.}
+\item{maximize_baseimage_contrast}{Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all — every pixel the same value — has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.}
 
 \item{noise_type}{String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).}
 
