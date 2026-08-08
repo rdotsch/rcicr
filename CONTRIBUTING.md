@@ -114,15 +114,21 @@ Two conditions clear a squash.
    ```sh
    gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
    ```
-3. **Leave no unresolved thread.** The 👍 speaks only for the latest run, so a finding you never
-   answered from an earlier round does not reopen it. Resolution state is GraphQL-only:
+3. **Resolve every thread you have answered.** The 👍 speaks only for the latest run, so a
+   finding left unanswered from an earlier round does not stop a later clean one. This half is
+   **enforced rather than checked**: the `main` ruleset sets `required_review_thread_resolution`,
+   so an unresolved thread blocks the squash server-side and no client-side count can clear it
+   by mistake. Resolve one by passing its `id` to the `resolveReviewThread` mutation.
+
+   To read what is still open — for answering, not for deciding:
    ```sh
    gh api graphql -f query='query { repository(owner: "rdotsch", name: "rcicr") {
-     pullRequest(number: <n>) { reviewThreads(first: 100) { nodes { isResolved } } } } }' \
-     --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'
+     pullRequest(number: <n>) { reviewThreads(first: 100) { nodes { id isResolved path } } } } }' \
+     --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
    ```
-   Zero clears it. Resolve a thread you have answered by passing its `id` (same query, add `id`
-   to the node fields) to the `resolveReviewThread` mutation.
+   That reads the first 100 threads and does not paginate, which is why it must not be the
+   gate: on a PR with more it would report nothing while an unresolved thread sat on page two.
+   GitHub is the gate; this is a convenience.
 
 `--paginate` on the findings listing is not optional: that endpoint pages at 30 and a
 review-heavy PR truncates silently without it. Pipe to `jq` rather than passing `--jq`, whose
@@ -131,11 +137,14 @@ filter runs once per page. Piped output is merged into one array despite `gh api
 `--slurp` on the strength of that sentence; it wraps the merged array in another array and
 breaks the filter.
 
-Every state that is not "👍 after your trigger, no unresolved threads" routes to reading the
-findings, whose worst case is a wasted look. Earlier versions of this section computed
-completion from review objects and `commit_id` and were wrong five separate ways — reporting a
-clean run as unfinished, an unrelated bot comment as clean, and hiding a reply because replies
-inherit the parent thread's commit. One green state, everything else not green.
+One green state, everything else not green: anything other than a 👍 newer than your trigger
+sends you to read the findings, whose worst case is a wasted look. Earlier versions of this
+section computed completion from review objects and `commit_id` and were wrong six separate
+ways — reporting a clean run as unfinished, an unrelated bot comment as clean, and hiding a
+reply because replies inherit the parent thread's commit. The lesson each time was the same:
+a client-side predicate that answers "is this safe to merge" fails open. The reaction is the
+one signal Codex sets deliberately, and thread resolution is enforced by GitHub rather than
+counted here.
 
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
