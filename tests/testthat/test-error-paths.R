@@ -78,7 +78,8 @@ test_that("generateCI reports which variable an .Rdata file is missing", {
   expect_missing("stimuli_params", "did not contain stimuli_params")
 
   # img_size is not a formal of generateCI(), so it can only come from the file
-  # -- unlike sigma, which is both, and which is what item 32 turned on.
+  # -- unlike sigma, which is both, and which is why load() could overwrite the
+  # argument with the file's field (the z-map sigma bug, fixed in #146).
   expect_missing("img_size", "did not contain img_size")
 })
 
@@ -264,7 +265,7 @@ test_that("generateStimuli2IFC rejects base_face_files that is not a list", {
   # This one calls stop() with no arguments after writing its explanation to
   # stderr(), so the condition carries an *empty* message and no regexp can
   # match it. Asserting only that it errors is the most this path allows;
-  # giving it a real message belongs to item 14.
+  # giving it a real message is the same class of work as #180.
   expect_error(
     suppressWarnings(
       generateStimuli2IFC(base_face_files = png, n_trials = 2, img_size = 32,

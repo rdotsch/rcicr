@@ -80,12 +80,12 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # then operate on whatever path that file happened to record.
   #
   # Keep every argument rather than the three that were known to collide: the
-  # hazard has bitten from the .Rdata side twice now (item 32 added `sigma` to
-  # the file and captured generateCI()'s z-map argument), so the guard has to
-  # hold for fields that do not exist yet. `target_ci` is the one that would
-  # hurt most here - it is read at the very end to compute the CI norm, so a
-  # file carrying that name would silently score somebody else's classification
-  # image and return a plausible number rather than an error.
+  # hazard has bitten from the .Rdata side twice now (a `sigma` field added to
+  # the file captured generateCI()'s z-map argument; fixed in #146), so the
+  # guard has to hold for fields that do not exist yet. `target_ci` is the one
+  # that would hurt most here - it is read at the very end to compute the CI
+  # norm, so a file carrying that name would silently score somebody else's
+  # classification image and return a plausible number rather than an error.
   .args <- captureArgs(environment())
   load(rdata)
   list2env(.args, envir = environment())

@@ -47,8 +47,9 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   # the .Rdata file silently overwrites an argument of the same name - the same
   # hazard handled in generateCI() and generateReferenceDistribution2IFC(). No
   # field written today collides with these arguments, so this changes nothing
-  # now; it is here because the collision that actually bit us (item 32) was
-  # created from the .Rdata side, by adding a field, not by adding an argument.
+  # now; it is here because the collision that actually bit us (the z-map
+  # `sigma`, fixed in #146) was created from the .Rdata side, by adding a field,
+  # not by adding an argument.
   #
   # Captured after the unlist() above, so the coerced vectors are what gets
   # restored rather than the original tibble columns.
