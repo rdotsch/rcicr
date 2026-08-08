@@ -12,19 +12,16 @@ loads only `CLAUDE.md`. Keep this file under 200 lines; adherence drops above th
 
 ## Check, don't assume
 
-**Verify a claim against the thing itself before writing it down or acting on it.** Three rules
-below are scar tissue from not doing that — the branch-protection API under "Testing and CI",
-and answering CRAN from a summary and quoting this machine's clock under "Releases and
-versioning". Each produced a confident wrong answer, and each keeps its detail there, where
-someone doing that task will hit it. This is the general form, for the cases not yet listed:
+**Verify a claim against the thing itself before writing it down or acting on it.** Several
+rules below are scar tissue from not doing that — the branch-protection API, answering CRAN
+from a summary, quoting this machine's clock — and each keeps its detail where someone doing
+that task will hit it. The general form:
 
-- **Run the command, read the file, query the API.** No "should be", "presumably", "as
-  expected". If a check was not run, say so rather than predicting its result.
-- **An empty result may mean you asked the wrong question.** Nothing found can mean the thing
-  is absent *or* that the endpoint, branch, path or scope was wrong — rule out the second
-  before reporting the first.
-- **Put the evidence next to the claim** — the command, the file and line, the actual output —
-  so the next reader can recheck it instead of re-deriving it.
+- **Run the command, read the file, query the API.** No "should be" or "as expected"; if a
+  check was not run, say so rather than predicting its result.
+- **An empty result may mean you asked the wrong question** — wrong endpoint, branch, path or
+  scope. Rule that out before reporting nothing found.
+- **Put the evidence next to the claim**: the command, the file and line, the actual output.
 
 ## Common commands
 
@@ -81,30 +78,12 @@ replaced a chronological session log; do not recreate one.
 - The squash commit message is the place to preserve *why* a change was made — the per-commit
   detail on the branch disappears, so measurements, rejected alternatives and reproducibility
   impact belong in the squash message or in `NEWS.md`, not only in the branch commits.
-- **Read the bot review before merging, and answer it.** Codex
-  (`chatgpt-codex-connector[bot]`) reviews on PR open, on ready-for-review and on a
-  `@codex review` comment, posting findings as inline review comments badged `P1`–`P3`.
-  Nothing makes you notice them: it submits as `COMMENTED`, so it never blocks a merge and
-  `reviewDecision` stays empty; `gh pr checks` is green regardless; and `gh pr view
-  --comments` shows only the review wrapper, **not the findings**. The one surface that has
-  them is `gh api repos/rdotsch/rcicr/pulls/<n>/comments`. It has been right about
-  substantive things (#170, #172, #173) — reply on each thread, fixing it or saying why not,
-  before squashing.
-- **An empty comment list is not an all-clear** — it also looks exactly like not-reviewed-yet.
-  What distinguishes them is the reaction on the PR body, via
-  `gh api repos/rdotsch/rcicr/issues/<n>/reactions`: 👀 while the review runs, replaced by 👍
-  if it finishes with nothing to say. Findings arrive as comments instead, with no 👍. The
-  reaction is replaced rather than added to, so compare its `created_at` against your last
-  commit — an older one cleared an earlier version of the branch, not this one.
-- **A push does not re-trigger it.** Only opening the PR, marking a draft ready, or an
-  `@codex review` comment does. The review stays pinned to the commit it names, so every fix
-  pushed afterwards is unreviewed; comment `@codex review` once the branch is final.
-- **If it never answers, merge without it.** The integration is not a required check and needs
-  no approval — the ruleset requires the five checks in "Testing and CI" and
-  `required_approving_review_count` is 0 — so it can be switched off or lapse with nothing to
-  announce it. Reviews here land in a couple of minutes; neither reaction nor comment well
-  after that means treat it as unavailable and merge on the other checks. This is a habit to
-  catch cheap mistakes, not a gate, and it must never become one an outage can hold shut.
+- **Read the Codex review before squashing, and answer it.** It is easy to merge past: it
+  never blocks — not a required check, submits as `COMMENTED` — and neither `gh pr checks` nor
+  `gh pr view --comments` shows the findings. They are inline review comments, at
+  `gh api repos/rdotsch/rcicr/pulls/<n>/comments`. An empty list means "not reviewed yet" as
+  often as "clean", and a push does not re-trigger the review. Mechanics, including how to
+  tell those two apart: `CONTRIBUTING.md` → "The Codex review".
 - Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
   clears stale remote refs locally.
 
