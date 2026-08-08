@@ -518,6 +518,31 @@ backlog information and stays on the item it holds; the project's current positi
 Same reasoning as deleting the hand-maintained `Version:`/`Date:` table from
 `man/rcicr-package.Rd` in 1.2.3: the way to keep a fact current is to stop writing it twice.
 
+### The backlog moves to GitHub Issues, after the stale issues are triaged
+Approved 2026-08-08. `BACKLOG.md` becomes the issue tracker; `BACKLOG.md` itself goes.
+The work is `BACKLOG.md` item 44, gated on item 19's remaining sweep.
+
+**The tracker is treated as a working surface, not a curated public product surface** — so
+internal maintenance work belongs in it alongside user-visible bugs, as in r-lib repos. The
+alternative considered was keeping the tracker for things a researcher would recognise as
+affecting them and holding chores elsewhere; rejected because two backlogs is the same
+duplication problem one layer up, and because the drift this file produced came precisely
+from status living somewhere a human has to remember to update.
+
+**The ordering is not incidental.** All 25 open issues date from 2016–2017, and opening ~18
+new ones into that would bury the triage under the migration. It also matters which half of
+this carries the value: **the sweep alone fixes the thing that actually costs something** —
+a tracker that reads as abandoned in 2017 while the package is being resubmitted to CRAN.
+The migration is the smaller remaining gain, which is why it is sequenced second rather than
+bundled.
+
+What deliberately does **not** become an issue: the "already correct — do not re-fix" entries
+(items 17, 25, 27, 30). Those are decisions and belong here. Item 17 was already duplicated
+in this file, which is what made the misfiling visible.
+
+**Known cost, accepted:** changes to the plan stop going through a reviewed PR, because issue
+edits are not reviewable. For a single maintainer that is close to zero.
+
 ### `CLAUDE.md` is a stub that imports `AGENTS.md`, not a symlink
 Claude Code reads `CLAUDE.md` and does not read `AGENTS.md`, so renaming the conventions file
 in #166 silently stopped it loading in every agent session until 2026-08-08 — including the

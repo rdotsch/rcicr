@@ -847,7 +847,11 @@ checklist at the top of this item, which is the live one.
 
 ### 44. Move the backlog to GitHub Issues and delete this file **[verified] [own review]**
 
-**Open, P1 — the highest-priority non-CRAN item. Size M.** Raised 2026-08-08.
+**Approved 2026-08-08, P1 — the highest-priority non-CRAN item. Size M.** Sequenced *after*
+item 19's sweep and the cleanup of the existing issues; see
+[`DECISIONS.md`](DECISIONS.md#the-backlog-moves-to-github-issues-after-the-stale-issues-are-triaged)
+for the decision and what was weighed. The tracker is treated as a **working surface**, so
+internal maintenance work belongs in it alongside user-visible bugs.
 
 **The tracker currently misrepresents the project.** All **25** open issues date from
 2016–2017; **not one** comes from the modernization. 77 are closed, the labels are GitHub's
@@ -893,16 +897,16 @@ in `DECISIONS.md`. It was never backlog, and neither are its neighbours.
 - [ ] Then open one issue per remaining open item, delete this file, and leave a one-line
       pointer in `AGENTS.md`.
 
-**Held until item 1 settles.** Creating ~18 issues notifies watchers, and doing it while a
-submission is with CRAN is noise for no CRAN benefit.
+**Gated on the sweep, not on CRAN.** The maintainer's sequencing is sweep → cleanup →
+migrate. The sweep itself is outward-facing — comments and closes notify people who filed
+these in 2016 — so the proposed text for all 25 goes to the maintainer for approval before
+anything is posted, per the convention already recorded on item 19.
 
 **What it costs, honestly:** a change to the plan stops going through a reviewed PR, since
 issue edits are not reviewable. For a single maintainer that is close to zero, but it is a
 real property being given up. Agent access also becomes `gh issue list --json ...` rather
 than one file read — which is arguably better, since it queries real state instead of a table
 that has been wrong six times.
-
-**Record the outcome in `DECISIONS.md` once decided**, whichever way it goes.
 
 ## P2 — Usability and maintainability
 
