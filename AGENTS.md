@@ -73,17 +73,16 @@ replaced a chronological session log; do not recreate one.
 - **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`). One
   commit per PR keeps history readable and makes `git revert` of a whole change
   straightforward, which matters here because a PR is usually one self-contained fix plus its
-  test and its `NEWS.md` entry. This is repo convention, not enforced by GitHub settings — it
-  is on whoever merges to pick the right one.
+  test and its `NEWS.md` entry. The `main` ruleset enforces it — `allowed_merge_methods` is
+  `["squash"]`, so the other buttons are not offered.
 - The squash commit message is the place to preserve *why* a change was made — the per-commit
   detail on the branch disappears, so measurements, rejected alternatives and reproducibility
   impact belong in the squash message or in `NEWS.md`, not only in the branch commits.
 - **Read the Codex review before squashing, and answer it.** It is easy to merge past: it
   never blocks — not a required check, submits as `COMMENTED` — and neither `gh pr checks` nor
-  `gh pr view --comments` shows its findings. Nor is reading them as simple as listing the
-  PR's comments: a push does not re-trigger the review, and the previous round's findings come
-  back looking current, so what you read has to be filtered to your head commit. Follow
-  `CONTRIBUTING.md` → "The Codex review".
+  `gh pr view --comments` shows its findings. Two things clear a squash: a 👍 on the PR body
+  dated after your own `@codex review` comment, and no unresolved review threads. One command
+  each, in `CONTRIBUTING.md` → "The Codex review".
 - Delete merged branches. `--delete-branch` on `gh pr merge` handles it; `git fetch --prune`
   clears stale remote refs locally.
 
