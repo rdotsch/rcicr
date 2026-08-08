@@ -69,8 +69,10 @@ Legend: **[P0]** correctness/blocking · **[P1]** high value · **[P2]** worthwh
 carries each one struck through with what it turned out to be; `NEWS.md` has the
 user-facing version.
 
-**Open and actionable:** items **27, 30, 31, 33** and **34** are triage, and **40** through
-**43** are the newest, all small. Items **1, 20** and **21** are not code — 1 and 21 wait on
+**Open and actionable:** **item 44 is the highest-priority non-CRAN item** — move this file to
+GitHub Issues, gated on item 19's remaining issue sweep. Items **27, 30, 31, 33** and **34**
+are triage, and **40** through **43** are small; 27, 30 and 25 should become `DECISIONS.md`
+entries under 44 rather than issues. Items **1, 20** and **21** are not code — 1 and 21 wait on
 CRAN, and 20 is a checklist that is re-run for every submission rather than closed.
 
 Items **13, 14 and 15** (modernize the R code, better errors, docs and onboarding) are the
@@ -111,6 +113,7 @@ breaking change) is out of it too and is not scheduled at all — see "Beyond v1
 | 40 | Retire `ChangeLog` as a live file | **Open, triage.** Not mandatory — R indexes `NEWS.md` for `news()` and ignores `ChangeLog` entirely — but it cannot simply be deleted: its 27 entries are the *only* record of 0.2.2 through 1.0.1. Freeze it as the pre-1.1.0 archive and drop the duplicated 1.1.0+ pointer entries, so it does one job and stops being a per-release chore | S |
 | 42 | The superseded Medium link is the only URL that ever 403s a checker | **Open, triage.** `README.md:68`. Local `--as-cran` flags it; for 1.2.3 no external check did — clean on both win-builder runs and all three R-hub platforms — but win-builder *did* flag it on 1.2.1, so it tracks the checker's network, not the version. The README already calls the post superseded by the vignette. Not done now because `README.md` ships in the tarball, so removing it would force every external check to re-run | S |
 | 43 | The vignette's `par()` bookend restores what nothing changed | **Open, triage.** `old_par <- par(no.readonly = TRUE)` at the top of the walkthrough and `par(old_par)` at the end, when the only `par()` mutation is inside the `show()` helper, which already saves and restores narrowly. It is also the form whose restore can error on `pin`. `on.exit()` is not an option — chunk code is top level, not a function. Kept for now because the echoed setup chunk teaches the pattern; CRAN named this file, so any change must still visibly reset `par()` | S |
+| 44 | **Move the backlog to GitHub Issues and delete this file** | **Open, P1 — highest-priority non-CRAN item.** All 25 open issues date from 2016–2017 and none comes from the modernization, so the tracker reads as a package abandoned in 2017. This file's status also lives in two hand-maintained places that have now disagreed six times. **Prerequisite: item 19's remaining sweep** — triaging 25 stale issues after opening ~18 new ones makes the tracker worse first. Items 17, 25, 27 and 30 go to `DECISIONS.md` instead of becoming issues. Held until item 1 settles | M |
 
 Items 2, 3, 6 and 7 shared a shape worth remembering, because it will recur: **the
 package failed silently or misleadingly rather than telling the user what went wrong.**
@@ -549,7 +552,10 @@ reporting is wanted later, add the token and set this back to `true` — the fir
 above is the recipe. The point of this change is narrower: a red `main` should mean the
 package is broken, and it now does.
 
-### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**
+### 19. Eight issues fixed in `main` but still open on the tracker  ✅ **DONE**, except the sweep
+
+> **The remaining sweep is the prerequisite for item 44.** The eight below are closed; the
+> other ~25 open issues have never been triaged, and item 44 cannot start until they are.
 
 Not a code task, but it is the largest gap between what the package *is* and what a
 prospective user *sees*. As of 2026-07-27 the tracker has 30 open issues, and at least
@@ -579,9 +585,12 @@ package's public health signal and it currently understates the state of the cod
       was the dominant cost, but the `ncores == 1` serial path in item 11 is still open and
       per-worker memory still scales with `img_size`. Comment with what changed and what
       did not, and leave it open, or close it explicitly scoped to the array copy.
-- [ ] Sweep the remaining ~22 open issues the same way — some are likely stale or already
-      resolved by earlier releases. This has not been done; the eight above are only the
-      ones this modernization pass touched directly.
+- [ ] **Sweep the remaining 25 open issues the same way — prerequisite for item 44.** Some
+      are likely stale or already resolved by earlier releases. Not done; the eight above
+      are only the ones this modernization pass touched directly. All 25 date from 2016–2017
+      and none is a bug report — the real bugs were the batch above. A partial triage exists
+      in `notes/issue-triage.md` (9 of 25 read). **Post nothing without the maintainer's
+      approval**: comments and closes notify subscribers and are outward-facing.
 
 Best done as one batch after #131 merges, so #122 closes with it rather than by hand.
 
@@ -835,6 +844,65 @@ and `vignettes/getting-started.Rmd` to further reading. All of that is done — 
 checklist at the top of this item, which is the live one.
 
 ---
+
+### 44. Move the backlog to GitHub Issues and delete this file **[verified] [own review]**
+
+**Open, P1 — the highest-priority non-CRAN item. Size M.** Raised 2026-08-08.
+
+**The tracker currently misrepresents the project.** All **25** open issues date from
+2016–2017; **not one** comes from the modernization. 77 are closed, the labels are GitHub's
+defaults, and there is no priority scheme. Someone landing on rcicr's issues sees a package
+abandoned in 2017 — no CRAN resubmission, no 43-item plan, no sign of this year's work. That
+is a worse public signal than item 19 described, and item 19 was called "the largest gap
+between what the package *is* and what a prospective user *sees*".
+
+**This file also keeps drifting, structurally.** Its status lives in two hand-maintained
+places — the order-of-attack table and each item's own heading — and they have disagreed
+**six times**, most recently item 38's heading reading open for a fix released days earlier,
+and item 19's ✅ sitting above an unchecked box. In a tracker, status is not a field someone
+remembers to update; it is the issue's state. The failure mode disappears rather than being
+managed.
+
+**Standard practice agrees.** For OSS R packages the near-universal split is Issues for work
+items, with in-repo files for conventions, decisions and user-facing history. r-lib and the
+tidyverse run this way. An in-repo backlog is a solo-project pattern.
+
+**Three jobs, three destinations.** This file is not one thing:
+
+| Job | Destination | Roughly |
+|---|---|---|
+| Open work items | **GitHub Issues** | ~750 lines |
+| "Already correct — do not re-fix", and why | **`DECISIONS.md`** | items 17, 25, 27, 30 |
+| Record of finished work | **`NEWS.md`, git, closed issues** | ~834 lines |
+
+Item 17 is the tell: "InfoVal formula, verified correct, do not re-fix" is already an entry
+in `DECISIONS.md`. It was never backlog, and neither are its neighbours.
+
+**Preparation, in order:**
+
+- [ ] **Item 19's remaining sweep — the hard prerequisite.** Triaging 25 stale issues *after*
+      opening ~18 new ones means the tracker gets worse before it gets better. Partial work in
+      `notes/issue-triage.md`. Nothing may be posted without the maintainer's approval.
+- [ ] **Create priority labels.** P0–P3 exist only as prose here; without them, priority is
+      the one thing the migration would lose.
+- [ ] **Rehome items 17, 25, 27 and 30 to `DECISIONS.md`** rather than opening issues for
+      them — they are settled non-fixes, not work.
+- [ ] **Rehome item 20's accumulated check results.** At 172 lines it is the largest section
+      in this file and roughly two-thirds of it duplicates `cran-comments.md` and
+      `notes/cran-review-*.md`. Keep the checklist, drop the per-submission record.
+- [ ] Then open one issue per remaining open item, delete this file, and leave a one-line
+      pointer in `AGENTS.md`.
+
+**Held until item 1 settles.** Creating ~18 issues notifies watchers, and doing it while a
+submission is with CRAN is noise for no CRAN benefit.
+
+**What it costs, honestly:** a change to the plan stops going through a reviewed PR, since
+issue edits are not reviewable. For a single maintainer that is close to zero, but it is a
+real property being given up. Agent access also becomes `gh issue list --json ...` rather
+than one file read — which is arguably better, since it queries real state instead of a table
+that has been wrong six times.
+
+**Record the outcome in `DECISIONS.md` once decided**, whichever way it goes.
 
 ## P2 — Usability and maintainability
 
