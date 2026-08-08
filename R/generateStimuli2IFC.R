@@ -60,7 +60,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   # Only create the directory when something is written to it.
   # generateReferenceDistribution2IFC() calls this with both save flags FALSE
-  # and used to leave a stray directory behind. BACKLOG.md item 24.
+  # and used to leave a stray ./stimuli directory behind.
   if (writes_to_disk) {
     dir.create(stimulus_path, recursive = TRUE, showWarnings = FALSE)
   } else if (missing(stimulus_path)) {

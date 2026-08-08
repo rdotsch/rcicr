@@ -1,7 +1,7 @@
 # Regression tests for bugs that HAVE been fixed.
 #
 # These began life in test-known-bugs.R as deliberately failing tests - the
-# executable form of the P0 list in BACKLOG.md. Every one of them now passes,
+# executable form of the P0 bug list from the modernization. Every one now passes,
 # so the file was renamed: its job from here on is to stop these bugs coming
 # back.
 #
@@ -10,7 +10,7 @@
 # bug back in. A failure means a regression.
 
 test_that("generateStimuli2IFC saves nscales and sigma in the .Rdata file", {
-  # BACKLOG item 2 / issue #81. Because nscales is not saved,
+  # Issue #81. Because nscales is not saved,
   # generateReferenceDistribution2IFC() silently rebuilds the InfoVal null
   # distribution on the default nscales=5 basis, so InfoVal values reported
   # from non-default nscales are computed against the wrong distribution.
@@ -26,7 +26,7 @@ test_that("generateStimuli2IFC saves nscales and sigma in the .Rdata file", {
 })
 
 test_that("computeInfoVal2IFC(force_gen_ref_dist = TRUE) regenerates the reference distribution", {
-  # BACKLOG item 3 / issue #113. The flag short-circuits the lookup-table
+  # Issue #113. The flag short-circuits the lookup-table
   # branch but never reaches the regeneration branch, because reference_norms
   # still exists() after load(). The user is given no indication it was ignored.
   tmp <- withr::local_tempdir()
@@ -50,7 +50,7 @@ test_that("computeInfoVal2IFC(force_gen_ref_dist = TRUE) regenerates the referen
 })
 
 test_that("generateCI accepts tibble columns as well as data.frame columns", {
-  # BACKLOG item 4 / issues #70 and #123. tbl[, "col"] stays a 1-column tibble
+  # Issues #70 and #123. tbl[, "col"] stays a 1-column tibble
   # where df[, "col"] drops to a vector, so aggregate() fails with
   # "arguments must have same length". Since readr/dplyr return tibbles by
   # default this is now the normal path for a modern user.
@@ -70,7 +70,7 @@ test_that("generateCI accepts tibble columns as well as data.frame columns", {
 })
 
 test_that("generateCI applies a matrix mask", {
-  # BACKLOG item 6 (no issue filed). generateCI() branches on
+  # No issue filed. generateCI() branches on
   # `if (!is.na(mask))`, which gets a matrix condition - a hard error since
   # R 4.2. A second bug sits behind it: applyMask() checks a hardcoded 512
   # rather than img_size, so masks fail for any other stimulus size.
@@ -91,7 +91,7 @@ test_that("generateCI applies a matrix mask", {
 })
 
 test_that("generateStimuli2IFC gives an informative error when the base image is not img_size", {
-  # BACKLOG item 7 / issue #124. The base image resize step is commented out
+  # Issue #124. The base image resize step is commented out
   # (left behind when the biOps dependency was dropped), and only squareness
   # is validated - so a size mismatch surfaces from inside a foreach worker as
   # "non-conformable arrays", naming neither the file nor the sizes.
@@ -111,7 +111,7 @@ test_that("generateStimuli2IFC gives an informative error when the base image is
 })
 
 test_that("generateNoiseImage supports pre-0.3.3 sinusoids/sinIdx noise patterns", {
-  # BACKLOG item 8 (no issue filed). The length check reads p$patchIdx before
+  # No issue filed. The length check reads p$patchIdx before
   # the block that renames sinusoids/sinIdx to patches/patchIdx, so the
   # backward compatibility the code clearly intends never actually works.
   p <- generateNoisePattern(16, nscales = 1)
@@ -122,7 +122,7 @@ test_that("generateNoiseImage supports pre-0.3.3 sinusoids/sinIdx noise patterns
 })
 
 test_that("simulateNoiseIntensities returns a matrix of noise intensity ranges", {
-  # BACKLOG item 5 (no issue filed). Sizes its progress bar with `data[, by]`,
+  # No issue filed. Sizes its progress bar with `data[, by]`,
   # but neither is a parameter of the function, so `data` resolves to
   # utils::data and it errors every time. It also ignores img_size, hardcoding
   # generateNoisePattern(img_size = 512).

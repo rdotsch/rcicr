@@ -2,7 +2,7 @@
 
 Why `rcicr` is the way it is: the measurement that ruled an option out, the alternative that
 looked obvious and was wrong, the thing that looks like a bug and is not. `NEWS.md` holds what
-changed for users, `BACKLOG.md` what is left, `AGENTS.md` and `CONTRIBUTING.md` the
+changed for users, the issue tracker what is left, `AGENTS.md` and `CONTRIBUTING.md` the
 conventions — none of them has room for *why*.
 
 **Add an entry when a decision was not obvious**: a plausible alternative rejected, something
@@ -25,7 +25,7 @@ enforces them, are in `CONTRIBUTING.md`.
 ## Numerics and the random number stream
 
 ### `purrr::rbernoulli()` was replaced with `runif()`, not `rbinom()`
-`BACKLOG.md` recommended `stats::rbinom(n, 1, p)`. **That advice was wrong.** `rbernoulli(n,
+An earlier note recommended `stats::rbinom(n, 1, p)`. **That advice was wrong.** `rbernoulli(n,
 p)` is internally `runif(n) > (1 - p)`, and `rbinom` draws from the stream differently —
 verified across 150 seed/probability combinations. Swapping it in would have silently changed
 every reference distribution, and therefore every InfoVal, computed from a given seed. The
@@ -92,7 +92,7 @@ The same release also fixed `sinIdx` counting from 0 rather than 1, which is wha
 
 The truncation this left behind in `generateCI()` had a dead branch for eleven years: the
 single-trial path tested for a length of 4092 and truncated to 4092, so it could never fire
-on the 4096-length input it was written for (`BACKLOG.md` item 28). **A backward-compatibility
+on the 4096-length input it was written for. **A backward-compatibility
 path that nothing exercises is indistinguishable from one that works** — this one had no test
 until 2026-07-28, and neither did the `sinusoids`/`sinIdx` path, which was also broken.
 
@@ -417,7 +417,7 @@ Where the actual CVE surface lives is worth stating, because it is not in R code
 the 53 packages in the recursive tree need compilation, and their vulnerabilities belong to the
 C libraries they bind to — **libpng** (`png`), **libjpeg** (`jpeg`), **GDAL/GEOS/PROJ**
 (`terra` ← `raster`). Those are patched by the user's operating system, not by CRAN, and
-nothing this package does can affect them. Dropping `raster` (`BACKLOG.md` item 34) is the only
+nothing this package does can affect them. Dropping `raster` (issue #186) is the only
 lever that shrinks it.
 
 **The actions genuinely needed watching.** Twelve of the thirteen in use were on floating
@@ -532,7 +532,7 @@ The same instinct applies in reverse — **do not explain a note the reviewer do
 local check, on no external check for 1.2.3, and not in CRAN's own pretest of 1.2.1. It was
 removed; the link stays in `README.md`, because `README.md` ships and removing it would
 invalidate the built tarball and force all five external checks to re-run for something no
-CRAN-side check has ever raised (`BACKLOG.md` item 42).
+CRAN-side check has ever raised (issue #192).
 
 ### Claims must survive on someone else's machine
 `cran-comments.md` twice stated a total runtime for the example set — "about nine seconds",
@@ -543,21 +543,22 @@ bar such as CRAN's five-second per-example limit; `NEWS.md`'s "about 6x faster, 
 0.28s per call" earns its place because a user feels that difference and the ratio holds
 anywhere. A bare absolute describes our hardware to a reader who has their own.
 
-### `BACKLOG.md` carries no project state
-It held a "state as of" block plus a "Last updated" narrative — some 78 lines describing where
-the release stood. Every fact in them lived somewhere with a better claim: `NEWS.md`,
-`cran-comments.md`, `CONTRIBUTING.md` → "Releasing", and the open PRs. **It drifted four
-times, each within a day of a release**, which is what a duplicated fact does rather than what
-a careless author does; the fourth fix was to write it more carefully, and it was wrong within
-the hour. Deleted, and replaced by four lines that name no facts. A *hold condition* is
-backlog information and stays on the item it holds; the project's current position is not.
+### A work tracker carries no project state
+`BACKLOG.md` once held a "state as of" block plus a "Last updated" narrative — some 78 lines
+describing where the release stood. Every fact in them lived somewhere with a better claim:
+`NEWS.md`, `cran-comments.md`, `CONTRIBUTING.md` → "Releasing", and the open PRs. **It drifted
+four times, each within a day of a release**, which is what a duplicated fact does rather than
+what a careless author does; the fourth fix was to write it more carefully, and it was wrong
+within the hour. The rule outlived the file and applies to the issue tracker: a *hold
+condition* belongs on the issue it holds; the project's current position belongs nowhere in
+the tracker at all.
 
 Same reasoning as deleting the hand-maintained `Version:`/`Date:` table from
 `man/rcicr-package.Rd` in 1.2.3: the way to keep a fact current is to stop writing it twice.
 
-### The backlog moves to GitHub Issues, after the stale issues are triaged
-Approved 2026-08-08. `BACKLOG.md` becomes the issue tracker; `BACKLOG.md` itself goes.
-The work is `BACKLOG.md` item 44, gated on item 19's remaining sweep.
+### The backlog moved to GitHub Issues, after the stale issues were triaged
+Done 2026-08-08: 21 issues opened as #174–#194 under `P0`–`P3` labels, and `BACKLOG.md`
+deleted. The sweep came first and was the hard prerequisite.
 
 **The tracker is treated as a working surface, not a curated public product surface** — so
 internal maintenance work belongs in it alongside user-visible bugs, as in r-lib repos. The
@@ -566,8 +567,8 @@ affecting them and holding chores elsewhere; rejected because two backlogs is th
 duplication problem one layer up, and because the drift this file produced came precisely
 from status living somewhere a human has to remember to update.
 
-**The ordering is not incidental.** All 25 open issues date from 2016–2017, and opening ~18
-new ones into that would bury the triage under the migration. It also matters which half of
+**The ordering was not incidental.** All 25 open issues dated from 2016–2017, and opening 21
+new ones into that would have buried the triage under the migration. It also matters which half of
 this carries the value: **the sweep alone fixes the thing that actually costs something** —
 a tracker that reads as abandoned in 2017 while the package is being resubmitted to CRAN.
 The migration is the smaller remaining gain, which is why it is sequenced second rather than

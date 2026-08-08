@@ -21,7 +21,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 
 - `tests/testthat/` has unit tests for every pure/deterministic function (`deg2rad`, `generateSinusoid`, `generateGabor`, `generateNoisePattern`, `generateNoiseImage`, `generateCINoise`), light/targeted tests for the I/O-heavy ones, and an end-to-end smoke test (`test-smoke-pipeline.R`).
 - `tests/testthat/helper-fixtures.R` provides shared fixtures: `make_square_png()` (synthetic base face — never a real photo), `make_fixture_rdata()` (runs a tiny `generateStimuli2IFC()` and returns the `.Rdata` path), `seed_reference_norms()` (pre-seeds a `reference_norms` vector so `computeInfoVal2IFC()` skips the expensive/interactive reference-distribution path).
-- `tests/testthat/test-fixed-bugs.R` holds regression tests for the P0 bugs in `BACKLOG.md`. They assert *intended* behaviour — never the buggy output they replaced. If one fails, that is a regression; do **not** "fix" it by asserting the broken result, which locks the bug back in.
+- `tests/testthat/test-fixed-bugs.R` holds regression tests for the P0 bugs found in the modernization pass. They assert *intended* behaviour — never the buggy output they replaced. If one fails, that is a regression; do **not** "fix" it by asserting the broken result, which locks the bug back in.
 - `tests/testthat/test-regression-baseline.R` is a golden master pinning the numeric output of the default pipeline — noise basis, classification image, scaling, infoVal — to the values produced *before* the P0 fixes. **If a change turns it red, that change alters researchers' results** and must be documented in `NEWS.md` under "Reproducibility impact" before merging. It is not a test to casually update.
 - `tools/compare-release-output.R` is the **release gate**: it installs a released version from its own commit (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference is allowed only with an `EXPECTED` entry in the script **and** a matching `NEWS.md` "Reproducibility impact" entry; both are checked, and a stale `EXPECTED` entry fails too. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `CONTRIBUTING.md` → "Releasing".
   - The battery is chosen by the **reference** version, not the current one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash — `mask`, z-maps below 512px, undecorated z-maps — have no old value to compare against. Before adding a configuration, check the reference version can execute it; a crash on the reference side aborts the whole gate.
@@ -33,7 +33,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 - Because the checks are required, an infrastructure flake blocks a merge. **This environment cannot re-run one** — `gh run rerun` returns `Resource not accessible by integration`, as does dispatching R-hub — so re-runs and workflow dispatches need the maintainer and the Actions tab.
 - **The workflows only trigger on PRs targeting `main`**, so a stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`. Retargeting an existing PR does *not* re-fire them; close and reopen it.
 - `.github/workflows/test-coverage.yaml` uploads to Codecov (needs a `CODECOV_TOKEN` secret); `codecov.yml` sets lenient thresholds because coverage is deliberately partial. `.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only — `styler`/`lintr`/`roxygenize` were left out because `styler` would reformat nearly every file and destroy `git blame`.
-- **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package, or `R CMD check` NOTEs "non-standard file/directory found at top level" (and a separate NOTE for dotfiles). Add it in the same commit as the file. It is a set of *regexes anchored with `^`*, not globs (e.g. `^BACKLOG\.md$`); read the file for the current list.
+- **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package, or `R CMD check` NOTEs "non-standard file/directory found at top level" (and a separate NOTE for dotfiles). Add it in the same commit as the file. It is a set of *regexes anchored with `^`*, not globs (e.g. `^DECISIONS\.md$`); read the file for the current list.
   - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see [`DECISIONS.md`](DECISIONS.md#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file). Build the release tarball at the repo root, not in a `git worktree`.
   - `.Rbuildignore` and `.gitignore` are **not** interchangeable. `R CMD build` works from the *working directory*, not from git, so a file that is git-ignored but present on disk still ships in the tarball unless `.Rbuildignore` also excludes it. Untracking a file is never a substitute for `.Rbuildignore`ing it.
 
@@ -50,10 +50,9 @@ replaced a chronological session log; do not recreate one.
   measuring something surprising, or deliberately *not* fixing something all qualify. Routine
   changes do not.
 - **Edit entries in place** when they stop being true. It is not an append-only log, and it
-  carries no dates, state or next-steps sections — `BACKLOG.md` holds what is left to do and
-  `NEWS.md` holds what changed for users.
-- **Do not restate in `DECISIONS.md` what this file, `CONTRIBUTING.md` or `BACKLOG.md`
-  already says.** Reference it instead. A duplicated rule drifts, and the copy a reader
+  carries no dates, state or next-steps sections — the issue tracker holds what is left to do
+  and `NEWS.md` holds what changed for users.
+- **Do not restate in `DECISIONS.md` what this file or `CONTRIBUTING.md` already says.** Reference it instead. A duplicated rule drifts, and the copy a reader
   happens to hit first is then wrong.
 
 ## Git and merge strategy
@@ -110,13 +109,17 @@ onto `main`, and releases are marked by tags.
   errors, then message-only fixes. Someone who stops reading after three bullets should have
   read the three that could change their results.
 
-## Backlog
+## The guiding constraint
 
-`BACKLOG.md` is the prioritized modernization backlog — read it before starting substantial work, and update it when you close something out.
+**Researchers re-run old analysis scripts years later.** Never change existing call syntax, argument meanings, or the numeric output of a function silently. Deprecate rather than delete; treat the `.Rdata` contract as append-only. When output does change it goes in `NEWS.md` under "Reproducibility impact", and the release gate has to agree — see "Testing and CI" above.
 
-**It carries what is left to do, never where the project currently stands.** No "state as of" block, no release narrative, no next-steps list — that belongs to `NEWS.md`, `cran-comments.md`, `CONTRIBUTING.md` → Releasing, and the open PRs. A hold condition belongs on the item it holds; the project's position does not.
+Some things **are already correct and must not be "re-fixed"** — notably the infoVal formula, which matches the published Schmitz et al. erratum. [`DECISIONS.md`](DECISIONS.md) records those with their reasoning; read it before changing something that looks wrong.
 
-It also records the **guiding constraint**: researchers re-run old analysis scripts years later, so never change existing call syntax, argument meanings, or the numeric output of a function silently. Deprecate rather than delete; treat the `.Rdata` contract as append-only. And it records what is **already correct and should not be "re-fixed"** — notably the infoVal formula, which already matches the published Schmitz et al. erratum.
+## Work is tracked in GitHub Issues
+
+`gh issue list`, prioritized with the `P0`–`P3` labels: P0 correctness and availability, P1 dependencies and toolchain, P2 usability and maintainability, P3 user-requested features. Read the tracker before starting substantial work, and close the issue when you finish.
+
+This replaced `BACKLOG.md`, an in-repo file whose status lived in two hand-maintained places that disagreed six times. **Do not recreate it** — an issue's state *is* its status, so that failure mode disappears rather than being managed. Anything settled, including a rejected alternative or a deliberate non-fix, belongs in `DECISIONS.md` rather than in an issue.
 
 ## Architecture
 

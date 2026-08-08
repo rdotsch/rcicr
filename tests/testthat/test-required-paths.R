@@ -35,7 +35,7 @@ test_that("generateStimuli2IFC needs no path when it writes nothing", {
   )
 
   expect_equal(ncol(noise), 2) # one column of noise per trial
-  # BACKLOG.md item 24: this path used to create ./stimuli anyway.
+  # This path used to create ./stimuli anyway.
   expect_false(dir.exists(file.path(dir, "stimuli")))
 })
 
@@ -52,7 +52,7 @@ test_that("generateReferenceDistribution2IFC leaves no stray stimuli directory",
   )
 
   # It re-generates the stimuli in memory only, so it must write nothing to the
-  # working directory. BACKLOG.md item 24.
+  # working directory.
   expect_equal(list.files(run_dir), character(0))
 })
 
