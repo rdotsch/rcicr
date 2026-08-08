@@ -106,7 +106,7 @@ test_that("the reference distribution is fixed by the stimulus file, not the cal
   # portable across machines.
   #
   # This determinism began as a *side effect* of the stimulus rebuild rather
-  # than a designed guarantee. Backlog item 26 resolved that: it is now
+  # than a designed guarantee. That was resolved in 1.2.0: it is now
   # documented as a guarantee under ?generateReferenceDistribution2IFC, the
   # set.seed() call it rests on carries a comment saying so, and the deliberate
   # way to vary the null is the response_seed argument tested below. This test

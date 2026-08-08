@@ -92,7 +92,7 @@ runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are d
 
 These describe what the code already does. **They apply to new and modified code**; there is
 no expectation that anyone reformats untouched files to match, and no sweep is planned — see
-`BACKLOG.md` item 36 for the one that would be, and why it needs a major version.
+issue #194 for the one that would be, and why it needs a major version.
 
 **Two of these are frozen by the constraint above, not chosen:**
 
@@ -112,11 +112,11 @@ outside the package can call them:
 | Internal helpers | camelCase, matching the exported style | Currently 7 camelCase (`applyMask`, `saveToImage`, `startBackend`, …) against one snake_case (`default_ncores`). New helpers follow the majority. |
 | Strings | single quotes | Roughly 3:2 in favour today; not worth churn to unify, but write new code single-quoted. |
 | Indentation | 2 spaces, no tabs | Already consistent; there are no tabs in `R/`. |
-| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` are rebindable variables, so this is a correctness rule, not a style one. 11 occurrences remain — item 13. |
+| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` are rebindable variables. In package code they resolve through the namespace and never reach a user's globals, so this is style rather than a hazard — but it is free, and the reasoning has to be re-derived every time someone notices. All occurrences were replaced in 1.2.2. |
 | Sequences | `seq_len()`/`seq_along()`, not `1:n` | `1:0` counts *backwards*, so `1:length(x)` on an empty vector iterates twice. |
 | Returns | explicit `return()` at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds `generateCI()`. `zzz.R` holds the `globalVariables()` declarations. |
-| Namespacing | prefer `@importFrom pkg fn` over `@import pkg` | `@import matlab` masks `base::sum()` with MATLAB semantics across six files — a live trap, item 13. |
+| Namespacing | prefer `@importFrom pkg fn` over `@import pkg` | `@import matlab` masks `base::sum()` with MATLAB semantics across six files — a live trap, issue #182. |
 
 Line length is not enforced; 35 lines in `R/` already exceed 100 characters. Wrap new code
 at something reasonable rather than reflowing what is there.
@@ -303,10 +303,15 @@ reporting. That is a repository ruleset, not something the workflow can enforce 
 
 ## Larger changes
 
-`BACKLOG.md` is the prioritized list of known work, with each item's evidence and any
-decisions already taken — including things that look like bugs but are intentional, and
-should not be "fixed". Read it before starting anything substantial, and if you are picking
-up an item, say so on the issue first so the work is not duplicated.
+Known work lives in [GitHub Issues](https://github.com/rdotsch/rcicr/issues), prioritized
+with the `P0`–`P3` labels: P0 correctness and availability, P1 dependencies and toolchain,
+P2 usability and maintainability, P3 user-requested features. Each carries the evidence
+behind it. Read the tracker before starting anything substantial, and comment on the issue
+before you begin so the work is not duplicated.
+
+`DECISIONS.md` is the companion: it records decisions already taken, **including things that
+look like bugs and are intentional and must not be "fixed"**. Check it before changing
+something that looks wrong.
 
 ## Code of conduct
 

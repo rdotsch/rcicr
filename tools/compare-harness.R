@@ -57,7 +57,7 @@ setwd(workdir)
 # zmap_plain is also the only way to cover a z-map below 512px: a *decorated*
 # small z-map cannot be produced by any version of rcicr, including this one.
 # Decoration needs margins the device does not have, and R fails with "figure
-# margins too large" -- measured, 128px fails and 256px works (backlog item 33).
+# margins too large" -- measured, 128px fails and 256px works (issue #177).
 #
 # The bracketed extras are skipped when the reference version predates them,
 # because the reference *crashes* on those calls rather than returning a

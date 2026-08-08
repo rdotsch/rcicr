@@ -1,7 +1,7 @@
 # Golden-master / characterization tests.
 #
 # These pin the numeric output of the core pipeline under NORMAL (default)
-# parameters, as it behaved BEFORE the BACKLOG.md P0 bug fixes were applied.
+# parameters, as it behaved BEFORE the P0 bug fixes were applied.
 # Their job is to answer one question for researchers:
 #
 #   "Does fixing these bugs change the classification images I already have?"
@@ -77,7 +77,7 @@ test_that("the default pipeline produces bit-stable classification images", {
 
 test_that("the default pipeline produces stable z-maps", {
   # Unlike its neighbours, this block does NOT pin pre-P0-fix behaviour, and
-  # cannot: z-maps were wrong before BACKLOG.md item 32 was fixed (an .Rdata
+  # cannot: z-maps were wrong before 1.2.0 fixed the sigma collision (an .Rdata
   # field named `sigma` shadowed generateCI()'s z-map blur argument, so the
   # blur ran at 25 rather than the documented 3). The only sane baseline is
   # current, post-fix output. Captured 2026-07-28 on R 4.3.3.
@@ -109,7 +109,7 @@ test_that("the default pipeline produces stable z-maps", {
       zmap = TRUE, zmapmethod = method, sigma = 3, threshold = 0,
       # zmapdecoration = FALSE is required, not stylistic: the default TRUE
       # dies inside base R with "figure margins too large" below 256px, and
-      # this fixture is 64px (BACKLOG.md item 33).
+      # this fixture is 64px (issue #177).
       zmapdecoration = FALSE, zmaptargetpath = file.path(tmp, "zmaps"),
       n_cores = 1
     )

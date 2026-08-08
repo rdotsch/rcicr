@@ -1,10 +1,11 @@
 # Backlog → GitHub Issues: the proposed issue set
 
-`BACKLOG.md` item 44. Every remaining open item and sub-item, **verified against the working
-tree at `1.2.3.9000`** before being proposed — the point of the migration is to stop carrying
+The migration of the retired `BACKLOG.md` to the issue tracker. Every remaining open item and
+sub-item, **verified against the working tree at `1.2.3.9000`** before being proposed — the point of the migration is to stop carrying
 claims nobody has rechecked, so minting a stale issue would defeat it.
 
-**Nothing has been opened.** This is the proposal for the maintainer to approve.
+**Approved and opened 2026-08-08 as #174–#194.** This file is the record of what was proposed
+and why, and of the verification behind each verdict — not a live view of the tracker.
 
 Items 13, 14 and 15 are umbrellas holding 14 independent tasks; they are split, because an
 umbrella issue cannot be closed while any box is open and so becomes the same drifting surface
@@ -14,7 +15,7 @@ the file is. The four settled non-fixes went to `DECISIONS.md` in PR #173 and ar
 
 | | n |
 |---|---|
-| **Propose opening** | 21 |
+| **Opened** (#174–#194) | 21 |
 | **Drop — already done, box never ticked** | 2 |
 | **Drop — a decision, not work** | 1 |
 | **Fold into another issue** | 1 |
@@ -30,7 +31,7 @@ the file is. The four settled non-fixes went to `DECISIONS.md` in PR #173 and ar
 
 ## Drop — a decision, already recorded
 
-**`styler`.** [`DECISIONS.md`](DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own)
+**`styler`.** [`DECISIONS.md`](../DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own)
 already says that if it ever happens it goes in as a commit of its own. An issue would invite
 someone to do the thing the decision defers.
 
@@ -42,7 +43,7 @@ see item 20". Nothing is left in it that item 20 does not carry.
 
 ---
 
-## Propose opening — 21 issues
+## Opened — 21 issues (#174–#194)
 
 ### P1 — waiting on CRAN
 
@@ -102,6 +103,6 @@ reconstruct.
 
 ## Afterwards
 
-`BACKLOG.md` is deleted and `AGENTS.md`'s "Backlog" section becomes a pointer to the tracker,
+`BACKLOG.md` was deleted in #195 and `AGENTS.md`'s "Backlog" section became a pointer to the tracker,
 keeping the guiding constraint it records — never change existing call syntax, argument
 meanings, or numeric output silently — which belongs to the project, not to the file.

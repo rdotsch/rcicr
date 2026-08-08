@@ -107,7 +107,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   # commit 18e07cb landed the import half as "add mask import ... (todo:
   # applying the mask)" and the todo was never picked up, so the argument was
   # validated and then silently discarded in every released version.
-  # BACKLOG.md item 23.
+  # The mask was validated and then never applied; see NEWS.md 1.2.0.
   if (!is.null(mask)) {
     zmap[mask] <- NA
   }
@@ -164,7 +164,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # so this branch could not run at all with a background image -- which is
     # every call from generateCI(), as it always passes the combined CI. The
     # decoration = TRUE branch above already used identical(); this one was
-    # missed. Same root cause as the `mask` bug in BACKLOG.md item 6.
+    # missed. Same root cause as the `mask` bug fixed in 1.1.0.
     if (!identical(bgimage, '')) {
       rasterImage(bgimage, 0, 0, 1, 1)
     }

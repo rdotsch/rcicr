@@ -45,7 +45,7 @@ jobs:
           # on pushes to main, so every merge turned the main branch red for a
           # reason unrelated to the code. Coverage is still computed and printed in
           # the step above; only the upload is allowed to fail. If a token is added
-          # later this can go back to true. See BACKLOG.md item 18.
+          # later this can go back to true. See DECISIONS.md, fail_ci_if_error.
           fail_ci_if_error: false
           files: ./cobertura.xml
           plugins: noop

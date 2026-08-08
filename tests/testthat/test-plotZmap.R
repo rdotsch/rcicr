@@ -15,7 +15,7 @@ test_that("decoration = FALSE works with a background image", {
   # normally an image matrix, so the condition had length img_size^2 -- an error
   # on R >= 4.2 rather than a silent first-element match. Every generateCI() call
   # passes a background image, so the whole undecorated path was dead. Same root
-  # cause as the `mask` bug (BACKLOG.md item 6).
+  # cause as the `mask` bug fixed in 1.1.0.
   tmp <- withr::local_tempdir()
 
   plotZmap(
@@ -165,7 +165,7 @@ test_that("raising the threshold removes regions from the z-map", {
 })
 
 test_that("a masked region is dropped from the z-map", {
-  # Regression test for BACKLOG.md item 23. Commit 18e07cb (2016) landed the
+  # Regression test for plotZmap(mask=). Commit 18e07cb (2016) landed the
   # mask import as "todo: applying the mask" and the todo was never picked up,
   # so `mask` was validated and then discarded in every released version. Half
   # a fully-painted z-map is masked here: that half must fall back to bare

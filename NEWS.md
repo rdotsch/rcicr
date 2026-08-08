@@ -103,7 +103,7 @@ gate confirms that against both 1.2.1 and 1.0.1.
   options off, purely to work in memory — but the directory was created before either
   option was consulted, so every call to it, and to `computeInfoVal2IFC()` when no
   reference distribution was cached, created an empty `./stimuli` wherever you happened to
-  be working. `BACKLOG.md` item 24.
+  be working.
 
 - **`plotZmap()` restores the graphics parameters it changes.** The undecorated branch set
   `par(mar = ...)` and left it set. It also now closes its PNG device through `on.exit()`,
