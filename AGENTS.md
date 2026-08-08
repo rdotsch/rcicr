@@ -1,6 +1,14 @@
 # AGENTS.md
 
 This file provides guidance to AI coding agents when working with code in this repository.
+It is the single source of truth for them; put conventions here.
+
+**`CLAUDE.md` at the repo root is a two-line stub that `@`-imports this file, and must not
+be deleted.** Claude Code reads `CLAUDE.md` and does not read `AGENTS.md`
+([docs](https://code.claude.com/docs/en/memory#agents-md)), so without the stub none of this
+loads — which was the case between the rename in #166 and 2026-08-08, and is why a session
+could miss the rules below on `NEWS.md` headings, `.Rbuildignore` and `test-fixed-bugs.R`.
+Keep this file under 200 lines; adherence drops above that.
 
 ## What this is
 
@@ -27,7 +35,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 - `.github/workflows/R-CMD-check.yaml` runs `R CMD check` on every push/PR to `main`, over four jobs: `ubuntu-latest` for R `release` and `devel`, plus `macos-latest` and `windows-latest` on `release`. The matrix previously varied only the R version on a hardcoded `ubuntu-latest` — one platform twice — and the first macOS run of any kind (an R-hub dispatch, 2026-07-28) failed a `plotZmap()` test that had been green on Linux for months. macOS and Windows are the two platforms CRAN gates on, so a platform-specific failure that only R-hub or win-builder would catch is one you find out about at submission time. **All four job names are required status checks matched by name**, so add rows to that matrix freely but never rename one: a required check that never reports reads as pending forever and blocks every PR. Being required also means an infrastructure flake blocks the merge — a Windows job died in `setup-r-dependencies` with `0xC0000409` (`STATUS_STACK_BUFFER_OVERRUN`) on a prose-only PR, before `R CMD check` ran at all. Re-run it; the token in this environment cannot (`gh run rerun` returns `Resource not accessible by integration`), so that needs the Actions tab. `.github/workflows/test-coverage.yaml` runs `covr::package_coverage()` and uploads to Codecov (needs a `CODECOV_TOKEN` repo secret). `codecov.yml` sets lenient coverage thresholds since coverage is deliberately partial (I/O-heavy functions get lighter tests, not full coverage).
 - **The workflows only trigger on PRs targeting `main`**, so a stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`. Retargeting an existing PR does *not* re-fire them; close and reopen it.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package. `R CMD check` fails a "non-standard file/directory found at top level" NOTE otherwise (and a separate "hidden files" NOTE for dotfiles). This has already caught `codecov.yml`, `.pre-commit-config.yaml`, and `BACKLOG.md` — if you add a config, doc, or scratch file at the repo root, update `.Rbuildignore` in the same commit. Note the file is a set of *regexes anchored with `^`*, not globs (e.g. `^BACKLOG\.md$`).
-  - It currently excludes `.git`, `*.Rproj`, `.Rproj.user`, `.github`, `.claude`, `AGENTS.md`, `DECISIONS.md`, `.pre-commit-config.yaml`, `codecov.yml`, `BACKLOG.md`, `CONTRIBUTING.md`, `notes`, `*.Rcheck`, `*.tar.gz`, `cran-comments.md`, `tools`.
+  - It currently excludes `.git`, `*.Rproj`, `.Rproj.user`, `.github`, `.claude`, `AGENTS.md`, `CLAUDE.md`, `DECISIONS.md`, `.pre-commit-config.yaml`, `codecov.yml`, `BACKLOG.md`, `CONTRIBUTING.md`, `notes`, `*.Rcheck`, `*.tar.gz`, `cran-comments.md`, `tools`.
   - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see `DECISIONS.md`. Build the release tarball at the repo root, not in a `git worktree`.
   - `.Rbuildignore` and `.gitignore` are **not** interchangeable. `R CMD build` works from the
     *working directory*, not from git, so a file that is git-ignored but present on disk still
