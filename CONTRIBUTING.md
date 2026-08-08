@@ -92,25 +92,34 @@ merge path makes you notice it, so read it deliberately before squashing.
 - **It never blocks, and must not become something that can.** It submits as `COMMENTED`, so
   `reviewDecision` stays empty; it is not a required check; no approval is required. If it has
   been switched off, or simply is not answering, merge on the other checks.
-- **Findings are inline review comments**, badged `P1`–`P3`. `gh pr checks` stays green
-  regardless, and `gh pr view --comments` shows only the review wrapper. One surface has them,
-  and it pages at 30 — a review-heavy PR truncates silently without `--paginate`:
-  ```sh
-  gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
-  ```
-  Keep to that streaming form: `--paginate` applies `--jq` per page, so `--jq 'length'` counts
-  each page separately instead of totalling them.
-- **An empty list is not an all-clear** — it is identical to not-reviewed-yet. What tells them
-  apart is the reaction on the PR body, `gh api repos/rdotsch/rcicr/issues/<n>/reactions`: 👀
-  while the review runs, replaced by 👍 when it finishes with nothing to say. Do not try to
-  date that against your commits: a commit timestamp is when it was authored locally, not when
-  it was pushed, and a review that began before a push can land its reaction after it. Either
-  way a stale 👍 reads as current.
-- **A push does not re-trigger it.** Only opening the PR, marking a draft ready, or an
-  `@codex review` comment does, so it stays pinned to the commit it named and later fixes go
-  unreviewed. That ordering is the only dependable freshness check — push last, *then* comment
-  `@codex review`, then read the result and answer each thread, fixing it or saying why not,
-  before you squash.
+The findings are inline review comments badged `P1`–`P3`. `gh pr checks` stays green
+regardless and `gh pr view --comments` shows only the review wrapper, so neither surface tells
+you anything. What does:
+
+1. **Push everything first, then comment `@codex review`.** A push does not re-trigger the
+   review — only that comment, opening the PR, or marking a draft ready does — so anything
+   pushed afterwards goes unreviewed against a review pinned to an older commit.
+2. **Wait for a review submitted against your head.** The previous round's comments are
+   returned immediately and look exactly like a result, so an unfiltered read cannot tell a
+   finished re-review from a running one. Reviews and comments both carry `commit_id`:
+   ```sh
+   head=$(git rev-parse HEAD)
+   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/reviews |
+     jq --arg head "$head" '[.[] | select(.commit_id == $head and (.user.login|test("codex")))] | length'
+   ```
+   Zero means it has not finished. The other completion signal is the reaction on the PR body
+   (`.../issues/<n>/reactions`): 👀 while the review runs, replaced by 👍 when it finishes with
+   nothing to say. Do not try to date that reaction against a commit — a commit timestamp
+   records local authoring, not the push, so a stale 👍 can look current.
+3. **Read only the findings at that head**, then answer each thread — fixing it, or saying why
+   not — before you squash:
+   ```sh
+   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments |
+     jq -r --arg head "$head" '.[] | select(.commit_id == $head) | "\(.path):\(.line)  \(.body)"'
+   ```
+   `--paginate` matters: the endpoint pages at 30 and a review-heavy PR truncates silently
+   without it. Pipe to `jq` rather than passing `--jq`, which is applied per page — `--jq
+   'length'` counts each page separately instead of totalling them.
 
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
