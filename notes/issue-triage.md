@@ -4,10 +4,10 @@ Prerequisite for `BACKLOG.md` item 44 (move the backlog to GitHub Issues). Item 
 eight issues the modernization fixed directly; these 25 are the remainder. All date from
 2016–2017, none is a bug report.
 
-**Approved by the maintainer 2026-08-08; not yet posted.** Every verdict below is approved as
-written. Posting is blocked in the agent environment — `gh issue close` and `gh issue comment`
-are denied by the permission classifier — so the nine postings need the maintainer or an
-allowlist rule. Verified against the working tree at `1.2.3.9000`.
+**Approved and posted 2026-08-08.** Every comment below went out as written: eight closes and
+the correction on #87, which stays open. 17 issues remain open, and item 44's prerequisite is
+met. Verdicts were verified against the working tree at `1.2.3.9000`; this file is the record
+of what was posted and why, not a live view of the tracker.
 
 ## Summary
 
@@ -271,11 +271,8 @@ nine years. Both were the maintainer's call, not a code check.
 
 ## Sequencing note for item 44
 
-Nine postings — eight closes and the #87 correction — all to people who filed or followed
-these years ago. Worth doing in one sitting rather than spread across days, and **before** ~18
-new issues are opened from `BACKLOG.md`, per item 44's prerequisite.
+All nine postings went out together on 2026-08-08 — one sitting, as intended, and **before**
+the ~18 new issues item 44 opens from `BACKLOG.md`. That prerequisite is now met.
 
-The comment bodies are approved as written above. They were not posted from the agent
-environment: `gh issue close` and `gh issue comment` are both refused by the permission
-classifier, so this needs the maintainer running them, or a Bash allowlist rule for `gh issue`
-in `.claude/settings.json`.
+The tracker afterwards: **17 open** — #6, #7, #10, #15, #22, #35, #37, #38, #46, #47, #54,
+#69, #71, #74, #76, #85, #87.
