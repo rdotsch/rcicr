@@ -107,10 +107,14 @@ Two conditions clear a squash.
    no reaction at all when it has findings.
    ```sh
    gh api repos/rdotsch/rcicr/issues/<n>/reactions \
-     --jq '.[] | select(.user.login|test("codex")) | "\(.content) \(.created_at)"'
+     --jq '.[] | select(.user.id == 199175422) | "\(.user.login) \(.content) \(.created_at)"'
    ```
    Only a `+1` dated after `$trig` clears it. 👀, nothing, and an older `+1` all mean not
-   cleared — read the findings and answer each one:
+   cleared. The filter is Codex's numeric account id (`chatgpt-codex-connector[bot]`, printed
+   back so you can see whose reaction cleared the gate) because reactions are open to anyone
+   with read access: a substring match on the login would let any account containing "codex"
+   clear a review that is still running, and an id survives a rename besides. When not cleared,
+   read the findings and answer each one:
    ```sh
    gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
    ```
