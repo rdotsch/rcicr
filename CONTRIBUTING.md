@@ -86,46 +86,66 @@ attaching a real face photo.
 
 ### The Codex review
 
-Codex reviews pull requests here and has caught real errors (#170, #172, #173). Nothing in the
-merge path makes you notice it, so read it deliberately before squashing.
+Codex reviews pull requests here and has caught real errors (#170, #172, #173, and three on the
+PR that wrote this section). Nothing in the merge path makes you notice it: it submits as
+`COMMENTED`, so it never blocks and `reviewDecision` stays empty; `gh pr checks` is green
+regardless; and `gh pr view --comments` shows only the review wrapper, never the findings.
 
-- **It never blocks, and must not become something that can.** It submits as `COMMENTED`, so
-  `reviewDecision` stays empty; it is not a required check; no approval is required. If it has
-  been switched off, or simply is not answering, merge on the other checks.
-The findings are inline review comments badged `P1`–`P3`. `gh pr checks` stays green
-regardless and `gh pr view --comments` shows only the review wrapper, so neither surface tells
-you anything. What does:
+**It must not become something that can block.** If it has been switched off, or simply is not
+answering, merge on the other checks.
 
-1. **Push everything first, then comment `@codex review`.** A push does not re-trigger the
-   review — only that comment, opening the PR, or marking a draft ready does — so anything
-   pushed afterwards goes unreviewed against a review pinned to an older commit.
-2. **Wait for a review submitted against your head.** The previous round's comments are
-   returned immediately and look exactly like a result, so an unfiltered read cannot tell a
-   finished re-review from a running one. Reviews and comments both carry `commit_id`:
+Two conditions clear a squash.
+
+1. **Push everything, then trigger, keeping the timestamp.** A push does not re-trigger the
+   review — only this comment, opening the PR, or marking a draft ready does. Posting it
+   returns the anchor you need:
    ```sh
-   head=$(git rev-parse HEAD)
-   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/reviews |
-     jq --arg head "$head" '[.[] | select(.commit_id == $head and (.user.login|test("codex")))] | length'
+   trig=$(gh api repos/rdotsch/rcicr/issues/<n>/comments -f body='@codex review' --jq '.created_at')
    ```
-   Zero means it has not finished. The other completion signal is the reaction on the PR body
-   (`.../issues/<n>/reactions`): 👀 while the review runs, replaced by 👍 when it finishes with
-   nothing to say. Do not try to date that reaction against a commit — a commit timestamp
-   records local authoring, not the push, so a stale 👍 can look current.
-3. **Read only the findings at that head**, then answer each thread — fixing it, or saying why
-   not — before you squash:
+2. **Wait for a 👍 newer than `$trig`.** The reaction on the PR body tracks the *latest run*
+   rather than the PR's history: 👀 while it runs, 👍 when it finishes with nothing to say, and
+   no reaction at all when it has findings.
    ```sh
-   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments |
-     jq -r --arg head "$head" '.[] | select(.commit_id == $head) | "\(.path):\(.line)  \(.body)"'
+   gh api repos/rdotsch/rcicr/issues/<n>/reactions \
+     --jq '.[] | select(.user.id == 199175422) | "\(.user.login) \(.content) \(.created_at)"'
    ```
-Both commands need `--paginate`: these endpoints page at 30, and a review-heavy PR truncates
-silently without it. Both also pipe to `jq` rather than passing `--jq`, and that distinction is
-load-bearing — `gh api`'s own filter runs once per page, so `--jq 'length'` reports a count per
-page rather than a total. **Piped output does not have that problem**, whatever `gh api --help`
-suggests when it says "Each page is a separate JSON array": that describes `--jq` and
-`--template`, and `gh` merges the pages before writing to stdout. Measured against 197 issues —
-piped, one array of 197; `--jq 'length'`, `100` then `97`. Do not "fix" these commands by adding
-`--slurp` on the strength of the help text; it would wrap the merged array in another array and
-break the filters.
+   Only a `+1` dated after `$trig` clears it. 👀, nothing, and an older `+1` all mean not
+   cleared. The filter is Codex's numeric account id (`chatgpt-codex-connector[bot]`, printed
+   back so you can see whose reaction cleared the gate) because reactions are open to anyone
+   with read access: a substring match on the login would let any account containing "codex"
+   clear a review that is still running, and an id survives a rename besides. When not cleared,
+   read the findings and answer each one:
+   ```sh
+   gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
+   ```
+3. **Resolve every thread you have answered.** The 👍 speaks only for the latest run, so a
+   finding left unanswered from an earlier round does not stop a later clean one. This half is
+   **enforced rather than checked**: the `main` ruleset sets `required_review_thread_resolution`,
+   so an unresolved thread blocks the squash server-side and no client-side count can clear it
+   by mistake. Resolve one by passing its `id` to the `resolveReviewThread` mutation.
+
+   To read what is still open — for answering, not for deciding:
+   ```sh
+   gh api graphql -f query='query { repository(owner: "rdotsch", name: "rcicr") {
+     pullRequest(number: <n>) { reviewThreads(first: 100) { nodes { id isResolved path } } } } }' \
+     --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+   ```
+   That reads the first 100 threads and does not paginate, which is why it must not be the
+   gate: on a PR with more it would report nothing while an unresolved thread sat on page two.
+   GitHub is the gate; this is a convenience.
+
+`--paginate` on the findings listing is not optional: that endpoint pages at 30, and a
+review-heavy PR truncates silently without it. The filter there is per-element, so it prints
+every finding whichever way the pages arrive.
+
+One green state, everything else not green: anything other than a 👍 newer than your trigger
+sends you to read the findings, whose worst case is a wasted look. Earlier versions of this
+section computed completion from review objects and `commit_id` and were wrong six separate
+ways — reporting a clean run as unfinished, an unrelated bot comment as clean, and hiding a
+reply because replies inherit the parent thread's commit. The lesson each time was the same:
+a client-side predicate that answers "is this safe to merge" fails open. The reaction is the
+one signal Codex sets deliberately, and thread resolution is enforced by GitHub rather than
+counted here.
 
 CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
 runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
