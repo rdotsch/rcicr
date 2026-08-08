@@ -1554,4 +1554,3 @@ contributors arrive expecting snake_case. Neither is obviously worth a major ver
   `generateCI()` already defaults to exactly that. **Verify and close.** (Note the
   *separate*, still-open problem in item #11: `generateReferenceDistribution2IFC()` has no
   `ncores` argument at all.)
-
