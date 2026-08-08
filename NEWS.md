@@ -1,3 +1,5 @@
+# rcicr (development version)
+
 # rcicr 1.2.3 (2026-08-07)
 
 **Documentation only. Nothing this package computes has changed** — no function,
