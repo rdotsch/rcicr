@@ -84,6 +84,12 @@ onto `main`, and releases are marked by tags.
   `NEWS.md` accumulates entries under a `# rcicr (development version)` heading, renamed to
   `# rcicr X.Y.Z (date)` at release time.
 - **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a GitHub release.
+- **Log every CRAN reply verbatim** in `notes/cran-review-<version>.md`, named for the
+  version whose tarball it reviews — `cran-review-1.2.1.md` reviews the 1.2.1 submission,
+  answered by 1.2.2 and 1.2.3. Add a new file per reply rather than editing an old one, and
+  **answer from the file, not from a summary of it**: a summary dropped one of the two
+  filenames in a point, and three drafts of the reply then told the reviewer we could not
+  find what she had named.
 - **Build the CRAN tarball from the tag, never from `main` HEAD.** This is also what keeps the
   `.9000` suffix safe: `Version contains large components` is only a CRAN blocker if the
   *submitted tarball* carries it, and a tarball built from a tag never does. Do not drop the

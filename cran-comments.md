@@ -12,14 +12,17 @@ Thank you for the review. This is 1.2.3, addressing each point.
    Langner and Van Knippenberg (2008) `<doi:10.1111/j.1467-9280.2008.02186.x>`, which the
    previous page carried. All three DOIs were verified against CrossRef.
 3. **`T`/`F` → `TRUE`/`FALSE`** — all 11 occurrences, including the four argument defaults
-   visible in the two `.Rd` files you quoted. No value changed.
-4. **Commented-out example lines** — removed. On `generateNoisePattern.Rd` we found none;
-   sweeping every `.Rd` file rather than the one named located it in
-   `man/rcicr-package.Rd`, whose `\examples` section was the single line
-   `#simple examples will be added soon.` from 2016. That page was the package's only
-   hand-maintained `.Rd`, which is why a sweep of the roxygen sources missed it. It is now
-   generated and has no `\examples` section, and **every `.Rd` in the package is now
-   generated.**
+   visible in the two `.Rd` files you quoted. No value changed. Neither `T` nor `F` is used
+   as a variable name anywhere in the package.
+4. **Commented-out example lines** — removed. Of the two files you listed,
+   `generateNoiseImage.Rd` had them: its whole `\examples` section was three commented
+   lines, and it now runs a real example. `generateNoisePattern.Rd` already held the live
+   call `generateNoisePattern(256)` and no commented line. Sweeping every `.Rd` rather than
+   only those two turned up a third, `man/rcicr-package.Rd`, whose entire `\examples`
+   section was `#simple examples will be added soon.` from 2016. That page was the
+   package's only hand-maintained `.Rd`, which is why a sweep of the roxygen sources missed
+   it. It is now generated and has no `\examples` section, and **every `.Rd` in the package
+   is now generated.**
 5. **`\dontrun{}` / `\donttest{}`** — all nine wrappers removed. Every example now runs,
    at 32x32 pixels over six trials, and no single example comes close to your five-second
    guideline.
