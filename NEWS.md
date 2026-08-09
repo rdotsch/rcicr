@@ -3,9 +3,9 @@
 ## Behaviour changes
 
 - **`plotZmap()` no longer depends on `raster`, and its `...` arguments now go to
-  `graphics::image()` instead of `raster::plot()`.** `col` behaves the same way in both (and
-  now actually works — see the bug fixes below); a call passing an argument specific to
-  `raster::plot()` will now be rejected as unused. Dropping the dependency also removes
+  `graphics::image()` instead of the raster package's plot method.** `col` behaves the same
+  way in both (and now actually works — see the bug fixes below); a call passing an argument
+  specific to that method will now be rejected as unused. Dropping the dependency also removes
   `terra`, `sp` and `Rcpp`, and with them the GDAL/GEOS/PROJ system libraries that every
   Linux CI job had to install before it could start.
 
