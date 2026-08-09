@@ -357,6 +357,10 @@ Submit at <https://cran.r-project.org/submit.html>, pasting the body of `cran-co
 into the "Optional comment" field — that file is `.Rbuildignore`d and reaches CRAN only this
 way, never inside the tarball. `devtools::submit_cran()` does the same thing.
 
+**Paste the tag's copy, not `main`'s** — `git show vX.Y.Z:cran-comments.md`. Submission can
+trail tagging by weeks, and `main` moves in between; its copy would describe check results
+from a tree that is not the tarball, and nothing in the submission would contradict it.
+
 **Ron submits to CRAN personally.** CRAN emails the maintainer address to confirm, and for a
 package archived over an undeliverable address, that confirmation *is* the point of the
 resubmission.
