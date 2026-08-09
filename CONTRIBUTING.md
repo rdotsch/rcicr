@@ -83,6 +83,11 @@ attaching a real face photo.
 - PRs are merged to `main` with **squash merges**, so put anything a future reader needs —
   measurements, rejected alternatives, reproducibility impact — in the PR description or
   `NEWS.md`, not only in individual branch commits.
+- **Write for the state the change ends in, not the route you took to it.** Commit messages,
+  PR comments and code comments describe what the change is and why it is right. How many
+  attempts it took, and what each one got wrong, is invisible in the squashed history and in
+  the merged code — nobody arrives at the file that way. Keep a rejected alternative only
+  when someone would otherwise retry it, and give it a line, not a chronology.
 
 ### Testing
 
