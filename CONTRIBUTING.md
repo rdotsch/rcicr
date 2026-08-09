@@ -86,10 +86,12 @@ attaching a real face photo.
 
 ### Testing
 
-- **Proving a test fails without its fix: use `cp` backups in a scratchpad, not git.**
-  `git checkout <file>` discards unstaged work and has destroyed an in-progress
-  implementation here. Guard each mutation with a `grep -q MUTANT` check as well — a mutation
-  that silently failed to apply looks exactly like a surviving mutant.
+- **Going beyond the one-off check above — mutating the code repeatedly — keep `cp` backups
+  in a scratchpad, and never restore with `git checkout <file>`.** The `git stash push -- R/`
+  in the checklist is right for proving a single fix; it is the *restore* step that bites,
+  because `git checkout <file>` discards unstaged work and has destroyed an in-progress
+  implementation here. Guard each mutation with a `grep -q MUTANT` check too — one that
+  silently failed to apply looks exactly like a surviving mutant.
 - **When a test reads pixels back from a graphics device, assert only relationships between
   renders.** Every absolute property of those pixels belongs to the device: the channel count
   (cairo writes RGB, macOS quartz writes RGBA) and the values alike (quartz renders a 0.5
