@@ -467,10 +467,13 @@ test_that("a decorated z-map too small for its margins is refused, by name", {
 })
 
 test_that("a smaller pointsize fits the decoration onto a small device", {
+  # 6, not 8: the minimum size is measured in inches, so it depends on the
+  # device's resolution. Windows' png() is 96 ppi where cairo is 72, and 128px
+  # at pointsize 8 fits the first and not the second.
   tmp <- withr::local_tempdir()
 
   plotZmap(matrix(5, 8, 8), sigma = 3, threshold = 3, decoration = TRUE,
-           targetpath = tmp, filename = "small", size = 128, pointsize = 8)
+           targetpath = tmp, filename = "small", size = 128, pointsize = 6)
 
   expect_true(file.exists(file.path(tmp, "small.png")))
 })
@@ -496,6 +499,6 @@ test_that("generateCI forwards zmappointsize to the z-map", {
   expect_error(do.call(generateCI, args), "decoration = FALSE")
   expect_false(file.exists(file.path(zmaps, "base.png")))
 
-  expect_no_error(do.call(generateCI, c(args, list(zmappointsize = 8))))
+  expect_no_error(do.call(generateCI, c(args, list(zmappointsize = 6))))
   expect_true(file.exists(file.path(zmaps, "base.png")))
 })
