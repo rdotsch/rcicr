@@ -98,7 +98,7 @@
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.</p></dd>
+<dd><p>Additional arguments to be passed to <code><a href="https://rdrr.io/r/graphics/image.html" class="external-link">graphics::image</a></code>. Only applied when decoration is TRUE.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -108,7 +108,7 @@
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
-Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the <code>col</code> argument. See raster::plot for details.</p>
+Unlisted additional arguments will be passed to <code><a href="https://rdrr.io/r/graphics/image.html" class="external-link">graphics::image</a></code>. For example, a different color palette can be specified using the <code>col</code> argument. See <code><a href="https://rdrr.io/r/graphics/image.html" class="external-link">graphics::image</a></code> for details. Versions up to and including 1.2.3 passed these to the raster package's plot method instead; <code>col</code> works the same way in both, but an argument specific to that method will no longer be understood.</p>
     </div>
     <div class="section level2">
     <h2 id="reproducibility-across-platforms">Reproducibility across platforms<a class="anchor" aria-label="anchor" href="#reproducibility-across-platforms"></a></h2>

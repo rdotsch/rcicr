@@ -4,6 +4,37 @@
 
 ### Behaviour changes
 
+- **[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  no longer depends on `raster`, and its `...` arguments now go to
+  [`graphics::image()`](https://rdrr.io/r/graphics/image.html) instead
+  of the raster package’s plot method.** `col` behaves the same way in
+  both (and now actually works — see the bug fixes below); a call
+  passing an argument specific to that method will now be rejected as
+  unused. Dropping the dependency also removes `terra`, `sp` and `Rcpp`,
+  and with them the GDAL/GEOS/PROJ system libraries that every Linux CI
+  job had to install before it could start.
+
+  **The z-map itself renders identically** — the undecorated figures
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  writes are pixel-for-pixel the same as before, within colour
+  quantisation, and a golden reference rendered by the old `raster` code
+  is committed as a test fixture to keep it that way. The palettes are
+  unchanged, including the quirk that a z-map drawn over a background
+  image uses the default palette rather than the viridis one.
+
+- **A `decoration = TRUE` z-map is laid out slightly differently.** The
+  colour bar is now drawn by hand rather than by `raster`, and the map
+  is a few pixels wider at 512px. If you regenerate a decorated z-map
+  figure, it will not be pixel-identical to one saved with 1.2.3 — the
+  same is already true of regenerating it on a different operating
+  system, and for the same reason: what a graphics device paints is not
+  part of what this package computes. No z-score, classification image,
+  scaling result or informational value changes, and
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
+  own z-map figures are undecorated and unaffected. See
+  [`?plotZmap`](https://rdotsch.github.io/rcicr/reference/plotZmap.md),
+  “Reproducibility across platforms”.
+
 - **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   now checks `base_face_files` before it generates anything, and names
   the entry it cannot use.** Four inputs used to get past the old check
@@ -34,6 +65,15 @@
   instead of reaching a reader that cannot parse it.
 
 ### Bug fixes
+
+- **`plotZmap(col = ...)` works.** Supplying a palette is how
+  [`?plotZmap`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  has always told you to change the colours, and doing it stopped the
+  call with `formal argument "col" matched by multiple actual arguments`
+  before anything was drawn — the function passed its own `col`
+  alongside yours. This affected every released version; the argument is
+  now taken as an override, and is used for the colour bar as well as
+  the map.
 
 - **A base image with no contrast no longer becomes an all-`NaN` base
   image.** Under `maximize_baseimage_contrast = TRUE`, the default,

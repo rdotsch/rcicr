@@ -280,8 +280,21 @@ its own** — never as a side effect of other work, so `git blame`
 survives it. Why the pre-commit hooks stay minimal and language-agnostic
 is above.
 
-Two rules that are about this package rather than about R:
+Three rules that are about this package rather than about R:
 
+- **Do not write a package-qualified call as code — in backticks or
+  `\code{}` — for a package the docs only *mention*.** The pkgdown site
+  resolves such a link by loading that package, and a package that is
+  installed but cannot load takes the whole site build down with it.
+  This is not hypothetical: after `raster` was dropped in \#186 the
+  runners kept it in their restored library while the sysreqs scan
+  stopped installing its GDAL/PROJ system libraries, so the build died
+  with `libproj.so.25: cannot open shared object file` — once from the
+  roxygen, then again from the `NEWS.md` entry describing the same
+  change. Name it in prose instead: “the raster package’s plot method”.
+  A package that is simply absent is fine, which is why `rhub::` and
+  `gitcreds::` appear above without trouble. `README.md`, `NEWS.md`,
+  `DECISIONS.md`, this file and the vignettes are all rendered.
 - **Add new names loaded from an `.Rdata` file to `R/zzz.R`’s
   [`globalVariables()`](https://rdrr.io/r/utils/globalVariables.html)**,
   or `R CMD check` NOTEs about undefined globals.

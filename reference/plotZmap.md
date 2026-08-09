@@ -79,8 +79,9 @@ plotZmap(
 
 - ...:
 
-  Additional arguments to be passed to raster::plot. Only applied when
-  decoration is TRUE.
+  Additional arguments to be passed to
+  [`graphics::image`](https://rdrr.io/r/graphics/image.html). Only
+  applied when decoration is TRUE.
 
 ## Value
 
@@ -91,8 +92,12 @@ Nothing. It writes a Z-map image.
 This function takes in a matrix of z-scores (as returned by generateCI)
 and an Rdata file containing a base image. It returns a Z-map image in
 PNG format. Unlisted additional arguments will be passed to
-raster::plot. For example, a different color palette can be specified
-using the `col` argument. See raster::plot for details.
+[`graphics::image`](https://rdrr.io/r/graphics/image.html). For example,
+a different color palette can be specified using the `col` argument. See
+[`graphics::image`](https://rdrr.io/r/graphics/image.html) for details.
+Versions up to and including 1.2.3 passed these to the raster package's
+plot method instead; `col` works the same way in both, but an argument
+specific to that method will no longer be understood.
 
 ## Reproducibility across platforms
 
