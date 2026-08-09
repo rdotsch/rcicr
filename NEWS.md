@@ -12,10 +12,17 @@
   **The z-map itself renders identically** — the undecorated figures `generateCI()` writes
   are pixel-for-pixel the same as before, within colour quantisation, and a golden reference
   rendered by the old `raster` code is committed as a test fixture to keep it that way. The
-  **decorated** figures differ slightly in layout: the colour bar is now drawn by hand, and
-  the map is a few pixels wider at 512px. The palettes are unchanged, including the quirk
-  that a z-map drawn over a background image uses the default palette rather than the
-  viridis one.
+  palettes are unchanged, including the quirk that a z-map drawn over a background image uses
+  the default palette rather than the viridis one.
+
+- **A `decoration = TRUE` z-map is laid out slightly differently.** The colour bar is now
+  drawn by hand rather than by `raster`, and the map is a few pixels wider at 512px. If you
+  regenerate a decorated z-map figure, it will not be pixel-identical to one saved with 1.2.3
+  — the same is already true of regenerating it on a different operating system, and for the
+  same reason: what a graphics device paints is not part of what this package computes. No
+  z-score, classification image, scaling result or informational value changes, and
+  `generateCI()`'s own z-map figures are undecorated and unaffected. See
+  `?plotZmap`, "Reproducibility across platforms".
 
 - **`generateStimuli2IFC()` now checks `base_face_files` before it generates anything,
   and names the entry it cannot use.** Four inputs used to get past the old check and
