@@ -393,6 +393,38 @@ test_that("a fixed colour scale passed through ... is respected", {
   )))
 })
 
+test_that("custom breaks colour the map and label the colour bar", {
+  # graphics::image() gives breaks precedence over zlim when assigning colours,
+  # so a colour bar spaced over zlim (or over the data) would report a scale the
+  # map was not drawn on. This combination could not be reached at all before
+  # the col fix above -- it died on the argument collision -- so the bar had
+  # never been wrong in a released version, only newly reachable.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(c(rep(9, 32), rep(-9, 32)), 8, 8)
+
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "breaks", size = 300,
+           col = c("blue", "red"), breaks = c(-100, 0, 100))
+  img <- png::readPNG(file.path(tmp, "breaks.png"))
+
+  # Every painted cell is one of the two colours asked for. A palette applied
+  # over the data range instead would interpolate and produce neither.
+  px <- unique(round(matrix(img[, , 1:3], ncol = 3), 3))
+  is_blue <- any(apply(px, 1, function(p) isTRUE(all.equal(p, c(0, 0, 1), tolerance = 0.02))))
+  is_red <- any(apply(px, 1, function(p) isTRUE(all.equal(p, c(1, 0, 0), tolerance = 0.02))))
+  expect_true(is_blue)
+  expect_true(is_red)
+
+  # The bar is drawn on the caller's breaks: widening them has to change the
+  # figure even though the map's own colours are unchanged.
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "breaks_wide", size = 300,
+           col = c("blue", "red"), breaks = c(-1000, 0, 1000))
+  expect_false(isTRUE(all.equal(
+    img, png::readPNG(file.path(tmp, "breaks_wide.png"))
+  )))
+})
+
 test_that("a palette passed through ... is used, not rejected", {
   # ?plotZmap has always offered `col` as the way to change the palette, and
   # passing it has always failed: the call supplied its own col alongside the

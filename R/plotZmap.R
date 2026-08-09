@@ -40,21 +40,29 @@ drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
 
 # The colour bar raster::plot() drew beside a decorated map. Nothing in base R
 # draws one, and fields::image.plot would only trade one dependency for another.
-drawZmapLegend <- function(zmap, col, zlim = NULL) {
+drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
   # Nothing suprathreshold, or a single value: no scale to label. Computing
   # range() first would warn on the empty case.
   finite <- zmap[is.finite(zmap)]
   if (!length(finite) || diff(range(finite)) == 0) {
     return(invisible(NULL))
   }
-  # A caller-supplied zlim is the scale the map was drawn on, so the bar has to
-  # be labelled with it rather than with the data's own range.
-  if (is.null(zlim)) zlim <- range(finite)
+  # The bar has to be labelled with the scale the map was drawn on, not with the
+  # data's own range. image() gives breaks precedence over zlim when both are
+  # present, so the order here matches: caller's breaks, then caller's zlim, then
+  # the data. Its own length check -- one more break than colour -- has already
+  # passed on the map by the time the bar is drawn.
+  edges <- if (!is.null(breaks)) {
+    breaks
+  } else {
+    if (is.null(zlim)) zlim <- range(finite)
+    seq(zlim[1], zlim[2], length.out = length(col) + 1)
+  }
 
   oldpar <- par(fig = c(0.86, 0.90, 0.30, 0.70), mar = c(0, 0, 0, 0), new = TRUE)
   on.exit(par(oldpar), add = TRUE, after = FALSE)
 
-  image(x = c(0, 1), y = seq(zlim[1], zlim[2], length.out = length(col) + 1),
+  image(x = c(0, 1), y = edges,
         z = matrix(seq_along(col), nrow = 1), col = col,
         axes = FALSE, xlab = '', ylab = '', useRaster = TRUE)
   axis(4, las = 1, cex.axis = 0.8, tcl = -0.2, mgp = c(3, 0.4, 0))
@@ -241,7 +249,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # instead. Drawn between the map and the box, the box came out as two thin
     # lines across the middle of the figure.
     drawZmapLegend(zmap, col = if (identical(bgimage, '')) base_col else overlay_col,
-                   zlim = dots$zlim)
+                   zlim = dots$zlim, breaks = dots$breaks)
     # Without decoration
   }
   if (!decoration) {
