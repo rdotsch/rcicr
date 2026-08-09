@@ -395,29 +395,16 @@ test_that("a fixed colour scale passed through ... is respected", {
 
 test_that("custom breaks decide which colour each z-score gets", {
   # graphics::image() gives breaks precedence over zlim when assigning colours,
-  # so the colour bar has to be drawn on them too or it reports a scale the map
-  # was not drawn on. This combination could not be reached before the col fix
-  # below -- it died on the argument collision -- so no released version ever
-  # drew a wrong bar; it was newly reachable.
+  # so the colour bar is drawn on them too, or it reports a scale the map was
+  # not drawn on.
   #
-  # Stated only as a difference BETWEEN renders. Three earlier versions asserted
-  # something about the pixels of a single render -- literal blue and red, then
-  # a count of distinct colours, then a count of colours holding at least 0.2%
-  # of the image -- and each measured the graphics device rather than the
-  # palette: the last counted 2 on cairo, 7 on Windows and 13 on quartz for
-  # identical input.
-  #
-  # The two renders hold `breaks` FIXED and vary only the data, so the colour
-  # bar is identical in both and the map is the only thing that can differ. A
-  # version that varied the breaks instead passed while `breaks` was being
-  # dropped from the map entirely -- the bar alone made the images unequal, and
-  # the mutant survived.
+  # Everything but the data is held fixed -- breaks, palette, and `main`, whose
+  # default embeds the differing filename -- so the map is the only thing that
+  # can differ between the two renders. An assertion about the pixels of a
+  # single render would measure the graphics device instead: absolute colours,
+  # and even counts of them, vary across cairo, quartz and Windows.
   tmp <- withr::local_tempdir()
 
-  # main is pinned because the default title embeds `filename`, and the two
-  # renders must go to different files. Left to default it differed by its
-  # heading text alone, which made the images unequal whatever the map did --
-  # and a mutant dropping breaks from the map survived that.
   render <- function(name, value) {
     plotZmap(matrix(value, 8, 8), sigma = 3, threshold = 3, decoration = TRUE,
              targetpath = tmp, filename = name, size = 300, main = "z-map",
@@ -425,9 +412,8 @@ test_that("custom breaks decide which colour each z-score gets", {
     png::readPNG(file.path(tmp, paste0(name, ".png")))
   }
 
-  # 4 and 9 straddle the break at 6, so honouring it puts them in different
-  # bins. Ignoring it makes both a constant map over its own degenerate range,
-  # which lands every cell in the same colour -- identical renders.
+  # 4 and 9 straddle the break at 6. Ignoring it makes each a constant map over
+  # its own degenerate range, which lands every cell in the same colour.
   expect_false(isTRUE(all.equal(render("below_break", 4), render("above_break", 9))))
 })
 
