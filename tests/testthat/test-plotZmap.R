@@ -325,7 +325,6 @@ test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel"
   #      offset or a different palette moves whole cells and destroys it.
   #   2. Exact, where the fixture's own backend is in use. Tolerance 0.02 is
   #      ~5/255, covering 8-bit rounding only.
-  skip_if_not_installed("png")
 
   input <- readRDS(test_path("fixtures", "zmap-raster-reference-input.rds"))
   tmp <- withr::local_tempdir()
