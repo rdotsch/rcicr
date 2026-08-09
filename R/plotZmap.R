@@ -41,10 +41,16 @@ drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
 # The colour bar raster::plot() drew beside a decorated map. Nothing in base R
 # draws one, and fields::image.plot would only trade one dependency for another.
 drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
-  # Nothing suprathreshold, or a single value: no scale to label. Computing
-  # range() first would warn on the empty case.
   finite <- zmap[is.finite(zmap)]
-  if (!length(finite) || diff(range(finite)) == 0) {
+
+  # Draw a bar whenever there is a scale to label, and only skip when there is
+  # none: no caller scale and nothing left above the threshold. Measured against
+  # raster::plot() in all four combinations rather than assumed -- it drew a bar
+  # for a constant z-map (over the value +/- a hair) and for an all-NA map given
+  # an explicit zlim, and drew none only for an all-NA map with no zlim. An
+  # earlier version here skipped on any degenerate data range, which silently
+  # dropped the bar from a call that had asked for a scale.
+  if (is.null(breaks) && is.null(zlim) && !length(finite)) {
     return(invisible(NULL))
   }
   # The bar has to be labelled with the scale the map was drawn on, not with the
@@ -56,6 +62,12 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
     breaks
   } else {
     if (is.null(zlim)) zlim <- range(finite)
+    # A constant z-map gives a degenerate range, which seq() would collapse to a
+    # bar of zero height. image() widens such a range around the value rather
+    # than refusing it; the same rule is applied here.
+    if (diff(zlim) == 0) {
+      zlim <- if (zlim[1] == 0) c(-1, 1) else zlim[1] + c(-0.4, 0.4) * abs(zlim[1])
+    }
     seq(zlim[1], zlim[2], length.out = length(col) + 1)
   }
 

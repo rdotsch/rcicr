@@ -400,20 +400,46 @@ test_that("custom breaks colour the map and label the colour bar", {
   # the col fix above -- it died on the argument collision -- so the bar had
   # never been wrong in a released version, only newly reachable.
   tmp <- withr::local_tempdir()
-  zmap <- matrix(c(rep(9, 32), rep(-9, 32)), 8, 8)
+  # Graded rather than two-valued, or the comparison below proves nothing: with
+  # only two distinct z-scores every palette yields two tones, breaks or not.
+  zmap <- matrix(seq(-12, 12, length.out = 64), 8, 8)
 
   plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
            targetpath = tmp, filename = "breaks", size = 300,
            col = c("blue", "red"), breaks = c(-100, 0, 100))
   img <- png::readPNG(file.path(tmp, "breaks.png"))
 
-  # Every painted cell is one of the two colours asked for. A palette applied
-  # over the data range instead would interpolate and produce neither.
-  px <- unique(round(matrix(img[, , 1:3], ncol = 3), 3))
-  is_blue <- any(apply(px, 1, function(p) isTRUE(all.equal(p, c(0, 0, 1), tolerance = 0.02))))
-  is_red <- any(apply(px, 1, function(p) isTRUE(all.equal(p, c(1, 0, 0), tolerance = 0.02))))
-  expect_true(is_blue)
-  expect_true(is_red)
+  # Counted, never matched against literal blue and red: what a device paints
+  # for a named colour is the device's business (this assertion did pin the
+  # values first, and failed on the macOS job for exactly that reason).
+  #
+  # Two breaks-separated bins can produce at most two coloured tones, whatever
+  # they render as. The same palette applied over the data range instead spreads
+  # across all of its entries, so the count separates the two cases even when
+  # every value has shifted.
+  # Counted by area, not by distinct value: cell boundaries antialias blue into
+  # red and produce hundreds of one-off blends, so a plain unique() count
+  # measures the renderer's edge handling rather than the palette. Tones holding
+  # at least 0.2% of the image are the ones the palette actually put there --
+  # measured across cutoffs, and this is where the two cases separate cleanly
+  # (2 against 10; at 1% the graded palette's own tones drop out too).
+  tones <- function(png) {
+    px <- round(matrix(png[, , 1:3], ncol = 3), 2)
+    keys <- apply(px, 1, paste, collapse = "_")
+    common <- names(which(table(keys) / length(keys) >= 0.002))
+    sum(vapply(strsplit(common, "_"), function(p) {
+      v <- as.numeric(p)
+      diff(range(v)) > 0.1  # coloured, not grey
+    }, logical(1)))
+  }
+
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "graded", size = 300,
+           col = viridis::viridis(20))
+  graded <- png::readPNG(file.path(tmp, "graded.png"))
+
+  expect_lte(tones(img), 4)
+  expect_gt(tones(graded), tones(img))
 
   # The bar is drawn on the caller's breaks: widening them has to change the
   # figure even though the map's own colours are unchanged.
