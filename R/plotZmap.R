@@ -99,6 +99,7 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
 #' @param targetpath String specifying the directory to save the Z-map PNG to. Required: this function exists to write a file, and has no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param filename Optional string to specify a file name for the Z-map PNG.
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
+#' @param pointsize Integer specifying the text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up. The minimum size is measured in inches and therefore depends on the device's resolution: roughly \code{12.3 * pointsize} pixels at 72 ppi (Linux, macOS) and \code{16.4 * pointsize} at 96 ppi (Windows) -- about 160px and 200px respectively at the default. Below that \code{plotZmap()} stops and names the minimum for the device in use. Lowering it is what makes a decorated z-map possible on a small device -- at the cost of a smaller map, since the margins shrink but the labels still need room. Ignored when \code{decoration = FALSE}, which has no margins and works at any size.
 #' @param ... Additional arguments to be passed to \code{graphics::image}. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
 #' @examples
@@ -106,7 +107,9 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
 #' zmap <- matrix(rnorm(64, sd = 5), 8, 8)
 #' plotZmap(zmap, sigma = 3, threshold = 3, decoration = FALSE,
 #'          targetpath = tempdir(), size = 200)
-plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = TRUE, targetpath, filename = 'zmap', size = 512, ...) {
+# pointsize sits after ... so it can only be supplied by name: placed before it,
+# a tenth positional argument would bind here instead of reaching image().
+plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = TRUE, targetpath, filename = 'zmap', size = 512, ..., pointsize = 12) {
 
   # targetpath is required, not defaulted: a default path writes to the user's
   # filespace uninvited, which CRAN policy does not allow.
@@ -187,21 +190,46 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   }
 
   # Plot
-  png(filename = paste0(targetpath, '/', filename, '.png'), width = size, height = size)
+  outfile <- paste0(targetpath, '/', filename, '.png')
+  png(filename = outfile, width = size, height = size, pointsize = pointsize)
 
   # Close the device however this function exits, so a failure while plotting
-  # cannot leak it or leave a half-written PNG behind.
-  on.exit(dev.off())
+  # cannot leak it. png() creates the file when it opens, so an unfinished
+  # render leaves a stub behind unless it is removed as well -- the fit check
+  # below stops between those two points.
+  drawn <- FALSE
+  on.exit({
+    dev.off()
+    if (!drawn) unlink(outfile)
+  })
 
   # With decoration
   if (decoration) {
+    zmapMargins <- c(5.1, 4.1, 4.1, 6.1)
+
+    # Margins are measured in lines of text, so what the decoration needs scales
+    # with pointsize and can exceed the device: base R then stops in plot.new()
+    # with `figure margins too large`, naming neither this package nor the way
+    # out. Asking the open device for its own line height and size gets the
+    # boundary exactly right -- 150px fits at pointsize 12 and 140px does not --
+    # and stays correct if the margins above ever change.
+    needed <- c(sum(zmapMargins[c(2, 4)]), sum(zmapMargins[c(1, 3)])) * par('csi')
+    if (any(par('din') <= needed)) {
+      stop(paste0(
+        'plotZmap() cannot draw a decorated z-map on a ', size, 'px image at ',
+        'pointsize ', pointsize, ': the margins, labels and colour scale need ',
+        'at least ', ceiling(max(needed) * size / par('din')[1]) + 1, 'px. ',
+        'Use a larger size, a smaller pointsize, or decoration = FALSE, which ',
+        'draws the z-map alone and works at any size.'))
+    }
+
     # Widen the right margin so the colour bar has somewhere to go. raster::plot()
     # reserved that space itself; drawn into the default margins the bar lands on
     # top of the map's right-hand edge.
     #
     # Restored immediately via on.exit rather than at the end of the function:
     # CRAN's review of 1.2.1 asked for exactly that pattern inside functions.
-    oldpar <- par(mar = c(5.1, 4.1, 4.1, 6.1))
+    oldpar <- par(mar = zmapMargins)
     on.exit(par(oldpar), add = TRUE, after = FALSE)
 
     # A col in ... replaces the palettes below rather than arriving alongside
@@ -285,5 +313,8 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # Add Z-map
     drawZmapLayer(zmap, col = zmapDefaultPalette(), add = TRUE)
   }
+
+  # Reached only when something was drawn, so the handler below keeps the file.
+  drawn <- TRUE
   # The device is closed by the on.exit() handler registered after png().
 }

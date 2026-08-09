@@ -54,10 +54,13 @@ setwd(workdir)
 #   mask         generateCI(mask=) -- masked pixels come back NA        [>= 1.1.0]
 #   zmap_plain   a z-map with zmapdecoration = FALSE                    [>= 1.1.0]
 #
-# zmap_plain is also the only way to cover a z-map below 512px: a *decorated*
-# small z-map cannot be produced by any version of rcicr, including this one.
-# Decoration needs margins the device does not have, and R fails with "figure
-# margins too large" -- measured, 128px fails and 256px works (issue #177).
+# zmap_plain is also the only way to cover a z-map below 512px here. Decoration
+# needs margins a small device does not have: the released versions this gate
+# compares against fail with "figure margins too large" below about 160px, and
+# have no way to ask for less. The working tree can now draw one, via
+# plotZmap(pointsize=) / generateCI(zmappointsize=) from #177, but a battery
+# entry the *reference* version cannot execute aborts the comparison, so the
+# small configs still leave the decorated z-map out.
 #
 # The bracketed extras are skipped when the reference version predates them,
 # because the reference *crashes* on those calls rather than returning a
