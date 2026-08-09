@@ -6,7 +6,6 @@
 #' after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
 #'
 #' @export
-#' @import matlab
 #' @import jpeg
 #' @import png
 #' @import foreach

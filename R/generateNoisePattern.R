@@ -1,7 +1,6 @@
 #' Generate sinusoid noise pattern
 #'
 #' @export
-#' @import matlab
 #' @param img_size Integer specifying size of the noise pattern in number of pixels.
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).

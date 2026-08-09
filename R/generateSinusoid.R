@@ -1,7 +1,6 @@
 #' Generate single sinusoid patch
 #'
 #' @export
-#' @import matlab
 #' @param img_size Integer specifying size of sinusoid patch in number of pixels.
 #' @param cycles Integer specifying number of cycles sinusoid should span.
 #' @param angle Value specifying the angle (rotation) of the sinusoid.

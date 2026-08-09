@@ -1,7 +1,6 @@
 #' Simulate pixel intensity range for noise
 #'
 #' @export
-#' @import matlab
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats runif
 #' @importFrom graphics boxplot

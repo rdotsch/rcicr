@@ -6,6 +6,8 @@
 \alias{rcicr-package}
 \title{rcicr: Reverse-Correlation Image-Classification Toolbox}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Generate stimuli and analyze data of reverse correlation image classification experiments (psychophysical tasks aimed at visualizing cognitive mental representations of faces). For the method see Dotsch and Todorov (2012) \doi{10.1177/1948550611430272}; for a practical primer see Brinkman, Todorov and Dotsch (2017) \doi{10.1080/10463283.2017.1381469}.
 }
 \details{
@@ -34,6 +36,7 @@ Ethnic out-group faces are biased in the prejudiced mind.
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://rdotsch.github.io/rcicr/}
   \item \url{https://github.com/rdotsch/rcicr}
   \item Report bugs at \url{https://github.com/rdotsch/rcicr/issues}
 }

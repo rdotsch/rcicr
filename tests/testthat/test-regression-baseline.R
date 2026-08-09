@@ -15,12 +15,11 @@
 # Values were captured on the pre-fix code (main @ 1487369, R 4.3.3) with
 # nscales = 5 (default), noise_type = "sinusoid" (default), seed = 1.
 #
-# NOTE the explicit base:: prefixes below. The matlab package (imported by
-# rcicr) exports its own sum(), which follows MATLAB semantics and returns
-# COLUMN sums for a matrix rather than a single total. Under devtools::test()
-# that masks base::sum() here, silently turning a scalar assertion into a
-# 64-element one. Package code is currently unaffected (its only sum() calls
-# are on vectors, where the two agree), but do not drop these prefixes.
+# The explicit base:: prefixes below are kept deliberately. rcicr no longer
+# imports matlab wholesale, so nothing masks sum() today - but matlab::sum()
+# returns COLUMN sums for a matrix rather than a single total, which would turn
+# a scalar assertion here into a 64-element one without failing. Prefixed, that
+# cannot happen again. test-namespace-imports.R guards the import itself.
 
 # helper: build a stimulus set at default nscales/noise_type, return .Rdata path
 

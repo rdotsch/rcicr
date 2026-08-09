@@ -1,7 +1,6 @@
 #' Generate single gabor patch
 #'
 #' @export
-#' @import matlab
 #' @param img_size Integer specifying size of gabor patch in number of pixels.
 #' @param cycles Integer specifying number of cycles the sinusoid should span.
 #' @param angle Value specifying the angle (rotation) of the sinusoid.
