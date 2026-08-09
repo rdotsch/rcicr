@@ -79,6 +79,17 @@
 <li>Run <code>git diff --stat main...HEAD</code> before opening the PR. <code>R CMD check</code> leaves a full copy of the package behind, and it has been committed by accident before.</li>
 <li>PRs are merged to <code>main</code> with <strong>squash merges</strong>, so put anything a future reader needs — measurements, rejected alternatives, reproducibility impact — in the PR description or <code>NEWS.md</code>, not only in individual branch commits.</li>
 </ul><div class="section level3">
+<h3 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h3>
+<ul><li>
+<strong>Going beyond the one-off check above — mutating the code repeatedly — keep <code>cp</code> backups in a scratchpad, and never restore with <code>git checkout &lt;file&gt;</code>.</strong> The <code>git stash push -- R/</code> in the checklist is right for proving a single fix; it is the <em>restore</em> step that bites, because <code>git checkout &lt;file&gt;</code> discards unstaged work and has destroyed an in-progress implementation here. Guard each mutation with a <code>grep -q MUTANT</code> check too — one that silently failed to apply looks exactly like a surviving mutant.</li>
+<li>
+<strong>When a test reads pixels back from a graphics device, assert only relationships between renders.</strong> Every absolute property of those pixels belongs to the device: the channel count (cairo writes RGB, macOS quartz writes RGBA) and the values alike (quartz renders a 0.5 background at roughly 0.573 where cairo gives 0.502). Render onto a <em>uniform</em> background so “drew nothing” becomes “the image is one flat value”, count distinct values over the colour channels only, and compare two renders rather than pinning a number. <a href="DECISIONS.html#pixel-assertions-have-measured-the-graphics-device-twice"><code>DECISIONS.md</code></a> has the two failures that taught this.</li>
+<li>
+<strong>Check figures by looking at them.</strong> Three problems in the walkthrough vignette were invisible to every assertion and obvious on sight; they are listed in <a href="DECISIONS.html#three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed"><code>DECISIONS.md</code></a>.</li>
+<li>
+<strong>Base images in tests and vignettes are always synthetic</strong>, never a real photograph. Avoiding licensing and consent questions entirely is worth more than a realistic-looking figure.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="the-codex-review">The Codex review<a class="anchor" aria-label="anchor" href="#the-codex-review"></a></h3>
 <p>Codex reviews pull requests here and has caught real errors (#170, #172, #173, and three on the PR that wrote this section). Nothing in the merge path makes you notice it: it submits as <code>COMMENTED</code>, so it never blocks and <code>reviewDecision</code> stays empty; <code>gh pr checks</code> is green regardless; and <code>gh pr view --comments</code> shows only the review wrapper, never the findings.</p>
 <p><strong>It must not become something that can block.</strong> If it has been switched off, or simply is not answering, merge on the other checks.</p>
@@ -159,6 +170,7 @@
 <code>@import matlab</code> masks <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files — a live trap, issue #182.</td>
 </tr></tbody></table><p>Line length is not enforced; 35 lines in <code>R/</code> already exceed 100 characters. Wrap new code at something reasonable rather than reflowing what is there.</p>
 <p><strong>Comments: as few as will do, and only where the code cannot speak for itself.</strong> Write one when the reason would otherwise have to be re-derived — a rejected alternative, a constraint, a measured number, a trap. Never narrate what the next line does, restate the error message below it, or re-tell an issue’s history. The long comments already in <code>R/</code> are the first kind and earn their length; the test is whether a reader would otherwise get it wrong, not whether the code looks bare. Where the explanation is about the package rather than about the line, it belongs in <a href="DECISIONS.html"><code>DECISIONS.md</code></a>.</p>
+<p><strong>If the package is ever run through <code>styler</code>, it goes in as a commit of its own</strong> — never as a side effect of other work, so <code>git blame</code> survives it. Why the pre-commit hooks stay minimal and language-agnostic is above.</p>
 <p>Two rules that are about this package rather than about R:</p>
 <ul><li>
 <strong>Add new names loaded from an <code>.Rdata</code> file to <code>R/zzz.R</code>’s <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code></strong>, or <code>R CMD check</code> NOTEs about undefined globals.</li>
