@@ -14,8 +14,8 @@ plotZmap(
   targetpath,
   filename = "zmap",
   size = 512,
-  pointsize = 12,
-  ...
+  ...,
+  pointsize = 12
 )
 }
 \arguments{
@@ -37,9 +37,9 @@ plotZmap(
 
 \item{size}{Integer specifying the width and height of the PNG image (default: 512).}
 
-\item{pointsize}{Integer specifying the text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up: a decorated z-map needs roughly \code{12.3 * pointsize} pixels, about 160px at the default. Below that \code{plotZmap()} stops and says so. Lowering it is what makes a decorated z-map possible on a small device -- at the cost of a smaller map, since the margins shrink but the labels still need room. Ignored when \code{decoration = FALSE}, which has no margins and works at any size.}
-
 \item{...}{Additional arguments to be passed to \code{graphics::image}. Only applied when decoration is TRUE.}
+
+\item{pointsize}{Integer specifying the text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up: a decorated z-map needs roughly \code{12.3 * pointsize} pixels, about 160px at the default. Below that \code{plotZmap()} stops and says so. Lowering it is what makes a decorated z-map possible on a small device -- at the cost of a smaller map, since the margins shrink but the labels still need room. Ignored when \code{decoration = FALSE}, which has no margins and works at any size.}
 }
 \value{
 Nothing. It writes a Z-map image.

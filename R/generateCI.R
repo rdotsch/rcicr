@@ -85,10 +85,14 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
                        targetpath, antiCI=FALSE, scaling='independent',
                        scaling_constant=0.1, individual_scaling='independent',
                        individual_scaling_constant=0.1, zmap = FALSE,
-                       zmapmethod = 'quick', zmapdecoration = TRUE,
-                       zmappointsize = 12, sigma = 3,
+                       zmapmethod = 'quick', zmapdecoration = TRUE, sigma = 3,
                        threshold = 3, zmaptargetpath,
-                       n_cores = default_ncores(), mask=NA) {
+                       n_cores = default_ncores(), mask=NA,
+                       # Appended, never inserted: a new formal in the middle
+                       # rebinds every positional argument after it in scripts
+                       # that already exist. Here it would have taken sigma's
+                       # value and left the z-map blurred at the default.
+                       zmappointsize = 12) {
 
   # Preprocessing -----------------------------------------------------------
 

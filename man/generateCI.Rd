@@ -22,12 +22,12 @@ generateCI(
   zmap = FALSE,
   zmapmethod = "quick",
   zmapdecoration = TRUE,
-  zmappointsize = 12,
   sigma = 3,
   threshold = 3,
   zmaptargetpath,
   n_cores = default_ncores(),
-  mask = NA
+  mask = NA,
+  zmappointsize = 12
 )
 }
 \arguments{
@@ -65,8 +65,6 @@ generateCI(
 
 \item{zmapdecoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
 
-\item{zmappointsize}{Integer specifying the text size of the Z-map decoration, in points (default: 12). Passed to \code{plotZmap()}, which sizes the Z-map image to \code{img_size}: the decoration needs roughly \code{12.3 * zmappointsize} pixels, so a stimulus set below about 160px cannot carry it at the default and \code{generateCI()} stops with an error saying so. Lower this to fit the decoration onto a small Z-map, or set \code{zmapdecoration = FALSE}.}
-
 \item{sigma}{Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).}
 
 \item{threshold}{Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.}
@@ -76,6 +74,8 @@ generateCI(
 \item{n_cores}{Optional integer specifying the number of CPU cores to use to generate the z-map (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 
 \item{mask}{Optional 2D matrix that defines the mask to be applied to the CI (0 = masked, 1 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked). Default: NA. Note the matrix convention was documented the wrong way round (as 1 = masked) up to and including 1.1.0; the code has always masked where the matrix is 0, matching the PNG form, and that is what is described here.}
+
+\item{zmappointsize}{Integer specifying the text size of the Z-map decoration, in points (default: 12). Passed to \code{plotZmap()}, which sizes the Z-map image to \code{img_size}: the decoration needs roughly \code{12.3 * zmappointsize} pixels, so a stimulus set below about 160px cannot carry it at the default and \code{generateCI()} stops with an error saying so. Lower this to fit the decoration onto a small Z-map, or set \code{zmapdecoration = FALSE}.}
 }
 \value{
 List of pixel matrix of classification noise only, scaled classification noise only, base image only and combined.

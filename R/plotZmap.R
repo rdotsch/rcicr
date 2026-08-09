@@ -107,7 +107,9 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
 #' zmap <- matrix(rnorm(64, sd = 5), 8, 8)
 #' plotZmap(zmap, sigma = 3, threshold = 3, decoration = FALSE,
 #'          targetpath = tempdir(), size = 200)
-plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = TRUE, targetpath, filename = 'zmap', size = 512, pointsize = 12, ...) {
+# pointsize sits after ... so it can only be supplied by name: placed before it,
+# a tenth positional argument would bind here instead of reaching image().
+plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, decoration = TRUE, targetpath, filename = 'zmap', size = 512, ..., pointsize = 12) {
 
   # targetpath is required, not defaulted: a default path writes to the user's
   # filespace uninvited, which CRAN policy does not allow.
