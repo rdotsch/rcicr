@@ -365,6 +365,34 @@ test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel"
   }
 })
 
+test_that("a fixed colour scale passed through ... is respected", {
+  # Regression test for #186. zlim is a valid argument to both the raster plot
+  # method and graphics::image(), and plotZmap(zlim = c(-5, 5)) worked before
+  # the swap -- the old code passed no zlim of its own. The replacement computed
+  # one from the data and handed image() both, so the call died with
+  # `formal argument "zlim" matched by multiple actual arguments`.
+  #
+  # Defaults in drawZmapLayer() are now merged by name, so this covers the whole
+  # class rather than zlim alone: a caller who names any of them replaces it.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(c(rep(9, 32), rep(-9, 32)), 8, 8)
+
+  expect_no_error(
+    plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = "fixed_scale", size = 300,
+             zlim = c(-20, 20))
+  )
+
+  # Honoured, not merely tolerated: a wider scale puts the same z-scores in a
+  # different part of the palette, so the image has to differ.
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "data_scale", size = 300)
+  expect_false(isTRUE(all.equal(
+    png::readPNG(file.path(tmp, "fixed_scale.png")),
+    png::readPNG(file.path(tmp, "data_scale.png"))
+  )))
+})
+
 test_that("a palette passed through ... is used, not rejected", {
   # ?plotZmap has always offered `col` as the way to change the palette, and
   # passing it has always failed: the call supplied its own col alongside the

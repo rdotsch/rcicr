@@ -19,24 +19,37 @@ drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
   # raster::plot() drew that empty map silently, so zlim is pinned to keep the
   # call well-defined -- no cell is painted either way.
   finite <- z[is.finite(z)]
-  zlim <- if (length(finite)) range(finite) else c(0, 1)
   # ylab is pinned empty because image() otherwise labels the axis with a
   # deparse of whatever expression was handed to y.
-  image(x = seq(0, 1, length.out = nrow(z) + 1),
-        y = seq(0, 1, length.out = ncol(z) + 1),
-        z = z, col = col, zlim = zlim, add = add, useRaster = TRUE, ylab = '', ...)
+  args <- list(x = seq(0, 1, length.out = nrow(z) + 1),
+               y = seq(0, 1, length.out = ncol(z) + 1),
+               z = z, col = col,
+               zlim = if (length(finite)) range(finite) else c(0, 1),
+               add = add, useRaster = TRUE, ylab = '')
+
+  # Everything above is a default, and the caller's ... replaces rather than
+  # accompanies it. Passing both is the failure this guards: R stops with
+  # `formal argument "zlim" matched by multiple actual arguments` before drawing
+  # anything, which is how plotZmap(zlim = c(-5, 5)) broke -- it worked under
+  # raster::plot(), which was handed no zlim of its own. Merging by name covers
+  # every default here at once instead of one argument at a time.
+  dots <- list(...)
+  args[names(dots)] <- dots
+  do.call(image, args)
 }
 
 # The colour bar raster::plot() drew beside a decorated map. Nothing in base R
 # draws one, and fields::image.plot would only trade one dependency for another.
-drawZmapLegend <- function(zmap, col) {
+drawZmapLegend <- function(zmap, col, zlim = NULL) {
   # Nothing suprathreshold, or a single value: no scale to label. Computing
   # range() first would warn on the empty case.
   finite <- zmap[is.finite(zmap)]
   if (!length(finite) || diff(range(finite)) == 0) {
     return(invisible(NULL))
   }
-  zlim <- range(finite)
+  # A caller-supplied zlim is the scale the map was drawn on, so the bar has to
+  # be labelled with it rather than with the data's own range.
+  if (is.null(zlim)) zlim <- range(finite)
 
   oldpar <- par(fig = c(0.86, 0.90, 0.30, 0.70), mar = c(0, 0, 0, 0), new = TRUE)
   on.exit(par(oldpar), add = TRUE, after = FALSE)
@@ -188,6 +201,9 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     dots <- list(...)
     user_col <- dots$col
     dots$col <- NULL
+    # add is structural rather than a default: the overlay has to be added to
+    # the map below it, and the first layer has to start one.
+    dots$add <- NULL
     base_col <- if (is.null(user_col)) viridis::viridis(100) else user_col
     # Absent a caller palette the overlay keeps rendering in the default one
     # rather than in the viridis set above, exactly as raster::plot() did: it
@@ -195,16 +211,21 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # changing it would silently restyle every existing figure.
     overlay_col <- if (is.null(user_col)) zmapDefaultPalette() else user_col
 
+    # Same merge as in drawZmapLayer(): these are defaults, and a caller who
+    # names one of them replaces it instead of colliding with it.
+    layer_args <- list(axes = FALSE, asp = 1,
+                       main = paste0('Z-map of ', filename),
+                       xlab = paste0('sigma = ', sigma, ', threshold = ', threshold))
+    layer_args[names(dots)] <- dots
+
     # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
-    do.call(drawZmapLayer, c(
-      list(zmap, col = base_col, axes = FALSE, asp = 1,
-           main = paste0('Z-map of ', filename),
-           xlab = paste0('sigma = ', sigma, ', threshold = ', threshold)),
-      dots))
+    do.call(drawZmapLayer, c(list(zmap, col = base_col), layer_args))
     # Add bgimage (if specified) and superimpose Z-map on top of it.
     if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
-      do.call(drawZmapLayer, c(list(zmap, col = overlay_col, add = TRUE), dots))
+      overlay_args <- dots
+      overlay_args$add <- TRUE
+      do.call(drawZmapLayer, c(list(zmap, col = overlay_col), overlay_args))
     }
     # If no bgimage was specified, draw a boundary box around the Z-map
     if (identical(bgimage, '')) {
@@ -219,7 +240,8 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # the overlay, the boundary box -- would land in the bar's coordinate space
     # instead. Drawn between the map and the box, the box came out as two thin
     # lines across the middle of the figure.
-    drawZmapLegend(zmap, col = if (identical(bgimage, '')) base_col else overlay_col)
+    drawZmapLegend(zmap, col = if (identical(bgimage, '')) base_col else overlay_col,
+                   zlim = dots$zlim)
     # Without decoration
   }
   if (!decoration) {
