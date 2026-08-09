@@ -14,10 +14,9 @@ zmapDefaultPalette <- function() rev(terrain.colors(255))
 # background drawn underneath it.
 drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
   z <- t(zmap[nrow(zmap):1, , drop = FALSE])
-  # A fully masked or entirely sub-threshold z-map is all NA, and image() would
-  # then take range() of nothing: c(Inf, -Inf), with a warning from each end.
-  # raster::plot() drew that empty map silently, so zlim is pinned to keep the
-  # call well-defined -- no cell is painted either way.
+  # A fully masked or entirely sub-threshold z-map is all NA, where range() of
+  # nothing gives c(Inf, -Inf) and a warning from each end. raster::plot() drew
+  # that empty map silently; pinning zlim keeps the call well-defined.
   finite <- z[is.finite(z)]
   # ylab is pinned empty because image() otherwise labels the axis with a
   # deparse of whatever expression was handed to y.
@@ -27,12 +26,9 @@ drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
                zlim = if (length(finite)) range(finite) else c(0, 1),
                add = add, useRaster = TRUE, ylab = '')
 
-  # Everything above is a default, and the caller's ... replaces rather than
-  # accompanies it. Passing both is the failure this guards: R stops with
-  # `formal argument "zlim" matched by multiple actual arguments` before drawing
-  # anything, which is how plotZmap(zlim = c(-5, 5)) broke -- it worked under
-  # raster::plot(), which was handed no zlim of its own. Merging by name covers
-  # every default here at once instead of one argument at a time.
+  # Merged by name, not passed alongside: R stops with `formal argument "zlim"
+  # matched by multiple actual arguments` if a caller names something already
+  # set above. This covers every default at once.
   dots <- list(...)
   args[names(dots)] <- dots
   do.call(image, args)
@@ -43,21 +39,14 @@ drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
 drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
   finite <- zmap[is.finite(zmap)]
 
-  # Draw a bar whenever there is a scale to label, and only skip when there is
-  # none: no caller scale and nothing left above the threshold. Measured against
-  # raster::plot() in all four combinations rather than assumed -- it drew a bar
-  # for a constant z-map (over the value +/- a hair) and for an all-NA map given
-  # an explicit zlim, and drew none only for an all-NA map with no zlim. An
-  # earlier version here skipped on any degenerate data range, which silently
-  # dropped the bar from a call that had asked for a scale.
+  # A bar wherever there is a scale to label. raster::plot() drew one for a
+  # constant z-map and for an all-NA map given an explicit zlim, and drew none
+  # only when neither a caller scale nor a surviving value existed.
   if (is.null(breaks) && is.null(zlim) && !length(finite)) {
     return(invisible(NULL))
   }
-  # The bar has to be labelled with the scale the map was drawn on, not with the
-  # data's own range. image() gives breaks precedence over zlim when both are
-  # present, so the order here matches: caller's breaks, then caller's zlim, then
-  # the data. Its own length check -- one more break than colour -- has already
-  # passed on the map by the time the bar is drawn.
+  # Labelled with the scale the map was drawn on, so the order matches image()'s
+  # own precedence: caller's breaks, then caller's zlim, then the data.
   edges <- if (!is.null(breaks)) {
     breaks
   } else {
@@ -74,11 +63,9 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
   oldpar <- par(fig = c(0.86, 0.90, 0.30, 0.70), mar = c(0, 0, 0, 0), new = TRUE)
   on.exit(par(oldpar), add = TRUE, after = FALSE)
 
-  # No useRaster here, unlike the map: unequally spaced breaks make the bar's
-  # y coordinates an irregular grid, which useRaster refuses outright --
-  # plotZmap(col = c('blue', 'red'), breaks = c(-100, 6, 100)) died with
-  # "'useRaster = TRUE' can only be used with a regular grid". The bar is a
-  # single column of rectangles, so nothing is gained by rasterising it.
+  # No useRaster here, unlike the map: unequally spaced breaks make these y
+  # coordinates an irregular grid, which it refuses outright. A single column of
+  # rectangles gains nothing from rasterising anyway.
   image(x = c(0, 1), y = edges,
         z = matrix(seq_along(col), nrow = 1), col = col,
         axes = FALSE, xlab = '', ylab = '')
@@ -217,12 +204,10 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     oldpar <- par(mar = c(5.1, 4.1, 4.1, 6.1))
     on.exit(par(oldpar), add = TRUE, after = FALSE)
 
-    # A col in ... is the caller's palette and has to replace the defaults
-    # rather than arrive alongside them: passing both raises "formal argument
-    # 'col' matched by multiple actual arguments" before anything is drawn.
-    # That is how ?plotZmap's own example of customising the palette has failed
-    # in every released version -- the raster implementation stacked the
-    # arguments the same way -- so this is a fix, not a port.
+    # A col in ... replaces the palettes below rather than arriving alongside
+    # them, which errors before anything is drawn. ?plotZmap has always
+    # documented col as the way to change the palette, and it errored in every
+    # released version.
     dots <- list(...)
     user_col <- dots$col
     dots$col <- NULL
@@ -230,10 +215,9 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # the map below it, and the first layer has to start one.
     dots$add <- NULL
     base_col <- if (is.null(user_col)) viridis::viridis(100) else user_col
-    # Absent a caller palette the overlay keeps rendering in the default one
-    # rather than in the viridis set above, exactly as raster::plot() did: it
-    # was passed no col either. Reproduced rather than tidied up, because
-    # changing it would silently restyle every existing figure.
+    # Absent a caller palette the overlay renders in the default one rather than
+    # the viridis set above, as raster::plot() did -- it was passed no col
+    # either. Changing that would restyle every existing figure.
     overlay_col <- if (is.null(user_col)) zmapDefaultPalette() else user_col
 
     # Same merge as in drawZmapLayer(): these are defaults, and a caller who
