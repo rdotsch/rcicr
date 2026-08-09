@@ -470,6 +470,18 @@ The cost of `workflow_dispatch`-only is that the workflow is invisible until it 
 **default branch** — GitHub offers no "Run workflow" button for a file that exists only on a
 feature branch. So it merges to `main` ahead of the release it is meant to check.
 
+### The pkgdown site deploys via a `gh-pages` branch, not the Actions-native route
+Pages was already configured here — `gh api repos/rdotsch/rcicr/pages` reported `status:
+built`, `build_type: legacy`, source branch `gh-pages` — and the only thing missing was that
+no such branch had ever been pushed, which is why the URL 404'd. Publishing that branch from
+a workflow therefore needed **no repository setting to change**. The Actions-native deploy
+would have been the more modern choice and was rejected on one fact: it requires flipping
+`build_type`, a repo-settings write that agents here cannot make (`Resource not accessible by
+integration`), turning a self-contained PR into one that stalls on the maintainer.
+
+`docs/` is the built site and is **git-ignored as well as `.Rbuildignore`d** — the two are not
+interchangeable, and a locally built site has already been committed by accident once.
+
 ---
 
 ## Releases and git
