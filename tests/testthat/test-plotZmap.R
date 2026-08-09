@@ -262,3 +262,188 @@ test_that("mismatched mask and zmap dimensions error", {
     "not the same size"
   )
 })
+
+test_that("the z-map is drawn in the orientation raster::plot() used", {
+  # #186 swapped raster::plot() for graphics::image(), which lays matrix rows
+  # along x and counts y upward. Drawn naively the z-map comes out transposed
+  # and vertically flipped -- over a base face, drawn separately by
+  # rasterImage(), that is a silently wrong figure rather than an error.
+  #
+  # A suprathreshold blob in one corner of the matrix has to land in the
+  # corresponding corner of the PNG. Row 1 is the TOP, column 1 the LEFT.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(0, 8, 8)
+  zmap[1:2, 1:2] <- 9
+
+  img <- render_zmap(tmp, zmap, "corner")[, , 1]
+  n <- nrow(img)
+  quadrant <- function(rows, cols) mean(img[rows, cols])
+
+  top_left <- quadrant(1:(n / 2), 1:(n / 2))
+  others <- c(
+    quadrant(1:(n / 2), (n / 2 + 1):n),
+    quadrant((n / 2 + 1):n, 1:(n / 2)),
+    quadrant((n / 2 + 1):n, (n / 2 + 1):n)
+  )
+
+  # Stated relative to the other quadrants, never against an absolute grey.
+  # The background here is a 0.5 matrix, but what a device paints for it is not
+  # 0.5 everywhere: quartz renders that mid-grey at roughly 0.573 where cairo
+  # gives 0.502, which is documented in ?plotZmap and failed this assertion on
+  # the macOS job when it was first written against the literal value.
+  expect_false(isTRUE(all.equal(top_left, others[1], tolerance = 0.05)))
+  expect_equal(others, rep(others[1], 3), tolerance = 0.05)
+})
+
+test_that("raster is no longer a dependency", {
+  expect_false("raster" %in% names(getNamespaceImports(asNamespace("rcicr"))))
+
+  desc <- read.dcf(system.file("DESCRIPTION", package = "rcicr"))
+  expect_false(grepl("\\braster\\b", paste(desc[1, c("Imports", "Depends")], collapse = " ")))
+})
+
+test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel", {
+  # The equivalence test for #186, which replaced raster::plot() with
+  # graphics::image(). The reference PNGs in fixtures/ were rendered by the
+  # raster implementation (1.2.3.9000, commit 437f755) and committed, because
+  # once the dependency is gone they cannot be regenerated here.
+  #
+  # This is the only check that the *data* survived the swap: value-to-colour
+  # mapping, cell geometry and orientation all at once. The release gate cannot
+  # see it -- that harness captures ci$zmap, the matrix, computed before
+  # anything is drawn -- so a rendering regression would otherwise pass green.
+  #
+  # The comparison comes in two halves, because a PNG's absolute pixel values
+  # are a property of the graphics device and not of what was drawn -- the
+  # fixtures were rendered on cairo, and quartz paints the same mid-grey at
+  # roughly 0.573 against cairo's 0.502 (see ?plotZmap). Asserting exact values
+  # everywhere failed the macOS job on correct output.
+  #
+  #   1. Structural, and device-independent: per-cell intensities must correlate
+  #      with the reference. A colour-management difference shifts values
+  #      monotonically and leaves this near 1; a transpose, a flip, a half-cell
+  #      offset or a different palette moves whole cells and destroys it.
+  #   2. Exact, where the fixture's own backend is in use. Tolerance 0.02 is
+  #      ~5/255, covering 8-bit rounding only.
+
+  input <- readRDS(test_path("fixtures", "zmap-raster-reference-input.rds"))
+  tmp <- withr::local_tempdir()
+
+  # Mean intensity of each z-map cell, the unit the two backends have to agree
+  # on. The rendered PNG is 64px for an 8x8 matrix, so each cell is 8x8 pixels.
+  cell_means <- function(img) {
+    k <- nrow(img) / nrow(input$zmap)
+    idx <- seq_len(nrow(input$zmap))
+    outer(idx, idx, Vectorize(function(i, j) {
+      mean(img[((i - 1) * k + 1):(i * k), ((j - 1) * k + 1):(j * k), 1])
+    }))
+  }
+
+  for (case in c("nobg", "bg")) {
+    plotZmap(
+      zmap = input$zmap,
+      bgimage = if (case == "bg") input$bg else "",
+      sigma = 3, threshold = 3, decoration = FALSE,
+      targetpath = tmp, filename = case, size = 64
+    )
+
+    got <- png::readPNG(file.path(tmp, paste0(case, ".png")))
+    want <- png::readPNG(test_path("fixtures", paste0("zmap-raster-reference-", case, ".png")))
+
+    # Drop any alpha plane: whether one is written is a property of the device,
+    # not of what was drawn (see the note on colour channels above).
+    got <- got[, , 1:3, drop = FALSE]
+    want <- want[, , 1:3, drop = FALSE]
+
+    expect_equal(dim(got), dim(want))
+    expect_gt(cor(as.vector(cell_means(got)), as.vector(cell_means(want))), 0.99)
+
+    if (!identical(Sys.info()[["sysname"]], "Darwin")) {
+      expect_lt(max(abs(got - want)), 0.02)
+    }
+  }
+})
+
+test_that("a fixed colour scale passed through ... is respected", {
+  # Regression test for #186. zlim is a valid argument to both the raster plot
+  # method and graphics::image(), and plotZmap(zlim = c(-5, 5)) worked before
+  # the swap -- the old code passed no zlim of its own. The replacement computed
+  # one from the data and handed image() both, so the call died with
+  # `formal argument "zlim" matched by multiple actual arguments`.
+  #
+  # Defaults in drawZmapLayer() are now merged by name, so this covers the whole
+  # class rather than zlim alone: a caller who names any of them replaces it.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(c(rep(9, 32), rep(-9, 32)), 8, 8)
+
+  expect_no_error(
+    plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = "fixed_scale", size = 300,
+             zlim = c(-20, 20))
+  )
+
+  # Honoured, not merely tolerated: a wider scale puts the same z-scores in a
+  # different part of the palette, so the image has to differ.
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "data_scale", size = 300)
+  expect_false(isTRUE(all.equal(
+    png::readPNG(file.path(tmp, "fixed_scale.png")),
+    png::readPNG(file.path(tmp, "data_scale.png"))
+  )))
+})
+
+test_that("custom breaks decide which colour each z-score gets", {
+  # graphics::image() gives breaks precedence over zlim when assigning colours,
+  # so the colour bar is drawn on them too, or it reports a scale the map was
+  # not drawn on.
+  #
+  # Everything but the data is held fixed -- breaks, palette, and `main`, whose
+  # default embeds the differing filename -- so the map is the only thing that
+  # can differ between the two renders. An assertion about the pixels of a
+  # single render would measure the graphics device instead: absolute colours,
+  # and even counts of them, vary across cairo, quartz and Windows.
+  tmp <- withr::local_tempdir()
+
+  render <- function(name, value) {
+    plotZmap(matrix(value, 8, 8), sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = name, size = 300, main = "z-map",
+             col = c("blue", "red"), breaks = c(-100, 6, 100))
+    png::readPNG(file.path(tmp, paste0(name, ".png")))
+  }
+
+  # 4 and 9 straddle the break at 6. Ignoring it makes each a constant map over
+  # its own degenerate range, which lands every cell in the same colour.
+  expect_false(isTRUE(all.equal(render("below_break", 4), render("above_break", 9))))
+})
+
+test_that("a palette passed through ... is used, not rejected", {
+  # ?plotZmap has always offered `col` as the way to change the palette, and
+  # passing it has always failed: the call supplied its own col alongside the
+  # caller's, so R stopped with "formal argument 'col' matched by multiple
+  # actual arguments" before drawing. Verified against the raster
+  # implementation too -- it stacked the arguments the same way, so this is a
+  # long-standing bug rather than something #186 introduced.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(c(rep(9, 32), rep(-9, 32)), 8, 8)
+  palette <- grDevices::heat.colors(20)
+
+  expect_no_error(
+    plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = "custom", size = 300, col = palette)
+  )
+  expect_no_error(
+    plotZmap(zmap, bgimage = matrix(0.5, 8, 8), sigma = 3, threshold = 3,
+             decoration = TRUE, targetpath = tmp, filename = "custom_bg",
+             size = 300, col = palette)
+  )
+
+  # The palette is honoured rather than merely tolerated: rendering with a
+  # different one has to produce a different image.
+  other <- file.path(tmp, "default.png")
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "default", size = 300)
+  expect_false(isTRUE(all.equal(
+    png::readPNG(file.path(tmp, "custom.png")),
+    png::readPNG(other)
+  )))
+})

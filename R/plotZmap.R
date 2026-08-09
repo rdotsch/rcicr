@@ -1,9 +1,84 @@
+# The palette raster::plot() used when none was given, reproduced here so that
+# dropping the dependency does not change what a z-map looks like. It came from
+# the RasterLayer plot method's `if (missing(col)) col <- rev(terrain.colors(255))`.
+zmapDefaultPalette <- function() rev(terrain.colors(255))
+
+# Draws a z-map matrix the way raster::plot(raster(zmap)) drew it: row 1 at the
+# top, column 1 at the left, over the extent 0..1 that rasterImage() paints the
+# background into. image() lays matrix rows along x and counts y upward, so the
+# matrix needs transposing and row-reversing.
+#
+# The coordinates are cell EDGES (n + 1 of them), not centres. Given centres,
+# image() infers the edges by extending half a cell past the first and last, so
+# the z-map would cover slightly more than 0..1 and sit shifted against the
+# background drawn underneath it.
+drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
+  z <- t(zmap[nrow(zmap):1, , drop = FALSE])
+  # A fully masked or entirely sub-threshold z-map is all NA, where range() of
+  # nothing gives c(Inf, -Inf) and a warning from each end. raster::plot() drew
+  # that empty map silently; pinning zlim keeps the call well-defined.
+  finite <- z[is.finite(z)]
+  # ylab is pinned empty because image() otherwise labels the axis with a
+  # deparse of whatever expression was handed to y.
+  args <- list(x = seq(0, 1, length.out = nrow(z) + 1),
+               y = seq(0, 1, length.out = ncol(z) + 1),
+               z = z, col = col,
+               zlim = if (length(finite)) range(finite) else c(0, 1),
+               add = add, useRaster = TRUE, ylab = '')
+
+  # Merged by name, not passed alongside: R stops with `formal argument "zlim"
+  # matched by multiple actual arguments` if a caller names something already
+  # set above. This covers every default at once.
+  dots <- list(...)
+  args[names(dots)] <- dots
+  do.call(image, args)
+}
+
+# The colour bar raster::plot() drew beside a decorated map. Nothing in base R
+# draws one, and fields::image.plot would only trade one dependency for another.
+drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
+  finite <- zmap[is.finite(zmap)]
+
+  # A bar wherever there is a scale to label. raster::plot() drew one for a
+  # constant z-map and for an all-NA map given an explicit zlim, and drew none
+  # only when neither a caller scale nor a surviving value existed.
+  if (is.null(breaks) && is.null(zlim) && !length(finite)) {
+    return(invisible(NULL))
+  }
+  # Labelled with the scale the map was drawn on, so the order matches image()'s
+  # own precedence: caller's breaks, then caller's zlim, then the data.
+  edges <- if (!is.null(breaks)) {
+    breaks
+  } else {
+    if (is.null(zlim)) zlim <- range(finite)
+    # A constant z-map gives a degenerate range, which seq() would collapse to a
+    # bar of zero height. image() widens such a range around the value rather
+    # than refusing it; the same rule is applied here.
+    if (diff(zlim) == 0) {
+      zlim <- if (zlim[1] == 0) c(-1, 1) else zlim[1] + c(-0.4, 0.4) * abs(zlim[1])
+    }
+    seq(zlim[1], zlim[2], length.out = length(col) + 1)
+  }
+
+  oldpar <- par(fig = c(0.86, 0.90, 0.30, 0.70), mar = c(0, 0, 0, 0), new = TRUE)
+  on.exit(par(oldpar), add = TRUE, after = FALSE)
+
+  # No useRaster here, unlike the map: unequally spaced breaks make these y
+  # coordinates an irregular grid, which it refuses outright. A single column of
+  # rectangles gains nothing from rasterising anyway.
+  image(x = c(0, 1), y = edges,
+        z = matrix(seq_along(col), nrow = 1), col = col,
+        axes = FALSE, xlab = '', ylab = '')
+  axis(4, las = 1, cex.axis = 0.8, tcl = -0.2, mgp = c(3, 0.4, 0))
+  invisible(NULL)
+}
+
 #' Plots a Z-map
 #'
 #' Plots a Z-map given a matrix of z-scores that maps onto a specified base image.
 #'
 #' This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
-#' Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
+#' Unlisted additional arguments will be passed to \code{graphics::image}. For example, a different color palette can be specified using the \code{col} argument. See \code{graphics::image} for details. Versions up to and including 1.2.3 passed these to the raster package's plot method instead; \code{col} works the same way in both, but an argument specific to that method will no longer be understood.
 #'
 #' @section Reproducibility across platforms:
 #' The z-scores themselves are ordinary R arithmetic and do not depend on your operating system, and neither do classification images, scaling or informational value. The PNG this function writes is different: it is drawn through a graphics device, and graphics devices differ between platforms both in colour management and in whether they write an alpha channel. The same z-map rendered on Linux and on macOS gives visibly identical figures whose files are not byte-identical -- macOS renders a mid-grey background at roughly 0.573 where the cairo device gives 0.502.
@@ -13,9 +88,8 @@
 #' This applies only to \code{plotZmap()}, which is the only function in the package that opens a graphics device. Every other PNG written by \code{rcicr} -- stimuli, classification images, autoscaled classification images -- is written straight from the pixel array by \code{png::writePNG()} and carries no such dependence.
 #'
 #' @export
-#' @importFrom raster raster plot
-#' @importFrom grDevices png dev.off
-#' @importFrom graphics rasterImage par plot.new plot.window
+#' @importFrom grDevices png dev.off terrain.colors
+#' @importFrom graphics rasterImage par plot.new plot.window image axis
 #' @param zmap A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.
 #' @param bgimage A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI. If not this argument is not given, only the Z-map will be drawn.
 #' @param sigma The sigma of the smoothing that was applied to the CI to create the Z-map.
@@ -25,7 +99,7 @@
 #' @param targetpath String specifying the directory to save the Z-map PNG to. Required: this function exists to write a file, and has no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param filename Optional string to specify a file name for the Z-map PNG.
 #' @param size Integer specifying the width and height of the PNG image (default: 512).
-#' @param ... Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.
+#' @param ... Additional arguments to be passed to \code{graphics::image}. Only applied when decoration is TRUE.
 #' @return Nothing. It writes a Z-map image.
 #' @examples
 #' set.seed(1)
@@ -121,14 +195,46 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
 
   # With decoration
   if (decoration) {
+    # Widen the right margin so the colour bar has somewhere to go. raster::plot()
+    # reserved that space itself; drawn into the default margins the bar lands on
+    # top of the map's right-hand edge.
+    #
+    # Restored immediately via on.exit rather than at the end of the function:
+    # CRAN's review of 1.2.1 asked for exactly that pattern inside functions.
+    oldpar <- par(mar = c(5.1, 4.1, 4.1, 6.1))
+    on.exit(par(oldpar), add = TRUE, after = FALSE)
+
+    # A col in ... replaces the palettes below rather than arriving alongside
+    # them, which errors before anything is drawn. ?plotZmap has always
+    # documented col as the way to change the palette, and it errored in every
+    # released version.
+    dots <- list(...)
+    user_col <- dots$col
+    dots$col <- NULL
+    # add is structural rather than a default: the overlay has to be added to
+    # the map below it, and the first layer has to start one.
+    dots$add <- NULL
+    base_col <- if (is.null(user_col)) viridis::viridis(100) else user_col
+    # Absent a caller palette the overlay renders in the default one rather than
+    # the viridis set above, as raster::plot() did -- it was passed no col
+    # either. Changing that would restyle every existing figure.
+    overlay_col <- if (is.null(user_col)) zmapDefaultPalette() else user_col
+
+    # Same merge as in drawZmapLayer(): these are defaults, and a caller who
+    # names one of them replaces it instead of colliding with it.
+    layer_args <- list(axes = FALSE, asp = 1,
+                       main = paste0('Z-map of ', filename),
+                       xlab = paste0('sigma = ', sigma, ', threshold = ', threshold))
+    layer_args[names(dots)] <- dots
+
     # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
-    raster::plot(raster(zmap), axes = FALSE, box = FALSE, main = paste0('Z-map of ', filename),
-                 xlab = paste0('sigma = ', sigma, ', threshold = ', threshold),
-                 col = viridis::viridis(100), ...)
-    # Add bgimage (if specified) and superimpose Z-map on top of it
+    do.call(drawZmapLayer, c(list(zmap, col = base_col), layer_args))
+    # Add bgimage (if specified) and superimpose Z-map on top of it.
     if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
-      raster::plot(raster(zmap), add = TRUE, ...)
+      overlay_args <- dots
+      overlay_args$add <- TRUE
+      do.call(drawZmapLayer, c(list(zmap, col = overlay_col), overlay_args))
     }
     # If no bgimage was specified, draw a boundary box around the Z-map
     if (identical(bgimage, '')) {
@@ -137,6 +243,14 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
       box[, c(1, ncol(zmap) + 1)] <- 0
       rasterImage(box, 0, 0, 1, 1)
     }
+    # The colour bar goes last, and has to: it draws in its own figure region,
+    # which leaves the device's user coordinates belonging to the bar rather
+    # than to the map. Anything drawn into 0..1 afterwards -- the background,
+    # the overlay, the boundary box -- would land in the bar's coordinate space
+    # instead. Drawn between the map and the box, the box came out as two thin
+    # lines across the middle of the figure.
+    drawZmapLegend(zmap, col = if (identical(bgimage, '')) base_col else overlay_col,
+                   zlim = dots$zlim, breaks = dots$breaks)
     # Without decoration
   }
   if (!decoration) {
@@ -169,7 +283,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
       rasterImage(bgimage, 0, 0, 1, 1)
     }
     # Add Z-map
-    raster::plot(raster(zmap), add = TRUE, legend = FALSE)
+    drawZmapLayer(zmap, col = zmapDefaultPalette(), add = TRUE)
   }
   # The device is closed by the on.exit() handler registered after png().
 }

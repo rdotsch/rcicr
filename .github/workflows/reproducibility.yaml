@@ -94,8 +94,19 @@ jobs:
 
       # This installs the *current* DESCRIPTION's dependencies; the reference
       # version's extra imports are fetched by the gate itself (--install-deps).
+      #
+      # raster is named explicitly even though the package dropped it in #186.
+      # --install-deps can fetch the R package, but the *system* libraries it
+      # links against (GDAL/GEOS/PROJ) are installed from this step's sysreqs
+      # scan of DESCRIPTION, which no longer mentions it. Without this the
+      # pinned v1.0.1 reference fails to install with
+      # "libproj.so.25: cannot open shared object file", and the gate aborts
+      # before comparing anything. The reference is pinned and does not advance,
+      # so this entry is permanent.
       - uses: r-lib/actions/setup-r-dependencies@v2
         if: steps.relevant.outputs.run == 'true'
+        with:
+          extra-packages: any::raster
 
       - name: Decide scope
         id: scope
