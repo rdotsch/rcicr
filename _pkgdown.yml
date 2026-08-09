@@ -1,0 +1,62 @@
+url: https://rdotsch.github.io/rcicr/
+
+template:
+  bootstrap: 5
+
+# pkgdown renders every root-level .md except a hardcoded few, with no way to
+# opt out, so AGENTS.md and CLAUDE.md become pages whether or not that is
+# wanted. Nothing links to them, but they were landing in site search ahead of
+# real documentation. CONTRIBUTING.md and DECISIONS.md stay indexed: those are
+# for humans and worth finding. The pages still exist and still appear in
+# sitemap.xml -- that is built from the files on disk and has no exclusion hook.
+search:
+  exclude:
+    - AGENTS.html
+    - CLAUDE.html
+
+# Ordered so the top of the page is what people actually call. The section
+# titles match README.md -> "How it works"; keep them in step if either moves.
+reference:
+  - title: Generating stimuli
+    desc: >
+      Build a stimulus set for a 2IFC task. The .Rdata file written here is the
+      only link to the analysis half, so keep it.
+    contents:
+      - generateStimuli2IFC
+      - simulateNoiseIntensities
+
+  - title: Classification images
+    desc: >
+      Turn collected responses into classification images, and render them.
+    contents:
+      - generateCI
+      - generateCI2IFC
+      - batchGenerateCI
+      - batchGenerateCI2IFC
+      - autoscale
+      - plotZmap
+      - computeCumulativeCICorrelation
+
+  - title: Informational value
+    desc: >
+      How much signal a classification image carries, against a simulated null.
+    contents:
+      - computeInfoVal2IFC
+      - generateReferenceDistribution2IFC
+
+  - title: Noise basis
+    desc: >
+      The sinusoid and Gabor machinery the stimuli are built from. Exported so
+      the noise can be inspected and reused; most analyses never call these
+      directly.
+    contents:
+      - generateNoisePattern
+      - generateNoiseImage
+      - generateCINoise
+      - generateSinusoid
+      - generateGabor
+      - deg2rad
+
+  - title: Package
+    contents:
+      - rcicr-package

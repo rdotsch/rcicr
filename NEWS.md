@@ -60,6 +60,14 @@
   error, or rejects input that could not have produced correct stimuli; a call that
   succeeds today produces exactly what it did before.
 
+## Documentation
+
+- **There is now a documentation website: <https://rdotsch.github.io/rcicr/>.** The
+  function reference, both vignettes and this changelog are readable without installing
+  the package first. It is generated from the same sources — `README.md` is the home page,
+  so "How it works" and "Anatomy of the `.Rdata` file" are not maintained twice — and
+  rebuilt by GitHub Actions on every push, so it cannot drift from the code.
+
 # rcicr 1.2.3 (2026-08-07)
 
 **Documentation only. Nothing this package computes has changed** — no function,
