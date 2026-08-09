@@ -70,6 +70,10 @@ replaced a chronological session log; do not recreate one.
 
 ## Git and merge strategy
 
+- **Re-read `CONTRIBUTING.md` → "Pull requests" when opening a PR, every time — not from
+  memory.** Its steps fail by producing silence rather than an error, so a half-remembered
+  version looks like it worked. Two of them have now been re-learned the hard way, after
+  being written down.
 - **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`). One
   commit per PR keeps history readable and makes `git revert` of a whole change
   straightforward, which matters here because a PR is usually one self-contained fix plus its
