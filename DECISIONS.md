@@ -188,13 +188,6 @@ intending to re-measure and the feature becomes unrecoverable rather than merely
 
 ## Testing
 
-### Mutation testing: `cp` backups, and check the mutant applied
-`CONTRIBUTING.md` covers the basic check (`git stash push -- R/`, not a plain `git stash`).
-Beyond it: prefer `cp` backups in a scratchpad over git, because `git checkout <file>`
-discards unstaged work and has destroyed an in-progress implementation here. Guard each
-mutation with a `grep -q MUTANT` check — one that silently failed to apply looks exactly like
-a surviving mutant.
-
 ### Vacuous assertions have shipped here twice, and both looked fine on the page
 Two `batchGenerateCI*` tests titled "computes one CI per group" asserted only length, names
 and `dim`: **grouping was never checked**, and a bug feeding all trials to every group passed
@@ -225,10 +218,11 @@ is in `test-generateNoiseImage.R`. If it is ever revisited, the replacement is a
 from the paper or a hand-computed 2×2 CI with a known reference vector, not a tidier
 restatement of the same expression.
 
-### To test a rendered image, render onto a uniform background
-Then "drew nothing" is "the image is one flat value" — a comparison rather than an eyeball.
-`plotZmap`'s tests were three-quarters `file.exists()` before this; a function writing a
-uniformly blank PNG passed them all.
+### Pixel assertions have measured the graphics device twice
+The practice this produced — uniform backgrounds, colour channels only, comparisons rather
+than pinned values — is in `CONTRIBUTING.md`. Here is what it cost to learn, twice in the same
+fix. (`plotZmap`'s tests were three-quarters `file.exists()` before any of it; a function
+writing a uniformly blank PNG passed them all.)
 
 Count distinct values over the **colour channels only**, never the raw array. Whether a PNG
 device writes an alpha channel is a property of the graphics backend, not of what was drawn:
@@ -392,10 +386,6 @@ exists for: a default is the value the function goes on to use, and is exactly a
 replaceable by a field in the `.Rdata` as one passed explicitly. Dropping them removed the
 `step` guard in `computeCumulativeCICorrelation()` and the test caught it. The predicate is
 therefore *required* (no default in `formals()`) **and** absent — not absent alone.
-
-### If the package is ever run through `styler`, it goes in as a commit of its own
-Never as a side effect of other work. (Why the hooks stay minimal and language-agnostic is in
-`CONTRIBUTING.md`.)
 
 ### `fail_ci_if_error: false` on the coverage workflow
 Chosen over getting a Codecov token or deleting the workflow. **This does not make coverage
@@ -641,8 +631,9 @@ premise proved itself during the port: two of the post's lines no longer worked 
 "development")`, a branch that does not exist. The post stays published for nine years of
 inbound links; this moves the canonical copy, it is not a takedown.
 
-### Figures must be checked by looking at them
-Three problems in the walkthrough vignette were caught only by viewing the output:
+### Three vignette figures were wrong in ways only viewing them showed
+The rule this stands behind is in `CONTRIBUTING.md`. What it caught, none of it visible to an
+assertion:
 
 - **`image()` auto-stretches its input across the palette**, so every linear rescaling of the
   same image renders *identically* — which made a four-way scaling comparison meaningless
@@ -682,9 +673,6 @@ feature on the grounds that it was never built.
 **The generalisable part:** "this changes rendered output" is not by itself an argument for
 leaving something broken. Ask who is currently *relying* on the broken output. Here the answer
 was nobody, and the entry sat open a day longer than it needed to.
-
-### Base images in tests and vignettes are always synthetic
-Avoiding licensing and consent questions entirely is worth more than a realistic-looking figure.
 
 ### The `.Rdata` anatomy belongs in `README.md`
 It is the only link between the two halves of the package, and nothing about a stimulus set is

@@ -31,9 +31,9 @@ the file is. The four settled non-fixes went to `DECISIONS.md` in PR #173 and ar
 
 ## Drop — a decision, already recorded
 
-**`styler`.** [`DECISIONS.md`](../DECISIONS.md#if-the-package-is-ever-run-through-styler-it-goes-in-as-a-commit-of-its-own)
-already says that if it ever happens it goes in as a commit of its own. An issue would invite
-someone to do the thing the decision defers.
+**`styler`.** [`CONTRIBUTING.md`](../CONTRIBUTING.md) → "Code conventions" already says that if
+it ever happens it goes in as a commit of its own. An issue would invite someone to do the
+thing that defers.
 
 ## Fold together
 
