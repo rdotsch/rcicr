@@ -83,9 +83,19 @@ attaching a real face photo.
 - PRs are merged to `main` with **squash merges**, so put anything a future reader needs —
   measurements, rejected alternatives, reproducibility impact — in the PR description or
   `NEWS.md`, not only in individual branch commits.
+- **Write for the state the change ends in, not the route you took to it.** Commit messages,
+  PR comments and code comments describe what the change is and why it is right. How many
+  attempts it took, and what each one got wrong, is invisible in the squashed history and in
+  the merged code — nobody arrives at the file that way. Keep a rejected alternative only
+  when someone would otherwise retry it, and give it a line, not a chronology.
 
 ### Testing
 
+- **`skip_if_not_installed()` is for `Suggests` only.** `withr` may genuinely be absent, so
+  skipping on it is honest. A package in `Imports` — `png`, `jpeg`, `matlab` — cannot be:
+  the package will not load without it. The skip can never fire for a real reason, and if it
+  somehow did it would hide the test rather than fail it. A skip reads as "this passed" at a
+  glance, which is the opposite of what you want to know.
 - **Going beyond the one-off check above — mutating the code repeatedly — keep `cp` backups
   in a scratchpad, and never restore with `git checkout <file>`.** The `git stash push -- R/`
   in the checklist is right for proving a single fix; it is the *restore* step that bites,
