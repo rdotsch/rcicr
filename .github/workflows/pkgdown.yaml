@@ -1,0 +1,72 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+name: pkgdown
+
+permissions: read-all
+
+jobs:
+  pkgdown:
+    runs-on: ubuntu-latest
+
+    # Only one deploy at a time, but let concurrent PR builds run: they never
+    # touch gh-pages.
+    concurrency:
+      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    # The repo default is read-all; deploying needs to push the gh-pages branch.
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
+
+      - name: Build site
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        shell: Rscript {0}
+
+      # Pull requests build the site but do not publish it: the point on a PR is
+      # to catch a broken _pkgdown.yml or a vignette that no longer knits,
+      # before it reaches main.
+      #
+      # GitHub Pages is already configured on this repo to serve the `gh-pages`
+      # branch (`gh api repos/rdotsch/rcicr/pages` -> build_type: legacy), so
+      # pushing that branch is all it takes to publish. Third-party action,
+      # so pinned by SHA like codecov in test-coverage.yaml.
+      - name: Deploy to GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
+        with:
+          # r-lib's template ships clean: false, which is right for a site that
+          # publishes release and development docs from separate runs -- the
+          # dev/ subdirectory has to survive a release deploy. This site is
+          # single-version (no `development:` key in _pkgdown.yml, so pkgdown
+          # defaults to mode: release) and has no custom domain, so nothing on
+          # gh-pages needs to outlive a build. Left false, it would keep serving
+          # reference pages for functions that no longer exist to anyone holding
+          # a bookmark or a search result. Revisit if a dev-mode site is added.
+          clean: true
+          branch: gh-pages
+          folder: docs

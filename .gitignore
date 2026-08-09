@@ -9,6 +9,11 @@ test
 # test/check detritus
 Rplots.pdf
 
+# The pkgdown site is built and deployed by .github/workflows/pkgdown.yaml, so
+# a local build is scratch. .Rbuildignore has to exclude it separately: R CMD
+# build works from the working directory, not from git.
+docs/
+
 # R CMD check leaves a full copy of the package plus its check log here, and
 # R CMD build writes the tarball next to it. Both are regenerated on every run
 # and were once committed by accident (~75k lines).
