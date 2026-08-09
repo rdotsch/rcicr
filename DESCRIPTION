@@ -28,7 +28,6 @@ Imports:
     foreach,
     spatstat.explore,
     spatstat.geom,
-    raster,
     tibble,
     yesno
 Suggests:

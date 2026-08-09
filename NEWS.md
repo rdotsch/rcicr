@@ -2,6 +2,21 @@
 
 ## Behaviour changes
 
+- **`plotZmap()` no longer depends on `raster`, and its `...` arguments now go to
+  `graphics::image()` instead of `raster::plot()`.** `col` behaves the same way in both, so
+  a call passing a palette is unaffected; a call passing an argument specific to
+  `raster::plot()` will now be rejected as unused. Dropping the dependency also removes
+  `terra`, `sp` and `Rcpp`, and with them the GDAL/GEOS/PROJ system libraries that every
+  Linux CI job had to install before it could start.
+
+  **The z-map itself renders identically** — the undecorated figures `generateCI()` writes
+  are pixel-for-pixel the same as before, within colour quantisation, and a golden reference
+  rendered by the old `raster` code is committed as a test fixture to keep it that way. The
+  **decorated** figures differ slightly in layout: the colour bar is now drawn by hand, and
+  the map is a few pixels wider at 512px. The palettes are unchanged, including the quirk
+  that a z-map drawn over a background image uses the default palette rather than the
+  viridis one.
+
 - **`generateStimuli2IFC()` now checks `base_face_files` before it generates anything,
   and names the entry it cannot use.** Four inputs used to get past the old check and
   fail from inside a parallel worker with `attempt to select less than one element in

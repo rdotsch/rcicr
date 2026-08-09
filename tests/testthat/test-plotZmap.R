@@ -262,3 +262,79 @@ test_that("mismatched mask and zmap dimensions error", {
     "not the same size"
   )
 })
+
+test_that("the z-map is drawn in the orientation raster::plot() used", {
+  # #186 swapped raster::plot() for graphics::image(), which lays matrix rows
+  # along x and counts y upward. Drawn naively the z-map comes out transposed
+  # and vertically flipped -- over a base face, drawn separately by
+  # rasterImage(), that is a silently wrong figure rather than an error.
+  #
+  # A suprathreshold blob in one corner of the matrix has to land in the
+  # corresponding corner of the PNG. Row 1 is the TOP, column 1 the LEFT.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(0, 8, 8)
+  zmap[1:2, 1:2] <- 9
+
+  img <- render_zmap(tmp, zmap, "corner")[, , 1]
+  n <- nrow(img)
+  quadrant <- function(rows, cols) mean(img[rows, cols])
+
+  top_left <- quadrant(1:(n / 2), 1:(n / 2))
+  others <- c(
+    quadrant(1:(n / 2), (n / 2 + 1):n),
+    quadrant((n / 2 + 1):n, 1:(n / 2)),
+    quadrant((n / 2 + 1):n, (n / 2 + 1):n)
+  )
+
+  # The painted corner differs from the flat background; the other three do not.
+  expect_false(isTRUE(all.equal(top_left, 0.5, tolerance = 0.05)))
+  expect_equal(others, rep(0.5, 3), tolerance = 0.05)
+})
+
+test_that("raster is no longer a dependency", {
+  expect_false("raster" %in% names(getNamespaceImports(asNamespace("rcicr"))))
+
+  desc <- read.dcf(system.file("DESCRIPTION", package = "rcicr"))
+  expect_false(grepl("\\braster\\b", paste(desc[1, c("Imports", "Depends")], collapse = " ")))
+})
+
+test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel", {
+  # The equivalence test for #186, which replaced raster::plot() with
+  # graphics::image(). The reference PNGs in fixtures/ were rendered by the
+  # raster implementation (1.2.3.9000, commit 437f755) and committed, because
+  # once the dependency is gone they cannot be regenerated here.
+  #
+  # This is the only check that the *data* survived the swap: value-to-colour
+  # mapping, cell geometry and orientation all at once. The release gate cannot
+  # see it -- that harness captures ci$zmap, the matrix, computed before
+  # anything is drawn -- so a rendering regression would otherwise pass green.
+  #
+  # Tolerance is for colour quantisation only. The two backends round a cell's
+  # colour to neighbouring 8-bit values in places; 0.02 is ~5/255. Anything
+  # structural -- a transpose, a flip, a half-cell offset, a different palette --
+  # moves whole cells and lands far outside it.
+  skip_if_not_installed("png")
+
+  input <- readRDS(test_path("fixtures", "zmap-raster-reference-input.rds"))
+  tmp <- withr::local_tempdir()
+
+  for (case in c("nobg", "bg")) {
+    plotZmap(
+      zmap = input$zmap,
+      bgimage = if (case == "bg") input$bg else "",
+      sigma = 3, threshold = 3, decoration = FALSE,
+      targetpath = tmp, filename = case, size = 64
+    )
+
+    got <- png::readPNG(file.path(tmp, paste0(case, ".png")))
+    want <- png::readPNG(test_path("fixtures", paste0("zmap-raster-reference-", case, ".png")))
+
+    # Drop any alpha plane: whether one is written is a property of the device,
+    # not of what was drawn (see the note on colour channels above).
+    got <- got[, , 1:3, drop = FALSE]
+    want <- want[, , 1:3, drop = FALSE]
+
+    expect_equal(dim(got), dim(want))
+    expect_lt(max(abs(got - want)), 0.02)
+  }
+})

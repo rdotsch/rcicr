@@ -36,7 +36,7 @@ plotZmap(
 
 \item{size}{Integer specifying the width and height of the PNG image (default: 512).}
 
-\item{...}{Additional arguments to be passed to raster::plot. Only applied when decoration is TRUE.}
+\item{...}{Additional arguments to be passed to \code{graphics::image}. Only applied when decoration is TRUE.}
 }
 \value{
 Nothing. It writes a Z-map image.
@@ -46,7 +46,7 @@ Plots a Z-map given a matrix of z-scores that maps onto a specified base image.
 }
 \details{
 This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
-Unlisted additional arguments will be passed to raster::plot. For example, a different color palette can be specified using the \code{col} argument. See raster::plot for details.
+Unlisted additional arguments will be passed to \code{graphics::image}. For example, a different color palette can be specified using the \code{col} argument. See \code{graphics::image} for details. Versions up to and including 1.2.3 passed these to \code{raster::plot} instead; \code{col} works the same way in both, but an argument specific to \code{raster::plot} will no longer be understood.
 }
 \section{Reproducibility across platforms}{
 
