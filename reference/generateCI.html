@@ -65,7 +65,8 @@
 <span>  threshold <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  <span class="va">zmaptargetpath</span>,</span>
 <span>  n_cores <span class="op">=</span> <span class="fu">default_ncores</span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  mask <span class="op">=</span> <span class="cn">NA</span></span>
+<span>  mask <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  zmappointsize <span class="op">=</span> <span class="fl">12</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -159,6 +160,10 @@
 
 <dt id="arg-mask">mask<a class="anchor" aria-label="anchor" href="#arg-mask"></a></dt>
 <dd><p>Optional 2D matrix that defines the mask to be applied to the CI (0 = masked, 1 = unmasked). May also be a string specifying the path to a grayscale PNG image (black = masked, white = unmasked). Default: NA. Note the matrix convention was documented the wrong way round (as 1 = masked) up to and including 1.1.0; the code has always masked where the matrix is 0, matching the PNG form, and that is what is described here.</p></dd>
+
+
+<dt id="arg-zmappointsize">zmappointsize<a class="anchor" aria-label="anchor" href="#arg-zmappointsize"></a></dt>
+<dd><p>Integer specifying the text size of the Z-map decoration, in points (default: 12). Passed to <code><a href="plotZmap.html">plotZmap()</a></code>, which sizes the Z-map image to <code>img_size</code>. The decoration needs roughly <code>12.3 * zmappointsize</code> pixels on a 72 ppi device and <code>16.4 * zmappointsize</code> on a 96 ppi one, so a stimulus set below about 160-200px cannot carry it at the default and <code>generateCI()</code> stops with an error naming the minimum for the device in use. Lower this to fit the decoration onto a small Z-map, or set <code>zmapdecoration = FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

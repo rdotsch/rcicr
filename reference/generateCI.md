@@ -27,7 +27,8 @@ generateCI(
   threshold = 3,
   zmaptargetpath,
   n_cores = default_ncores(),
-  mask = NA
+  mask = NA,
+  zmappointsize = 12
 )
 ```
 
@@ -163,6 +164,18 @@ generateCI(
   masked) up to and including 1.1.0; the code has always masked where
   the matrix is 0, matching the PNG form, and that is what is described
   here.
+
+- zmappointsize:
+
+  Integer specifying the text size of the Z-map decoration, in points
+  (default: 12). Passed to
+  [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md),
+  which sizes the Z-map image to `img_size`. The decoration needs
+  roughly `12.3 * zmappointsize` pixels on a 72 ppi device and
+  `16.4 * zmappointsize` on a 96 ppi one, so a stimulus set below about
+  160-200px cannot carry it at the default and `generateCI()` stops with
+  an error naming the minimum for the device in use. Lower this to fit
+  the decoration onto a small Z-map, or set `zmapdecoration = FALSE`.
 
 ## Value
 

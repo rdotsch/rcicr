@@ -53,7 +53,8 @@
 <span>  <span class="va">targetpath</span>,</span>
 <span>  filename <span class="op">=</span> <span class="st">"zmap"</span>,</span>
 <span>  size <span class="op">=</span> <span class="fl">512</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  pointsize <span class="op">=</span> <span class="fl">12</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -99,6 +100,10 @@
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments to be passed to <code><a href="https://rdrr.io/r/graphics/image.html" class="external-link">graphics::image</a></code>. Only applied when decoration is TRUE.</p></dd>
+
+
+<dt id="arg-pointsize">pointsize<a class="anchor" aria-label="anchor" href="#arg-pointsize"></a></dt>
+<dd><p>Integer specifying the text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up. The minimum size is measured in inches and therefore depends on the device's resolution: roughly <code>12.3 * pointsize</code> pixels at 72 ppi (Linux, macOS) and <code>16.4 * pointsize</code> at 96 ppi (Windows) – about 160px and 200px respectively at the default. Below that <code>plotZmap()</code> stops and names the minimum for the device in use. Lowering it is what makes a decorated z-map possible on a small device – at the cost of a smaller map, since the margins shrink but the labels still need room. Ignored when <code>decoration = FALSE</code>, which has no margins and works at any size.</p></dd>
 
 </dl></div>
     <div class="section level2">

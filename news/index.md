@@ -4,6 +4,29 @@
 
 ### Behaviour changes
 
+- **A decorated z-map on a device too small for it now says so, and can
+  be made to fit.** `plotZmap(decoration = TRUE)` needs room for
+  margins, labels and the colour scale — about 160px at the default text
+  size on Linux and macOS, and about 200px on Windows, whose graphics
+  device is 96 ppi where theirs is 72 — and below that base R stopped
+  with `figure margins too large`, naming neither `rcicr` nor a way
+  forward. It now stops with a message giving the size, the minimum, and
+  the three ways out.
+  [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  gains **`pointsize`** and
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  gains **`zmappointsize`**: the decoration is measured in lines of
+  text, so a smaller size fits it onto a smaller image. This matters
+  most through
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
+  which sizes the z-map to `img_size`, so a stimulus set below about
+  160px could not produce a decorated z-map at all — a `128px` set now
+  can, with `zmappointsize = 6`.
+
+  Both arguments default to the graphics device’s own `12`, so every
+  existing call renders exactly as before; a 512px decorated z-map is
+  byte-identical.
+
 - **[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
   no longer depends on `raster`, and its `...` arguments now go to
   [`graphics::image()`](https://rdrr.io/r/graphics/image.html) instead
