@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   getting-started: getting-started.html
   reverse-correlation-walkthrough: reverse-correlation-walkthrough.html
-last_built: 2026-08-09T16:02Z
+last_built: 2026-08-09T16:05Z
 urls:
   reference: https://rdotsch.github.io/rcicr/reference
   article: https://rdotsch.github.io/rcicr/articles

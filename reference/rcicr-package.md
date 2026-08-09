@@ -43,6 +43,8 @@ Dotsch, R., Wigboldus, D. H. J., Langner, O., & Van Knippenberg, A.
 
 Useful links:
 
+- <https://rdotsch.github.io/rcicr/>
+
 - <https://github.com/rdotsch/rcicr>
 
 - Report bugs at <https://github.com/rdotsch/rcicr/issues>
