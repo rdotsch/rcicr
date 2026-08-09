@@ -91,6 +91,11 @@ attaching a real face photo.
 
 ### Testing
 
+- **`skip_if_not_installed()` is for `Suggests` only.** `withr` may genuinely be absent, so
+  skipping on it is honest. A package in `Imports` — `png`, `jpeg`, `matlab` — cannot be:
+  the package will not load without it. The skip can never fire for a real reason, and if it
+  somehow did it would hide the test rather than fail it. A skip reads as "this passed" at a
+  glance, which is the opposite of what you want to know.
 - **Going beyond the one-off check above — mutating the code repeatedly — keep `cp` backups
   in a scratchpad, and never restore with `git checkout <file>`.** The `git stash push -- R/`
   in the checklist is right for proving a single fix; it is the *restore* step that bites,

@@ -376,7 +376,6 @@ test_that("generateStimuli2IFC saves a base image the CI pipeline can use", {
 
 test_that("generateStimuli2IFC picks the reader from the extension, not the path", {
   skip_if_not_installed("withr")
-  skip_if_not_installed("jpeg")
 
   dir <- withr::local_tempdir()
 
