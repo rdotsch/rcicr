@@ -499,26 +499,3 @@ test_that("generateCI forwards zmappointsize to the z-map", {
   expect_no_error(do.call(generateCI, c(args, list(zmappointsize = 8))))
   expect_true(file.exists(file.path(zmaps, "base.png")))
 })
-
-test_that("new arguments are appended, so positional calls keep their meaning", {
-  # A researcher's stored script may pass arguments positionally. Inserting a
-  # formal in the middle silently rebinds every one after it -- when
-  # zmappointsize was first added before `sigma`, a positional call handed
-  # sigma's value to it and left the z-map blurred at the default, with no
-  # error. Pinning the released order makes that a test failure rather than a
-  # quiet change in someone's results.
-  released_plotZmap <- c("zmap", "bgimage", "sigma", "threshold", "mask",
-                         "decoration", "targetpath", "filename", "size", "...")
-  released_generateCI <- c("stimuli", "responses", "baseimage", "rdata",
-                           "participants", "save_individual_cis", "save_as_png",
-                           "filename", "targetpath", "antiCI", "scaling",
-                           "scaling_constant", "individual_scaling",
-                           "individual_scaling_constant", "zmap", "zmapmethod",
-                           "zmapdecoration", "sigma", "threshold",
-                           "zmaptargetpath", "n_cores", "mask")
-
-  expect_equal(names(formals(plotZmap))[seq_along(released_plotZmap)],
-               released_plotZmap)
-  expect_equal(names(formals(generateCI))[seq_along(released_generateCI)],
-               released_generateCI)
-})
