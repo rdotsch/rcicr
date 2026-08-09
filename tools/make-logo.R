@@ -18,6 +18,15 @@ suppressMessages(devtools::load_all(".", quiet = TRUE))
 size <- 256
 trials <- 400
 
+# ncores = 1 is required, not a preference. generateStimuli2IFC()'s workers
+# library(rcicr) themselves, which load_all() does not satisfy: on a fresh
+# checkout they fail with "there is no package called 'rcicr'", and where an
+# older rcicr happens to be installed they quietly build the logo from *that*
+# instead of the working tree. Running in-process is also the only way this
+# script can be trusted to reflect the code beside it. See AGENTS.md, "Common
+# commands".
+ncores <- 1
+
 # --- synthetic base face ------------------------------------------------------
 
 ax <- seq(-1, 1, length.out = size)
@@ -44,7 +53,7 @@ generateStimuli2IFC(
   stimulus_path = work,
   seed = 1,
   nscales = 5,
-  ncores = 2,
+  ncores = ncores,
   save_as_png = FALSE
 )
 
@@ -144,3 +153,29 @@ dir.create("man/figures", recursive = TRUE, showWarnings = FALSE)
 png::writePNG(rgba, "man/figures/logo.png")
 
 cat("wrote man/figures/logo.png (", size, "x", size, ")\n")
+
+# --- favicons -----------------------------------------------------------------
+
+# Regenerated here rather than by hand: they are derived from the logo, so a new
+# logo with the old favicons beside it is a silent mismatch.
+pkgdown::build_favicons(overwrite = TRUE)
+
+# build_favicons() writes root-absolute icon paths ("/web-app-manifest-...png"),
+# which assume the site is served from the domain root. This one is a project
+# page under /rcicr/, so those resolve to https://rdotsch.github.io/... and 404
+# for anyone installing the site as an app. Relative paths work under any
+# prefix. The generator also leaves the names empty, which shows as a blank
+# label on the installed icon.
+manifest_path <- "pkgdown/favicon/site.webmanifest"
+manifest <- jsonlite::fromJSON(manifest_path, simplifyVector = FALSE)
+manifest$name <- "rcicr"
+manifest$short_name <- "rcicr"
+manifest$icons <- lapply(manifest$icons, function(icon) {
+  icon$src <- sub("^/", "", icon$src)
+  icon
+})
+jsonlite::write_json(manifest, manifest_path,
+  auto_unbox = TRUE, pretty = TRUE
+)
+
+cat("wrote pkgdown/favicon/ (icon paths made relative)\n")
