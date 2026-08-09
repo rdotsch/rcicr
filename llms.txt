@@ -1,0 +1,299 @@
+# rcicr
+
+[![CRAN
+status](https://www.r-pkg.org/badges/version/rcicr)](https://CRAN.R-project.org/package=rcicr)
+[![R-CMD-check](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml)
+[![Documentation](https://img.shields.io/badge/docs-rdotsch.github.io%2Frcicr-blue)](https://rdotsch.github.io/rcicr/)
+
+`rcicr` implements **reverse correlation image classification**, a
+technique from psychophysics for visualizing internal mental
+representations (for example, of faces). It generates noise-based
+stimuli for two-image-forced-choice (2IFC) perceptual tasks, and
+computes “classification images” from participants’ responses that
+reveal what visual features drove their choices.
+
+## Installation
+
+Install from GitHub:
+
+``` r
+
+install.packages('remotes')
+remotes::install_github('rdotsch/rcicr')
+```
+
+> **`install.packages('rcicr')` does not currently work.** The package
+> was archived on CRAN on 2021-06-08 because email to the maintainer had
+> become undeliverable — an old university address that stopped working.
+> The code was never the problem, and the maintainer address has since
+> been updated. Returning to CRAN is being worked on; until then, GitHub
+> is the only source. The last CRAN release was 0.3.4.1, which is
+> several years behind.
+
+## Quick example
+
+A minimal 2IFC workflow: generate stimuli from a base face, then turn
+collected responses into a classification image.
+
+``` r
+
+library(rcicr)
+
+# 1. Generate stimuli: writes an original + inverted noise-blended PNG per
+#    trial to stimulus_path, plus an .Rdata file that later analysis needs.
+generateStimuli2IFC(
+  base_face_files = list(face = "path/to/base_face.jpg"),
+  n_trials        = 770,
+  img_size        = 512,
+  stimulus_path   = "./stimuli",
+  seed            = 1
+)
+
+# 2. After running the task and collecting responses (1 = original chosen,
+#    -1 = inverted chosen), compute the classification image:
+generateCI(
+  stimuli    = 1:770,               # stimulus numbers, in presentation order
+  responses  = my_responses,        # 1 / -1 vector, same order as `stimuli`
+  baseimage  = "face",              # key used in base_face_files above
+  rdata      = "./stimuli/rcic_seed_1_time_....Rdata",
+  targetpath = "./cis"              # where to write the CI PNG
+)
+```
+
+Every function that writes files takes its destination explicitly:
+`stimulus_path`, `targetpath` and `zmaptargetpath` have no defaults, so
+nothing is ever written to a directory you did not name. Pass
+`save_as_png = FALSE` to compute a classification image without writing
+anything.
+
+## Documentation
+
+Everything below is also on the web at
+**<https://rdotsch.github.io/rcicr/>** — the function reference, both
+vignettes and the changelog — if you would rather read it before
+installing.
+
+Two vignettes ship with the package:
+
+``` r
+
+vignette("getting-started", package = "rcicr")  # shortest working example
+vignette("reverse-correlation-walkthrough", package = "rcicr")  # the full method
+```
+
+The walkthrough covers designing a study, generating stimuli, computing
+classification images for several participants, choosing a scaling
+method, and telling signal from noise. Its code runs when the package is
+built, so it cannot drift out of date.
+
+For example datasets and analysis scripts, see
+[rcicr_examples](https://github.com/rdotsch/rcicr_examples/). There is
+also an older [Medium
+post](https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/)
+covering similar ground; the vignette above supersedes it and is the
+version kept current with the code.
+
+## How it works
+
+The package is two halves that run at different times — often months
+apart — and share no state except one file on disk.
+
+    base face image(s) ─┐
+                        ├─> generateStimuli2IFC() ─> stimulus PNGs + <label>_seed_<n>_time_<ts>.Rdata
+         random noise ──┘                                        │
+                                                                 │  (run your experiment)
+                                 participant responses ──────────┤
+                                                                 ▼
+                                           generateCI() / generateCI2IFC() ──> classification image
+                                                                 │
+                                            ┌────────────────────┼────────────────────┐
+                                            ▼                    ▼                    ▼
+                                      autoscale()      computeInfoVal2IFC()      plotZmap()
+
+**1. Stimulus generation.**
+[`generateNoisePattern()`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md)
+builds the *noise basis* — a stack of sinusoid (or Gabor) patches at
+several orientations, phases and spatial scales. This is built once and
+reused for every trial.
+[`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md)
+then combines one random contrast weight per patch into a single noise
+image, and
+[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+runs that loop over trials, writing two PNGs per trial per base face:
+the noise blended with the base image, and its inverted counterpart.
+
+**2. Analysis.**
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+loads the stimulus file, looks up the parameters of the stimuli a
+participant actually saw, weights each by their response (`1` = original
+chosen, `-1` = inverted chosen), and averages them into one image — the
+classification image. From there,
+[`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
+makes a batch of CIs visually comparable,
+[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+scores one against a simulated null distribution, and
+[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+shows which regions carry reliable signal.
+
+**The `.Rdata` file is the only link between the two halves.** Nothing
+about your stimuli is recoverable without it — not from the PNGs, not
+from the seed alone. Back it up with your response data, and keep it
+alongside anything you publish: recomputing a classification image years
+later needs this file and nothing else.
+
+**Compare numbers, not figures, across machines.** Classification
+images, scaling, informational value and z-scores are ordinary R
+arithmetic and do not depend on your operating system — the test suite
+pins them to fixed values and they hold on Linux and on macOS ARM64
+alike. The one exception is the PNG written by
+[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md),
+the only function here that draws through a graphics device: devices
+differ between platforms in colour management and in whether they write
+an alpha channel, so the same z-map yields visibly identical figures
+whose files are not byte-identical. A z-map image that differs
+pixel-for-pixel on a colleague’s machine is not a different result.
+Every other PNG the package writes comes straight from the pixel array
+via [`png::writePNG()`](https://rdrr.io/pkg/png/man/writePNG.html) and
+is unaffected. See
+[`?plotZmap`](https://rdotsch.github.io/rcicr/reference/plotZmap.md).
+
+## Anatomy of the `.Rdata` file
+
+[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+writes one file named `<label>_seed_<seed>_time_<timestamp>.Rdata`.
+[`load()`](https://rdrr.io/r/base/load.html) it and you get these
+objects (sizes shown for a 3-trial, 32px, `nscales = 2` example):
+
+| Object | What it is |
+|----|----|
+| `p` | The noise basis. A list of `patches` (an `img_size × img_size × 12·nscales` array of sinusoid/Gabor layers), `patchIdx` (which parameter drives each pixel of each layer), `noise_type`, and `generator_version`. This is the expensive part and the reason the file exists. |
+| `stimuli_params` | Named list, one entry per base image, each an `n_trials × nparams` matrix of contrast weights in `[-1, 1]`. **Row *i* is the noise of stimulus *i*** — this is what [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md) looks up and weights by responses. |
+| `base_faces` | Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained. |
+| `base_face_files` | The paths they were read from, for reference. |
+| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters. [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md) re-reads these to rebuild the same noise basis when simulating a null distribution, so they must describe the stimuli exactly. |
+| `seed` | The RNG seed. Regenerating with the same seed and parameters reproduces the identical stimulus set. |
+| `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
+| `label`, `stimulus_path` | What the files were called and where they were written. |
+| `generator_version` | The rcicr version that wrote the file — see the caveat below. |
+| `trial` | A leftover loop counter, equal to `n_trials`. Carries no information; ignore it. |
+
+[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+and
+[`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+**add** two more fields to the same file the first time you compute an
+informational value:
+
+| Object | What it is |
+|----|----|
+| `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. |
+| `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in 1.2.0. |
+
+Two things worth knowing before you write code against this file:
+
+- **The contract is append-only.** Fields get added across versions and
+  are never renamed or repurposed, so newer rcicr reads older files. The
+  converse does not hold: `nscales` and `sigma` were only added in
+  1.1.0, and `noise_type` earlier still, so functions warn rather than
+  guess when reading a file that predates them.
+- **`generator_version` is unreliable on older files.** It was a
+  hardcoded `'0.4.0'` string until 1.2.0, so any file written between
+  0.4.0 and 1.1.0 claims to be 0.4.0 whatever wrote it.
+  `p$generator_version` has always held the real value. Compare versions
+  with
+  [`numeric_version()`](https://rdrr.io/r/base/numeric_version.html)
+  semantics, never as text.
+
+## Development
+
+``` r
+
+devtools::load_all()   # load the package for interactive development
+devtools::test()       # run the test suite
+devtools::check()      # full CRAN-style check
+```
+
+## Contributing
+
+Contributions, thoughts, and criticisms are very welcome — please [open
+an issue](https://github.com/rdotsch/rcicr/issues/).
+
+## License
+
+GPL-2
+
+# Package index
+
+## Generating stimuli
+
+Build a stimulus set for a 2IFC task. The .Rdata file written here is
+the only link to the analysis half, so keep it.
+
+- [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  : Generates 2IFC stimuli
+- [`simulateNoiseIntensities()`](https://rdotsch.github.io/rcicr/reference/simulateNoiseIntensities.md)
+  : Simulate pixel intensity range for noise
+
+## Classification images
+
+Turn collected responses into classification images, and render them.
+
+- [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  : Generates classification image
+- [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
+  : Generates 2IFC classification image
+- [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+  : Generates multiple classification images by participant or condition
+- [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+  : Generates multiple 2IFC classification images by participant or
+  condition
+- [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
+  : Determines optimal scaling constant for a list of CIs
+- [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  : Plots a Z-map
+- [`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+  : Computes cumulative trial CIs correlations with final/target CI
+
+## Informational value
+
+How much signal a classification image carries, against a simulated
+null.
+
+- [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  : Computes Informational Value
+- [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+  : Generates reference distribution
+
+## Noise basis
+
+The sinusoid and Gabor machinery the stimuli are built from. Exported so
+the noise can be inspected and reused; most analyses never call these
+directly.
+
+- [`generateNoisePattern()`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md)
+  : Generate sinusoid noise pattern
+- [`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md)
+  : Generate single noise image based on parameter vector
+- [`generateCINoise()`](https://rdotsch.github.io/rcicr/reference/generateCINoise.md)
+  : Generate classification image noise pattern based on set of stimuli
+  (matrix: trials, parameters), responses (vector), and sinusoid
+- [`generateSinusoid()`](https://rdotsch.github.io/rcicr/reference/generateSinusoid.md)
+  : Generate single sinusoid patch
+- [`generateGabor()`](https://rdotsch.github.io/rcicr/reference/generateGabor.md)
+  : Generate single gabor patch
+- [`deg2rad()`](https://rdotsch.github.io/rcicr/reference/deg2rad.md) :
+  Convert angle in degrees to radians
+
+## Package
+
+- [`rcicr`](https://rdotsch.github.io/rcicr/reference/rcicr-package.md)
+  [`rcicr-package`](https://rdotsch.github.io/rcicr/reference/rcicr-package.md)
+  : rcicr: Reverse-Correlation Image-Classification Toolbox
+
+# Articles
+
+### All vignettes
+
+- [Getting started with
+  rcicr](https://rdotsch.github.io/rcicr/articles/getting-started.md):
+- [A reverse correlation
+  walkthrough](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md):
