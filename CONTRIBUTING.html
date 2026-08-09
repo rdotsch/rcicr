@@ -230,6 +230,7 @@
 <span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="fu">git</span> switch <span class="at">-</span>                    <span class="co"># back to where you were</span></span></code></pre></div>
 <p>Building from the tag is what keeps the development suffix out of the submitted version: <code>Version contains large components</code> is only a CRAN blocker if the <em>tarball</em> carries it.</p>
 <p>Submit at <a href="https://cran.r-project.org/submit.html" class="external-link uri">https://cran.r-project.org/submit.html</a>, pasting the body of <code>cran-comments.md</code> into the “Optional comment” field — that file is <code>.Rbuildignore</code>d and reaches CRAN only this way, never inside the tarball. <code>devtools::submit_cran()</code> does the same thing.</p>
+<p><strong>Paste the tag’s copy, not <code>main</code>’s</strong> — <code>git show vX.Y.Z:cran-comments.md</code>. Submission can trail tagging by weeks, and <code>main</code> moves in between; its copy would describe check results from a tree that is not the tarball, and nothing in the submission would contradict it.</p>
 <p><strong>Ron submits to CRAN personally.</strong> CRAN emails the maintainer address to confirm, and for a package archived over an undeliverable address, that confirmation <em>is</em> the point of the resubmission.</p>
 </div>
 <div class="section level3">
