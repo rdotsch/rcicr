@@ -74,9 +74,14 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
   oldpar <- par(fig = c(0.86, 0.90, 0.30, 0.70), mar = c(0, 0, 0, 0), new = TRUE)
   on.exit(par(oldpar), add = TRUE, after = FALSE)
 
+  # No useRaster here, unlike the map: unequally spaced breaks make the bar's
+  # y coordinates an irregular grid, which useRaster refuses outright --
+  # plotZmap(col = c('blue', 'red'), breaks = c(-100, 6, 100)) died with
+  # "'useRaster = TRUE' can only be used with a regular grid". The bar is a
+  # single column of rectangles, so nothing is gained by rasterising it.
   image(x = c(0, 1), y = edges,
         z = matrix(seq_along(col), nrow = 1), col = col,
-        axes = FALSE, xlab = '', ylab = '', useRaster = TRUE)
+        axes = FALSE, xlab = '', ylab = '')
   axis(4, las = 1, cex.axis = 0.8, tcl = -0.2, mgp = c(3, 0.4, 0))
   invisible(NULL)
 }

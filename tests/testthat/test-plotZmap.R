@@ -393,62 +393,42 @@ test_that("a fixed colour scale passed through ... is respected", {
   )))
 })
 
-test_that("custom breaks colour the map and label the colour bar", {
+test_that("custom breaks decide which colour each z-score gets", {
   # graphics::image() gives breaks precedence over zlim when assigning colours,
-  # so a colour bar spaced over zlim (or over the data) would report a scale the
-  # map was not drawn on. This combination could not be reached at all before
-  # the col fix above -- it died on the argument collision -- so the bar had
-  # never been wrong in a released version, only newly reachable.
-  tmp <- withr::local_tempdir()
-  # Graded rather than two-valued, or the comparison below proves nothing: with
-  # only two distinct z-scores every palette yields two tones, breaks or not.
-  zmap <- matrix(seq(-12, 12, length.out = 64), 8, 8)
-
-  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
-           targetpath = tmp, filename = "breaks", size = 300,
-           col = c("blue", "red"), breaks = c(-100, 0, 100))
-  img <- png::readPNG(file.path(tmp, "breaks.png"))
-
-  # Counted, never matched against literal blue and red: what a device paints
-  # for a named colour is the device's business (this assertion did pin the
-  # values first, and failed on the macOS job for exactly that reason).
+  # so the colour bar has to be drawn on them too or it reports a scale the map
+  # was not drawn on. This combination could not be reached before the col fix
+  # below -- it died on the argument collision -- so no released version ever
+  # drew a wrong bar; it was newly reachable.
   #
-  # Two breaks-separated bins can produce at most two coloured tones, whatever
-  # they render as. The same palette applied over the data range instead spreads
-  # across all of its entries, so the count separates the two cases even when
-  # every value has shifted.
-  # Counted by area, not by distinct value: cell boundaries antialias blue into
-  # red and produce hundreds of one-off blends, so a plain unique() count
-  # measures the renderer's edge handling rather than the palette. Tones holding
-  # at least 0.2% of the image are the ones the palette actually put there --
-  # measured across cutoffs, and this is where the two cases separate cleanly
-  # (2 against 10; at 1% the graded palette's own tones drop out too).
-  tones <- function(png) {
-    px <- round(matrix(png[, , 1:3], ncol = 3), 2)
-    keys <- apply(px, 1, paste, collapse = "_")
-    common <- names(which(table(keys) / length(keys) >= 0.002))
-    sum(vapply(strsplit(common, "_"), function(p) {
-      v <- as.numeric(p)
-      diff(range(v)) > 0.1  # coloured, not grey
-    }, logical(1)))
+  # Stated only as a difference BETWEEN renders. Three earlier versions asserted
+  # something about the pixels of a single render -- literal blue and red, then
+  # a count of distinct colours, then a count of colours holding at least 0.2%
+  # of the image -- and each measured the graphics device rather than the
+  # palette: the last counted 2 on cairo, 7 on Windows and 13 on quartz for
+  # identical input.
+  #
+  # The two renders hold `breaks` FIXED and vary only the data, so the colour
+  # bar is identical in both and the map is the only thing that can differ. A
+  # version that varied the breaks instead passed while `breaks` was being
+  # dropped from the map entirely -- the bar alone made the images unequal, and
+  # the mutant survived.
+  tmp <- withr::local_tempdir()
+
+  # main is pinned because the default title embeds `filename`, and the two
+  # renders must go to different files. Left to default it differed by its
+  # heading text alone, which made the images unequal whatever the map did --
+  # and a mutant dropping breaks from the map survived that.
+  render <- function(name, value) {
+    plotZmap(matrix(value, 8, 8), sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = name, size = 300, main = "z-map",
+             col = c("blue", "red"), breaks = c(-100, 6, 100))
+    png::readPNG(file.path(tmp, paste0(name, ".png")))
   }
 
-  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
-           targetpath = tmp, filename = "graded", size = 300,
-           col = viridis::viridis(20))
-  graded <- png::readPNG(file.path(tmp, "graded.png"))
-
-  expect_lte(tones(img), 4)
-  expect_gt(tones(graded), tones(img))
-
-  # The bar is drawn on the caller's breaks: widening them has to change the
-  # figure even though the map's own colours are unchanged.
-  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
-           targetpath = tmp, filename = "breaks_wide", size = 300,
-           col = c("blue", "red"), breaks = c(-1000, 0, 1000))
-  expect_false(isTRUE(all.equal(
-    img, png::readPNG(file.path(tmp, "breaks_wide.png"))
-  )))
+  # 4 and 9 straddle the break at 6, so honouring it puts them in different
+  # bins. Ignoring it makes both a constant map over its own degenerate range,
+  # which lands every cell in the same colour -- identical renders.
+  expect_false(isTRUE(all.equal(render("below_break", 4), render("above_break", 9))))
 })
 
 test_that("a palette passed through ... is used, not rejected", {
