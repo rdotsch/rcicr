@@ -3,8 +3,8 @@
 ## Behaviour changes
 
 - **`plotZmap()` no longer depends on `raster`, and its `...` arguments now go to
-  `graphics::image()` instead of `raster::plot()`.** `col` behaves the same way in both, so
-  a call passing a palette is unaffected; a call passing an argument specific to
+  `graphics::image()` instead of `raster::plot()`.** `col` behaves the same way in both (and
+  now actually works — see the bug fixes below); a call passing an argument specific to
   `raster::plot()` will now be rejected as unused. Dropping the dependency also removes
   `terra`, `sp` and `Rcpp`, and with them the GDAL/GEOS/PROJ system libraries that every
   Linux CI job had to install before it could start.
@@ -40,6 +40,12 @@
   reaching a reader that cannot parse it.
 
 ## Bug fixes
+
+- **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
+  you to change the colours, and doing it stopped the call with `formal argument "col"
+  matched by multiple actual arguments` before anything was drawn — the function passed its
+  own `col` alongside yours. This affected every released version; the argument is now taken
+  as an override, and is used for the colour bar as well as the map.
 
 - **A base image with no contrast no longer becomes an all-`NaN` base image.** Under
   `maximize_baseimage_contrast = TRUE`, the default, `generateStimuli2IFC()` rescales

@@ -364,3 +364,35 @@ test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel"
     }
   }
 })
+
+test_that("a palette passed through ... is used, not rejected", {
+  # ?plotZmap has always offered `col` as the way to change the palette, and
+  # passing it has always failed: the call supplied its own col alongside the
+  # caller's, so R stopped with "formal argument 'col' matched by multiple
+  # actual arguments" before drawing. Verified against the raster
+  # implementation too -- it stacked the arguments the same way, so this is a
+  # long-standing bug rather than something #186 introduced.
+  tmp <- withr::local_tempdir()
+  zmap <- matrix(c(rep(9, 32), rep(-9, 32)), 8, 8)
+  palette <- grDevices::heat.colors(20)
+
+  expect_no_error(
+    plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = "custom", size = 300, col = palette)
+  )
+  expect_no_error(
+    plotZmap(zmap, bgimage = matrix(0.5, 8, 8), sigma = 3, threshold = 3,
+             decoration = TRUE, targetpath = tmp, filename = "custom_bg",
+             size = 300, col = palette)
+  )
+
+  # The palette is honoured rather than merely tolerated: rendering with a
+  # different one has to produce a different image.
+  other <- file.path(tmp, "default.png")
+  plotZmap(zmap, sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "default", size = 300)
+  expect_false(isTRUE(all.equal(
+    png::readPNG(file.path(tmp, "custom.png")),
+    png::readPNG(other)
+  )))
+})

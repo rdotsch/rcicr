@@ -179,20 +179,32 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     oldpar <- par(mar = c(5.1, 4.1, 4.1, 6.1))
     on.exit(par(oldpar), add = TRUE, after = FALSE)
 
+    # A col in ... is the caller's palette and has to replace the defaults
+    # rather than arrive alongside them: passing both raises "formal argument
+    # 'col' matched by multiple actual arguments" before anything is drawn.
+    # That is how ?plotZmap's own example of customising the palette has failed
+    # in every released version -- the raster implementation stacked the
+    # arguments the same way -- so this is a fix, not a port.
+    dots <- list(...)
+    user_col <- dots$col
+    dots$col <- NULL
+    base_col <- if (is.null(user_col)) viridis::viridis(100) else user_col
+    # Absent a caller palette the overlay keeps rendering in the default one
+    # rather than in the viridis set above, exactly as raster::plot() did: it
+    # was passed no col either. Reproduced rather than tidied up, because
+    # changing it would silently restyle every existing figure.
+    overlay_col <- if (is.null(user_col)) zmapDefaultPalette() else user_col
+
     # Initial (dummy) plot; sets up plot with initial dimensions + scale, title, label
-    drawZmapLayer(zmap, col = viridis::viridis(100), axes = FALSE, asp = 1,
-                  main = paste0('Z-map of ', filename),
-                  xlab = paste0('sigma = ', sigma, ', threshold = ', threshold), ...)
+    do.call(drawZmapLayer, c(
+      list(zmap, col = base_col, axes = FALSE, asp = 1,
+           main = paste0('Z-map of ', filename),
+           xlab = paste0('sigma = ', sigma, ', threshold = ', threshold)),
+      dots))
     # Add bgimage (if specified) and superimpose Z-map on top of it.
-    #
-    # The overlay passes no palette, so it renders in the default one rather
-    # than in the viridis set above -- and raster::plot() redrew its legend on
-    # top of the first one for the same reason. That is what a z-map over a base
-    # image has always looked like, so both are reproduced rather than tidied
-    # up: changing it here would silently restyle every existing figure.
     if (!(identical(bgimage, ''))) {
       rasterImage(bgimage, 0, 0, 1, 1)
-      drawZmapLayer(zmap, col = zmapDefaultPalette(), add = TRUE, ...)
+      do.call(drawZmapLayer, c(list(zmap, col = overlay_col, add = TRUE), dots))
     }
     # If no bgimage was specified, draw a boundary box around the Z-map
     if (identical(bgimage, '')) {
@@ -207,7 +219,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # the overlay, the boundary box -- would land in the bar's coordinate space
     # instead. Drawn between the map and the box, the box came out as two thin
     # lines across the middle of the figure.
-    drawZmapLegend(zmap, col = if (identical(bgimage, '')) viridis::viridis(100) else zmapDefaultPalette())
+    drawZmapLegend(zmap, col = if (identical(bgimage, '')) base_col else overlay_col)
     # Without decoration
   }
   if (!decoration) {
