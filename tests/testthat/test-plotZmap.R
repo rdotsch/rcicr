@@ -286,9 +286,13 @@ test_that("the z-map is drawn in the orientation raster::plot() used", {
     quadrant((n / 2 + 1):n, (n / 2 + 1):n)
   )
 
-  # The painted corner differs from the flat background; the other three do not.
-  expect_false(isTRUE(all.equal(top_left, 0.5, tolerance = 0.05)))
-  expect_equal(others, rep(0.5, 3), tolerance = 0.05)
+  # Stated relative to the other quadrants, never against an absolute grey.
+  # The background here is a 0.5 matrix, but what a device paints for it is not
+  # 0.5 everywhere: quartz renders that mid-grey at roughly 0.573 where cairo
+  # gives 0.502, which is documented in ?plotZmap and failed this assertion on
+  # the macOS job when it was first written against the literal value.
+  expect_false(isTRUE(all.equal(top_left, others[1], tolerance = 0.05)))
+  expect_equal(others, rep(others[1], 3), tolerance = 0.05)
 })
 
 test_that("raster is no longer a dependency", {
@@ -309,14 +313,32 @@ test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel"
   # see it -- that harness captures ci$zmap, the matrix, computed before
   # anything is drawn -- so a rendering regression would otherwise pass green.
   #
-  # Tolerance is for colour quantisation only. The two backends round a cell's
-  # colour to neighbouring 8-bit values in places; 0.02 is ~5/255. Anything
-  # structural -- a transpose, a flip, a half-cell offset, a different palette --
-  # moves whole cells and lands far outside it.
+  # The comparison comes in two halves, because a PNG's absolute pixel values
+  # are a property of the graphics device and not of what was drawn -- the
+  # fixtures were rendered on cairo, and quartz paints the same mid-grey at
+  # roughly 0.573 against cairo's 0.502 (see ?plotZmap). Asserting exact values
+  # everywhere failed the macOS job on correct output.
+  #
+  #   1. Structural, and device-independent: per-cell intensities must correlate
+  #      with the reference. A colour-management difference shifts values
+  #      monotonically and leaves this near 1; a transpose, a flip, a half-cell
+  #      offset or a different palette moves whole cells and destroys it.
+  #   2. Exact, where the fixture's own backend is in use. Tolerance 0.02 is
+  #      ~5/255, covering 8-bit rounding only.
   skip_if_not_installed("png")
 
   input <- readRDS(test_path("fixtures", "zmap-raster-reference-input.rds"))
   tmp <- withr::local_tempdir()
+
+  # Mean intensity of each z-map cell, the unit the two backends have to agree
+  # on. The rendered PNG is 64px for an 8x8 matrix, so each cell is 8x8 pixels.
+  cell_means <- function(img) {
+    k <- nrow(img) / nrow(input$zmap)
+    idx <- seq_len(nrow(input$zmap))
+    outer(idx, idx, Vectorize(function(i, j) {
+      mean(img[((i - 1) * k + 1):(i * k), ((j - 1) * k + 1):(j * k), 1])
+    }))
+  }
 
   for (case in c("nobg", "bg")) {
     plotZmap(
@@ -335,6 +357,10 @@ test_that("the rendered z-map matches what raster::plot() drew, pixel for pixel"
     want <- want[, , 1:3, drop = FALSE]
 
     expect_equal(dim(got), dim(want))
-    expect_lt(max(abs(got - want)), 0.02)
+    expect_gt(cor(as.vector(cell_means(got)), as.vector(cell_means(want))), 0.99)
+
+    if (!identical(Sys.info()[["sysname"]], "Darwin")) {
+      expect_lt(max(abs(got - want)), 0.02)
+    }
   }
 })
