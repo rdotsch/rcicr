@@ -59,6 +59,14 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
         with:
-          clean: false
+          # r-lib's template ships clean: false, which is right for a site that
+          # publishes release and development docs from separate runs -- the
+          # dev/ subdirectory has to survive a release deploy. This site is
+          # single-version (no `development:` key in _pkgdown.yml, so pkgdown
+          # defaults to mode: release) and has no custom domain, so nothing on
+          # gh-pages needs to outlive a build. Left false, it would keep serving
+          # reference pages for functions that no longer exist to anyone holding
+          # a bookmark or a search result. Revisit if a dev-mode site is added.
+          clean: true
           branch: gh-pages
           folder: docs
