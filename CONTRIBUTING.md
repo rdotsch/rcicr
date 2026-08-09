@@ -84,6 +84,27 @@ attaching a real face photo.
   measurements, rejected alternatives, reproducibility impact — in the PR description or
   `NEWS.md`, not only in individual branch commits.
 
+### Testing
+
+- **Proving a test fails without its fix: use `cp` backups in a scratchpad, not git.**
+  `git checkout <file>` discards unstaged work and has destroyed an in-progress
+  implementation here. Guard each mutation with a `grep -q MUTANT` check as well — a mutation
+  that silently failed to apply looks exactly like a surviving mutant.
+- **When a test reads pixels back from a graphics device, assert only relationships between
+  renders.** Every absolute property of those pixels belongs to the device: the channel count
+  (cairo writes RGB, macOS quartz writes RGBA) and the values alike (quartz renders a 0.5
+  background at roughly 0.573 where cairo gives 0.502). Render onto a *uniform* background so
+  "drew nothing" becomes "the image is one flat value", count distinct values over the colour
+  channels only, and compare two renders rather than pinning a number.
+  [`DECISIONS.md`](DECISIONS.md#pixel-assertions-have-measured-the-graphics-device-twice) has
+  the two failures that taught this.
+- **Check figures by looking at them.** Three problems in the walkthrough vignette were
+  invisible to every assertion and obvious on sight; they are listed in
+  [`DECISIONS.md`](DECISIONS.md#three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed).
+- **Base images in tests and vignettes are always synthetic**, never a real photograph.
+  Avoiding licensing and consent questions entirely is worth more than a realistic-looking
+  figure.
+
 ### The Codex review
 
 Codex reviews pull requests here and has caught real errors (#170, #172, #173, and three on the
@@ -191,6 +212,10 @@ below it, or re-tell an issue's history. The long comments already in `R/` are t
 and earn their length; the test is whether a reader would otherwise get it wrong, not whether
 the code looks bare. Where the explanation is about the package rather than about the line, it
 belongs in [`DECISIONS.md`](DECISIONS.md).
+
+**If the package is ever run through `styler`, it goes in as a commit of its own** — never as
+a side effect of other work, so `git blame` survives it. Why the pre-commit hooks stay minimal
+and language-agnostic is above.
 
 Two rules that are about this package rather than about R:
 
