@@ -22,6 +22,7 @@ generateCI(
   zmap = FALSE,
   zmapmethod = "quick",
   zmapdecoration = TRUE,
+  zmappointsize = 12,
   sigma = 3,
   threshold = 3,
   zmaptargetpath,
@@ -63,6 +64,8 @@ generateCI(
 \item{zmapmethod}{String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.}
 
 \item{zmapdecoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
+
+\item{zmappointsize}{Integer specifying the text size of the Z-map decoration, in points (default: 12). Passed to \code{plotZmap()}, which sizes the Z-map image to \code{img_size}: the decoration needs roughly \code{12.3 * zmappointsize} pixels, so a stimulus set below about 160px cannot carry it at the default and \code{generateCI()} stops with an error saying so. Lower this to fit the decoration onto a small Z-map, or set \code{zmapdecoration = FALSE}.}
 
 \item{sigma}{Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).}
 

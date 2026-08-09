@@ -49,6 +49,7 @@
 #' @param zmap Boolean specifying whether a z-map should be created (default: FALSE).
 #' @param zmapmethod String specifying the method to create the z-map. Can be: \code{quick} (default), \code{t.test}.
 #' @param zmapdecoration Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).
+#' @param zmappointsize Integer specifying the text size of the Z-map decoration, in points (default: 12). Passed to \code{plotZmap()}, which sizes the Z-map image to \code{img_size}: the decoration needs roughly \code{12.3 * zmappointsize} pixels, so a stimulus set below about 160px cannot carry it at the default and \code{generateCI()} stops with an error saying so. Lower this to fit the decoration onto a small Z-map, or set \code{zmapdecoration = FALSE}.
 #' @param sigma Integer specifying the amount of smoothing to apply when generating the z-maps (default: 3).
 #' @param threshold Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.
 #' @param zmaptargetpath String specifying the directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
@@ -84,7 +85,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
                        targetpath, antiCI=FALSE, scaling='independent',
                        scaling_constant=0.1, individual_scaling='independent',
                        individual_scaling_constant=0.1, zmap = FALSE,
-                       zmapmethod = 'quick', zmapdecoration = TRUE, sigma = 3,
+                       zmapmethod = 'quick', zmapdecoration = TRUE,
+                       zmappointsize = 12, sigma = 3,
                        threshold = 3, zmaptargetpath,
                        n_cores = default_ncores(), mask=NA) {
 
@@ -361,7 +363,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     # working directory) no matter what the caller asked for.
     plotZmap(zmap = zmap, bgimage = combined, filename = baseimage,
              sigma = sigma, threshold = threshold, size = img_size,
-             decoration = zmapdecoration, targetpath = zmaptargetpath)
+             decoration = zmapdecoration, pointsize = zmappointsize,
+             targetpath = zmaptargetpath)
   }
 
   # Return data

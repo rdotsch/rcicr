@@ -447,3 +447,55 @@ test_that("a palette passed through ... is used, not rejected", {
     png::readPNG(other)
   )))
 })
+
+test_that("a decorated z-map too small for its margins is refused, by name", {
+  # Base R stops in plot.new() with `figure margins too large`, which names
+  # neither this package nor the way out. zmapdecoration = TRUE is the default
+  # and generateCI() sizes the device to img_size, so a small stimulus set hit
+  # this on an ordinary call.
+  tmp <- withr::local_tempdir()
+
+  expect_error(
+    plotZmap(matrix(5, 8, 8), sigma = 3, threshold = 3, decoration = TRUE,
+             targetpath = tmp, filename = "toosmall", size = 128),
+    "decoration = FALSE"
+  )
+
+  # png() creates the file when it opens the device, so refusing after that
+  # point leaves a stub where a figure should be unless it is cleaned up.
+  expect_false(file.exists(file.path(tmp, "toosmall.png")))
+})
+
+test_that("a smaller pointsize fits the decoration onto a small device", {
+  tmp <- withr::local_tempdir()
+
+  plotZmap(matrix(5, 8, 8), sigma = 3, threshold = 3, decoration = TRUE,
+           targetpath = tmp, filename = "small", size = 128, pointsize = 8)
+
+  expect_true(file.exists(file.path(tmp, "small.png")))
+})
+
+test_that("generateCI forwards zmappointsize to the z-map", {
+  # The path that matters: generateCI() sizes the z-map device to img_size, so
+  # without this argument a small stimulus set cannot produce a decorated z-map
+  # at all.
+  tmp <- withr::local_tempdir()
+  # 128px: too small for the decoration at the default pointsize, large enough
+  # to carry it at a smaller one. The default 32px fixture cannot fit it at any
+  # sane pointsize, so it could not show the argument working.
+  rdata <- make_fixture_rdata(tmp, img_size = 128)
+  # The z-map goes to its own directory: the fixture writes a base.png into tmp,
+  # and plotZmap() names the z-map after the base image, so a file.exists()
+  # check against tmp would pass whether or not a z-map was ever drawn.
+  zmaps <- file.path(tmp, "zmaps")
+  args <- list(stimuli = 1:6, responses = c(1, -1, 1, -1, 1, -1),
+               baseimage = "base", rdata = rdata, save_as_png = FALSE,
+               targetpath = tmp, zmap = TRUE, zmapdecoration = TRUE,
+               zmaptargetpath = zmaps)
+
+  expect_error(do.call(generateCI, args), "decoration = FALSE")
+  expect_false(file.exists(file.path(zmaps, "base.png")))
+
+  expect_no_error(do.call(generateCI, c(args, list(zmappointsize = 8))))
+  expect_true(file.exists(file.path(zmaps, "base.png")))
+})
