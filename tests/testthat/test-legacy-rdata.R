@@ -141,21 +141,32 @@ test_that("the missing-nscales fallback assumes the historical default of 5", {
   expect_false(anyNA(fallback$norms))
 })
 
-test_that("a 1.1.0 file's saved nscales is used, and no fallback fires", {
+test_that("a 1.1.0 file's saved nscales is honoured, not the fallback", {
   skip_if_not_installed("withr")
 
   # 1.1.0 records nscales, and this fixture records 1 -- deliberately unlike the
-  # fallback's 5, so a fallback firing when it should not would change the noise
-  # basis rather than passing unnoticed.
+  # fallback's 5. "No fallback warning" alone would not catch the reader ignoring
+  # the saved value and using 5 anyway: no field is missing, so no warning fires,
+  # and the null is still finite. So the check is that the null matches an
+  # explicit 1 and differs from an explicit 5 -- the value that a saved-nscales
+  # regression would substitute.
   e <- new.env()
   load(legacy_fixture("1.1.0"), envir = e)
   expect_equal(get("nscales", envir = e), 1)
 
-  got <- reference_norms_for(local_fixture_copy("1.1.0"))
+  saved <- reference_norms_for(local_fixture_copy("1.1.0"))
 
-  expect_false(any(grepl("does not contain `nscales`", got$warnings, fixed = TRUE)))
-  expect_length(got$norms, 3)
-  expect_false(anyNA(got$norms))
+  as_1 <- local_fixture_copy("1.1.0")
+  mutate_rdata(as_1, nscales = 1)
+  as_1 <- reference_norms_for(as_1)
+
+  as_5 <- local_fixture_copy("1.1.0")
+  mutate_rdata(as_5, nscales = 5)
+  as_5 <- reference_norms_for(as_5)
+
+  expect_false(any(grepl("does not contain `nscales`", saved$warnings, fixed = TRUE)))
+  expect_identical(saved$norms, as_1$norms)
+  expect_false(identical(saved$norms, as_5$norms))
 })
 
 test_that("the writing version is read from p, not from the field that says 0.4.0", {
