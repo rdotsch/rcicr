@@ -40,10 +40,22 @@ legacy_fixture <- function(version) {
 # generateCI() writes to disk, so each call gets its own directory. The fixture
 # itself is never written to: it is copied first, because a test that mutated it
 # would silently rewrite a committed artefact.
+#
+# `base_face_files` is repointed at a base image written here. These files store
+# an *absolute* path from the machine that generated them -- a real property of
+# every `.Rdata` rcicr writes, and the reason a researcher who moved their base
+# image cannot re-generate either. Only readers that re-generate stimuli
+# (generateReferenceDistribution2IFC()) ever open it; generateCI() works from the
+# `base_faces` matrix already in the file. The image is the same synthetic square
+# the rest of the suite uses, and its content is irrelevant to what is asserted.
 local_fixture_copy <- function(version, env = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = env)
   dest <- file.path(dir, basename(legacy_fixture(version)))
   file.copy(legacy_fixture(version), dest)
+
+  base_png <- make_square_png(file.path(dir, "base.png"), size = 32, seed = 1)
+  mutate_rdata(dest, base_face_files = list(base = base_png))
+
   dest
 }
 

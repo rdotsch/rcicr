@@ -18,6 +18,12 @@
 # Every version here builds a parallel cluster whose workers call
 # library(rcicr), so the package has to be installed, which is why this cannot
 # just source the old R files.
+#
+# The fixtures carry `base_face_files` and `stimulus_path` as *absolute paths on
+# this machine*, which is what rcicr has always written and cannot be fixed here.
+# A reader that re-generates stimuli therefore has to repoint them; the test does
+# that, and CI caught it the one time it did not -- the paths existed only on the
+# machine that generated the fixtures.
 
 args <- commandArgs(trailingOnly = TRUE)
 opt <- function(name, default) {
