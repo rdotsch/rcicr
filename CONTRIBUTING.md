@@ -309,9 +309,9 @@ R CMD build . && R CMD check --as-cran rcicr_*.tar.gz
   after review.
 - **`ChangeLog`**: add a dated pointer entry deferring to `NEWS.md` — not a duplicate. See
   [`DECISIONS.md`](DECISIONS.md#changelog-gets-a-pointer-entry-not-a-duplicate) for why.
-- **`CITATION.cff`**: set `version` and `date-released` to this release. They track the
-  released version rather than `DESCRIPTION`'s, so this is the one place they change;
-  `ubuntu-latest (release)` fails until they match `NEWS.md`'s new heading.
+- **`CITATION.cff`**: regenerate it, after the `DESCRIPTION` edit above, with
+  `cffr::cff_write("DESCRIPTION", dependencies = FALSE, gh_keywords = FALSE)` — it carries the
+  version. `ubuntu-latest (release)` regenerates and compares, so it fails until you do.
 - **`cran-comments.md`**: re-read every claim in it rather than trusting it. It has gone
   stale *within a single day* before, by describing a URL reference that another PR had
   just removed, one step short of a CRAN reviewer reading it. Leave the test-environment

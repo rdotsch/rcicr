@@ -111,10 +111,10 @@
   rebuilt by GitHub Actions on every push, so it cannot drift from the code.
 
 - **The repository now carries a `CITATION.cff`, so GitHub offers a "Cite this repository"
-  button.** `citation("rcicr")` is unchanged and still reads `inst/CITATION`, which remains
-  the citation of record; the new file repeats it in the format GitHub reads. The two cannot
-  drift apart — CI fails when they disagree about the title, authors, version, release date,
-  licence or URLs.
+  button.** `citation("rcicr")` is unchanged and still reads `inst/CITATION`, which remains the
+  citation of record; the new file is generated from it and `DESCRIPTION` by `cffr`, and
+  carries it as `preferred-citation`. The two cannot drift apart: CI regenerates the file,
+  compares every field, and validates the result against the CFF schema.
 
 - **The install instructions now install a release rather than the development version.**
   `remotes::install_github('rdotsch/rcicr')` takes the tip of `main`, which carries unreleased
