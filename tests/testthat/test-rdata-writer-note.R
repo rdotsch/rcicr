@@ -81,15 +81,20 @@ test_that("a file that only claims 0.4.0 is reported as unknown, not as 0.4.0", 
   expect_false(grepl("written by rcicr 0.4.0", msg, fixed = TRUE))
 })
 
-test_that("a file with no version field at all says so", {
+test_that("a file with no version field reports the absence, not an age", {
   skip_if_not_installed("withr")
 
+  # This fixture is a *current* file with its version fields stripped, which is
+  # the case that makes the point: an absent field is equally a truncated file, a
+  # hand-rewritten one, or one rcicr never wrote, so the message may not conclude
+  # the file is old.
   msg <- failure_message(
     broken_rdata(withr::local_tempdir(), top_version = NULL, p_version = NULL)
   )
 
   expect_match(msg, "records no writing version", fixed = TRUE)
-  expect_match(msg, "predates rcicr 0.4.0", fixed = TRUE)
+  expect_match(msg, "what wrote this file is unknown", fixed = TRUE)
+  expect_false(grepl("predates", msg, fixed = TRUE))
 })
 
 test_that("an unparseable version is reported rather than raising from the guard", {

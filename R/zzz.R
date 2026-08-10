@@ -81,7 +81,11 @@ rdataWriterNote <- function(env) {
   if (is.null(version)) version <- field('generator_version')
 
   if (is.null(version) || !length(version)) {
-    return(' The file records no writing version, so it predates rcicr 0.4.0.')
+    # Not "so it predates 0.4.0": a truncated file, a hand-rewritten one, or one
+    # rcicr never wrote also has no version field, and this runs on a file
+    # already known to be broken. State the absence and stop there.
+    return(paste0(' The file records no writing version. rcicr has recorded one since 0.4.0,',
+                  ' so what wrote this file is unknown.'))
   }
 
   version <- tryCatch(as.character(numeric_version(version)),

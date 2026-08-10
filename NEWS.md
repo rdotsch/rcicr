@@ -67,8 +67,9 @@
   install that version". The version is read tolerantly, because the field cannot be taken at
   face value: `p$generator_version` is preferred over the top-level `generator_version`, which
   every release from 0.4.0 through 1.1.0 recorded as a hardcoded `0.4.0`, and a file that only
-  claims `0.4.0` is reported as *unknown* rather than as 0.4.0. A file with no version field
-  at all — anything older than 0.4.0 — says that instead.
+  claims `0.4.0` is reported as *unknown* rather than as 0.4.0. A file with no version field at
+  all reports the absence and stops there — an absent field is equally a file older than 0.4.0,
+  a truncated one, or one rcicr never wrote.
 
 ## Bug fixes
 
