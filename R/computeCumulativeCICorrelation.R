@@ -62,15 +62,15 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
 
   # Check whether critical variables have been loaded
   if (!exists('s', envir=environment(), inherits=FALSE) & !exists('p', envir=environment(), inherits=FALSE) ) {
-    stop('File specified in rdata argument did not contain s or p variable.')
+    stop('File specified in rdata argument did not contain s or p variable.', rdataWriterNote(environment()))
   }
 
   if (!exists('base_faces', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata argument did not contain base_faces variable.')
+    stop('File specified in rdata argument did not contain base_faces variable.', rdataWriterNote(environment()))
   }
 
   if (!exists('stimuli_params', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata argument did not contain stimuli_params variable.')
+    stop('File specified in rdata argument did not contain stimuli_params variable.', rdataWriterNote(environment()))
   }
 
   # Convert s to p (if rdata file originates from pre-0.3.3)

@@ -75,7 +75,7 @@ test_that("an .Rdata file predating noise_type still works, and says so", {
   warnings_seen <- collect_warnings(
     generateReferenceDistribution2IFC(rdata_path, iter = 3, ncores = 1))
 
-  expect_true(any(grepl("did not save `noise_type`", warnings_seen, fixed = TRUE)))
+  expect_true(any(grepl("does not contain `noise_type`", warnings_seen, fixed = TRUE)))
 
   # It has to actually finish, not just warn on the way to the old error.
   after <- new.env()
@@ -88,7 +88,7 @@ test_that("an .Rdata file predating noise_type still works, and says so", {
   fresh <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6,
                               nscales = 1, seed = 1)
   expect_false(any(grepl(
-    "did not save `noise_type`",
+    "does not contain `noise_type`",
     collect_warnings(generateReferenceDistribution2IFC(fresh, iter = 3, ncores = 1)),
     fixed = TRUE)))
 })
