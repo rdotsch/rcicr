@@ -66,10 +66,32 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          # roxygen2 is pinned, and to DESCRIPTION's RoxygenNote: .Rd output
+          # varies between generator versions, so `any::` would let a CRAN
+          # release of roxygen2 fail the documentation step below on formatting
+          # alone. Only that step needs it, on one job -- installing it on all
+          # four is the price of not putting a matrix conditional here.
+          extra-packages: |
+            any::rcmdcheck
+            roxygen2@7.3.1
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      # The check above catches man/ that disagrees with a function's signature
+      # (tools::codoc). It never runs roxygen, so it cannot catch prose drift --
+      # an edited @description or @examples that was not regenerated -- which
+      # ships to the pkgdown site, built from man/. Last, so a failure here
+      # cannot cost us the check results.
+      - name: Documentation is up to date
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: |
+          Rscript -e 'want <- read.dcf("DESCRIPTION", "RoxygenNote")[[1]]' \
+                  -e 'have <- as.character(packageVersion("roxygen2"))' \
+                  -e 'if (have != want) stop("roxygen2 ", have, " installed, DESCRIPTION says ", want, ": update the pin in this workflow to match.")' \
+                  -e 'roxygen2::roxygenise(load_code = "source")'
+          git diff --exit-code -- man NAMESPACE \
+            || { echo "::error::man/ or NAMESPACE is stale. Run roxygen2::roxygenise() and commit the result."; exit 1; }

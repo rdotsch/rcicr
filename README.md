@@ -12,8 +12,23 @@ Install from GitHub:
 
 ``` r
 install.packages('remotes')
+
+# The most recent release -- start here
+remotes::install_github('rdotsch/rcicr@*release')
+
+# A specific release, by tag -- to reproduce an analysis run under that version
+remotes::install_github('rdotsch/rcicr@v1.2.3')
+
+# The development version at the tip of main -- unreleased, may change under you
 remotes::install_github('rdotsch/rcicr')
 ```
+
+Every release is tagged, and the tags are listed on the
+[releases page](https://github.com/rdotsch/rcicr/releases). Record the version you ran in
+your analysis script, and install it by tag when you come back to that analysis: a
+classification image is only reproducible against the version that computed it, and any
+release that changes numeric output says so in [`NEWS.md`](NEWS.md) under "Reproducibility
+impact".
 
 > **`install.packages('rcicr')` does not currently work.** The package was archived on
 > CRAN on 2021-06-08 because email to the maintainer had become undeliverable — an old
