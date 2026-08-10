@@ -507,7 +507,9 @@ formatting — the second version pin in this repo, after roxygen2's, for far le
 
 `tools/check-citation-sync.R` compares every field to a source of truth instead, so nothing in
 the file is unchecked: title and authors against `inst/CITATION` (the citation of record, and
-the one whose title differs from `DESCRIPTION`'s), licence and URLs against `DESCRIPTION`,
+the one whose title differs from `DESCRIPTION`'s), licence, URLs and author addresses against
+`DESCRIPTION` (the address especially: an undeliverable one is what took this package off CRAN
+in 2021, so a stale contact in the citation file is not cosmetic),
 and `version`/`date-released` against `NEWS.md`'s dated release heading. `DESCRIPTION` is the
 wrong source for those two — between releases it carries `.9000`, and a citation names a
 released artifact — and reading them from `NEWS.md` means a release PR that forgets to rename

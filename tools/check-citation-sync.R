@@ -89,6 +89,26 @@ check(
   )
 )
 
+# Addresses come from Authors@R, the only place they are written. This package was
+# archived from CRAN in 2021 over an undeliverable maintainer address, so a stale
+# contact in the citation file is not a cosmetic difference.
+people <- eval(parse(text = desc[["Authors@R"]]))
+addresses <- vapply(people, function(p) paste0(p$email, collapse = ""), "")
+names(addresses) <- vapply(people, function(p) paste(c(p$given, p$family), collapse = " "), "")
+for (a in cff$authors) {
+  who <- paste(a$`given-names`, a$`family-names`)
+  if (!who %in% names(addresses)) {
+    cat("  FAIL author ", sQuote(who), " is not in DESCRIPTION's Authors@R\n", sep = "")
+    fail <- c(fail, paste("author", who))
+  } else {
+    check(
+      paste0("email for ", who, " (DESCRIPTION Authors@R)"),
+      addresses[[who]],
+      if (is.null(a$email)) "(absent)" else a$email
+    )
+  }
+}
+
 # DESCRIPTION carries the SPDX-less R spelling; CFF wants SPDX.
 spdx <- c("GPL-2" = "GPL-2.0-only", "GPL-3" = "GPL-3.0-only", "MIT + file LICENSE" = "MIT")
 check("license (DESCRIPTION, as SPDX)", spdx[[desc[["License"]]]], cff$license)
