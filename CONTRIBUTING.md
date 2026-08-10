@@ -37,10 +37,16 @@ compares. Every release has to pass it — see **Releasing** below.
 
 ``` r
 
-devtools::install()   # not load_all() -- see below
+devtools::install()      # not load_all() -- see below
 devtools::test()
 devtools::check()
+roxygen2::roxygenise()   # after editing any roxygen comment; commit man/ and NAMESPACE
 ```
+
+`man/` and `NAMESPACE` are generated and tracked, and
+`ubuntu-latest (release)` regenerates them and fails on a difference.
+Use the roxygen2 version in `DESCRIPTION`’s `RoxygenNote`; the CI step
+is pinned to it and says so when they disagree.
 
 [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
 spawns parallel workers that each call

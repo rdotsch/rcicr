@@ -154,6 +154,14 @@
   are not maintained twice — and rebuilt by GitHub Actions on every
   push, so it cannot drift from the code.
 
+- **The install instructions now install a release rather than the
+  development version.** `remotes::install_github('rdotsch/rcicr')`
+  takes the tip of `main`, which carries unreleased changes; the
+  `README.md` and walkthrough-vignette instructions now lead with
+  `@*release`, and show `@v1.2.3` for installing one specific version —
+  worth recording in an analysis script, since a classification image is
+  only reproducible against the version that computed it.
+
 ## rcicr 1.2.3 (2026-08-07)
 
 **Documentation only. Nothing this package computes has changed** — no

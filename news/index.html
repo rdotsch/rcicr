@@ -71,8 +71,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
-<ul><li>
-<strong>There is now a documentation website: <a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a>.</strong> The function reference, both vignettes and this changelog are readable without installing the package first. It is generated from the same sources — <code>README.md</code> is the home page, so “How it works” and “Anatomy of the <code>.Rdata</code> file” are not maintained twice — and rebuilt by GitHub Actions on every push, so it cannot drift from the code.</li>
+<ul><li><p><strong>There is now a documentation website: <a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a>.</strong> The function reference, both vignettes and this changelog are readable without installing the package first. It is generated from the same sources — <code>README.md</code> is the home page, so “How it works” and “Anatomy of the <code>.Rdata</code> file” are not maintained twice — and rebuilt by GitHub Actions on every push, so it cannot drift from the code.</p></li>
+<li><p><strong>The install instructions now install a release rather than the development version.</strong> <code>remotes::install_github('rdotsch/rcicr')</code> takes the tip of <code>main</code>, which carries unreleased changes; the <code>README.md</code> and walkthrough-vignette instructions now lead with <code>@*release</code>, and show <code>@v1.2.3</code> for installing one specific version — worth recording in an analysis script, since a classification image is only reproducible against the version that computed it.</p></li>
 </ul></div>
 </div>
     <div class="section level2">

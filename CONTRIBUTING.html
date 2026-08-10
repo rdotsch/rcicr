@@ -51,9 +51,11 @@
 <div class="section level2">
 <h2 id="getting-set-up">Getting set up<a class="anchor" aria-label="anchor" href="#getting-set-up"></a></h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span>   <span class="co"># not load_all() -- see below</span></span>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span>      <span class="co"># not load_all() -- see below</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">roxygen2</span><span class="fu">::</span><span class="fu">roxygenise</span><span class="op">(</span><span class="op">)</span>   <span class="co"># after editing any roxygen comment; commit man/ and NAMESPACE</span></span></code></pre></div>
+<p><code>man/</code> and <code>NAMESPACE</code> are generated and tracked, and <code>ubuntu-latest (release)</code> regenerates them and fails on a difference. Use the roxygen2 version in <code>DESCRIPTION</code>’s <code>RoxygenNote</code>; the CI step is pinned to it and says so when they disagree.</p>
 <p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> spawns parallel workers that each call <code><a href="https://rdotsch.github.io/rcicr/">library(rcicr)</a></code>, so anything touching it needs the package <strong>actually installed</strong>. Under <code>devtools::load_all()</code> alone the workers fail with <code>there is no package called 'rcicr'</code>.</p>
 <p><strong>An <code>--as-cran</code> run needs a complete check environment, or it reports failures the package does not have.</strong> Install <code>texlive</code> and <code>tidy</code>, and set both incoming variables:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="va">_R_CHECK_CRAN_INCOMING_</span><span class="op">=</span>TRUE <span class="va">_R_CHECK_CRAN_INCOMING_REMOTE_</span><span class="op">=</span>TRUE <span class="dt">\</span></span>

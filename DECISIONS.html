@@ -248,6 +248,18 @@
 <h3 id="the-pkgdown-site-deploys-via-a-gh-pages-branch-not-the-actions-native-route">The pkgdown site deploys via a <code>gh-pages</code> branch, not the Actions-native route<a class="anchor" aria-label="anchor" href="#the-pkgdown-site-deploys-via-a-gh-pages-branch-not-the-actions-native-route"></a></h3>
 <p>Pages was already configured here — <code>gh api repos/rdotsch/rcicr/pages</code> reported <code>status: built</code>, <code>build_type: legacy</code>, source branch <code>gh-pages</code> — and the only thing missing was that no such branch had ever been pushed, which is why the URL 404’d. Publishing that branch from a workflow therefore needed <strong>no repository setting to change</strong>. The Actions-native deploy would have been the more modern choice and was rejected on one fact: it requires flipping <code>build_type</code>, a repo-settings write that agents here cannot make (<code>Resource not accessible by integration</code>), turning a self-contained PR into one that stalls on the maintainer.</p>
 <p><code>docs/</code> is the built site and is <strong>git-ignored as well as <code>.Rbuildignore</code>d</strong> — the two are not interchangeable, and a locally built site has already been committed by accident once.</p>
+</div>
+<div class="section level3">
+<h3 id="the-stale-man-gate-is-a-step-in-an-existing-job-and-a-pre-commit-hook-was-rejected">The stale-<code>man/</code> gate is a step in an existing job, and a pre-commit hook was rejected<a class="anchor" aria-label="anchor" href="#the-stale-man-gate-is-a-step-in-an-existing-job-and-a-pre-commit-hook-was-rejected"></a></h3>
+<p><code>R CMD check</code> already fails on documentation that disagrees with a function’s <em>signature</em> — <code><a href="https://rdrr.io/r/tools/codoc.html" class="external-link">tools::codoc()</a></code>, confirmed by renaming <code>deg2rad</code>’s formal without regenerating <code>man/</code>. What it cannot see is prose drift: an edited <code>@description</code> or <code>@examples</code> never regenerated. The same edit leaves <code>codoc()</code> silent and still reaches the pkgdown site, which builds from <code>man/</code>. So the gate re-runs roxygen and diffs <code>man/</code> and <code>NAMESPACE</code>.</p>
+<p>Three things about where it lives:</p>
+<ul><li>
+<strong>A step in <code>ubuntu-latest (release)</code>, not a new job or workflow.</strong> Required checks are matched by name, and adding a name to the ruleset is a repo-settings write agents here cannot make — a new job would report without ever blocking. It runs last so a failure cannot cost us the check results.</li>
+<li>
+<strong>Not a pre-commit hook.</strong> R hooks were kept out of <code>.pre-commit-config.yaml</code> for their own reasons, but the deciding one here is that the check job already has R and every dependency installed, where a hook would install them per run — and an optional local hook is not a gate.</li>
+<li>
+<strong>roxygen2 is pinned to <code>RoxygenNote</code>, not <code>any::</code>.</strong> <code>.Rd</code> output varies between generator versions, so <code>any::</code> lets a CRAN release of roxygen2 redden a required check on formatting alone — an external event breaking the gate, in an environment that cannot re-run a job. The step asserts the installed version matches <code>DESCRIPTION</code> so the pin cannot silently desync; bumping the generator means bumping both.</li>
+</ul><p>Nothing rebuilds the <em>site</em> locally or in a hook — the pkgdown workflow builds it on every PR and deploys on push, which is what catches a vignette that no longer knits.</p>
 <hr></div>
 </div>
 <div class="section level2">

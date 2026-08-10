@@ -54,8 +54,12 @@ address, not a problem with the package), so install it from GitHub:
 ``` r
 
 # install.packages("remotes")
-remotes::install_github("rdotsch/rcicr")
+remotes::install_github("rdotsch/rcicr@*release")   # or @v1.2.3 for one specific release
 ```
+
+Install a tagged release rather than the tip of `main`, and note the
+version in your analysis script: a classification image is only
+reproducible against the version that computed it.
 
 ## 2. What the method does
 

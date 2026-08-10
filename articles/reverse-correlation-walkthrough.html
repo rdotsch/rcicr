@@ -112,7 +112,10 @@ maintainer email address, not a problem with the package), so install it
 from GitHub:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@*release"</span><span class="op">)</span>   <span class="co"># or @v1.2.3 for one specific release</span></span></code></pre></div>
+<p>Install a tagged release rather than the tip of <code>main</code>,
+and note the version in your analysis script: a classification image is
+only reproducible against the version that computed it.</p>
 </div>
 <div class="section level2">
 <h2 id="what-the-method-does">2. What the method does<a class="anchor" aria-label="anchor" href="#what-the-method-does"></a>
