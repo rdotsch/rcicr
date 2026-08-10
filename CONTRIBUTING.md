@@ -292,7 +292,7 @@ only get out deliberately and loudly.
 
 ### 1. Prepare the release PR
 
-Branch from `main` (`release-X.Y.Z` by convention) and make these four edits together:
+Branch from `main` (`release-X.Y.Z` by convention) and make these five edits together:
 
 ```sh
 Rscript tools/compare-release-output.R              # both gate runs green
@@ -309,6 +309,9 @@ R CMD build . && R CMD check --as-cran rcicr_*.tar.gz
   after review.
 - **`ChangeLog`**: add a dated pointer entry deferring to `NEWS.md` — not a duplicate. See
   [`DECISIONS.md`](DECISIONS.md#changelog-gets-a-pointer-entry-not-a-duplicate) for why.
+- **`CITATION.cff`**: regenerate it, after the `DESCRIPTION` edit above, with
+  `cffr::cff_write("DESCRIPTION", dependencies = FALSE, gh_keywords = FALSE)` — it carries the
+  version. `ubuntu-latest (release)` regenerates and compares, so it fails until you do.
 - **`cran-comments.md`**: re-read every claim in it rather than trusting it. It has gone
   stale *within a single day* before, by describing a URL reference that another PR had
   just removed, one step short of a CRAN reviewer reading it. Leave the test-environment

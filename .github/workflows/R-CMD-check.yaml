@@ -73,7 +73,9 @@ jobs:
           # four is the price of not putting a matrix conditional here.
           extra-packages: |
             any::rcmdcheck
+            any::yaml
             roxygen2@7.3.1
+            cffr@1.4.1
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
@@ -99,3 +101,10 @@ jobs:
           git add -A -- man NAMESPACE
           git diff --cached --exit-code -- man NAMESPACE \
             || { echo "::error::man/ or NAMESPACE is stale. Run roxygen2::roxygenise() and commit the result."; exit 1; }
+
+      # cffr is pinned for the reason roxygen2 is: the file is generated, so a
+      # release of the generator changes what this regenerates and reddens a
+      # required check on an outside event.
+      - name: CITATION.cff matches its sources
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: Rscript tools/check-citation-cff.R
