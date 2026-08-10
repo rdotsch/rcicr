@@ -279,6 +279,27 @@ The battery is snapshotted into the temp directory before either side runs, so e
 working copy mid-run cannot leave the two sides comparing different things — which happened
 here once, and produces a "difference" that is purely an artefact.
 
+### The legacy `.Rdata` fixtures are committed, not generated when the tests run
+Both directions of the compatibility promise now have a test. The gate above checks that this
+version still computes what old versions computed; `test-legacy-rdata.R` checks that it can
+still *read* what they wrote, which no other test can, because every other fixture is built by
+the current generator.
+
+Generating those files needs the old version installed — each one builds a cluster whose
+workers call `library(rcicr)`, so sourcing its R files is not enough, and v1.0.1 additionally
+needs `raster`, dropped in #186. Doing that at test time would put a package install and a
+network round trip inside the suite. Instead `tools/make-legacy-rdata.R` installs each tag into
+a throwaway library once and the resulting files are committed: 205 KB for 1.0.1 and 45 KB for
+1.1.0 at 32px — 1.0.1 is the larger because it is generated at `nscales = 5`, the historical
+default, so its missing-`nscales` fallback lands on the right noise basis. The safeguard runs
+in every CI job, on every platform, with no network. Regenerating is a deliberate act, as with
+the `released-formals` fixtures — a red test here means this version can no longer read a file
+a researcher already has, which is the failure, not the fixture.
+
+Writing them also settled the `generator_version` question with data rather than documentation:
+the 1.0.1 and 1.1.0 files really do carry a top-level `'0.4.0'` while `p$generator_version`
+holds `'1.0.1'` and `'1.1.0'`.
+
 ### The v1.0.1 reference is pinned; the previous release is a *second* run, not a replacement
 The obvious move once a release is green is to make it the new reference. It is wrong. Each
 release would then be compared only against its predecessor, and a tree could walk away from
