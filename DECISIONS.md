@@ -472,6 +472,32 @@ integration`), turning a self-contained PR into one that stalls on the maintaine
 `docs/` is the built site and is **git-ignored as well as `.Rbuildignore`d** — the two are not
 interchangeable, and a locally built site has already been committed by accident once.
 
+### The stale-`man/` gate is a step in an existing job, and a pre-commit hook was rejected
+`R CMD check` already fails on documentation that disagrees with a function's *signature* —
+`tools::codoc()`, confirmed by renaming `deg2rad`'s formal without regenerating `man/`. What it
+cannot see is prose drift: an edited `@description` or `@examples` never regenerated. The same
+edit leaves `codoc()` silent and still reaches the pkgdown site, which builds from `man/`. So
+the gate re-runs roxygen and diffs `man/` and `NAMESPACE`.
+
+Three things about where it lives:
+
+- **A step in `ubuntu-latest (release)`, not a new job or workflow.** Required checks are
+  matched by name, and adding a name to the ruleset is a repo-settings write agents here
+  cannot make — a new job would report without ever blocking. It runs last so a failure
+  cannot cost us the check results.
+- **Not a pre-commit hook.** R hooks were kept out of `.pre-commit-config.yaml` for their own
+  reasons, but the deciding one here is that the check job already has R and every dependency
+  installed, where a hook would install them per run — and an optional local hook is not a
+  gate.
+- **roxygen2 is pinned to `RoxygenNote`, not `any::`.** `.Rd` output varies between generator
+  versions, so `any::` lets a CRAN release of roxygen2 redden a required check on formatting
+  alone — an external event breaking the gate, in an environment that cannot re-run a job. The
+  step asserts the installed version matches `DESCRIPTION` so the pin cannot silently desync;
+  bumping the generator means bumping both.
+
+Nothing rebuilds the *site* locally or in a hook — the pkgdown workflow builds it on every PR
+and deploys on push, which is what catches a vignette that no longer knits.
+
 ---
 
 ## Releases and git

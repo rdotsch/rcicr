@@ -28,10 +28,15 @@ configurations, and compares. Every release has to pass it — see **Releasing**
 ## Getting set up
 
 ```r
-devtools::install()   # not load_all() -- see below
+devtools::install()      # not load_all() -- see below
 devtools::test()
 devtools::check()
+roxygen2::roxygenise()   # after editing any roxygen comment; commit man/ and NAMESPACE
 ```
+
+`man/` and `NAMESPACE` are generated and tracked, and `ubuntu-latest (release)` regenerates
+them and fails on a difference. Use the roxygen2 version in `DESCRIPTION`'s `RoxygenNote`;
+the CI step is pinned to it and says so when they disagree.
 
 `generateStimuli2IFC()` spawns parallel workers that each call `library(rcicr)`, so anything
 touching it needs the package **actually installed**. Under `devtools::load_all()` alone the
