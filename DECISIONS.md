@@ -511,8 +511,13 @@ the one whose title differs from `DESCRIPTION`'s), licence and URLs against `DES
 and `version`/`date-released` against `NEWS.md`'s dated release heading. `DESCRIPTION` is the
 wrong source for those two — between releases it carries `.9000`, and a citation names a
 released artifact — and reading them from `NEWS.md` means a release PR that forgets to rename
-the development heading fails here too. It also asserts CFF's required keys: GitHub declines
-to render the button when it cannot parse the file, and says nothing.
+the development heading fails here too.
+
+The fields nothing derives — `cff-version`, `type`, `message`, and each author having
+`family-names` or `name` — are checked by value for the same reason the rest are checked at
+all: GitHub declines to render the button when it cannot parse the file, and says nothing, so
+a hand edit to a constant has no other symptom. Validating against the CFF schema would catch
+more, at the cost of vendoring the schema and depending on `jsonvalidate` for an 18-line file.
 
 Every branch of it was tested by mutation, including the source side — an edit to
 `inst/CITATION` alone fails the check.

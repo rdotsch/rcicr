@@ -22,17 +22,37 @@ check <- function(label, want, have) {
 
 cff <- yaml::read_yaml("CITATION.cff")
 
-# CFF 1.2.0's required keys. GitHub renders the "Cite this repository" button
-# from this file and silently declines when it cannot parse it, so a structural
-# break has no other symptom.
-required <- c("cff-version", "message", "title", "authors")
-missing <- required[!required %in% names(cff)]
-if (length(missing) || !length(cff$authors)) {
-  cat("CITATION.cff is not valid CFF: missing ",
-    paste(c(missing, if (!length(cff$authors)) "a non-empty authors list"), collapse = ", "),
-    "\n",
-    sep = ""
-  )
+# GitHub renders the "Cite this repository" button from this file and silently
+# declines when it cannot parse it, so a structural break has no other symptom.
+# The comparisons below cover every derived field; these are the ones nothing
+# derives, so a hand edit to one would otherwise pass unnoticed. Checked by value
+# rather than against the CFF schema, which would mean vendoring the schema and
+# depending on jsonvalidate for a file this size.
+invalid <- character()
+note <- function(...) invalid <<- c(invalid, paste0(...))
+str1 <- function(x) is.character(x) && length(x) == 1L && nzchar(trimws(x))
+
+for (field in setdiff(c("cff-version", "message", "title", "authors"), names(cff))) {
+  note("missing ", field)
+}
+
+constants <- c(`cff-version` = "1.2.0", type = "software")
+for (field in names(constants)) {
+  have <- if (is.null(cff[[field]])) "(absent)" else as.character(cff[[field]])
+  if (!identical(have, constants[[field]])) {
+    note(field, " must be ", sQuote(constants[[field]]), ", not ", sQuote(have))
+  }
+}
+
+if (!str1(cff$message)) note("message must be a non-empty string")
+if (!length(cff$authors)) {
+  note("authors must be a non-empty list")
+} else if (!all(vapply(cff$authors, function(a) str1(a$`family-names`) || str1(a$name), TRUE))) {
+  note("every author needs family-names (a person) or name (an entity)")
+}
+
+if (length(invalid)) {
+  cat("CITATION.cff is not valid CFF 1.2.0:\n", paste0("  ", invalid, "\n"), sep = "")
   quit(status = 1L)
 }
 
