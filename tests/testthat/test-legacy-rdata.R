@@ -29,7 +29,11 @@ legacy_versions <- c("1.0.1", "1.1.0")
 
 legacy_fixture <- function(version) {
   path <- test_path("fixtures", paste0("legacy-rdata-", version, ".Rdata"))
-  skip_if_not(file.exists(path), paste("no legacy fixture for", version))
+  # Committed, mandatory assets, so a missing one fails rather than skips: a skip
+  # reads as "this passed" at a glance, and the scenario it would hide -- the
+  # fixture deleted, renamed, or left out of a built package -- is precisely the
+  # safeguard silently disappearing while CI stays green.
+  expect_true(file.exists(path), info = paste("missing legacy fixture:", path))
   path
 }
 
@@ -63,22 +67,46 @@ test_that("the current generateCI() reads .Rdata files written by older releases
   }
 })
 
-test_that("a 1.0.1 file, which predates nscales and sigma, still yields a CI", {
-  skip_if_not_installed("withr")
-
-  # The specific hazard: 1.0.1 never wrote these two fields, so anything reading
-  # them has to cope with their absence rather than erroring or -- worse --
-  # silently substituting a default that changes the noise basis.
+test_that("a 1.0.1 file genuinely lacks nscales and sigma", {
   e <- new.env()
   load(legacy_fixture("1.0.1"), envir = e)
+
   expect_false(exists("nscales", envir = e, inherits = FALSE))
   expect_false(exists("sigma", envir = e, inherits = FALSE))
+  # noise_type predates 1.0.1, so this file has it -- which is why the test below
+  # expects the nscales warning and not the noise_type one.
+  expect_true(exists("noise_type", envir = e, inherits = FALSE))
+})
 
-  ci <- generateCI(
-    stimuli = 1:6, responses = rep(c(1, -1), 3), baseimage = "base",
-    rdata = local_fixture_copy("1.0.1"), save_as_png = FALSE
+test_that("the missing-nscales fallback carries a real 1.0.1 file through the null", {
+  skip_if_not_installed("withr")
+
+  # generateCI() never reads nscales or sigma, so it cannot exercise the
+  # compatibility fallbacks -- those are in generateReferenceDistribution2IFC(),
+  # which re-generates the stimuli and therefore needs the noise-basis
+  # parameters 1.0.1 did not save. This is the reader that would break if the
+  # fallbacks were removed.
+  rdata <- local_fixture_copy("1.0.1")
+
+  seen <- character()
+  withCallingHandlers(
+    generateReferenceDistribution2IFC(rdata, iter = 3, ncores = 1),
+    warning = function(cond) {
+      seen <<- c(seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
   )
-  expect_false(anyNA(ci$ci))
+
+  # Warned about what it had to assume, and named the field.
+  expect_true(any(grepl("does not contain `nscales`", seen, fixed = TRUE)))
+  expect_false(any(grepl("does not contain `noise_type`", seen, fixed = TRUE)))
+
+  # And it has to actually finish: the warning is worth nothing if the call then
+  # fails, which is how #94 presented on files of this vintage.
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_length(after$reference_norms, 3)
+  expect_false(anyNA(after$reference_norms))
 })
 
 test_that("the writing version is read from p, not from the field that says 0.4.0", {
