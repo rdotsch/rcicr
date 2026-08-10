@@ -71,6 +71,12 @@
   all reports the absence and stops there — an absent field is equally a file older than 0.4.0,
   a truncated one, or one rcicr never wrote.
 
+  `generateReferenceDistribution2IFC()`'s two warnings about a missing `nscales` or
+  `noise_type` were reworded for the same reason. They said the file "was written by a version
+  of rcicr that did not save" the field, which an absence does not establish; they now report
+  what is missing, and keep the version as context rather than as a conclusion. The advice is
+  unchanged, and was always right either way: regenerate the stimulus set with this version.
+
 ## Bug fixes
 
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told

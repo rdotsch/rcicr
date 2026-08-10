@@ -94,12 +94,12 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   # producing a wrong infoVal - so warn loudly rather than guessing quietly.
   if (!exists('nscales', envir=environment(), inherits=FALSE)) {
     nscales <- 5
-    warning(paste0('This .Rdata file was written by a version of rcicr that ',
-                   'did not save `nscales`, so the default (5) is assumed for ',
-                   'the reference distribution. If the stimuli were generated ',
-                   'with a different nscales, the resulting infoVal will be ',
-                   'wrong - regenerate the stimulus set with this version of ',
-                   'rcicr to fix this.'))
+    warning(paste0('This .Rdata file does not contain `nscales`, so the default ',
+                   '(5) is assumed for the reference distribution. rcicr did not ',
+                   'save it before 1.1.0. If the stimuli were generated with a ',
+                   'different nscales, the resulting infoVal will be wrong - ',
+                   'regenerate the stimulus set with this version of rcicr to fix ',
+                   'this.'))
   }
   if (!exists('sigma', envir=environment(), inherits=FALSE)) {
     sigma <- 25
@@ -112,12 +112,12 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   # the null is built on a different *kind* of noise than participants saw.
   if (!exists('noise_type', envir=environment(), inherits=FALSE)) {
     noise_type <- 'sinusoid'
-    warning(paste0('This .Rdata file was written by a version of rcicr that ',
-                   'did not save `noise_type`, so the default (sinusoid) is ',
-                   'assumed for the reference distribution. If the stimuli ',
-                   'were generated with noise_type = "gabor", the resulting ',
-                   'infoVal will be wrong - regenerate the stimulus set with ',
-                   'this version of rcicr to fix this.'))
+    warning(paste0('This .Rdata file does not contain `noise_type`, so the ',
+                   'default (sinusoid) is assumed for the reference distribution. ',
+                   'Older files do not carry it. If the stimuli were generated ',
+                   'with noise_type = "gabor", the resulting infoVal will be ',
+                   'wrong - regenerate the stimulus set with this version of ',
+                   'rcicr to fix this.'))
   }
 
   # Re-generate stimuli based on rdata parameters in matrix form
