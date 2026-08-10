@@ -200,7 +200,7 @@
 </ul><p>Silently widening a tolerance, deleting a configuration from the battery, or skipping the run is none of those things. The whole point is that a change to researchers’ numbers can only get out deliberately and loudly.</p>
 <div class="section level3">
 <h3 id="id_1-prepare-the-release-pr">1. Prepare the release PR<a class="anchor" aria-label="anchor" href="#id_1-prepare-the-release-pr"></a></h3>
-<p>Branch from <code>main</code> (<code>release-X.Y.Z</code> by convention) and make these four edits together:</p>
+<p>Branch from <code>main</code> (<code>release-X.Y.Z</code> by convention) and make these five edits together:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">Rscript</span> tools/compare-release-output.R              <span class="co"># both gate runs green</span></span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="ex">Rscript</span> tools/compare-release-output.R <span class="at">--ref</span><span class="op">=</span>vA.B.C <span class="co"># the previous release</span></span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="ex">R</span> CMD build . <span class="kw">&amp;&amp;</span> <span class="ex">R</span> CMD check <span class="at">--as-cran</span> rcicr_<span class="pp">*</span>.tar.gz</span></code></pre></div>
@@ -210,6 +210,8 @@
 <strong><code>DESCRIPTION</code></strong>: drop the <code>.9000</code>. This is also what switches CI from the everyday <code>--quick</code> gate to the full battery, so it has to happen <strong>before</strong> the PR is opened, not after review.</li>
 <li>
 <strong><code>ChangeLog</code></strong>: add a dated pointer entry deferring to <code>NEWS.md</code> — not a duplicate. See <a href="DECISIONS.html#changelog-gets-a-pointer-entry-not-a-duplicate"><code>DECISIONS.md</code></a> for why.</li>
+<li>
+<strong><code>CITATION.cff</code></strong>: regenerate it, after the <code>DESCRIPTION</code> edit above, with <code>cffr::cff_write("DESCRIPTION", dependencies = FALSE, gh_keywords = FALSE)</code> — it carries the version. <code>ubuntu-latest (release)</code> regenerates and compares, so it fails until you do.</li>
 <li>
 <strong><code>cran-comments.md</code></strong>: re-read every claim in it rather than trusting it. It has gone stale <em>within a single day</em> before, by describing a URL reference that another PR had just removed, one step short of a CRAN reviewer reading it. Leave the test-environment results for step 2; everything else is written now.</li>
 </ul><p>Open the PR. The full battery runs on it, takes ~20 minutes, and is a required check.</p>
