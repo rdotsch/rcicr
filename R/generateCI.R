@@ -149,19 +149,19 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   # Check whether critical variables have been loaded
   if (!exists('s', envir=environment(), inherits=FALSE) &
       !exists('p', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata did not contain s or p variable.')
+    stop('File specified in rdata did not contain s or p variable.', rdataWriterNote(environment()))
   }
 
   if (!exists('base_faces', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata did not contain base_faces variable.')
+    stop('File specified in rdata did not contain base_faces variable.', rdataWriterNote(environment()))
   }
 
   if (!exists('stimuli_params', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata did not contain stimuli_params variable.')
+    stop('File specified in rdata did not contain stimuli_params variable.', rdataWriterNote(environment()))
   }
 
   if (!exists('img_size', envir=environment(), inherits=FALSE)) {
-    stop('File specified in rdata did not contain img_size variable.')
+    stop('File specified in rdata did not contain img_size variable.', rdataWriterNote(environment()))
   }
 
 

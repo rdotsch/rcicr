@@ -60,6 +60,16 @@
   whose *extension* does not say what it is is rejected up front, by name, instead of
   reaching a reader that cannot parse it.
 
+- **The `.Rdata` validation errors now name the version of rcicr that wrote the file.**
+  `generateCI()` and `computeCumulativeCICorrelation()` already said which field a file was
+  missing; they now also say where the file came from, which is what turns "this file has no
+  `stimuli_params`" into "it predates the version that added it — regenerate the stimuli, or
+  install that version". The version is read tolerantly, because the field cannot be taken at
+  face value: `p$generator_version` is preferred over the top-level `generator_version`, which
+  every release from 0.4.0 through 1.1.0 recorded as a hardcoded `0.4.0`, and a file that only
+  claims `0.4.0` is reported as *unknown* rather than as 0.4.0. A file with no version field
+  at all — anything older than 0.4.0 — says that instead.
+
 ## Bug fixes
 
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
