@@ -90,16 +90,7 @@ test_that("a 1.0.1 file genuinely lacks nscales and sigma", {
   expect_true(exists("noise_type", envir = e, inherits = FALSE))
 })
 
-test_that("the missing-nscales fallback carries a real 1.0.1 file through the null", {
-  skip_if_not_installed("withr")
-
-  # generateCI() never reads nscales or sigma, so it cannot exercise the
-  # compatibility fallbacks -- those are in generateReferenceDistribution2IFC(),
-  # which re-generates the stimuli and therefore needs the noise-basis
-  # parameters 1.0.1 did not save. This is the reader that would break if the
-  # fallbacks were removed.
-  rdata <- local_fixture_copy("1.0.1")
-
+reference_norms_for <- function(rdata) {
   seen <- character()
   withCallingHandlers(
     generateReferenceDistribution2IFC(rdata, iter = 3, ncores = 1),
@@ -108,17 +99,55 @@ test_that("the missing-nscales fallback carries a real 1.0.1 file through the nu
       invokeRestart("muffleWarning")
     }
   )
-
-  # Warned about what it had to assume, and named the field.
-  expect_true(any(grepl("does not contain `nscales`", seen, fixed = TRUE)))
-  expect_false(any(grepl("does not contain `noise_type`", seen, fixed = TRUE)))
-
-  # And it has to actually finish: the warning is worth nothing if the call then
-  # fails, which is how #94 presented on files of this vintage.
   after <- new.env()
   load(rdata, envir = after)
-  expect_length(after$reference_norms, 3)
-  expect_false(anyNA(after$reference_norms))
+  list(warnings = seen, norms = after$reference_norms)
+}
+
+test_that("the missing-nscales fallback rebuilds the basis a 1.0.1 file was made with", {
+  skip_if_not_installed("withr")
+
+  # generateCI() never reads nscales or sigma, so it cannot exercise the
+  # compatibility fallbacks -- those are in generateReferenceDistribution2IFC(),
+  # which re-generates the stimuli and therefore needs the noise-basis parameters
+  # 1.0.1 did not save. This is the reader that would break if they were removed.
+  #
+  # The fixture is generated at nscales = 5, the default then and now, which is
+  # what makes the fallback's assumption *right* for it -- see
+  # tools/make-legacy-rdata.R. Finishing is not the claim: a null built on a
+  # different noise basis than the stimuli finishes too, and is wrong. So the
+  # claim is equivalence with a file that states nscales explicitly.
+  fallback <- reference_norms_for(local_fixture_copy("1.0.1"))
+
+  stated <- local_fixture_copy("1.0.1")
+  mutate_rdata(stated, nscales = 5)
+  stated <- reference_norms_for(stated)
+
+  expect_true(any(grepl("does not contain `nscales`", fallback$warnings, fixed = TRUE)))
+  expect_false(any(grepl("does not contain `noise_type`", fallback$warnings, fixed = TRUE)))
+  expect_false(any(grepl("does not contain `nscales`", stated$warnings, fixed = TRUE)))
+
+  # Bit-identical, not merely both finite.
+  expect_identical(fallback$norms, stated$norms)
+  expect_length(fallback$norms, 3)
+  expect_false(anyNA(fallback$norms))
+})
+
+test_that("a 1.1.0 file's saved nscales is used, and no fallback fires", {
+  skip_if_not_installed("withr")
+
+  # 1.1.0 records nscales, and this fixture records 1 -- deliberately unlike the
+  # fallback's 5, so a fallback firing when it should not would change the noise
+  # basis rather than passing unnoticed.
+  e <- new.env()
+  load(legacy_fixture("1.1.0"), envir = e)
+  expect_equal(get("nscales", envir = e), 1)
+
+  got <- reference_norms_for(local_fixture_copy("1.1.0"))
+
+  expect_false(any(grepl("does not contain `nscales`", got$warnings, fixed = TRUE)))
+  expect_length(got$norms, 3)
+  expect_false(anyNA(got$norms))
 })
 
 test_that("the writing version is read from p, not from the field that says 0.4.0", {

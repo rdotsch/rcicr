@@ -33,6 +33,21 @@ opt <- function(name, default) {
 VERSIONS <- strsplit(opt("versions", "v1.0.1,v1.1.0"), ",")[[1]]
 KEEP <- "--keep" %in% args
 
+# nscales per version, and these values are load-bearing rather than convenient.
+#
+# v1.0.1 does not save nscales, so a current reader that re-generates stimuli
+# falls back to 5 -- the default then and now. Generating this fixture at 5 makes
+# that fallback *correct*, which is the situation a returning researcher is
+# actually in. At any other value the null would be rebuilt on a different noise
+# basis than the stimuli, giving a wrong infoVal: that is what
+# generateReferenceDistribution2IFC() warns about, not something to enshrine in a
+# fixture and assert as usable.
+#
+# v1.1.0 does save it, so its value is honoured and no fallback applies. Keeping
+# it at 1 -- deliberately unlike the fallback's 5 -- means a fallback firing when
+# it should not would change the basis, and be visible.
+NSCALES <- c("v1.0.1" = 5L, "v1.1.0" = 1L)
+
 say <- function(...) cat(..., "\n", sep = "")
 die <- function(...) { cat("ERROR: ", ..., "\n", sep = ""); quit(status = 2L) }
 
@@ -57,6 +72,11 @@ for (tag in VERSIONS) {
   sha <- suppressWarnings(system2("git", c("rev-parse", "--verify", "--quiet",
                                            paste0(tag, "^{commit}")), stdout = TRUE))
   if (length(sha) != 1L) die("cannot resolve ", tag)
+
+  if (!tag %in% names(NSCALES))
+    die(tag, " has no entry in NSCALES -- decide what its noise basis should be, ",
+        "and why, before adding it")
+  nscales <- NSCALES[[tag]]
 
   worktree <- file.path(tmp, paste0("src-", tag))
   lib <- file.path(tmp, paste0("lib-", tag))
@@ -95,11 +115,15 @@ for (tag in VERSIONS) {
   # Small on purpose: 32px and 6 trials keeps the fixture at tens of KB, and
   # nothing here depends on the stimuli looking like anything.
   script <- file.path(tmp, paste0("gen-", tag, ".R"))
+  # encodeString(), not shQuote(): this text is R *source*, and on Windows a
+  # path's backslashes would be read as escapes -- "C:\\Users\\..." fails to parse
+  # on sequences like \\U. Forward slashes work on every platform R supports.
+  rsrc <- function(path) encodeString(gsub("\\\\", "/", path), quote = '"')
   writeLines(c(
     "library(rcicr)",
-    sprintf("generateStimuli2IFC(base_face_files = list(base = %s),", shQuote(base_png)),
-    "                    n_trials = 6, img_size = 32, nscales = 1, seed = 1,",
-    sprintf("                    stimulus_path = %s, ncores = 1, save_as_png = FALSE)", shQuote(outdir))
+    sprintf("generateStimuli2IFC(base_face_files = list(base = %s),", rsrc(base_png)),
+    sprintf("                    n_trials = 6, img_size = 32, nscales = %d, seed = 1,", nscales),
+    sprintf("                    stimulus_path = %s, ncores = 1, save_as_png = FALSE)", rsrc(outdir))
   ), script)
   st <- system2(file.path(R.home("bin"), "Rscript"), shQuote(script),
                 env = paste0("R_LIBS=", paste(c(lib, .libPaths()), collapse = .Platform$path.sep)),
