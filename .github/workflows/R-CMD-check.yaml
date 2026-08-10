@@ -93,5 +93,9 @@ jobs:
                   -e 'have <- as.character(packageVersion("roxygen2"))' \
                   -e 'if (have != want) stop("roxygen2 ", have, " installed, DESCRIPTION says ", want, ": update the pin in this workflow to match.")' \
                   -e 'roxygen2::roxygenise(load_code = "source")'
-          git diff --exit-code -- man NAMESPACE \
+          # Staged, because `git diff` alone ignores untracked files: a new
+          # documented *internal* function leaves NAMESPACE untouched, so its
+          # missing man/*.Rd would be invisible and the gate would pass.
+          git add -A -- man NAMESPACE
+          git diff --cached --exit-code -- man NAMESPACE \
             || { echo "::error::man/ or NAMESPACE is stale. Run roxygen2::roxygenise() and commit the result."; exit 1; }
