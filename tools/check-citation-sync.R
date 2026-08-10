@@ -92,8 +92,10 @@ check(
 # Addresses come from Authors@R, the only place they are written. This package was
 # archived from CRAN in 2021 over an undeliverable maintainer address, so a stale
 # contact in the citation file is not a cosmetic difference.
+# An author Authors@R gives no address for must be absent from the CFF too, not
+# hold an address nothing here can check.
 people <- eval(parse(text = desc[["Authors@R"]]))
-addresses <- vapply(people, function(p) paste0(p$email, collapse = ""), "")
+addresses <- vapply(people, function(p) if (length(p$email)) p$email[[1]] else "(absent)", "")
 names(addresses) <- vapply(people, function(p) paste(c(p$given, p$family), collapse = " "), "")
 for (a in cff$authors) {
   who <- paste(a$`given-names`, a$`family-names`)
@@ -113,15 +115,22 @@ for (a in cff$authors) {
 spdx <- c("GPL-2" = "GPL-2.0-only", "GPL-3" = "GPL-3.0-only", "MIT + file LICENSE" = "MIT")
 check("license (DESCRIPTION, as SPDX)", spdx[[desc[["License"]]]], cff$license)
 
+# CFF gives the two URLs different jobs -- repository-code is the source
+# repository, url the landing page -- so each is pinned to its own source.
+# Membership in DESCRIPTION's list would let them swap, or be the same URL twice.
 urls <- sub("/$", "", trimws(strsplit(desc[["URL"]], ",")[[1]]))
-for (field in c("repository-code", "url")) {
-  have <- sub("/$", "", cff[[field]])
-  if (!have %in% urls) {
-    cat("  FAIL ", field, ": ", sQuote(have), " is not in DESCRIPTION's URL field\n", sep = "")
-    fail <- c(fail, field)
-  } else {
-    cat("  ok   ", field, ": ", sQuote(have), "\n", sep = "")
-  }
+repo <- grep("github\\.com", urls, value = TRUE)
+home <- setdiff(urls, repo)
+if (length(repo) != 1L || length(home) != 1L) {
+  cat("  FAIL DESCRIPTION's URL field should list one GitHub repository and one",
+    " documentation site; got ", paste(sQuote(urls), collapse = ", "), "\n",
+    sep = ""
+  )
+  fail <- c(fail, "URL")
+} else {
+  check("repository-code (DESCRIPTION, its GitHub URL)", repo, sub("/$", "", cff$`repository-code`))
+  check("url (DESCRIPTION, its documentation site)", home, sub("/$", "", cff$url))
+  check("repository-code (inst/CITATION url)", sub("/$", "", cit$url), sub("/$", "", cff$`repository-code`))
 }
 
 if (length(fail)) {
