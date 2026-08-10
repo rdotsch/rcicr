@@ -151,7 +151,7 @@
   the wrong noise basis finishes just as happily and is wrong. Every other
   fixture is built by the current generator, so nothing before this could catch a field this
   version expects and an older one never saved. It runs on every platform with no network: the
-  files are 46 KB each.
+  fixtures are 205 KB (1.0.1) and 45 KB (1.1.0).
 
 # rcicr 1.2.3 (2026-08-07)
 

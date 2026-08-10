@@ -112,8 +112,9 @@ for (tag in VERSIONS) {
   }
 
   # Run the old version out of process, so its namespace never meets this one's.
-  # Small on purpose: 32px and 6 trials keeps the fixture at tens of KB, and
-  # nothing here depends on the stimuli looking like anything.
+  # Small on purpose: 32px and 6 trials keep the fixtures well under pre-commit's
+  # 1 MB ceiling -- tens of KB, or ~200 KB where nscales is 5 -- and nothing here
+  # depends on the stimuli looking like anything.
   script <- file.path(tmp, paste0("gen-", tag, ".R"))
   # encodeString(), not shQuote(): this text is R *source*, and on Windows a
   # path's backslashes would be read as escapes -- "C:\\Users\\..." fails to parse

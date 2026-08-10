@@ -104,7 +104,7 @@ reference_norms_for <- function(rdata) {
   list(warnings = seen, norms = after$reference_norms)
 }
 
-test_that("the missing-nscales fallback rebuilds the basis a 1.0.1 file was made with", {
+test_that("the missing-nscales fallback assumes the historical default of 5", {
   skip_if_not_installed("withr")
 
   # generateCI() never reads nscales or sigma, so it cannot exercise the
@@ -112,23 +112,31 @@ test_that("the missing-nscales fallback rebuilds the basis a 1.0.1 file was made
   # which re-generates the stimuli and therefore needs the noise-basis parameters
   # 1.0.1 did not save. This is the reader that would break if they were removed.
   #
-  # The fixture is generated at nscales = 5, the default then and now, which is
-  # what makes the fallback's assumption *right* for it -- see
-  # tools/make-legacy-rdata.R. Finishing is not the claim: a null built on a
-  # different noise basis than the stimuli finishes too, and is wrong. So the
-  # claim is equivalence with a file that states nscales explicitly.
+  # That re-generation rebuilds the basis from the nscales *value*, not from the
+  # stored stimuli, so what this pins is the value the fallback picks: it must be
+  # 5, the default a 1.0.1 user actually generated with, or the null is built on a
+  # different basis than the participant saw -- which finishes just as happily and
+  # is wrong. So "finite norms" is not the claim; equalling an explicit 5, and
+  # differing from any other value, is. The fixture is likewise generated at 5
+  # (tools/make-legacy-rdata.R) so it represents that real default case.
   fallback <- reference_norms_for(local_fixture_copy("1.0.1"))
 
-  stated <- local_fixture_copy("1.0.1")
-  mutate_rdata(stated, nscales = 5)
-  stated <- reference_norms_for(stated)
+  explicit_5 <- local_fixture_copy("1.0.1")
+  mutate_rdata(explicit_5, nscales = 5)
+  explicit_5 <- reference_norms_for(explicit_5)
+
+  explicit_3 <- local_fixture_copy("1.0.1")
+  mutate_rdata(explicit_3, nscales = 3)
+  explicit_3 <- reference_norms_for(explicit_3)
 
   expect_true(any(grepl("does not contain `nscales`", fallback$warnings, fixed = TRUE)))
   expect_false(any(grepl("does not contain `noise_type`", fallback$warnings, fixed = TRUE)))
-  expect_false(any(grepl("does not contain `nscales`", stated$warnings, fixed = TRUE)))
+  expect_false(any(grepl("does not contain `nscales`", explicit_5$warnings, fixed = TRUE)))
 
-  # Bit-identical, not merely both finite.
-  expect_identical(fallback$norms, stated$norms)
+  # The fallback picks 5 specifically: identical to an explicit 5, and the value
+  # is load-bearing, so a different one gives a different null.
+  expect_identical(fallback$norms, explicit_5$norms)
+  expect_false(identical(fallback$norms, explicit_3$norms))
   expect_length(fallback$norms, 3)
   expect_false(anyNA(fallback$norms))
 })

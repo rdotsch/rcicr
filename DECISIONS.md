@@ -289,10 +289,12 @@ Generating those files needs the old version installed — each one builds a clu
 workers call `library(rcicr)`, so sourcing its R files is not enough, and v1.0.1 additionally
 needs `raster`, dropped in #186. Doing that at test time would put a package install and a
 network round trip inside the suite. Instead `tools/make-legacy-rdata.R` installs each tag into
-a throwaway library once and the resulting files are committed: 46 KB each at 32px, so the
-whole safeguard runs in every CI job, on every platform, with no network. Regenerating is a
-deliberate act, as with the `released-formals` fixtures — a red test here means this version
-can no longer read a file a researcher already has, which is the failure, not the fixture.
+a throwaway library once and the resulting files are committed: 205 KB for 1.0.1 and 45 KB for
+1.1.0 at 32px — 1.0.1 is the larger because it is generated at `nscales = 5`, the historical
+default, so its missing-`nscales` fallback lands on the right noise basis. The safeguard runs
+in every CI job, on every platform, with no network. Regenerating is a deliberate act, as with
+the `released-formals` fixtures — a red test here means this version can no longer read a file
+a researcher already has, which is the failure, not the fixture.
 
 Writing them also settled the `generator_version` question with data rather than documentation:
 the 1.0.1 and 1.1.0 files really do carry a top-level `'0.4.0'` while `p$generator_version`
