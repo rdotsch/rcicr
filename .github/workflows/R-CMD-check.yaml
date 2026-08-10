@@ -73,6 +73,7 @@ jobs:
           # four is the price of not putting a matrix conditional here.
           extra-packages: |
             any::rcmdcheck
+            any::yaml
             roxygen2@7.3.1
           needs: check
 
@@ -99,3 +100,7 @@ jobs:
           git add -A -- man NAMESPACE
           git diff --cached --exit-code -- man NAMESPACE \
             || { echo "::error::man/ or NAMESPACE is stale. Run roxygen2::roxygenise() and commit the result."; exit 1; }
+
+      - name: Citation metadata agrees
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: Rscript tools/check-citation-sync.R

@@ -13,6 +13,7 @@
 ^.*\.tar\.gz$
 ^Rplots\.pdf$
 ^cran-comments\.md$
+^CITATION\.cff$
 ^CONTRIBUTING\.md$
 ^tools$
 ^_pkgdown\.yml$

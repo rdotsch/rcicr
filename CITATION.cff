@@ -1,0 +1,19 @@
+# Hand-maintained, and checked against DESCRIPTION, inst/CITATION and NEWS.md by
+# tools/check-citation-sync.R, a step in the `ubuntu-latest (release)` job.
+#
+# `version` and `date-released` describe the latest *release*, not the `.9000`
+# development version in DESCRIPTION: a citation names a released artifact.
+# Update both in the release PR -- the check fails until you do.
+cff-version: 1.2.0
+message: If you use this software, please cite it using the metadata from this file.
+type: software
+title: "rcicr: Reverse correlation image classification toolbox"
+authors:
+  - family-names: Dotsch
+    given-names: Ron
+    email: rdotsch@gmail.com
+version: 1.2.3
+date-released: "2026-08-07"
+license: GPL-2.0-only
+repository-code: https://github.com/rdotsch/rcicr
+url: https://rdotsch.github.io/rcicr/
