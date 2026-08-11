@@ -13,7 +13,7 @@ would still matter if this package were maintained somewhere else entirely belon
 surprising measured, something deliberately not fixed. Entries are grouped by theme, not by
 date, and are edited in place when they stop being true.
 
-**Keep this file under 550 lines.** It is read to answer "why is this like this", and a file
+**Keep this file under 5200 words.** It is read to answer "why is this like this", and a file
 long enough to skim is one whose answer is never found. Over budget, something comes out before
 something goes in. Write the decision and the evidence, not the route taken to it: an entry
 earns its length from a measurement or a rejected alternative, never from narrating how it was
@@ -101,33 +101,28 @@ The same release also fixed `sinIdx` counting from 0 rather than 1, which is wha
 `pre_0.3.0` flag exists for. The two are independent and both live in that boundary.
 
 **The 0-based path in `generateNoiseImage()` looks like it corrupts the whole image and does
-not.** When `min(patchIdx) == 0`, `params[p$patchIdx]` drops every 0-indexed cell (R drops
-rather than `NA`s a 0 subscript), returning a vector too short for the patch array, which
-`array()` then recycles — the setup for a general misalignment. It is harmless because the
-same counter-from-0 leaves the *last* patch layer never written, so every `patchIdx == 0`
-cell is also a `patches == 0` cell (verified at every `nscales`) — the one-way implication
-masking needs, not an equivalence: a populated phase-0 layer has zero pixels too, so the
-converse is false. Those zero-index cells sit contiguously at the end of the column-major
-order, so the recycled values land only where the patch is identically zero and are
-multiplied away. Measured: the warning-branch output equals the
-honest "one patch not shown" result exactly (max abs diff 0) across 36 size/nscales/seed
-combinations, so the warning is accurate, not an understatement. This is not a self-fulfilling
-reconstruction: a stimulus file stores the patch array its own generator wrote
-(`generateStimuli2IFC()` `save()`s `p`), and the genuine pre-0.3.0 generator is the identical
-`co = 0` / `idx = 0` loop the `pre_0.3.0` flag runs — verified against the R-Forge source
-(`git show 7d0d9e6:pkg/R/rcicr.R`), where 0.3.0 only flipped the default and added the flag. So
-no genuine legacy file can carry index 0 on a populated patch, and the 0.3.0 `ChangeLog`
-independently records the effect as two single sinuses fixed in contrast rather than a
-whole-image change. Do **not** "fix" the recycle by 1-offsetting the index — that would change
-which sinusoid is dropped, altering the CI of every genuinely pre-0.3.0 file.
-`test-generateNoiseImage.R` pins the masking implication and the output equality so neither can
-be broken silently.
+not.** When `min(patchIdx) == 0`, `params[p$patchIdx]` drops every 0-indexed cell (R drops rather
+than `NA`s a 0 subscript), returning a vector too short for the patch array, which `array()` then
+recycles — the setup for a general misalignment. It is harmless because the same counter-from-0
+leaves the *last* patch layer never written, so every `patchIdx == 0` cell is also a
+`patches == 0` cell — the one-way implication masking needs, not an equivalence. Those cells sit
+contiguously at the end of the column-major order, so recycled values land only where the patch
+is identically zero and are multiplied away. Measured: identical to the honest "one patch not
+shown" result (max abs diff 0) across 36 size/nscales/seed combinations, so the warning is
+accurate rather than an understatement.
 
-The truncation this left behind in `generateCI()` had a dead branch for eleven years: the
-single-trial path tested for a length of 4092 and truncated to 4092, so it could never fire
-on the 4096-length input it was written for. **A backward-compatibility
-path that nothing exercises is indistinguishable from one that works** — this one had no test
-until 2026-07-28, and neither did the `sinusoids`/`sinIdx` path, which was also broken.
+Not a self-fulfilling reconstruction: a stimulus file stores the patch array its own generator
+wrote, and the genuine pre-0.3.0 generator is the identical `co = 0` / `idx = 0` loop the
+`pre_0.3.0` flag runs — verified against the R-Forge source (`git show 7d0d9e6:pkg/R/rcicr.R`),
+where 0.3.0 only flipped the default and added the flag. Do **not** "fix" the recycle by
+1-offsetting the index: that changes which sinusoid is dropped, altering the CI of every
+genuinely pre-0.3.0 file. `test-generateNoiseImage.R` pins both properties.
+
+The truncation left a dead branch in `generateCI()` for eleven years: the single-trial path
+tested for a length of 4092 and truncated to 4092, so it could never fire on the 4096-length
+input it was written for. **A backward-compatibility path that nothing exercises is
+indistinguishable from one that works** — it had no test until 2026-07-28, and neither did the
+`sinusoids`/`sinIdx` path, also broken.
 
 ### `load()` assigns into the calling frame — check every new argument against saved names
 An object in an `.Rdata` file silently overwrites a function argument of the same name.
@@ -149,33 +144,28 @@ It matches the erratum to Schmitz et al. (2019): the Euclidean norm, with *k* su
 Flagged as a bug and changed; **Ron overruled, and the change was reverted.** `$combined` must
 stay as the caller supplied it, so a combination made before autoscaling survives the call and
 existing scripts keep plotting the same image; `$scaled` carries the autoscaled result. The
-user-facing problem was never the code but that nothing said which field to look at — fixed in
-`?autoscale` and the vignette, plus a test asserting `$combined` comes back identical and
-warning against "fixing" it.
+user-facing problem was never the code but that nothing said which field to look at.
 
-The trap worth knowing: after `batchGenerateCI()` (which scales `'none'` first) `$combined` is
-an overlay of *unscaled* noise and looks almost blank. Build the overlay as `(ci$scaled +
-ci$base) / 2`, which is what `save_as_pngs = TRUE` writes.
+The trap worth knowing: after `batchGenerateCI()` (which scales `'none'` first) `$combined` is an
+overlay of *unscaled* noise and looks almost blank. Build it as `(ci$scaled + ci$base) / 2`, which
+is what `save_as_pngs = TRUE` writes.
 
-**What kept this cheap to undo:** the change was filed under its own "Behaviour change"
-heading rather than slipped in with unambiguous bug fixes. When a fix is debatable, say so.
+What kept this cheap to undo: it was filed under its own "Behaviour change" heading rather than
+slipped in with unambiguous bug fixes. **When a fix is debatable, say so.**
 
 ### `base_face_files` validation rejects two inputs that used to run
-Duplicate names, and a list element that is not a single file name, now stop the call. Both
-ran before, so this is a considered exception to the constraint above rather than a plain bug
-fix — and it is allowed because neither ever produced what the call asked for. `list(face =
-'a.png', face = 'b.png')` looks each name up by string, so it wrote **one** set of stimuli,
-from `a.png`, and nothing from `b.png`; verified against the pre-fix code, four files for two
-trials. A script that "worked" this way was generating stimuli for a base image it never
-named. Every other new check rejects input that already failed, just further downstream —
-inside a parallel worker, as `attempt to select less than one element in get1index`.
+Duplicate names, and a list element that is not a single file name, now stop the call. Both ran
+before, so this is a considered exception to the constraint above — allowed because neither ever
+produced what the call asked for. `list(face = 'a.png', face = 'b.png')` looks each name up by
+string, so it wrote **one** stimulus set, from `a.png`: verified against the pre-fix code, four
+files for two trials. A script that "worked" this way was generating stimuli for a base image it
+never named. Every other new check rejects input that already failed further downstream, inside a
+parallel worker.
 
-**Readability is checked by attempting the read, not by `file.access()`.** The obvious version
-— `file.access(filename, 4)` — is documented as unreliable on Windows and on networked
-filesystems, so it can reject a file that reads fine. `png::readPNG()` / `jpeg::readJPEG()`
-inside `tryCatch()` cannot be wrong about it, and keeping the reader's own message means the
-distinction between "not a PNG" and "permission denied" survives instead of being flattened
-into one guess.
+**Readability is checked by attempting the read, not by `file.access()`**, which is documented as
+unreliable on Windows and networked filesystems and can reject a file that reads fine. Keeping
+the reader's own message also preserves the difference between "not a PNG" and "permission
+denied".
 
 ### `_R_CHECK_LIMIT_CORES_` handling caps cores under check only
 `default_ncores()` returns 2 when that variable is set and `detectCores() - 1` otherwise. Only
@@ -192,20 +182,17 @@ string and a `package_version`, and compare with `numeric_version()` semantics �
 field; it detects the old `sinusoids`/`sinIdx` layout structurally. Just as well.
 
 ### `return_as_dataframe = TRUE` returns one noise image per trial, not per trial × base image
-`generateStimuli2IFC()`'s early `return()` (`R/generateStimuli2IFC.R:231`) sits *inside* the
-per-base-image loop at `:193`, so with several base images it fires on the first and the rest
-never run. Under the default
-`use_same_parameters = TRUE` that is correct — every base image shares one parameter set, so one
-noise image per trial is all there is — and the returned frame has one column per trial, so it
-could not represent the alternative anyway. Documented on `@param return_as_dataframe` rather
-than changed.
+`generateStimuli2IFC()`'s early `return()` sits *inside* the per-base-image loop, so with several
+base images it fires on the first and the rest never run. Under the default
+`use_same_parameters = TRUE` that is correct — every base image shares one parameter set — and
+the returned frame has one column per trial, so it could not represent the alternative anyway.
+Documented on `@param return_as_dataframe` rather than changed.
 
-InfoVal is unaffected, checked rather than assumed:
-`generateReferenceDistribution2IFC()` is the only in-package caller, it never passes
-`use_same_parameters`, and the first base image's parameters come from the same leading block of
-the RNG stream either way — measured identical, max absolute difference 0. Widening the frame to
-trial × base image would change the return shape, so it needs a **new argument**, never a
-redefinition.
+InfoVal is unaffected, checked rather than assumed: `generateReferenceDistribution2IFC()` is the
+only in-package caller, never passes `use_same_parameters`, and the first base image's parameters
+come from the same leading block of the RNG stream either way — measured identical, max absolute
+difference 0. Widening the frame would change the return shape, so it needs a **new argument**,
+never a redefinition.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI
@@ -213,30 +200,21 @@ redefinition.
 presentation order. Deliberate — collapsing repeats would discard exactly the order a cumulative
 curve is about.
 
-Two consequences, measured rather than reasoned about. With no `targetci` the function computes
-its own final CI from the same un-aggregated trials as the curve, so wherever the evaluated trials
-reach the last one the curve **ends at exactly 1** — self-consistency, not convergence. That is
-every call at the default `step = 1`, but not all of them: trials are taken at
-`seq(1, length(responses), step)`, so six responses at `step = 2` stop at the fifth and end at
-0.967, and at `step = 3` at the fourth and end at 0.938. Nor when the responses cancel exactly:
-that CI is uniformly zero, and correlating against a constant gives `NA` at *every* point, not
-just the last. And that self-computed final CI equals
-`generateCI()`'s only when every stimulus was presented the same number of times: with equal
-counts the two are bit-identical, while with unequal counts they weight the data differently —
-each trial equally here, each unique stimulus equally there. Measured on 32px sets: counts 3/1
-correlate at 0.845, counts 4/2/1/1 at 0.773, max absolute pixel differences 0.065 and 0.054. Not
-a rounding artefact.
+With no `targetci` the final CI is built from the same un-aggregated trials as the curve, so the
+curve **ends at exactly 1** — self-consistency, not convergence. Three conditions, all measured:
+it holds only where the evaluated trials reach the last one (six responses at `step = 2` stop at
+the fifth and end at 0.967, at `step = 3` at 0.938); and not at all when responses cancel
+exactly, since that CI is uniformly zero and correlating against a constant gives `NA` at *every*
+point.
 
-Documented in `?computeCumulativeCICorrelation` and pinned by a test, rather than changed.
-Aggregating the self-computed final CI would move numeric output for anyone calling it without
-`targetci`, and would stop the curve ending at 1 — a worse default than the one being fixed. The
-advice is to pass `targetci = generateCI(...)` when the comparison you want is against the CI you
-will report.
+That self-computed final CI equals `generateCI()`'s only under equal repeat counts, where the two
+are bit-identical. Unequal counts weight the data differently — each trial equally here, each
+unique stimulus equally there: counts 3/1 correlate at 0.845, counts 4/2/1/1 at 0.773.
 
-Whether `generateCI()`'s own equal-weight-per-unique-stimulus aggregation is the right weighting
-under unequal repeat counts is a separate question, filed rather than settled here: its code
-comment frames the aggregation as reducing memory and processing load, which only holds where the
-two weightings coincide.
+Documented and pinned by a test rather than changed. Aggregating the self-computed final CI would
+move numeric output for anyone calling without `targetci` *and* stop the curve ending at 1 — a
+worse default than the one being fixed. Whether `generateCI()`'s own weighting is right for
+unbalanced designs is filed separately.
 
 ### Repopulating `ref_lookup` costs four measurements — and the two halves stand or fall together
 `AGENTS.md` covers what the table is (not a cache, empty since 2018, every lookup misses). What
@@ -380,29 +358,25 @@ suite, and by the gate only from v1.1.0 onward — the `SINCE` table in `tools/c
 records which extras need which reference.
 
 ### Tolerances: 8 ULP scaled to the values, plus an 8-bit pixel count
-A flat `.Machine$double.eps` is the right bar for a classification image (values around 0.01)
-and far too tight for a z-map, whose values run to several units and whose one-ULP steps are
-therefore ~4× larger. So the tolerance is `8 * eps * max(1, max(abs(reference)))`: a few ULP
-*of the values involved*. Anything that could only come from a changed random stream, algorithm
-or file format — patch indices, drawn stimulus parameters, the base image, the stimulus PNGs —
-is required to be bit-identical instead, with no tolerance at all.
+A flat `.Machine$double.eps` is right for a classification image (values around 0.01) and far too
+tight for a z-map, whose values run to several units and whose one-ULP steps are ~4× larger. So
+the tolerance is `8 * eps * max(1, max(abs(reference)))`: a few ULP *of the values involved*.
+Anything that could only come from a changed random stream, algorithm or file format — patch
+indices, drawn parameters, the base image, the stimulus PNGs — must be bit-identical instead.
 
 **Why 8 and not 1.** These are not single passes over the data. A z-map is a convolution over
-262,144 pixels followed by a standardisation over the same 262,144 values, so a 3.5e-18
-difference in the classification image arrives as **1.33e-15** — measured at 512px, comparing
-the current tree against v1.0.1. One ULP of the largest value (9.0e-16) rejects that; eight
-accepts it and still sits three orders of magnitude below anything observable.
+262,144 pixels then a standardisation over the same values, so a 3.5e-18 difference in the CI
+arrives as **1.33e-15** — measured at 512px against v1.0.1. One ULP of the largest value
+(9.0e-16) rejects that; eight accepts it and still sits three orders of magnitude below anything
+observable.
 
-Widening a tolerance to make a run pass is exactly the move `CONTRIBUTING.md` warns against, so
-the distinction matters: what protects this comparison is not the numeric tolerance but the two
-**exact** checks beside it — 0 of N pixels may differ once quantised to 8 bits, and the NA
-pattern must match cell for cell. The z-map sigma bug moved 1,282 cells across the threshold
-and was caught by the NA check; every numeric tolerance considered here would have passed it.
-
-Image-like outputs additionally have to survive quantisation: 0 of N pixels may differ once
-rounded to 8 bits. That is the check that answers the question a researcher actually has, which
-is whether the PNG they publish changes, and it is why a 1.11e-16 difference in the CI is
-reported as a pass rather than argued about.
+Widening a tolerance to make a run pass is the move `CONTRIBUTING.md` warns against, so the
+distinction matters: what protects this comparison is not the tolerance but the two **exact**
+checks beside it — 0 of N pixels may differ once quantised to 8 bits, and the NA pattern must
+match cell for cell. The z-map sigma bug moved 1,282 cells across the threshold and was caught by
+the NA check; every numeric tolerance considered here would have passed it. The 8-bit check is
+also the one answering the question a researcher actually has — does the PNG I publish change —
+which is why a 1.11e-16 difference in the CI is a pass rather than an argument.
 
 ---
 

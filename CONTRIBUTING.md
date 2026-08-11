@@ -5,7 +5,7 @@ that are specific to this package — the rest is ordinary R package practice. R
 `RELEASING.md`, the repository's automation in `MAINTENANCE.md`, and why the package behaves
 as it does in `DECISIONS.md`.
 
-**Keep this file under 320 lines.** A convention nobody reaches is not a convention; over
+**Keep this file under 2800 words.** A convention nobody reaches is not a convention; over
 budget, something comes out before something goes in.
 
 ## The one constraint that shapes everything else
@@ -55,9 +55,8 @@ _R_CHECK_CRAN_INCOMING_=TRUE _R_CHECK_CRAN_INCOMING_REMOTE_=TRUE \
   R CMD check --as-cran rcicr_X.Y.Z.tar.gz
 ```
 
-Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely
-the sandbox — no `pdflatex`, no `tidy`, and a leftover `rcicr-manual.tex` from the failed PDF
-build. Installing it was the only change needed to reach 2 NOTEs. **Do not reach for
+Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely the
+sandbox; installing it was the only change needed to reach 2. **Do not reach for
 `--no-manual` to make the manual checks go away**: it skips them rather than passing them,
 and a note here once recorded that as the problem being *resolved*. A clean run shows
 `checking PDF version of manual ... OK` and `checking HTML version of manual ... OK` — if
@@ -129,70 +128,41 @@ attaching a real face photo.
 
 ### The Codex review
 
-Codex reviews pull requests here and has caught real errors (#170, #172, #173, and three on the
-PR that wrote this section). Nothing in the merge path makes you notice it: it submits as
-`COMMENTED`, so it never blocks and `reviewDecision` stays empty; `gh pr checks` is green
-regardless; and `gh pr view --comments` shows only the review wrapper, never the findings.
+Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes
+you notice it: it submits as `COMMENTED`, so `gh pr checks` stays green and
+`gh pr view --comments` shows only the wrapper, never the findings.
 
-**It must not become something that can block.** If it has been switched off, or simply is not
+**It must not become something that can block.** If it is switched off, erroring, or simply not
 answering, merge on the other checks.
+
+Push everything first — a push does not re-trigger the review; only this comment, opening the
+PR, or marking a draft ready does. Keep the timestamp it returns:
+
+```sh
+trig=$(gh api repos/rdotsch/rcicr/issues/<n>/comments -f body='@codex review' --jq '.created_at')
+```
 
 Two conditions clear a squash.
 
-1. **Push everything, then trigger, keeping the timestamp.** A push does not re-trigger the
-   review — only this comment, opening the PR, or marking a draft ready does. Posting it
-   returns the anchor you need:
-   ```sh
-   trig=$(gh api repos/rdotsch/rcicr/issues/<n>/comments -f body='@codex review' --jq '.created_at')
-   ```
-2. **Wait for a 👍 newer than `$trig`.** The reaction on the PR body tracks the *latest run*
-   rather than the PR's history: 👀 while it runs, 👍 when it finishes with nothing to say, and
-   no reaction at all when it has findings.
+1. **A 👍 newer than `$trig`.** The reaction tracks the latest run: 👀 running, 👍 clean, none
+   when it has findings. Filter on the numeric account id — reactions are open to anyone with
+   read access, and an id survives a rename.
    ```sh
    gh api repos/rdotsch/rcicr/issues/<n>/reactions \
-     --jq '.[] | select(.user.id == 199175422) | "\(.user.login) \(.content) \(.created_at)"'
+     --jq '.[] | select(.user.id == 199175422) | "\(.content) \(.created_at)"'
    ```
-   Only a `+1` dated after `$trig` clears it. 👀, nothing, and an older `+1` all mean not
-   cleared. The filter is Codex's numeric account id (`chatgpt-codex-connector[bot]`, printed
-   back so you can see whose reaction cleared the gate) because reactions are open to anyone
-   with read access: a substring match on the login would let any account containing "codex"
-   clear a review that is still running, and an id survives a rename besides. When not cleared,
-   read the findings and answer each one:
+   Anything else — 👀, nothing, an older `+1` — means read the findings and answer each.
+   `--paginate` is not optional; that endpoint pages at 30 and truncates silently.
    ```sh
    gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
    ```
-3. **Resolve every thread you have answered.** The 👍 speaks only for the latest run, so a
-   finding left unanswered from an earlier round does not stop a later clean one. This half is
+2. **Every answered thread resolved**, via the `resolveReviewThread` mutation. This half is
    **enforced rather than checked**: the `main` ruleset sets `required_review_thread_resolution`,
-   so an unresolved thread blocks the squash server-side and no client-side count can clear it
-   by mistake. Resolve one by passing its `id` to the `resolveReviewThread` mutation.
+   so an unresolved thread blocks the squash server-side.
 
-   To read what is still open — for answering, not for deciding:
-   ```sh
-   gh api graphql -f query='query { repository(owner: "rdotsch", name: "rcicr") {
-     pullRequest(number: <n>) { reviewThreads(first: 100) { nodes { id isResolved path } } } } }' \
-     --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
-   ```
-   That reads the first 100 threads and does not paginate, which is why it must not be the
-   gate: on a PR with more it would report nothing while an unresolved thread sat on page two.
-   GitHub is the gate; this is a convenience.
-
-`--paginate` on the findings listing is not optional: that endpoint pages at 30, and a
-review-heavy PR truncates silently without it. The filter there is per-element, so it prints
-every finding whichever way the pages arrive.
-
-One green state, everything else not green: anything other than a 👍 newer than your trigger
-sends you to read the findings, whose worst case is a wasted look. Earlier versions of this
-section computed completion from review objects and `commit_id` and were wrong six separate
-ways — reporting a clean run as unfinished, an unrelated bot comment as clean, and hiding a
-reply because replies inherit the parent thread's commit. The lesson each time was the same:
-a client-side predicate that answers "is this safe to merge" fails open. The reaction is the
-one signal Codex sets deliberately, and thread resolution is enforced by GitHub rather than
-counted here.
-
-CI runs `R CMD check` on the current R release and devel, reports coverage to Codecov, and
-runs a small set of whitespace/YAML pre-commit hooks. `styler` and `lintr` are deliberately
-**not** run: they would reformat nearly every file in one sweep and destroy `git blame`.
+Do not compute "is this safe to merge" client-side. Earlier versions of this section derived it
+from review objects and `commit_id` and were wrong six separate ways, each failing *open*. The
+reaction is the one signal Codex sets deliberately; thread resolution is GitHub's to enforce.
 
 ## Code conventions
 

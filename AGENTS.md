@@ -4,7 +4,8 @@ This file provides guidance to AI coding agents when working with code in this r
 It is the single source of truth for them; put conventions here.
 
 **Do not delete `CLAUDE.md`** — it is a stub that `@`-imports this file, and Claude Code
-loads only `CLAUDE.md`. Keep this file under 200 lines; adherence drops above that.
+loads only `CLAUDE.md`. **Keep this file under 2800 words** — counted in words, not lines,
+because a line budget is defeated by longer lines and this file has been the worst offender.
 
 ## What this is
 
@@ -32,6 +33,10 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 
 ## Testing and CI
 
+**The workflow inventory, the five required check names, and the two rules for editing them
+(never rename a job, never convert the gate to a `paths:` filter) are in `MAINTENANCE.md`.** Read
+it before touching `.github/workflows/`.
+
 - `tests/testthat/` has unit tests for every pure/deterministic function (`deg2rad`, `generateSinusoid`, `generateGabor`, `generateNoisePattern`, `generateNoiseImage`, `generateCINoise`), light/targeted tests for the I/O-heavy ones, and an end-to-end smoke test (`test-smoke-pipeline.R`).
 - `tests/testthat/helper-fixtures.R` provides shared fixtures: `make_square_png()` (synthetic base face — never a real photo), `make_fixture_rdata()` (runs a tiny `generateStimuli2IFC()` and returns the `.Rdata` path), `seed_reference_norms()` (pre-seeds a `reference_norms` vector so `computeInfoVal2IFC()` skips the expensive/interactive reference-distribution path).
 - `tests/testthat/test-fixed-bugs.R` holds regression tests for the P0 bugs found in the modernization pass. They assert *intended* behaviour — never the buggy output they replaced. If one fails, that is a regression; do **not** "fix" it by asserting the broken result, which locks the bug back in.
@@ -40,31 +45,31 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
   - The battery is chosen by the **reference** version, not the current one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash — `mask`, z-maps below 512px, undecorated z-maps — have no old value to compare against. Before adding a configuration, check the reference version can execute it; a crash on the reference side aborts the whole gate.
   - It needs ~1.5 GB of RAM at 512px and the reference version's own dependencies — `--install-deps` puts them in a throwaway library rather than the user's.
 - Both `devtools::test()` and `testthat::test_local()` set `NOT_CRAN=true` themselves, so neither can be used to verify that a `skip_on_cran()` actually fires.
-- `.github/workflows/reproducibility.yaml` runs the gate: `--quick` on every PR to `main`, full on release PRs, `v*` tags and manual dispatch. It tells them apart from `DESCRIPTION` — a version without the `.9000` suffix *is* a release — so the version bump turns the full gate on by itself. On a PR touching only inert files (prose, `man/`, `vignettes/`, `tests/`) the job runs, reports green and does no work; the allowlist is in the workflow, and anything unrecognised runs the gate. **Never convert this to a `paths:` filter** — a skipped required check never reports at all, which GitHub reads as pending forever, making every docs-only PR unmergeable.
-- **Five required status checks on `main`**: `compare`, `ubuntu-latest (release)`, `ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)`. They are enforced by a **ruleset**, not classic branch protection, so `gh api repos/rdotsch/rcicr/branches/main` reports no required contexts and looks unconfigured. Query `gh api repos/rdotsch/rcicr/rules/branches/main` instead.
-- `.github/workflows/R-CMD-check.yaml` runs `R CMD check` over four jobs: `ubuntu-latest` on R `release` and `devel`, plus `macos-latest` and `windows-latest` on `release`. macOS and Windows are the two platforms CRAN gates on, and each has caught a failure that was green on Linux for months. **The job names are required checks matched by name** — add rows to the matrix freely, but never rename one, or the renamed check reads as pending forever and blocks every PR.
 - Because the checks are required, an infrastructure flake blocks a merge. **This environment cannot re-run one** — `gh run rerun` returns `Resource not accessible by integration`, as does dispatching R-hub — so re-runs and workflow dispatches need the maintainer and the Actions tab.
 - **The workflows only trigger on PRs targeting `main`**, so a stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`. Retargeting an existing PR does *not* re-fire them; close and reopen it.
-- `.github/workflows/test-coverage.yaml` uploads to Codecov (needs a `CODECOV_TOKEN` secret); `codecov.yml` sets lenient thresholds because coverage is deliberately partial. `.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only — `styler`/`lintr`/`roxygenize` were left out because `styler` would reformat nearly every file and destroy `git blame`.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package, or `R CMD check` NOTEs "non-standard file/directory found at top level" (and a separate NOTE for dotfiles). Add it in the same commit as the file. It is a set of *regexes anchored with `^`*, not globs (e.g. `^DECISIONS\.md$`); read the file for the current list.
   - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see [`MAINTENANCE.md`](MAINTENANCE.md#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file). Build the release tarball at the repo root, not in a `git worktree`.
   - `.Rbuildignore` and `.gitignore` are **not** interchangeable. `R CMD build` works from the *working directory*, not from git, so a file that is git-ignored but present on disk still ships in the tarball unless `.Rbuildignore` also excludes it. Untracking a file is never a substitute for `.Rbuildignore`ing it.
 
 ## Which file a thing goes in
 
-Each doc has one job, and **every one carries a line budget** — over it, something comes out
-before something goes in. Put a fact in exactly one of them and reference it from the others; a
+Each doc has one job, and **each states a word budget** — over it, something comes out before
+something goes in. Put a fact in exactly one of them and reference it from the others; a
 duplicated rule drifts, and the copy a reader hits first is then wrong.
 
-| file | its job |
-|---|---|
-| `AGENTS.md` | conventions for agents (this file) |
-| `CONTRIBUTING.md` | how to contribute: setup, tests, PRs, code conventions |
-| `RELEASING.md` | the release checklist and why it is ordered that way |
-| `MAINTENANCE.md` | how the repo's CI, gates and generated files are wired |
-| `SECURITY.md` | vulnerability reporting and dependency posture |
-| `DECISIONS.md` | why the **package** behaves as it does |
-| `NEWS.md` | what changed for users |
+| file | its job | budget |
+|---|---|---|
+| `AGENTS.md` | conventions for agents (this file) | 2800 |
+| `CONTRIBUTING.md` | how to contribute: setup, tests, PRs, code conventions | 2800 |
+| `RELEASING.md` | the release checklist and why it is ordered that way | 1600 |
+| `MAINTENANCE.md` | how the repo's CI, gates and generated files are wired | 1800 |
+| `SECURITY.md` | vulnerability reporting and dependency posture | 600 |
+| `DECISIONS.md` | why the **package** behaves as it does | 5200 |
+| `NEWS.md` | what changed for users | none — trimmed at each release |
+
+Budgets are in **words, not lines**: a line budget is defeated by writing longer lines, which
+is exactly how this file grew to hold more words than `CONTRIBUTING.md` in two-thirds the lines.
+`wc -w` is the check.
 
 `DECISIONS.md` is the one most often misfiled into. Its subject is what `generateCI()` returns
 and why a number cannot change — **not** how CI is wired or how a release is cut. The test:

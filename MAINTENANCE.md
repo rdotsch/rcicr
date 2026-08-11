@@ -4,6 +4,37 @@ How this repository's automation is wired, and why. `CONTRIBUTING.md` is how to 
 `RELEASING.md` how to cut a release, `DECISIONS.md` why the package behaves as it does — this
 file is the machinery around them.
 
+**Keep this file under 1800 words.**
+
+---
+
+## The workflows
+
+| workflow | what it does |
+|---|---|
+| `R-CMD-check.yaml` | `R CMD check` on `ubuntu-latest` (release + devel), `macos-latest`, `windows-latest`. macOS and Windows are the platforms CRAN gates on, and each has caught a failure green on Linux for months. |
+| `reproducibility.yaml` | the release gate: `--quick` on every PR to `main`, full on release PRs, `v*` tags and dispatch. It tells them apart from `DESCRIPTION` — no `.9000` *is* a release — so the version bump turns the full gate on by itself. |
+| `test-coverage.yaml` | Codecov; needs a `CODECOV_TOKEN`. `codecov.yml` sets lenient thresholds because coverage is deliberately partial. |
+| `pkgdown.yaml` | builds the site on every PR, deploys on push to `main`. |
+| `rhub.yaml` | stock R-hub v2, `workflow_dispatch` only. |
+
+**Five required status checks on `main`**: `compare`, `ubuntu-latest (release)`,
+`ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)`. They are enforced
+by a **ruleset**, not classic branch protection, so `gh api repos/rdotsch/rcicr/branches/main`
+reports no required contexts and looks unconfigured — query
+`gh api repos/rdotsch/rcicr/rules/branches/main` instead.
+
+Two consequences worth knowing before editing a workflow. **Required checks are matched by
+name**, so rows can be added to a matrix freely but never renamed — a renamed check reads as
+pending forever and blocks every PR. And **the gate must never become a `paths:` filter**: a
+skipped required check never reports at all, which GitHub also reads as pending forever, making
+every docs-only PR unmergeable. Instead the job always runs and exits early on an allowlist of
+inert paths, which is in the workflow; anything unrecognised runs the gate.
+
+`.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only.
+`styler` and `lintr` were deliberately left out: they would reformat nearly every file in one
+sweep and destroy `git blame`.
+
 ---
 
 ## CI, checks and packaging

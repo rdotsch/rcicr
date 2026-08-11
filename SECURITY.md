@@ -1,5 +1,7 @@
 # Security policy
 
+**Keep this file under 600 words.**
+
 ## Reporting a vulnerability
 
 Email the maintainer at the address in `DESCRIPTION` rather than opening a public issue. A
