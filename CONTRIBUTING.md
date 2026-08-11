@@ -176,6 +176,35 @@ Two conditions clear a squash.
 review-heavy PR truncates silently without it. The filter there is per-element, so it prints
 every finding whichever way the pages arrive.
 
+#### Watching for the result
+
+Codex answers in **three** places, and a watcher has to poll all three or it mistakes an outcome
+for silence:
+
+1. the **reaction** on the PR body — 👀 running, 👍 clean, none when it has findings;
+2. **inline review comments**, `repos/rdotsch/rcicr/pulls/<n>/comments`;
+3. an **issue comment**, `repos/rdotsch/rcicr/issues/<n>/comments` — where both "Didn't find any
+   major issues" and its failures land, including `Codex Review: Something went wrong … An unknown
+   error occurred`.
+
+A watcher polling only the first two sits quiet through a failed run, which is indistinguishable
+from one still working. That has happened; it errored twice in a row and nothing reported it.
+Adding the third is not a substitute for the other two: a rebuilt watcher that now catches the
+error comment must still report new **review comments**, or the next run's findings go unseen. All
+three, every time — they are different outcomes, not alternative spellings of one.
+
+**On a cold start, read what is already there before watching for change.** A fresh watch — a new
+session, or a restarted one — that seeds a baseline count and reports only growth will baseline
+away every finding posted before it started, then report "nothing new" while they sit unanswered.
+Read the unresolved threads with the query above *first* and answer those; only then watch for
+new ones. The same applies to a session picking up a PR it did not open.
+
+Two counting traps, both of which have produced phantom findings here. `pulls/<n>/comments`
+returns **replies as well as findings**, so a count from it is not a count of threads — seed a
+baseline from the same endpoint the watch polls, and never compare one endpoint's count against
+another's. And a reaction only clears the run it belongs to: filter on Codex's numeric account id
+and on `created_at` newer than your trigger, per the two conditions above.
+
 One green state, everything else not green: anything other than a 👍 newer than your trigger
 sends you to read the findings, whose worst case is a wasted look. Earlier versions of this
 section computed completion from review objects and `commit_id` and were wrong six separate
