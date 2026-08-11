@@ -18,6 +18,12 @@
 #' responses and \code{step = 2} the last one evaluated is the fifth, and the curve ends at
 #' whatever that partial CI correlates to -- 0.97 in one such set, not 1.
 #'
+#' Both statements assume the CI being compared against varies at all. Responses that cancel
+#' exactly -- every presentation of a stimulus answered both ways -- average to a uniformly zero
+#' CI, and a correlation against a constant is undefined, so \strong{every} point on the curve is
+#' \code{NA} rather than the last one being 1. An all-\code{NA} curve means the responses carry no
+#' net signal, not that the call failed.
+#'
 #' Where every stimulus was
 #' presented the same number of times, that final CI is identical to the one \code{generateCI}
 #' returns. Where repeat counts differ, the two weight the data differently -- each trial equally

@@ -151,7 +151,8 @@
   mean.** With no `targetci`, the final CI it compares against is built from the same
   un-aggregated trials as the curve, so wherever the evaluated trials reach the last one the curve
   ends at 1 — self-consistency, not convergence. That is every call at the default `step = 1`,
-  though a larger `step` can stop short of the final trial and end below 1. That final CI is
+  though a larger `step` can stop short of the final trial and end below 1, and responses that
+  cancel exactly give a constant CI and an all-`NA` curve. That final CI is
   identical to `generateCI()`'s where every stimulus was
   presented the same number of times, and differs where repeat counts vary, because this
   function weights each trial equally while `generateCI()` weights each unique stimulus equally.

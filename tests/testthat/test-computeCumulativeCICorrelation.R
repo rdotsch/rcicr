@@ -90,3 +90,29 @@ test_that("the endpoint of 1 holds only when the evaluated trials reach the last
   expect_length(step_2, 3)
   expect_lt(step_2[length(step_2)], 1 - 1e-6)
 })
+
+test_that("responses that cancel exactly give an all-NA curve, not an endpoint of 1", {
+  skip_if_not_installed("withr")
+
+  # Each stimulus answered both ways, so every parameter averages to zero and the
+  # final CI is uniformly zero. cor() against a constant is undefined, so the NA
+  # is every point rather than only the last -- which is why the endpoint
+  # documentation is qualified on the CI varying at all.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+  stimuli <- c(1, 1, 2, 2, 3, 3)
+  responses <- c(1, -1, 1, -1, 1, -1)
+
+  final_ci <- generateCINoise(e$stimuli_params$base[stimuli, , drop = FALSE], responses, e$p)
+  expect_true(all(final_ci == 0))
+
+  correlations <- suppressWarnings(computeCumulativeCICorrelation(
+    stimuli = stimuli, responses = responses, baseimage = "base", rdata = rdata_path
+  ))
+
+  expect_length(correlations, 6)
+  expect_true(all(is.na(correlations)))
+})

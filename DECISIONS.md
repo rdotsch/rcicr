@@ -208,7 +208,9 @@ its own final CI from the same un-aggregated trials as the curve, so wherever th
 reach the last one the curve **ends at exactly 1** — self-consistency, not convergence. That is
 every call at the default `step = 1`, but not all of them: trials are taken at
 `seq(1, length(responses), step)`, so six responses at `step = 2` stop at the fifth and end at
-0.967, and at `step = 3` at the fourth and end at 0.938. And that self-computed final CI equals
+0.967, and at `step = 3` at the fourth and end at 0.938. Nor when the responses cancel exactly:
+that CI is uniformly zero, and correlating against a constant gives `NA` at *every* point, not
+just the last. And that self-computed final CI equals
 `generateCI()`'s only when every stimulus was presented the same number of times: with equal
 counts the two are bit-identical, while with unequal counts they weight the data differently —
 each trial equally here, each unique stimulus equally there. Measured on 32px sets: counts 3/1
