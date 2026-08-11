@@ -99,8 +99,13 @@ and `legacy_fixture()` are keyed on version strings and need a variant-aware for
   explicit `sigma = 25` and differs from an explicit `sigma = 10`. The *differs* half is what
   stops the test passing vacuously — finite norms would not, per CONTRIBUTING's "a test's title is
   a claim".
-- The new warning fires for the Gabor file and does **not** fire for the sinusoidal 1.0.1 fixture.
-  Match a fragment of the real `conditionMessage()`.
+- The new warning fires for the Gabor fixture, which lacks `sigma`, and does **not** fire in
+  either direction it could be wrong: not for the sinusoidal 1.0.1 fixture (right era, inert
+  parameter), and **not for a Gabor file that does carry `sigma`**. Without that second case an
+  implementation warning on *every* Gabor file passes both assertions, and every current Gabor
+  stimulus set — which saves `sigma` — collects a spurious compatibility warning, fatal under
+  `options(warn = 2)`. The `explicit_25` copy the fallback test already builds is exactly that
+  case, so it costs one assertion. Match a fragment of the real `conditionMessage()`.
 
 Prove the tests fail without the change with `git stash push -- R/` — never a plain `git stash`,
 which reverts the new tests too and passes vacuously. The fixture and tests are both new, so also
