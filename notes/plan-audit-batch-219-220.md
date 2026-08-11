@@ -131,8 +131,15 @@ the curve's endpoint, which is what a user would actually notice. Check the equa
 agrees exactly, so the result distinguishes "only under unequal counts" from "always".
 
 **Then stop and report the numbers**, before any documentation, [`DECISIONS.md`](../DECISIONS.md)
-entry or test is written. A fix that changed numeric output is ruled out in advance by the guiding
-constraint.
+entry or test is written. What follows is the maintainer's call, resting on the measurement: a
+doc note plus a `DECISIONS.md` entry recording a deliberate asymmetry if the difference is what
+the issue expects, or a correction if the numbers show the self-computed `finalCI` is simply
+wrong.
+
+A correction is **not** ruled out in advance. The guiding constraint forbids changing numeric
+output *silently*, not changing it — a documented fix carries a `NEWS.md` "Reproducibility
+impact" entry and has to survive the release gate. What this step rules out is deciding either
+way before the numbers exist.
 
 ## Verification
 
