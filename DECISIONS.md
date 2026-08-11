@@ -204,8 +204,11 @@ presentation order. Deliberate — collapsing repeats would discard exactly the 
 curve is about.
 
 Two consequences, measured rather than reasoned about. With no `targetci` the function computes
-its own final CI from the same un-aggregated trials as the curve, so the curve **always ends at
-exactly 1**; that is self-consistency, not convergence. And that self-computed final CI equals
+its own final CI from the same un-aggregated trials as the curve, so wherever the evaluated trials
+reach the last one the curve **ends at exactly 1** — self-consistency, not convergence. That is
+every call at the default `step = 1`, but not all of them: trials are taken at
+`seq(1, length(responses), step)`, so six responses at `step = 2` stop at the fifth and end at
+0.967, and at `step = 3` at the fourth and end at 0.938. And that self-computed final CI equals
 `generateCI()`'s only when every stimulus was presented the same number of times: with equal
 counts the two are bit-identical, while with unequal counts they weight the data differently —
 each trial equally here, each unique stimulus equally there. Measured on 32px sets: counts 3/1

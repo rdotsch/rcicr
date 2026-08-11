@@ -11,8 +11,14 @@
 #' repeats would discard the presentation order a cumulative curve is entirely about.
 #'
 #' One consequence is worth knowing. With no \code{targetci}, the final CI computed here is built
-#' from the same un-aggregated trials as the curve, so the curve ends at exactly 1 by
-#' construction -- that is self-consistency, not evidence of convergence. Where every stimulus was
+#' from the same un-aggregated trials as the curve. Where the evaluated trials reach the last one
+#' -- always so at the default \code{step = 1} -- the curve's final point compares that CI with
+#' itself and is exactly 1: self-consistency, not evidence of convergence. A larger \code{step}
+#' can stop short, because trials are taken at \code{seq(1, length(responses), step)}: with six
+#' responses and \code{step = 2} the last one evaluated is the fifth, and the curve ends at
+#' whatever that partial CI correlates to -- 0.97 in one such set, not 1.
+#'
+#' Where every stimulus was
 #' presented the same number of times, that final CI is identical to the one \code{generateCI}
 #' returns. Where repeat counts differ, the two weight the data differently -- each trial equally
 #' here, each unique stimulus equally there -- and they diverge: on an 8-trial set with counts
