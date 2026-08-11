@@ -22,8 +22,8 @@
 #
 # A difference is only tolerated if it is listed in EXPECTED below, with a
 # reason and the NEWS.md heading that documents it for users. Adding an entry is
-# a deliberate, reviewable act -- which is the point. See CONTRIBUTING.md
-# RELEASING.md for where this sits in the release checklist.
+# a deliberate, reviewable act -- which is the point. See RELEASING.md for
+# where this sits in the release checklist.
 
 args <- commandArgs(trailingOnly = TRUE)
 opt <- function(flag, default = NULL) {

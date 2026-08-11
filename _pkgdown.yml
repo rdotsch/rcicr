@@ -6,8 +6,9 @@ template:
 # pkgdown renders every root-level .md except a hardcoded few, with no way to
 # opt out, so AGENTS.md and CLAUDE.md become pages whether or not that is
 # wanted. Nothing links to them, but they were landing in site search ahead of
-# real documentation. CONTRIBUTING.md and DECISIONS.md stay indexed: those are
-# for humans and worth finding. The pages still exist and still appear in
+# real documentation. CONTRIBUTING.md, DECISIONS.md, RELEASING.md,
+# MAINTENANCE.md and SECURITY.md stay indexed: those are for humans and worth
+# finding. The pages still exist and still appear in
 # sitemap.xml -- that is built from the files on disk and has no exclusion hook.
 search:
   exclude:

@@ -10,7 +10,7 @@
 # template cleanly. A CI from noisy responses is a grey smudge, which is true to
 # life but illegible at favicon size.
 #
-# The base face is synthetic, never a photograph (DECISIONS.md, "Base images in
+# The base face is synthetic, never a photograph (CONTRIBUTING.md, "Base images in
 # tests and vignettes are always synthetic").
 
 suppressMessages(devtools::load_all(".", quiet = TRUE))
