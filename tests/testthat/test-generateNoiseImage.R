@@ -62,7 +62,11 @@ test_that("0-indexed warning branch drops exactly one patch, not the whole image
     w[is.na(w)] <- 0
     oracle <- rowMeans(p0$patches * array(w, dim(p0$patches)), dims = 2)
 
-    expect_equal(current, oracle)
+    # expect_identical, not expect_equal: the two are bit-identical (the zero
+    # cells are contiguous at the end, so the non-zero positions fill exactly as
+    # the oracle does and the same rowMeans runs on the same bits), and the
+    # NEWS/DECISIONS claim is "exact" - a tolerant compare would pass on drift.
+    expect_identical(current, oracle)
   }
 })
 
