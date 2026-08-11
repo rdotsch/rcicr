@@ -101,15 +101,15 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
                    'regenerate the stimulus set with this version of rcicr to fix ',
                    'this.'))
   }
-  if (!exists('sigma', envir=environment(), inherits=FALSE)) {
-    sigma <- 25
-  }
   # Same story for noise_type, which older .Rdata files also lack. Without this
   # the re-generation below failed outright with "object 'noise_type' not
   # found" (issue #94) - the workaround on record was to load the file and
-  # assign noise_type by hand. It gets the same loud warning as nscales rather
-  # than the silent default given to sigma, because guessing wrong here means
-  # the null is built on a different *kind* of noise than participants saw.
+  # assign noise_type by hand. It gets the same loud warning as nscales,
+  # because guessing wrong here means the null is built on a different *kind* of
+  # noise than participants saw.
+  #
+  # It is resolved before sigma because whether a missing sigma matters at all
+  # depends on it.
   if (!exists('noise_type', envir=environment(), inherits=FALSE)) {
     noise_type <- 'sinusoid'
     warning(paste0('This .Rdata file does not contain `noise_type`, so the ',
@@ -118,6 +118,24 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
                    'with noise_type = "gabor", the resulting infoVal will be ',
                    'wrong - regenerate the stimulus set with this version of ',
                    'rcicr to fix this.'))
+  }
+  # sigma reaches the noise basis only through generateGabor(), so for sinusoidal
+  # noise the default is inert: the reference norms are identical whatever it is,
+  # and warning about it would be noise on every legacy sinusoidal file. For
+  # gabor noise it is exactly as load-bearing as nscales - measured on a 1.0.1
+  # gabor file, the norms move from 0.681/0.689/0.680 at 25 to 0.615/0.620/0.626
+  # at 10 - so that case gets the same loud warning.
+  if (!exists('sigma', envir=environment(), inherits=FALSE)) {
+    sigma <- 25
+    if (noise_type == 'gabor') {
+      warning(paste0('This .Rdata file does not contain `sigma`, so the default ',
+                     '(25) is assumed for the reference distribution. rcicr did ',
+                     'not save it before 1.1.0. These stimuli use gabor noise, ',
+                     'where sigma determines the noise basis, so if they were ',
+                     'generated with a different sigma the resulting infoVal ',
+                     'will be wrong - regenerate the stimulus set with this ',
+                     'version of rcicr to fix this.'))
+    }
   }
 
   # Re-generate stimuli based on rdata parameters in matrix form

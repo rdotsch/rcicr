@@ -17,3 +17,136 @@ test_that("computeCumulativeCICorrelation returns one correlation per step, endi
   # so the cumulative correlation at the last trial must be 1.
   expect_equal(correlations[6], 1, tolerance = 1e-8)
 })
+
+test_that("the self-computed final CI matches generateCI() only under equal repeat counts", {
+  skip_if_not_installed("withr")
+
+  # This function does not aggregate repeated presentations and generateCI() does,
+  # which is deliberate -- see DECISIONS.md, "computeCumulativeCICorrelation() does
+  # not aggregate repeated stimuli". The difference is invisible where each stimulus
+  # was presented the same number of times and real where it was not, so pinning
+  # only one of those halves would not distinguish the intended behaviour from an
+  # accidental one.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 8, nscales = 2, seed = 1)
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+
+  self_ci <- function(stimuli, responses) {
+    generateCINoise(e$stimuli_params$base[stimuli, , drop = FALSE], responses, e$p)
+  }
+  aggregated_ci <- function(stimuli, responses) {
+    suppressWarnings(generateCI(
+      stimuli = stimuli, responses = responses, baseimage = "base",
+      rdata = rdata_path, save_as_png = FALSE, scaling = "none"
+    ))$ci
+  }
+
+  equal_stim <- c(1, 1, 2, 2)
+  equal_resp <- c(1, -1, 1, 1)
+  expect_equal(self_ci(equal_stim, equal_resp), aggregated_ci(equal_stim, equal_resp))
+
+  # Unequal counts: the two weight the data differently -- each trial equally here,
+  # each unique stimulus equally there -- so they must differ, and by more than a
+  # rounding artefact.
+  uneq_stim <- c(1, 1, 1, 1, 2, 2, 3, 4)
+  uneq_resp <- c(1, -1, 1, 1, -1, 1, 1, -1)
+  uneq_self <- self_ci(uneq_stim, uneq_resp)
+  uneq_aggregated <- aggregated_ci(uneq_stim, uneq_resp)
+
+  expect_false(isTRUE(all.equal(uneq_self, uneq_aggregated)))
+  expect_gt(max(abs(uneq_self - uneq_aggregated)), 1e-3)
+  expect_lt(stats::cor(as.vector(uneq_self), as.vector(uneq_aggregated)), 0.99)
+})
+
+test_that("the endpoint of 1 holds only when the evaluated trials reach the last one", {
+  skip_if_not_installed("withr")
+
+  # Trials are taken at seq(1, length(responses), step), which need not include the
+  # final trial. Where it does -- always at the default step = 1 -- the last point
+  # compares the final CI with itself and is 1. Where it does not, the curve ends
+  # on a partial CI and lands below 1, so documenting the endpoint as unconditional
+  # would be wrong.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  responses <- withr::with_seed(2, sample(c(1, -1), 6, replace = TRUE))
+  curve <- function(step) {
+    suppressWarnings(computeCumulativeCICorrelation(
+      stimuli = 1:6, responses = responses, baseimage = "base",
+      rdata = rdata_path, step = step
+    ))
+  }
+
+  step_1 <- curve(1)
+  expect_length(step_1, 6)
+  expect_equal(step_1[length(step_1)], 1, tolerance = 1e-8)
+
+  # step = 2 evaluates trials 1, 3 and 5, so the sixth response never enters a
+  # cumulative CI even though it is in the final CI being compared against. Three
+  # points rather than six is what shows the sequence stopped short.
+  step_2 <- curve(2)
+  expect_length(step_2, 3)
+  expect_lt(step_2[length(step_2)], 1 - 1e-6)
+})
+
+test_that("responses that cancel exactly give an all-NA curve, not an endpoint of 1", {
+  skip_if_not_installed("withr")
+
+  # Each stimulus answered both ways, so every parameter averages to zero and the
+  # final CI is uniformly zero. cor() against a constant is undefined, so the NA
+  # is every point rather than only the last -- which is why the endpoint
+  # documentation is qualified on the CI varying at all.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  e <- new.env()
+  load(rdata_path, envir = e)
+  stimuli <- c(1, 1, 2, 2, 3, 3)
+  responses <- c(1, -1, 1, -1, 1, -1)
+
+  final_ci <- generateCINoise(e$stimuli_params$base[stimuli, , drop = FALSE], responses, e$p)
+  expect_true(all(final_ci == 0))
+
+  correlations <- suppressWarnings(computeCumulativeCICorrelation(
+    stimuli = stimuli, responses = responses, baseimage = "base", rdata = rdata_path
+  ))
+
+  expect_length(correlations, 6)
+  expect_true(all(is.na(correlations)))
+})
+
+test_that("a masked targetci makes every correlation NA", {
+  skip_if_not_installed("withr")
+
+  # generateCI() stores NA in masked pixels and the correlations here are taken
+  # over all pixels, so a masked target yields nothing usable however strong the
+  # signal. Pinned as the documented current behaviour, not as desirable: see the
+  # issue tracker. The assertion that the *unmasked* target gives a real curve on
+  # the same data is what shows the NAs come from the mask rather than the data.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+  responses <- withr::with_seed(2, sample(c(1, -1), 6, replace = TRUE))
+
+  target <- function(mask) {
+    args <- list(stimuli = 1:6, responses = responses, baseimage = "base",
+                 rdata = rdata_path, save_as_png = FALSE)
+    if (!is.null(mask)) args$mask <- mask
+    suppressWarnings(do.call(generateCI, args))
+  }
+  curve <- function(tci) {
+    suppressWarnings(computeCumulativeCICorrelation(
+      stimuli = 1:6, responses = responses, baseimage = "base",
+      rdata = rdata_path, targetci = tci
+    ))
+  }
+
+  mask <- matrix(1, 32, 32)
+  mask[1:4, 1:4] <- 0
+  masked <- target(mask)
+  expect_equal(sum(is.na(masked$ci)), 16)
+
+  expect_true(all(is.na(curve(masked))))
+  expect_false(anyNA(curve(target(NULL))))
+})

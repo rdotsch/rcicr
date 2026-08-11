@@ -4,6 +4,42 @@
 #'
 #' Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
 #'
+#' @section Repeated presentations of the same stimulus:
+#' This function walks trials in the order they were presented and does not aggregate repeated
+#' presentations of a stimulus, unlike \code{\link{generateCI}}, which averages the responses to
+#' each unique stimulus before building its classification image. That is deliberate: collapsing
+#' repeats would discard the presentation order a cumulative curve is entirely about.
+#'
+#' One consequence is worth knowing. With no \code{targetci}, the final CI computed here is built
+#' from the same un-aggregated trials as the curve. Where the evaluated trials reach the last one
+#' -- always so at the default \code{step = 1} -- the curve's final point compares that CI with
+#' itself and is exactly 1: self-consistency, not evidence of convergence. A larger \code{step}
+#' can stop short, because trials are taken at \code{seq(1, length(responses), step)}: with six
+#' responses and \code{step = 2} the last one evaluated is the fifth, and the curve ends at
+#' whatever that partial CI correlates to -- 0.97 in one such set, not 1.
+#'
+#' Both statements assume the CI being compared against varies at all. Responses that cancel
+#' exactly -- every presentation of a stimulus answered both ways -- average to a uniformly zero
+#' CI, and a correlation against a constant is undefined, so \strong{every} point on the curve is
+#' \code{NA} rather than the last one being 1. Such a curve means the responses carry no net
+#' signal, not that the call failed.
+#'
+#' An all-\code{NA} curve has one other cause, and it is not that: a \code{targetci} carrying
+#' masked pixels. \code{\link{generateCI}} stores \code{NA} in every pixel a \code{mask} excludes,
+#' and the correlations here are taken over all pixels, so a single masked pixel makes every point
+#' \code{NA} however strong the signal -- masking a 4x4 corner of a 32x32 CI is enough. Until that
+#' is addressed, correlate against an unmasked \code{targetci}.
+#'
+#' Where every stimulus was
+#' presented the same number of times, that final CI is identical to the one \code{generateCI}
+#' returns. Where repeat counts differ, the two weight the data differently -- each trial equally
+#' here, each unique stimulus equally there -- and they diverge: on an 8-trial set with counts
+#' 4/2/1/1 they correlate at 0.77.
+#'
+#' So to see how the CI approaches the one you will actually report, pass it as
+#' \code{targetci = generateCI(...)} rather than relying on the self-computed default -- built
+#' without a \code{mask}, per the note above.
+#'
 #' @export
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats cor
