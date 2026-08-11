@@ -116,3 +116,37 @@ test_that("responses that cancel exactly give an all-NA curve, not an endpoint o
   expect_length(correlations, 6)
   expect_true(all(is.na(correlations)))
 })
+
+test_that("a masked targetci makes every correlation NA", {
+  skip_if_not_installed("withr")
+
+  # generateCI() stores NA in masked pixels and the correlations here are taken
+  # over all pixels, so a masked target yields nothing usable however strong the
+  # signal. Pinned as the documented current behaviour, not as desirable: see the
+  # issue tracker. The assertion that the *unmasked* target gives a real curve on
+  # the same data is what shows the NAs come from the mask rather than the data.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+  responses <- withr::with_seed(2, sample(c(1, -1), 6, replace = TRUE))
+
+  target <- function(mask) {
+    args <- list(stimuli = 1:6, responses = responses, baseimage = "base",
+                 rdata = rdata_path, save_as_png = FALSE)
+    if (!is.null(mask)) args$mask <- mask
+    suppressWarnings(do.call(generateCI, args))
+  }
+  curve <- function(tci) {
+    suppressWarnings(computeCumulativeCICorrelation(
+      stimuli = 1:6, responses = responses, baseimage = "base",
+      rdata = rdata_path, targetci = tci
+    ))
+  }
+
+  mask <- matrix(1, 32, 32)
+  mask[1:4, 1:4] <- 0
+  masked <- target(mask)
+  expect_equal(sum(is.na(masked$ci)), 16)
+
+  expect_true(all(is.na(curve(masked))))
+  expect_false(anyNA(curve(target(NULL))))
+})
