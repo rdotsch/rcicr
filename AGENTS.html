@@ -113,6 +113,8 @@
 <ul><li>
 <strong>Re-read <code>CONTRIBUTING.md</code> → “Pull requests” when opening a PR, every time — not from memory.</strong> Its steps fail by producing silence rather than an error, so a half-remembered version looks like it worked. Two of them have now been re-learned the hard way, after being written down.</li>
 <li>
+<strong>Plan first when a change touches behaviour, numbers or a contract</strong> — <code>R/</code> behaviour, numeric output, the <code>.Rdata</code> contract, fixtures, or the release and CI machinery. The plan is the branch’s first commit, reviewed as a <strong>draft</strong> PR before any of the change is written, then deleted on that same branch so the squash leaves <code>main</code> one commit and no plan file. Full procedure in <code>CONTRIBUTING.md</code> → “Plan first, in the same pull request”; read it there. Prose, <code>man/</code>, <code>NEWS.md</code> wording and comment-only edits are exempt.</li>
+<li>
 <strong>Merge pull requests to <code>main</code> with squash merges</strong> (<code>gh pr merge &lt;n&gt; --squash</code>). One commit per PR keeps history readable and makes <code>git revert</code> of a whole change straightforward, which matters here because a PR is usually one self-contained fix plus its test and its <code>NEWS.md</code> entry. The <code>main</code> ruleset enforces it — <code>allowed_merge_methods</code> is <code>["squash"]</code>, so the other buttons are not offered.</li>
 <li>The squash commit message is the place to preserve <em>why</em> a change was made — the per-commit detail on the branch disappears, so measurements, rejected alternatives and reproducibility impact belong in the squash message or in <code>NEWS.md</code>, not only in the branch commits.</li>
 <li>

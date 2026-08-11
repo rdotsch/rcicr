@@ -265,6 +265,19 @@
 <h2 id="larger-changes">Larger changes<a class="anchor" aria-label="anchor" href="#larger-changes"></a></h2>
 <p>Known work lives in <a href="https://github.com/rdotsch/rcicr/issues" class="external-link">GitHub Issues</a>, prioritized with the <code>P0</code>–<code>P3</code> labels: P0 correctness and availability, P1 dependencies and toolchain, P2 usability and maintainability, P3 user-requested features. Each carries the evidence behind it. Read the tracker before starting anything substantial, and comment on the issue before you begin so the work is not duplicated.</p>
 <p><code>DECISIONS.md</code> is the companion: it records decisions already taken, <strong>including things that look like bugs and are intentional and must not be “fixed”</strong>. Check it before changing something that looks wrong.</p>
+<div class="section level3">
+<h3 id="plan-first-in-the-same-pull-request">Plan first, in the same pull request<a class="anchor" aria-label="anchor" href="#plan-first-in-the-same-pull-request"></a></h3>
+<p><strong>When a change touches behaviour, numbers or a contract, the first commit on the branch is a plan, and it gets reviewed before any of the change is written.</strong> That means anything altering <code>R/</code> behaviour, numeric output, the <code>.Rdata</code> contract, test fixtures, or the release and CI machinery. It does <em>not</em> mean prose, <code>man/</code>, <code>NEWS.md</code> wording or comment-only edits — roughly the inert set <code>.github/workflows/reproducibility.yaml</code> already allowlists.</p>
+<ol style="list-style-type: decimal"><li>Branch from <code>main</code> and commit the plan to <code>notes/plan-&lt;topic&gt;.md</code>. <code>notes/</code> is already <code>.Rbuildignore</code>d via <code>^notes$</code> and on that same inert allowlist, so a plan-only diff needs no <code>.Rbuildignore</code> entry and the gate reports green without doing work.</li>
+<li>
+<strong>Open the PR as a draft</strong> and request the review, exactly as in “The Codex review” above. The same two conditions clear it.</li>
+<li>Implement on that same branch, and <strong>delete the plan file there</strong> as part of the work.</li>
+<li>
+<strong>Mark the draft ready</strong>, which re-triggers the review on the full diff — a push alone does not.</li>
+<li>Squash as usual.</li>
+</ol><p>Because the plan file is added and deleted within the branch, the squash gives <code>main</code> one commit — the change itself, carrying no plan file — while the plan and both review rounds stay on the PR thread. The plan does not outlive the work and cannot become a second, drifting source of status; <code>NEWS.md</code>, <code>DECISIONS.md</code> and the tracker hold what survives.</p>
+<p>A plan is worth reviewing only if it can be wrong. State what you verified and how, name the step most likely to fail, and where the change rests on a claim about behaviour, measure it rather than asserting it — an issue’s proposed fix is a hypothesis until it has been run.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="code-of-conduct">Code of conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a></h2>

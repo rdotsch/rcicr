@@ -189,6 +189,14 @@ date**. It replaced a chronological session log; do not recreate one.
   than an error, so a half-remembered version looks like it worked. Two
   of them have now been re-learned the hard way, after being written
   down.
+- **Plan first when a change touches behaviour, numbers or a contract**
+  — `R/` behaviour, numeric output, the `.Rdata` contract, fixtures, or
+  the release and CI machinery. The plan is the branch’s first commit,
+  reviewed as a **draft** PR before any of the change is written, then
+  deleted on that same branch so the squash leaves `main` one commit and
+  no plan file. Full procedure in `CONTRIBUTING.md` → “Plan first, in
+  the same pull request”; read it there. Prose, `man/`, `NEWS.md`
+  wording and comment-only edits are exempt.
 - **Merge pull requests to `main` with squash merges**
   (`gh pr merge <n> --squash`). One commit per PR keeps history readable
   and makes `git revert` of a whole change straightforward, which
