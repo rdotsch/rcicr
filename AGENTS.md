@@ -36,7 +36,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 - `tests/testthat/helper-fixtures.R` provides shared fixtures: `make_square_png()` (synthetic base face — never a real photo), `make_fixture_rdata()` (runs a tiny `generateStimuli2IFC()` and returns the `.Rdata` path), `seed_reference_norms()` (pre-seeds a `reference_norms` vector so `computeInfoVal2IFC()` skips the expensive/interactive reference-distribution path).
 - `tests/testthat/test-fixed-bugs.R` holds regression tests for the P0 bugs found in the modernization pass. They assert *intended* behaviour — never the buggy output they replaced. If one fails, that is a regression; do **not** "fix" it by asserting the broken result, which locks the bug back in.
 - `tests/testthat/test-regression-baseline.R` is a golden master pinning the numeric output of the default pipeline — noise basis, classification image, scaling, infoVal — to the values produced *before* the P0 fixes. **If a change turns it red, that change alters researchers' results** and must be documented in `NEWS.md` under "Reproducibility impact" before merging. It is not a test to casually update.
-- `tools/compare-release-output.R` is the **release gate**: it installs a released version from its own commit (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference is allowed only with an `EXPECTED` entry in the script **and** a matching `NEWS.md` "Reproducibility impact" entry; both are checked, and a stale `EXPECTED` entry fails too. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `CONTRIBUTING.md` → "Releasing".
+- `tools/compare-release-output.R` is the **release gate**: it installs a released version from its own commit (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference is allowed only with an `EXPECTED` entry in the script **and** a matching `NEWS.md` "Reproducibility impact" entry; both are checked, and a stale `EXPECTED` entry fails too. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `RELEASING.md`.
   - The battery is chosen by the **reference** version, not the current one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash — `mask`, z-maps below 512px, undecorated z-maps — have no old value to compare against. Before adding a configuration, check the reference version can execute it; a crash on the reference side aborts the whole gate.
   - It needs ~1.5 GB of RAM at 512px and the reference version's own dependencies — `--install-deps` puts them in a throwaway library rather than the user's.
 - Both `devtools::test()` and `testthat::test_local()` set `NOT_CRAN=true` themselves, so neither can be used to verify that a `skip_on_cran()` actually fires.
@@ -47,26 +47,38 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 - **The workflows only trigger on PRs targeting `main`**, so a stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`. Retargeting an existing PR does *not* re-fire them; close and reopen it.
 - `.github/workflows/test-coverage.yaml` uploads to Codecov (needs a `CODECOV_TOKEN` secret); `codecov.yml` sets lenient thresholds because coverage is deliberately partial. `.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only — `styler`/`lintr`/`roxygenize` were left out because `styler` would reformat nearly every file and destroy `git blame`.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package, or `R CMD check` NOTEs "non-standard file/directory found at top level" (and a separate NOTE for dotfiles). Add it in the same commit as the file. It is a set of *regexes anchored with `^`*, not globs (e.g. `^DECISIONS\.md$`); read the file for the current list.
-  - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see [`DECISIONS.md`](DECISIONS.md#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file). Build the release tarball at the repo root, not in a `git worktree`.
+  - `^\.git$` is **not** redundant with `R CMD build`'s own exclusion — see [`MAINTENANCE.md`](MAINTENANCE.md#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file). Build the release tarball at the repo root, not in a `git worktree`.
   - `.Rbuildignore` and `.gitignore` are **not** interchangeable. `R CMD build` works from the *working directory*, not from git, so a file that is git-ignored but present on disk still ships in the tarball unless `.Rbuildignore` also excludes it. Untracking a file is never a substitute for `.Rbuildignore`ing it.
 
-## DECISIONS.md
+## Which file a thing goes in
 
-`DECISIONS.md` records **why** the package is the way it is: the measurement that ruled an
-option out, the alternative that looked obvious and was wrong, the thing that looks like a
-bug and is deliberate. It is tracked in git and organised **by theme, not by date**. It
-replaced a chronological session log; do not recreate one.
+Each doc has one job, and **every one carries a line budget** — over it, something comes out
+before something goes in. Put a fact in exactly one of them and reference it from the others; a
+duplicated rule drifts, and the copy a reader hits first is then wrong.
+
+| file | its job |
+|---|---|
+| `AGENTS.md` | conventions for agents (this file) |
+| `CONTRIBUTING.md` | how to contribute: setup, tests, PRs, code conventions |
+| `RELEASING.md` | the release checklist and why it is ordered that way |
+| `MAINTENANCE.md` | how the repo's CI, gates and generated files are wired |
+| `SECURITY.md` | vulnerability reporting and dependency posture |
+| `DECISIONS.md` | why the **package** behaves as it does |
+| `NEWS.md` | what changed for users |
+
+`DECISIONS.md` is the one most often misfiled into. Its subject is what `generateCI()` returns
+and why a number cannot change — **not** how CI is wired or how a release is cut. The test:
+would this still matter if the package were maintained somewhere else entirely?
 
 - **Update it as decisions are made**, not in a sweep at the end — the reasoning and the
   numbers are only cheap to write down while they are still to hand.
 - **Add an entry when a decision was not obvious.** Rejecting a plausible alternative,
   measuring something surprising, or deliberately *not* fixing something all qualify. Routine
   changes do not.
-- **Edit entries in place** when they stop being true. It is not an append-only log, and it
-  carries no dates, state or next-steps sections — the issue tracker holds what is left to do
-  and `NEWS.md` holds what changed for users.
-- **Do not restate in `DECISIONS.md` what this file or `CONTRIBUTING.md` already says.** Reference it instead. A duplicated rule drifts, and the copy a reader
-  happens to hit first is then wrong.
+- **Edit entries in place** when they stop being true. It is organised by theme, carries no
+  dates, state or next-steps sections, and replaced a chronological session log — do not
+  recreate one.
+- **An edge case in a third-party tool is not a decision.** Work it out again if it recurs.
 
 ## Git and merge strategy
 
@@ -103,7 +115,7 @@ there should not be one: CRAN has no concept of it, this is a single-maintainer 
 it would add a permanent second merge direction for no gain. Feature branches → PR → squash
 onto `main`, and releases are marked by tags.
 
-- **The reproducibility gate is a release blocker.** `CONTRIBUTING.md` → "Releasing" holds the
+- **The reproducibility gate is a release blocker.** `RELEASING.md` holds the
   full checklist. The v1.0.1 reference is **pinned and does not advance** with each release —
   see [`DECISIONS.md`](DECISIONS.md#the-v101-reference-is-pinned-the-previous-release-is-a-second-run-not-a-replacement).
 - **`main` carries a `.9000` development version between releases.** Right after a release,

@@ -1,8 +1,8 @@
 # Does this tree still produce the numbers the published versions produced?
 #
-# See tools/compare-release-output.R for what is compared and CONTRIBUTING.md
-# ("Releasing") for where this sits in the release checklist. A release must not
-# go out while this is red.
+# See tools/compare-release-output.R for what is compared and RELEASING.md for
+# where this sits in the release checklist. A release must not go out while this
+# is red.
 #
 # Two comparisons, and they answer different questions: v1.0.1 is the version
 # the literature was produced with and stays pinned, while the previous release

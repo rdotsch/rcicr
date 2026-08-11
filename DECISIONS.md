@@ -1,13 +1,23 @@
 # Decisions
 
-Why `rcicr` is the way it is: the measurement that ruled an option out, the alternative that
-looked obvious and was wrong, the thing that looks like a bug and is not. `NEWS.md` holds what
-changed for users, the issue tracker what is left, `AGENTS.md` and `CONTRIBUTING.md` the
-conventions — none of them has room for *why*.
+Why `rcicr` behaves as it does: the measurement that ruled an option out, the alternative that
+looked obvious and was wrong, the thing that looks like a bug and is not.
+
+**This file is about the package, not about the repository.** Its subject is what
+`generateCI()` returns and why a number cannot change — not how CI is wired, how a release is
+cut, or which documents exist. Those are `MAINTENANCE.md`, `RELEASING.md` and `SECURITY.md`;
+`CONTRIBUTING.md` holds the conventions and `NEWS.md` what changed for users. A decision that
+would still matter if this package were maintained somewhere else entirely belongs here.
 
 **Add an entry when a decision was not obvious**: a plausible alternative rejected, something
 surprising measured, something deliberately not fixed. Entries are grouped by theme, not by
 date, and are edited in place when they stop being true.
+
+**Keep this file under 550 lines.** It is read to answer "why is this like this", and a file
+long enough to skim is one whose answer is never found. Over budget, something comes out before
+something goes in. Write the decision and the evidence, not the route taken to it: an entry
+earns its length from a measurement or a rejected alternative, never from narrating how it was
+reached.
 
 > This was a chronological session log (`.session-log.md`) until 2026-07-27. The original
 > narrative, with dates and intermediate states, is in git history up to `887aea4`.
@@ -273,33 +283,22 @@ from the paper or a hand-computed 2×2 CI with a known reference vector, not a t
 restatement of the same expression.
 
 ### Pixel assertions have measured the graphics device twice
-The practice this produced — uniform backgrounds, colour channels only, comparisons rather
-than pinned values — is in `CONTRIBUTING.md`. Here is what it cost to learn, twice in the same
-fix. (`plotZmap`'s tests were three-quarters `file.exists()` before any of it; a function
-writing a uniformly blank PNG passed them all.)
+The practice — uniform backgrounds, colour channels only, comparisons rather than pinned
+values — is in `CONTRIBUTING.md`. Here are the two measurements behind it, made one line apart
+in the same fix.
 
-Count distinct values over the **colour channels only**, never the raw array. Whether a PNG
-device writes an alpha channel is a property of the graphics backend, not of what was drawn:
-cairo (Linux, Windows) writes RGB, macOS quartz writes RGBA. An opaque alpha plane is a solid
-block of 1s, so it adds a second distinct value to the array while nothing has been painted.
-The original `expect_length(unique(as.vector(png)), 1)` therefore measured the backend as much
-as the drawing, and `test-plotZmap.R` now drops any alpha plane before counting.
+**Channel count belongs to the backend.** cairo (Linux, Windows) writes RGB, macOS quartz writes
+RGBA, and an opaque alpha plane is a solid block of 1s — so it adds a distinct value while
+nothing has been painted. `expect_length(unique(as.vector(png)), 1)` measured the backend as
+much as the drawing. It was the only assertion in the suite counting distinct values rather than
+comparing two renders, and so the only one that failed when the suite first ran on macOS: an
+image-to-image comparison stays green because both sides gain the same plane.
 
-It was the *only* assertion in the suite counting distinct values rather than comparing two
-renders, which is why it was also the only one that failed when the suite first ran on macOS:
-every image-to-image comparison stays green because both sides gain the same plane. Prefer
-the comparison form for new tests.
-
-**The absolute pixel value is device-dependent too, and must not be asserted.** The first
-attempt at this fix pinned the flat value to the background grey — and failed on macOS, which
-renders `bgimage` 0.5 at ~0.573 where cairo gives 0.502. That is colour management, and
-precisely the same mistake the alpha fix was correcting, made one line below it. The check is
-now an *ordering*: the same render over a darker background must come out darker, which
-survives any monotone transfer function.
-
-**The general form:** when a test reads pixels back from a graphics device, every absolute
-property of those pixels belongs to the device — channel count and value alike. Only
-relationships between renders are portable.
+**So does the absolute value.** The first attempt at that fix pinned the flat value to the
+background grey and failed on macOS, which renders `bgimage` 0.5 at ~0.573 where cairo gives
+0.502 — colour management, the same mistake being corrected one line above. The check is now an
+*ordering*: the same render over a darker background must come out darker, which survives any
+monotone transfer function.
 
 ### The recovery test uses a permutation null, not a parametric one
 `test-recovery.R` gives a simulated observer a known template and asserts `generateCI()`
@@ -339,20 +338,22 @@ version still computes what old versions computed; `test-legacy-rdata.R` checks 
 still *read* what they wrote, which no other test can, because every other fixture is built by
 the current generator.
 
-Generating those files needs the old version installed — each one builds a cluster whose
-workers call `library(rcicr)`, so sourcing its R files is not enough, and v1.0.1 additionally
-needs `raster`, dropped in #186. Doing that at test time would put a package install and a
-network round trip inside the suite. Instead `tools/make-legacy-rdata.R` installs each tag into
-a throwaway library once and the resulting files are committed: 205 KB for 1.0.1 and 45 KB for
-1.1.0 at 32px — 1.0.1 is the larger because it is generated at `nscales = 5`, the historical
-default, so its missing-`nscales` fallback lands on the right noise basis. The safeguard runs
-in every CI job, on every platform, with no network. Regenerating is a deliberate act, as with
-the `released-formals` fixtures — a red test here means this version can no longer read a file
-a researcher already has, which is the failure, not the fixture.
+Generating them needs the old version *installed* — each builds a cluster whose workers call
+`library(rcicr)`, so sourcing its R files is not enough, and v1.0.1 additionally needs `raster`,
+dropped in #186. At test time that would put a package install and a network round trip inside
+the suite. Instead `tools/make-legacy-rdata.R` installs each tag into a throwaway library once
+and the files are committed, so the safeguard runs in every CI job, on every platform, with no
+network. Regenerating is a deliberate act: a red test here means this version can no longer read
+a file a researcher already has, which is the failure, not the fixture.
 
-Writing them also settled the `generator_version` question with data rather than documentation:
-the 1.0.1 and 1.1.0 files really do carry a top-level `'0.4.0'` while `p$generator_version`
-holds `'1.0.1'` and `'1.1.0'`.
+Each is generated at the era's **defaults** — `nscales = 5`, `sigma = 25` for 1.0.1 — so its
+missing-field fallbacks land on the right noise basis, which is the situation a returning
+researcher is actually in. Any other value would enshrine a wrong null. The gabor row exists
+because `sigma` reaches the basis through `generateGabor()` alone: sinusoidal norms are
+identical at `sigma` 25 and 10, so no sinusoidal fixture can exercise that fallback at all.
+
+Writing them also settled the `generator_version` question with data: the 1.0.1 and 1.1.0 files
+really do carry a top-level `'0.4.0'` while `p$generator_version` holds the truth.
 
 ### The v1.0.1 reference is pinned; the previous release is a *second* run, not a replacement
 The obvious move once a release is green is to make it the new reference. It is wrong. Each
@@ -432,22 +433,18 @@ trial's noise.
 
 ---
 
-## Packaging, CI and tooling
+## Arguments and internal guards
 
 ### Write paths are required arguments, not defaults of `tempdir()`
-CRAN's review of 1.2.1 asked us to "omit any default path in writing functions". Two answers
-would satisfy the letter of that: default the paths to `tempdir()`, or remove the defaults.
-We removed them.
+CRAN's review of 1.2.1 asked us to "omit any default path in writing functions". Defaulting to
+`tempdir()` would satisfy the letter and was **rejected as the more dangerous option**: a script
+relying on `./cis` would keep running, silently writing classification images into a directory
+deleted when the session ends, surfacing days later as missing output with nothing connecting it
+to an upgrade. Removing the default turns the same script into an immediate error naming the
+argument. A breaking change that announces itself beats a silent relocation of someone's results.
 
-`tempdir()` was rejected because it is the more dangerous of the two for this package's
-users. A researcher whose script relied on `./cis` would keep running, silently writing
-classification images into a directory that is deleted when the session ends — the failure
-surfaces days later as missing output, with nothing to connect it to an upgrade. Removing
-the default turns the same script into an immediate error naming the argument to supply. A
-breaking change that announces itself beats a silent relocation of somebody's results.
-
-It also cost nothing to verify: the release gate reports `max|d| = 0` across 135 checks
-against v1.2.1, because `tools/compare-harness.R` already passed every path explicitly.
+Cost nothing to verify: the gate reports `max|d| = 0` across 135 checks, because
+`tools/compare-harness.R` already passed every path explicitly.
 
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 The `load()` guard snapshots a function's arguments and restores them after reading an
@@ -461,296 +458,6 @@ exists for: a default is the value the function goes on to use, and is exactly a
 replaceable by a field in the `.Rdata` as one passed explicitly. Dropping them removed the
 `step` guard in `computeCumulativeCICorrelation()` and the test caught it. The predicate is
 therefore *required* (no default in `formals()`) **and** absent — not absent alone.
-
-### `fail_ci_if_error: false` on the coverage workflow
-Chosen over getting a Codecov token or deleting the workflow. **This does not make coverage
-reporting work** — no token means no badge, no per-PR comments, and `codecov.yml`'s thresholds
-stay inert. What it buys is narrower and more useful: a red `main` now means the package is
-broken. The `token:` input is left wired so adding the secret later restores reporting.
-
-### `^\.git$` is in `.Rbuildignore` because a worktree's `.git` is a *file*
-`R CMD build` drops `.git` on its own, so the entry looks redundant. It is not: the built-in
-exclusion matches a **directory** named `.git`, and in a `git worktree` checkout `.git` is a
-49-byte text file holding a `gitdir:` pointer. It ships. The tarball then draws
-`checking for hidden files and directories ... NOTE`, naming `.git`, from a tree that looks
-identical to a clean one.
-
-This is not hypothetical — it reached win-builder. Building the tag in a worktree (the
-obvious way to honour "never build from `main` HEAD") returned 2 NOTEs where the same commit
-built at the repo root returned 1. Reproduced both ways before believing it: worktree tarball
-contains `rcicr/.git`, repo-root tarball contains no match.
-
-Separately: `.Rbuildignore` was itself listed in `.gitignore` from 2016 until 2026, an
-RStudio-template leftover, so it never reached CI or other contributors. Do not re-add it.
-
-### Dependabot watches the actions, not the R packages
-`.github/dependabot.yml` covers `github-actions` and nothing else. That is not an oversight,
-and the asymmetry is the point.
-
-**The R dependencies cannot be watched, and pretending otherwise is worse than the gap.**
-Dependabot has no CRAN ecosystem, and **CRAN publishes no security advisory database** — there
-is no `npm audit` equivalent for R. The nearest thing is Sonatype's OSS Index via `oysteR`,
-which as of 2026-07-29 returns **401 to anonymous requests** and so needs an account to run at
-all. Weighed and rejected: a scanner whose CRAN coverage is thin reports "clean" because its
-database is empty, not because the tree is safe, and a green badge that means nothing is worse
-than a known gap. The realistic dependency failure — an import getting archived — is already
-caught by `R CMD check` on four platforms on every push.
-
-Where the actual CVE surface lives is worth stating, because it is not in R code at all: 29 of
-the 53 packages in the recursive tree need compilation, and their vulnerabilities belong to the
-C libraries they bind to — **libpng** (`png`), **libjpeg** (`jpeg`), **GDAL/GEOS/PROJ**
-(`terra` ← `raster`). Those are patched by the user's operating system, not by CRAN, and
-nothing this package does can affect them. Dropping `raster` (issue #186) is the only
-lever that shrinks it.
-
-**The actions genuinely needed watching.** Twelve of the thirteen in use were on floating
-major tags, so whoever controls those repositories could change what runs in CI at any time —
-the one supply-chain surface here with real incident history, and the one Dependabot supports.
-Updates are **grouped into a single PR**, because `.github/workflows/` is deliberately not on
-the gate's inert allowlist, so ungrouped bumps would each spend a full CI round.
-
-### R-hub runs on `workflow_dispatch` only, never on push
-The R-hub v2 workflow is the stock file `rhub::rhub_setup()` writes, kept unmodified so it can
-be refreshed from upstream. It is left trigger-on-demand because R-hub answers a question that
-only arises at release time — does this build under CRAN's own compiler flags and on the
-odd platforms nobody develops on — and running it per-PR would spend a matrix of platforms on
-a question nobody asked yet, competing with the ~11-minute reproducibility gate that *is*
-required on every code PR.
-
-**R-hub does not stand in for per-platform coverage, and once wrongly appeared to.** This
-entry used to justify the per-PR gap by saying the everyday answer was "already covered by
-`R-CMD-check.yaml` on release and devel". That matrix varied only the *R version* against a
-pinned `ubuntu-latest` — one platform twice. The hole stayed invisible until the first R-hub
-dispatch failed a `plotZmap()` test on macOS that had been green on Linux for months (see
-the alpha-channel entry under Testing); CRAN builds on macOS, so it would have landed as a
-submission ERROR. **The lesson generalises: "already covered by X" is a claim about what X
-runs, and worth reading X to check rather than repeating.**
-
-Both platforms CRAN gates on are now in the everyday matrix. Windows was added on different
-grounds from macOS, and the distinction is the useful part: macOS had never been run, whereas
-Windows had passed on R-hub and win-builder — it was not an untested hole but a *late* one,
-checked only at release.
-
-The cost of `workflow_dispatch`-only is that the workflow is invisible until it reaches the
-**default branch** — GitHub offers no "Run workflow" button for a file that exists only on a
-feature branch. So it merges to `main` ahead of the release it is meant to check.
-
-### The pkgdown site deploys via a `gh-pages` branch, not the Actions-native route
-Pages was already configured here — `gh api repos/rdotsch/rcicr/pages` reported `status:
-built`, `build_type: legacy`, source branch `gh-pages` — and the only thing missing was that
-no such branch had ever been pushed, which is why the URL 404'd. Publishing that branch from
-a workflow therefore needed **no repository setting to change**. The Actions-native deploy
-would have been the more modern choice and was rejected on one fact: it requires flipping
-`build_type`, a repo-settings write that agents here cannot make (`Resource not accessible by
-integration`), turning a self-contained PR into one that stalls on the maintainer.
-
-`docs/` is the built site and is **git-ignored as well as `.Rbuildignore`d** — the two are not
-interchangeable, and a locally built site has already been committed by accident once.
-
-### The stale-`man/` gate is a step in an existing job, and a pre-commit hook was rejected
-`R CMD check` already fails on documentation that disagrees with a function's *signature* —
-`tools::codoc()`, confirmed by renaming `deg2rad`'s formal without regenerating `man/`. What it
-cannot see is prose drift: an edited `@description` or `@examples` never regenerated. The same
-edit leaves `codoc()` silent and still reaches the pkgdown site, which builds from `man/`. So
-the gate re-runs roxygen and diffs `man/` and `NAMESPACE`.
-
-Three things about where it lives:
-
-- **A step in `ubuntu-latest (release)`, not a new job or workflow.** Required checks are
-  matched by name, and adding a name to the ruleset is a repo-settings write agents here
-  cannot make — a new job would report without ever blocking. It runs last so a failure
-  cannot cost us the check results.
-- **Not a pre-commit hook.** R hooks were kept out of `.pre-commit-config.yaml` for their own
-  reasons, but the deciding one here is that the check job already has R and every dependency
-  installed, where a hook would install them per run — and an optional local hook is not a
-  gate.
-- **roxygen2 is pinned to `RoxygenNote`, not `any::`.** `.Rd` output varies between generator
-  versions, so `any::` lets a CRAN release of roxygen2 redden a required check on formatting
-  alone — an external event breaking the gate, in an environment that cannot re-run a job. The
-  step asserts the installed version matches `DESCRIPTION` so the pin cannot silently desync;
-  bumping the generator means bumping both.
-
-Nothing rebuilds the *site* locally or in a hook — the pkgdown workflow builds it on every PR
-and deploys on push, which is what catches a vignette that no longer knits.
-
-### `CITATION.cff` is generated by `cffr` and compared, not hand-written and field-checked
-The first version of this was hand-written, with a script comparing each field to a source of
-truth: title and authors to `inst/CITATION`, licence, URLs and addresses to `DESCRIPTION`,
-version and release date to `NEWS.md`. It was rejected *after* being built, because reviewing
-it turned up five defects in four rounds and every one was the same shape — a field the
-comparison did not reach. Unordered URL membership let `repository-code` and `url` swap; author
-comparison by name left the address unchecked, on a package CRAN archived for an undeliverable
-address; a missing source address compared as `""` against `"(absent)"`, which would have
-failed permanently for a future author with no email. A hand-written comparator is a list of
-the fields someone remembered, and the failure mode is silence.
-
-`cffr::cff_create()` derives the whole file, so the comparison is structural — regenerate,
-compare every key, and nothing depends on remembering a field. It also validates against the
-CFF schema, which is what makes a malformed file fail loudly; GitHub declines to render the
-"Cite this repository" button on a file it cannot parse and says nothing.
-
-Two measurements shaped how it is generated. `dependencies = TRUE`, the default, emits 380
-lines describing every dependency's authors, with years read from whichever versions happen to
-be installed — regenerating on a different machine produces a different file, so it is off.
-And `preferred-citation`'s year comes from `inst/CITATION`, which reads the clock when
-`DESCRIPTION` carries no publication date, so that one field changes on 1 January with nothing
-else: the comparison excludes it, or a required check would go red on a calendar boundary.
-`gh_keywords = FALSE` keeps generation off the network.
-
-The dependency and the second version pin — the two costs that argued for hand-writing it —
-are real but bought something. `version` now tracks `DESCRIPTION`, including the `.9000`
-suffix between releases, where the hand-written file deliberately named the last release; that
-is the one thing the switch gave up.
-
----
-
-## Releases and git
-
-The conventions and their rationale are in `AGENTS.md` — trunk-based with tags and no
-`develop` branch, `.9000` on `main` between releases, tarballs built from the tag, squash
-merges, delete merged branches, `NEWS.md` ordered largest-impact first. Two things learned
-the hard way that those entries do not cover:
-
-- **Squash merging is what makes a bad commit cheap.** One branch here carried ~75,000 lines
-  of committed `R CMD check` artifacts across three commits; `main` only ever saw the final
-  tree, so no history rewrite was needed. (Both patterns are now in `.gitignore` and
-  `.Rbuildignore`, and the `git diff --stat main...HEAD` habit is in `CONTRIBUTING.md`.)
-- `git push origin --delete a b` is **atomic**: one stale name fails the whole command and
-  takes the other branch down with it. (`gh pr merge --delete-branch` has already removed the
-  remote branch anyway.)
-
-### External checks run on the release branch; the tag and `.9000` still precede acceptance
-The procedure is in `CONTRIBUTING.md` → "Releasing", step 2. What is not obvious is why it
-can work at all.
-
-**The circularity that appears to force checks after the tag is not real.** It looks as
-though results cannot be recorded in the commit they describe, because writing them changes
-the tree and so invalidates the tarball that was checked. But `cran-comments.md` is
-`.Rbuildignore`d and verifiably absent from the built tarball, so editing it produces the
-same tarball byte for byte. It is not a package artifact at all — it is the text pasted into
-the "Optional comment" field of the CRAN submission form. At 1.2.1 the checks ran *after* the
-tag and the `.9000` reopen, so the results landed on a development tree and the tag recorded
-no evidence that the tree it names had passed anything.
-
-**Deliberately *not* copied from `usethis:::release_checklist()`: tagging and reopening
-`.9000` still happen before CRAN accepts.** The `.9000` suffix is what selects `--quick` over
-the full ~20-minute battery, so holding `main` at a clean version across the weeks CRAN can
-take would run the full gate on every unrelated PR in that window. And a rejection means
-shipping X.Y.Z+1 anyway, leaving the tag naming a tree that was never on CRAN — already true
-of `v1.2.0` and `v1.2.2`, so the repository tolerates that cheaply.
-
-This variant is in one respect tighter than usethis's, which runs win-builder while
-`DESCRIPTION` still carries `.9000` and never re-checks after `use_version()` — recording
-results for a different version string than the one submitted.
-
-### GitHub releases carry notes only — the built tarball is not attached
-Asked and settled at the 1.2.1 release. A release page already offers "Source code (tar.gz)",
-which GitHub generates from the tag, and that is **not** the same artifact `R CMD build`
-produces: the git archive has no built vignettes in `inst/doc/` and does carry every
-`.Rbuildignore`d development file. Attaching the real tarball would put two different
-"source" downloads on one page, which is a support question waiting to happen, and a second
-artifact that can drift from the tag it claims to be.
-
-The convention this follows is r-lib's and the tidyverse's: CRAN hosts the tarball, and
-`remotes::install_github('rdotsch/rcicr@vX.Y.Z')` covers everyone else. That rcicr is
-currently *off* CRAN is the strongest argument the other way, and it was considered — it is
-temporary, and it does not outweigh publishing an artifact the project would then have to
-keep consistent at every release.
-
-What this deliberately gives up: the tarball is **not byte-reproducible from the tag**,
-because `R CMD build` stamps `Packaged: <timestamp>; <user>` into `DESCRIPTION`. So the exact
-bytes sent to CRAN are not archived anywhere and can only be rebuilt, into something
-marginally different. That is accepted: what has to be reproducible is the *tree*, which the
-tag pins exactly, and which is what both the release gate and `R CMD check` actually operate
-on. Nothing about a result depends on the timestamp in a tarball header.
-
-### Answer CRAN from the review text, and never send them a question a sweep can answer
-CRAN's review of 1.2.1 listed two `.Rd` files under "some code lines in examples are
-commented out". Working from a summary that had kept one of them, 1.2.2 replied that we could
-not find the commented line and **asked the reviewer which line she meant** — while the fix
-for the file she had named correctly sat in the same commit, made under a different point.
-Two further drafts repeated it.
-
-Three rules came out of that, and the first two are in `AGENTS.md`: log every reply verbatim
-in `notes/cran-review-<version>.md` and answer from the file; re-verify every claim in
-`cran-comments.md` against the tree rather than carrying it forward. The third is a matter of
-tone: **a question to the reviewer costs a round trip measured in weeks, and a sweep costs
-minutes.** Sweep everything the point could apply to, then report what was found.
-
-The same instinct applies in reverse — **do not explain a note the reviewer does not have.**
-`cran-comments.md` carried a paragraph answering a `medium.com` 403 that appears only on our
-local check, on no external check for 1.2.3, and not in CRAN's own pretest of 1.2.1. It was
-removed; the link stays in `README.md`, because `README.md` ships and removing it would
-invalidate the built tarball and force all five external checks to re-run for something no
-CRAN-side check has ever raised (issue #192).
-
-### Claims must survive on someone else's machine
-`cran-comments.md` twice stated a total runtime for the example set — "about nine seconds",
-then "about fifteen" — measured here. Both win-builder runs report 18s, so the reviewer's own
-log would have contradicted the letter arguing for the package. The rule is in `AGENTS.md`;
-what it is *not* is a ban on numbers. A ratio survives, and so does a comparison to a fixed
-bar such as CRAN's five-second per-example limit; `NEWS.md`'s "about 6x faster, 1.66s to
-0.28s per call" earns its place because a user feels that difference and the ratio holds
-anywhere. A bare absolute describes our hardware to a reader who has their own.
-
-### A work tracker carries no project state
-`BACKLOG.md` once held a "state as of" block plus a "Last updated" narrative — some 78 lines
-describing where the release stood. Every fact in them lived somewhere with a better claim:
-`NEWS.md`, `cran-comments.md`, `CONTRIBUTING.md` → "Releasing", and the open PRs. **It drifted
-four times, each within a day of a release**, which is what a duplicated fact does rather than
-what a careless author does; the fourth fix was to write it more carefully, and it was wrong
-within the hour. The rule outlived the file and applies to the issue tracker: a *hold
-condition* belongs on the issue it holds; the project's current position belongs nowhere in
-the tracker at all.
-
-Same reasoning as deleting the hand-maintained `Version:`/`Date:` table from
-`man/rcicr-package.Rd` in 1.2.3: the way to keep a fact current is to stop writing it twice.
-
-### The backlog moved to GitHub Issues, after the stale issues were triaged
-Done 2026-08-08: 21 issues opened as #174–#194 under `P0`–`P3` labels, and `BACKLOG.md`
-deleted. The sweep came first and was the hard prerequisite.
-
-**The tracker is treated as a working surface, not a curated public product surface** — so
-internal maintenance work belongs in it alongside user-visible bugs, as in r-lib repos. The
-alternative considered was keeping the tracker for things a researcher would recognise as
-affecting them and holding chores elsewhere; rejected because two backlogs is the same
-duplication problem one layer up, and because the drift this file produced came precisely
-from status living somewhere a human has to remember to update.
-
-**The ordering was not incidental.** All 25 open issues dated from 2016–2017, and opening 21
-new ones into that would have buried the triage under the migration. It also matters which half of
-this carries the value: **the sweep alone fixes the thing that actually costs something** —
-a tracker that reads as abandoned in 2017 while the package is being resubmitted to CRAN.
-The migration is the smaller remaining gain, which is why it is sequenced second rather than
-bundled.
-
-What deliberately does **not** become an issue: the "already correct — do not re-fix" entries.
-Those are decisions and belong here, and four moved into this file rather than onto the
-tracker — the InfoVal formula, `return_as_dataframe`'s one-image-per-trial shape, the emptied
-`ref_lookup` rows, and the infoVal test oracle that mirrors its implementation. The formula one
-was *already* duplicated here, which is what made the misfiling visible in the first place.
-
-**Known cost, accepted:** changes to the plan stop going through a reviewed PR, because issue
-edits are not reviewable. For a single maintainer that is close to zero.
-
-### `CLAUDE.md` is a stub that imports `AGENTS.md`, not a symlink
-Claude Code reads `CLAUDE.md` and does not read `AGENTS.md`, so renaming the conventions file
-in #166 silently stopped it loading in every agent session until 2026-08-08 — including the
-rules on `NEWS.md` headings, `.Rbuildignore` and `test-fixed-bugs.R`, each of which costs a
-release when broken.
-
-The documented fixes are a `CLAUDE.md` containing `@AGENTS.md`, or `ln -s AGENTS.md
-CLAUDE.md`. **The symlink was rejected**: it requires Administrator privileges or Developer
-Mode on Windows, and this package has Windows contributors and a Windows CI runner. The
-import is a plain file that git and every platform treat identically, and it leaves room for
-Claude-specific instructions below it. `AGENTS.md` stays the single source of truth.
-
-### `ChangeLog` gets a pointer entry, not a duplicate
-`NEWS.md` supersedes it, but someone opening `ChangeLog` first would otherwise conclude the
-last release is whatever it last recorded. Two changelogs both claiming authority is worse
-than one that defers.
-
----
 
 ## Documentation
 
