@@ -4,6 +4,23 @@
 #'
 #' Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
 #'
+#' @section Repeated presentations of the same stimulus:
+#' This function walks trials in the order they were presented and does not aggregate repeated
+#' presentations of a stimulus, unlike \code{\link{generateCI}}, which averages the responses to
+#' each unique stimulus before building its classification image. That is deliberate: collapsing
+#' repeats would discard the presentation order a cumulative curve is entirely about.
+#'
+#' One consequence is worth knowing. With no \code{targetci}, the final CI computed here is built
+#' from the same un-aggregated trials as the curve, so the curve ends at exactly 1 by
+#' construction -- that is self-consistency, not evidence of convergence. Where every stimulus was
+#' presented the same number of times, that final CI is identical to the one \code{generateCI}
+#' returns. Where repeat counts differ, the two weight the data differently -- each trial equally
+#' here, each unique stimulus equally there -- and they diverge: on an 8-trial set with counts
+#' 4/2/1/1 they correlate at 0.77.
+#'
+#' So to see how the CI approaches the one you will actually report, pass it as
+#' \code{targetci = generateCI(...)} rather than relying on the self-computed default.
+#'
 #' @export
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats cor

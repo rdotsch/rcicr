@@ -147,6 +147,16 @@
 
 ## Documentation
 
+- **`?computeCumulativeCICorrelation` explains what its curve ending at 1 does and does not
+  mean.** With no `targetci`, the final CI it compares against is built from the same
+  un-aggregated trials as the curve, so the last point is 1 by construction — self-consistency,
+  not convergence. That final CI is identical to `generateCI()`'s where every stimulus was
+  presented the same number of times, and differs where repeat counts vary, because this
+  function weights each trial equally while `generateCI()` weights each unique stimulus equally.
+  Measured on an 8-trial set with counts 4/2/1/1, the two correlate at 0.77. Pass
+  `targetci = generateCI(...)` when you want the curve to describe the CI you will report.
+  Nothing changed in what the function computes.
+
 - **There is now a documentation website: <https://rdotsch.github.io/rcicr/>.** The
   function reference, both vignettes and this changelog are readable without installing
   the package first. It is generated from the same sources — `README.md` is the home page,
