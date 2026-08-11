@@ -232,6 +232,59 @@ test_that("generateCI truncates 4096-parameter files for a single trial too", {
   expect_equal(single$ci, generateNoiseImage(stimuli_params$base[1, 1:4092], p))
 })
 
+test_that("computeCumulativeCICorrelation truncates 4096-parameter files like generateCI", {
+  # Same pre-0.3.0 over-allocation as the test above: 4096 stored contrasts, 4092
+  # real patches. generateCI() truncated these files; computeCumulativeCICorrelation()
+  # did not, so the extra four columns reached generateNoiseImage() as a length
+  # mismatch and it aborted with "number of parameters doesn't equal number of
+  # patches" -- an availability gap on old files for this one analysis function.
+  tmp <- withr::local_tempdir()
+
+  # nscales = 5 gives 4092 patches at any image size, so a 16px pattern is enough.
+  p <- generateNoisePattern(img_size = 16, nscales = 5)
+  expect_equal(max(p$patchIdx), 4092)
+
+  img_size <- 16
+  base_faces <- list(base = matrix(0.5, img_size, img_size))
+  seed <- 1
+  params4092 <- matrix(runif(6 * 4092, -1, 1), nrow = 6)
+  responses <- c(1, -1, 1, -1, 1, -1)
+
+  write_rdata <- function(stimuli_params_mat) {
+    stimuli_params <- list(base = stimuli_params_mat)
+    path <- file.path(tmp, paste0("f", ncol(stimuli_params_mat), ".Rdata"))
+    save(base_faces, stimuli_params, p, img_size, seed, file = path)
+    path
+  }
+  # A 4096-column file (four unused padding contrasts) and its 4092 equivalent.
+  path4096 <- write_rdata(cbind(params4092, matrix(runif(6 * 4, -1, 1), nrow = 6)))
+  path4092 <- write_rdata(params4092)
+
+  cc96 <- suppressWarnings(
+    computeCumulativeCICorrelation(1:6, responses, "base", path4096)
+  )
+  cc92 <- suppressWarnings(
+    computeCumulativeCICorrelation(1:6, responses, "base", path4092)
+  )
+
+  expect_length(cc96, 6)
+  # Truncation must drop exactly the four padding columns, so the 4096 file gives
+  # the same curve as the already-4092 file -- not merely "runs without error".
+  expect_equal(cc96, cc92)
+
+  # A single presented stimulus makes the parameter row a vector unless it is kept
+  # two-dimensional; the params[1:trial, ] slice then aborted with "incorrect
+  # number of dimensions" for any file, 4092 or 4096. drop = FALSE fixes both.
+  one96 <- suppressWarnings(
+    computeCumulativeCICorrelation(1, 1, "base", path4096)
+  )
+  one92 <- suppressWarnings(
+    computeCumulativeCICorrelation(1, 1, "base", path4092)
+  )
+  expect_length(one96, 1)
+  expect_equal(one96, one92)
+})
+
 test_that("generateCI's z-map sigma is not overwritten by the .Rdata's noise sigma", {
   # Found by tools/compare-release-output.R, 2026-07-28. load() assigns into
   # generateCI()'s own frame, and 1.1.0 started storing the noise `sigma` in the
