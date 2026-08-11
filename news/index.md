@@ -142,6 +142,23 @@
   `maximize_baseimage_contrast = TRUE`: a flat base image is perfectly
   usable with the rescale switched off, and the message says so.
 
+- **[`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+  reads pre-0.3.0 stimulus files again.** Files written before rcicr
+  0.3.0 (January 2015) store 4096 contrast parameters per trial where
+  only 4092 patches exist, and
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  has truncated the four unused columns for years.
+  [`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+  did not, so on such a file the extra columns reached
+  [`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md)
+  as a length mismatch and it aborted with “number of parameters doesn’t
+  equal number of patches” — the cumulative-correlation curve could not
+  be computed at all. It now applies the same truncation. Files from
+  0.3.0 onward already have 4092 parameters and are unaffected. The same
+  fix keeps a single presented stimulus two-dimensional, so a
+  one-stimulus call — which aborted with “incorrect number of
+  dimensions” on any file — now returns its (single-point) curve.
+
 - **The `base_face_files` type check raises an error you can actually
   read.** It wrote its explanation to
   [`stderr()`](https://rdrr.io/r/base/showConnections.html) and then
