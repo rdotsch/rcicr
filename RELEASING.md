@@ -253,4 +253,3 @@ local check, on no external check for 1.2.3, and not in CRAN's own pretest of 1.
 removed; the link stays in `README.md`, because `README.md` ships and removing it would
 invalidate the built tarball and force all five external checks to re-run for something no
 CRAN-side check has ever raised (issue #192).
-

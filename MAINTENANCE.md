@@ -122,4 +122,3 @@ contributors and a Windows CI runner. The `@AGENTS.md` import is a plain file ev
 treats identically.
 
 ---
-
