@@ -26,25 +26,12 @@ test_that("legacy 0-indexed patchIdx warns but still returns a valid image", {
 })
 
 # The 0-based path drops every patchIdx == 0 cell (R drops a 0 subscript) and
-# recycles a too-short vector back over the patch array - which reads like a
-# whole-image misalignment. It is not: the counter-from-0 leaves the last patch
-# layer all-zero, so every patchIdx == 0 cell is also a patches == 0 cell (the
-# one-way implication masking needs - the converse is false, a populated phase-0
-# layer has zero pixels too), and the recycled values land only where the patch
-# is zero and are multiplied away. This pins the
-# output against the honest "one patch not shown" oracle so that a change to the
-# indexing cannot silently reintroduce the misalignment. See DECISIONS.md,
-# "4096 -> 4092 parameters", and issue #221.
-#
-# Reconstructing p with pre_0.3.0 = TRUE reproduces the genuine legacy layout
-# rather than a convenient one: a stimulus file stores the patch array its own
-# generator wrote (generateStimuli2IFC() save()s `p`), and the pre-0.3.0
-# generator is the identical co = 0 / idx = 0 loop this flag runs - verified
-# against the R-Forge source (git show 7d0d9e6:pkg/R/rcicr.R), where 0.3.0 only
-# flipped the default and added the flag. So no genuine legacy file can carry
-# index 0 on a populated patch; the same no-op first write leaves the same last
-# layer unwritten. The 0.3.0 ChangeLog independently records the effect as two
-# single sinuses fixed in contrast, not a whole-image change.
+# recycles a too-short vector over the patch array, which reads like a
+# whole-image misalignment but is masked because those cells sit on an all-zero
+# patch layer. This checks the masking implication and pins the output against an
+# honest "one patch not shown" oracle. Why pre_0.3.0 = TRUE reconstructs the
+# genuine legacy layout, and why the effect is one patch rather than the whole
+# image, are in DECISIONS.md, "4096 -> 4092 parameters"; see also issue #221.
 test_that("0-indexed warning branch drops exactly one patch, not the whole image", {
   for (ns in 1:2) {
     p0 <- generateNoisePattern(16, nscales = ns, pre_0.3.0 = TRUE)
