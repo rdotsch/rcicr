@@ -443,6 +443,33 @@ before you begin so the work is not duplicated.
 look like bugs and are intentional and must not be "fixed"**. Check it before changing
 something that looks wrong.
 
+### Plan first, in the same pull request
+
+**When a change touches behaviour, numbers or a contract, the first commit on the branch is a
+plan, and it gets reviewed before any of the change is written.** That means anything altering
+`R/` behaviour, numeric output, the `.Rdata` contract, test fixtures, or the release and CI
+machinery. It does *not* mean prose, `man/`, `NEWS.md` wording or comment-only edits — roughly
+the inert set `.github/workflows/reproducibility.yaml` already allowlists.
+
+1. Branch from `main` and commit the plan to `notes/plan-<topic>.md`. `notes/` is already
+   `.Rbuildignore`d via `^notes$` and on that same inert allowlist, so a plan-only diff needs no
+   `.Rbuildignore` entry and the gate reports green without doing work.
+2. **Open the PR as a draft** and request the review, exactly as in "The Codex review" above.
+   The same two conditions clear it.
+3. Implement on that same branch, and **delete the plan file there** as part of the work.
+4. **Mark the draft ready**, which re-triggers the review on the full diff — a push alone does
+   not.
+5. Squash as usual.
+
+Because the plan file is added and deleted within the branch, the squash gives `main` one
+commit — the change itself, carrying no plan file — while the plan and both review rounds stay
+on the PR thread. The plan does not outlive the work and cannot become a second, drifting
+source of status; `NEWS.md`, `DECISIONS.md` and the tracker hold what survives.
+
+A plan is worth reviewing only if it can be wrong. State what you verified and how, name the
+step most likely to fail, and where the change rests on a claim about behaviour, measure it
+rather than asserting it — an issue's proposed fix is a hypothesis until it has been run.
+
 ## Code of conduct
 
 Be decent to each other. Problems can be raised privately with the maintainer at the address
