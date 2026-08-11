@@ -114,6 +114,27 @@
   always right either way: regenerate the stimulus set with this
   version.
 
+- **A stimulus file with gabor noise and no saved `sigma` now says so.**
+  [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+  assumes the historical default of 25 when a file predates 1.1.0 and
+  lacks the field, which it has always done silently — unlike the loud
+  warnings for a missing `nscales` or `noise_type`. For gabor noise that
+  silence hid the same hazard those warnings exist for: `sigma` is what
+  shapes the Gaussian mask, so guessing it wrong rebuilds the null on a
+  different noise basis than participants saw, and the resulting InfoVal
+  is wrong. On a 1.0.1 gabor stimulus set the reference norms move from
+  0.681/0.689/0.680 at `sigma = 25` to 0.615/0.620/0.626 at
+  `sigma = 10`.
+
+  **Sinusoidal files are unaffected and stay silent**, which is the
+  point of doing this by noise type rather than by field: `sigma`
+  reaches the basis through
+  [`generateGabor()`](https://rdotsch.github.io/rcicr/reference/generateGabor.md)
+  alone, so for sinusoidal noise the norms are identical whatever it is,
+  and a warning would be pure noise on the far more common legacy file.
+  Nothing warns that did not previously produce a wrong answer, and no
+  numeric output changes.
+
 ### Bug fixes
 
 - **`plotZmap(col = ...)` works.** Supplying a palette is how
@@ -189,6 +210,25 @@
   did before.
 
 ### Documentation
+
+- **[`?computeCumulativeCICorrelation`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+  explains what its curve ending at 1 does and does not mean.** With no
+  `targetci`, the final CI it compares against is built from the same
+  un-aggregated trials as the curve, so wherever the evaluated trials
+  reach the last one the curve ends at 1 — self-consistency, not
+  convergence. That is every call at the default `step = 1`, though a
+  larger `step` can stop short of the final trial and end below 1, and
+  responses that cancel exactly give a constant CI and an all-`NA`
+  curve. That final CI is identical to
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
+  where every stimulus was presented the same number of times, and
+  differs where repeat counts vary, because this function weights each
+  trial equally while
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  weights each unique stimulus equally. Measured on an 8-trial set with
+  counts 4/2/1/1, the two correlate at 0.77. Pass
+  `targetci = generateCI(...)` when you want the curve to describe the
+  CI you will report. Nothing changed in what the function computes.
 
 - **There is now a documentation website:
   <https://rdotsch.github.io/rcicr/>.** The function reference, both

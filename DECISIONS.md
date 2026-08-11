@@ -274,6 +274,50 @@ of the RNG stream either way — measured identical, max absolute
 difference 0. Widening the frame to trial × base image would change the
 return shape, so it needs a **new argument**, never a redefinition.
 
+### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
+
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+averages the responses to each unique stimulus before building its CI
+(`R/generateCI.R:184-191`);
+[`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+does not, and walks trials in presentation order. Deliberate —
+collapsing repeats would discard exactly the order a cumulative curve is
+about.
+
+Two consequences, measured rather than reasoned about. With no
+`targetci` the function computes its own final CI from the same
+un-aggregated trials as the curve, so wherever the evaluated trials
+reach the last one the curve **ends at exactly 1** — self-consistency,
+not convergence. That is every call at the default `step = 1`, but not
+all of them: trials are taken at `seq(1, length(responses), step)`, so
+six responses at `step = 2` stop at the fifth and end at 0.967, and at
+`step = 3` at the fourth and end at 0.938. Nor when the responses cancel
+exactly: that CI is uniformly zero, and correlating against a constant
+gives `NA` at *every* point, not just the last. And that self-computed
+final CI equals
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
+only when every stimulus was presented the same number of times: with
+equal counts the two are bit-identical, while with unequal counts they
+weight the data differently — each trial equally here, each unique
+stimulus equally there. Measured on 32px sets: counts 3/1 correlate at
+0.845, counts 4/2/1/1 at 0.773, max absolute pixel differences 0.065 and
+0.054. Not a rounding artefact.
+
+Documented in
+[`?computeCumulativeCICorrelation`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+and pinned by a test, rather than changed. Aggregating the self-computed
+final CI would move numeric output for anyone calling it without
+`targetci`, and would stop the curve ending at 1 — a worse default than
+the one being fixed. The advice is to pass `targetci = generateCI(...)`
+when the comparison you want is against the CI you will report.
+
+Whether
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
+own equal-weight-per-unique-stimulus aggregation is the right weighting
+under unequal repeat counts is a separate question, filed rather than
+settled here: its code comment frames the aggregation as reducing memory
+and processing load, which only holds where the two weightings coincide.
+
 ### Repopulating `ref_lookup` costs four measurements — and the two halves stand or fall together
 
 `AGENTS.md` covers what the table is (not a cache, empty since 2018,
