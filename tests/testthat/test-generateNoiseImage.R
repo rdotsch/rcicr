@@ -28,8 +28,10 @@ test_that("legacy 0-indexed patchIdx warns but still returns a valid image", {
 # The 0-based path drops every patchIdx == 0 cell (R drops a 0 subscript) and
 # recycles a too-short vector back over the patch array - which reads like a
 # whole-image misalignment. It is not: the counter-from-0 leaves the last patch
-# layer all-zero, so patchIdx == 0 iff patches == 0, and the recycled values
-# land only where the patch is zero and are multiplied away. This pins the
+# layer all-zero, so every patchIdx == 0 cell is also a patches == 0 cell (the
+# one-way implication masking needs - the converse is false, a populated phase-0
+# layer has zero pixels too), and the recycled values land only where the patch
+# is zero and are multiplied away. This pins the
 # output against the honest "one patch not shown" oracle so that a change to the
 # indexing cannot silently reintroduce the misalignment. See DECISIONS.md,
 # "4096 -> 4092 parameters", and issue #221.
@@ -46,7 +48,8 @@ test_that("legacy 0-indexed patchIdx warns but still returns a valid image", {
 test_that("0-indexed warning branch drops exactly one patch, not the whole image", {
   for (ns in 1:2) {
     p0 <- generateNoisePattern(16, nscales = ns, pre_0.3.0 = TRUE)
-    expect_true(all(p0$patches[p0$patchIdx == 0] == 0)) # the masking invariant
+    # masking implication: patchIdx == 0 => patches == 0 (converse is false)
+    expect_true(all(p0$patches[p0$patchIdx == 0] == 0))
 
     set.seed(42)
     params <- rnorm(max(p0$patchIdx) + 1)
