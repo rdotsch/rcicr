@@ -141,5 +141,17 @@ constraint.
 - `devtools::test()`, full suite green — `test-regression-baseline.R` and `test-legacy-rdata.R`
   matter most here.
 - `Rscript tools/compare-release-output.R --quick`, to confirm the release gate is unaffected.
-- `R CMD build` in a temp directory, never at the repo root, then `R CMD check --as-cran`, watching
-  for an installed-size NOTE from the added fixture.
+- A tarball build, then `R CMD check --as-cran` on it, watching for an installed-size NOTE from
+  the added fixture. This is an ad-hoc build rather than a release one, so run it as:
+
+  ```sh
+  tmp=$(mktemp -d) && (cd "$tmp" && R CMD build /workspaces/rcicr)
+  ```
+
+  `R CMD build` takes the package directory as an argument and writes the tarball into the
+  *working* directory, so this builds the real repo root — not a copy and not a worktree, so
+  `.git` is a directory and `^\.git$` in `.Rbuildignore` behaves exactly as it does for a release
+  — while the tarball lands outside the root. That matters because `R CMD build .` at the root
+  overwrites any externally-checked tarball sitting there, which has happened. The release
+  procedure is unchanged and still `R CMD build .` at the repo root
+  ([`CONTRIBUTING.md`](../CONTRIBUTING.md) → "Releasing").
