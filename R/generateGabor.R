@@ -5,11 +5,12 @@
 #' @param cycles Integer specifying number of cycles the sinusoid should span.
 #' @param angle Value specifying the angle (rotation) of the sinusoid.
 #' @param phase Value specifying phase of sinusoid.
-#' @param sigma of guassian mask on top of sinusoid.
+#' @param sigma Value specifying the standard deviation, in pixels, of the
+#'   Gaussian mask applied on top of the sinusoid.
 #' @param contrast Value between -1.0 and 1.0 specifying contrast of sinusoid.
-#' @return The sinusoid image with size \code{img_size}.
+#' @return The gabor patch image with size \code{img_size}.
 #' @examples
-#' generateSinusoid(512, 2, 90, pi/2, 1.0)
+#' generateGabor(512, 2, 90, pi/2, 25, 1.0)
 generateGabor <- function(img_size, cycles, angle, phase, sigma, contrast) {
 
   s <- generateSinusoid(img_size, cycles, angle, phase, contrast)

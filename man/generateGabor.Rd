@@ -15,16 +15,17 @@ generateGabor(img_size, cycles, angle, phase, sigma, contrast)
 
 \item{phase}{Value specifying phase of sinusoid.}
 
-\item{sigma}{of guassian mask on top of sinusoid.}
+\item{sigma}{Value specifying the standard deviation, in pixels, of the
+Gaussian mask applied on top of the sinusoid.}
 
 \item{contrast}{Value between -1.0 and 1.0 specifying contrast of sinusoid.}
 }
 \value{
-The sinusoid image with size \code{img_size}.
+The gabor patch image with size \code{img_size}.
 }
 \description{
 Generate single gabor patch
 }
 \examples{
-generateSinusoid(512, 2, 90, pi/2, 1.0)
+generateGabor(512, 2, 90, pi/2, 25, 1.0)
 }
