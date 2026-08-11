@@ -98,6 +98,15 @@
   The error fires only under `maximize_baseimage_contrast = TRUE`: a flat base image is
   perfectly usable with the rescale switched off, and the message says so.
 
+- **`computeCumulativeCICorrelation()` reads pre-0.3.0 stimulus files again.** Files written
+  before rcicr 0.3.0 (2016) store 4096 contrast parameters per trial where only 4092 patches
+  exist, and `generateCI()` has truncated the four unused columns for years.
+  `computeCumulativeCICorrelation()` did not, so on such a file the extra columns reached
+  `generateNoiseImage()` as a length mismatch and it aborted with "number of parameters
+  doesn't equal number of patches" — the cumulative-correlation curve could not be computed at
+  all. It now applies the same truncation. Files from 0.3.0 onward already have 4092 parameters
+  and are unaffected.
+
 - **The `base_face_files` type check raises an error you can actually read.** It wrote
   its explanation to `stderr()` and then called `stop()` with no arguments, so the
   condition it raised carried an empty message: `conditionMessage()` returned `""`, and

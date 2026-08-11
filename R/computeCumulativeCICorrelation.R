@@ -95,6 +95,20 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
     stop(paste0('No parameters found for base image: ', baseimage))
   }
 
+  # Truncate a pre-0.3.0 parameter set from 4096 to 4092, exactly as generateCI()
+  # does, so this function can read the same old files. Without it the extra four
+  # unused contrasts reach generateNoiseImage() as a length mismatch and abort.
+  # See generateCI() and ChangeLog 0.3.0-29 for why 4096 was over-allocated.
+  if (!is.vector(params)) {
+    if (ncol(params) == 4096) {
+      params <- params[, 1:4092]
+    }
+  } else {
+    if (length(params) == 4096) {
+      params <- params[1:4092]
+    }
+  }
+
   # Compute final classification image if necessary
   if (length(targetci) == 0) {
     finalCI <- generateCINoise(params, responses, p)
