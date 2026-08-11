@@ -70,7 +70,7 @@ jobs:
             base=$(git merge-base "origin/${{ github.base_ref }}" HEAD)
             changed=$(git diff --name-only "$base" HEAD)
             echo "changed files:"; echo "$changed" | sed 's/^/  /'
-            inert='^(man/|vignettes/|tests/|notes/|\.claude/|\.github/ISSUE_|README\.md$|AGENTS\.md$|CLAUDE\.md$|DECISIONS\.md$|CONTRIBUTING\.md$|ChangeLog$|cran-comments\.md$|codecov\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.Rbuildignore$|LICENSE|.*\.Rproj$)'
+            inert='^(man/|vignettes/|tests/|notes/|\.claude/|\.github/ISSUE_|README\.md$|AGENTS\.md$|CLAUDE\.md$|DECISIONS\.md$|CONTRIBUTING\.md$|RELEASING\.md$|MAINTENANCE\.md$|SECURITY\.md$|ChangeLog$|cran-comments\.md$|codecov\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.Rbuildignore$|LICENSE|.*\.Rproj$)'
             # Deliberately no `grep -qv`: ugrep and GNU grep disagree on its
             # exit status, so the emptiness of the list is tested instead. It
             # also lets the log name the file that forced the run.

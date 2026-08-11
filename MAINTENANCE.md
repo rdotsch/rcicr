@@ -143,7 +143,7 @@ reasoning as deleting the hand-maintained `Version:`/`Date:` table from `man/rci
 The tracker is a **working surface, not a curated public one**, so internal maintenance work
 sits in it alongside user-visible bugs. Splitting chores elsewhere was rejected: two backlogs is
 the same duplication one layer up. What does *not* become an issue is an "already correct — do
-not re-fix" decision; those belong here.
+not re-fix" decision about the package; those go in `DECISIONS.md`.
 
 ### `CLAUDE.md` is a stub that imports `AGENTS.md`, not a symlink
 Claude Code reads `CLAUDE.md` and not `AGENTS.md`, so the rename in #166 silently stopped the
