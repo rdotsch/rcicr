@@ -12,10 +12,14 @@
 # the release gate runs the old code rather than trusting the golden master. What
 # they contain is not a reconstruction:
 #
-#   1.0.1  no `nscales`, no `sigma` (both added in 1.1.0). generator_version
-#          '0.4.0', p$generator_version '1.0.1'.
-#   1.1.0  has nscales and sigma. generator_version still '0.4.0',
-#          p$generator_version '1.1.0'.
+#   1.0.1        no `nscales`, no `sigma` (both added in 1.1.0).
+#                generator_version '0.4.0', p$generator_version '1.0.1'.
+#   1.0.1-gabor  the same release with noise_type = 'gabor', which it does save.
+#                The case that hits both missing-field fallbacks at once, and the
+#                only one where the missing `sigma` can change anything: sigma
+#                reaches the basis through generateGabor() alone.
+#   1.1.0        has nscales and sigma. generator_version still '0.4.0',
+#                p$generator_version '1.1.0'.
 #
 # That both files really do claim 0.4.0 while `p` holds the truth is the measured
 # basis for preferring p$generator_version -- see DECISIONS.md, "`generator_version`
@@ -26,6 +30,12 @@
 # --------------------------------------------------------------------------
 
 legacy_versions <- c("1.0.1", "1.1.0")
+
+# Fixture ids, not versions: a release can contribute more than one file, and the
+# id is what names it on disk. Only the tests asserting the *writing version* are
+# keyed on legacy_versions.
+gabor_fixture <- "1.0.1-gabor"
+legacy_fixtures <- c(legacy_versions, gabor_fixture)
 
 legacy_fixture <- function(version) {
   path <- test_path("fixtures", paste0("legacy-rdata-", version, ".Rdata"))
@@ -62,7 +72,7 @@ local_fixture_copy <- function(version, env = parent.frame()) {
 test_that("the current generateCI() reads .Rdata files written by older releases", {
   skip_if_not_installed("withr")
 
-  for (version in legacy_versions) {
+  for (version in legacy_fixtures) {
     rdata <- local_fixture_copy(version)
 
     ci <- generateCI(
@@ -137,6 +147,56 @@ test_that("the missing-nscales fallback assumes the historical default of 5", {
   # is load-bearing, so a different one gives a different null.
   expect_identical(fallback$norms, explicit_5$norms)
   expect_false(identical(fallback$norms, explicit_3$norms))
+  expect_length(fallback$norms, 3)
+  expect_false(anyNA(fallback$norms))
+})
+
+test_that("a 1.0.1 gabor file lacks nscales and sigma but records its noise type", {
+  e <- new.env()
+  load(legacy_fixture(gabor_fixture), envir = e)
+
+  expect_false(exists("nscales", envir = e, inherits = FALSE))
+  expect_false(exists("sigma", envir = e, inherits = FALSE))
+  # noise_type is saved, which is what makes this file usable as the both-
+  # fallbacks case rather than one that also has to guess the kind of noise.
+  expect_equal(get("noise_type", envir = e), "gabor")
+})
+
+test_that("the missing-sigma fallback assumes 25, and warns only for gabor noise", {
+  skip_if_not_installed("withr")
+
+  # sigma reaches the noise basis through generateGabor() alone, so it is inert
+  # for sinusoidal noise -- measured, the sinusoidal norms are identical at sigma
+  # 25 and 10, while these gabor ones move 0.681/0.689/0.680 -> 0.615/0.620/0.626.
+  # That asymmetry is the whole test: the value must be pinned where it matters,
+  # and the warning must not fire where it cannot.
+  fallback <- reference_norms_for(local_fixture_copy(gabor_fixture))
+
+  explicit_25 <- local_fixture_copy(gabor_fixture)
+  mutate_rdata(explicit_25, sigma = 25)
+  explicit_25 <- reference_norms_for(explicit_25)
+
+  explicit_10 <- local_fixture_copy(gabor_fixture)
+  mutate_rdata(explicit_10, sigma = 10)
+  explicit_10 <- reference_norms_for(explicit_10)
+
+  sinusoidal <- reference_norms_for(local_fixture_copy("1.0.1"))
+
+  warned <- function(x) any(grepl("does not contain `sigma`", x$warnings, fixed = TRUE))
+
+  # All three directions. The first assertion alone is satisfied by an
+  # implementation that warns on every gabor file -- which would put a spurious
+  # compatibility warning on every current gabor stimulus set, all of which save
+  # sigma, and be fatal under options(warn = 2). The other two rule that out, and
+  # rule out warning on any legacy file regardless of noise type.
+  expect_true(warned(fallback))
+  expect_false(warned(explicit_25))
+  expect_false(warned(sinusoidal))
+
+  # The fallback picks 25 specifically: identical to an explicit 25, and the
+  # value is load-bearing, so a different one gives a different null.
+  expect_identical(fallback$norms, explicit_25$norms)
+  expect_false(identical(fallback$norms, explicit_10$norms))
   expect_length(fallback$norms, 3)
   expect_false(anyNA(fallback$norms))
 })

@@ -77,6 +77,21 @@
   what is missing, and keep the version as context rather than as a conclusion. The advice is
   unchanged, and was always right either way: regenerate the stimulus set with this version.
 
+- **A stimulus file with gabor noise and no saved `sigma` now says so.**
+  `generateReferenceDistribution2IFC()` assumes the historical default of 25 when a file
+  predates 1.1.0 and lacks the field, which it has always done silently — unlike the loud
+  warnings for a missing `nscales` or `noise_type`. For gabor noise that silence hid the same
+  hazard those warnings exist for: `sigma` is what shapes the Gaussian mask, so guessing it
+  wrong rebuilds the null on a different noise basis than participants saw, and the resulting
+  InfoVal is wrong. On a 1.0.1 gabor stimulus set the reference norms move from
+  0.681/0.689/0.680 at `sigma = 25` to 0.615/0.620/0.626 at `sigma = 10`.
+
+  **Sinusoidal files are unaffected and stay silent**, which is the point of doing this by
+  noise type rather than by field: `sigma` reaches the basis through `generateGabor()` alone,
+  so for sinusoidal noise the norms are identical whatever it is, and a warning would be pure
+  noise on the far more common legacy file. Nothing warns that did not previously produce a
+  wrong answer, and no numeric output changes.
+
 ## Bug fixes
 
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
