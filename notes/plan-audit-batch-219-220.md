@@ -145,7 +145,8 @@ constraint.
   the added fixture. This is an ad-hoc build rather than a release one, so run it as:
 
   ```sh
-  tmp=$(mktemp -d) && (cd "$tmp" && R CMD build /workspaces/rcicr)
+  pkg=$(pwd)                                        # at the repo root
+  tmp=$(mktemp -d) && (cd "$tmp" && R CMD build "$pkg")
   ```
 
   `R CMD build` takes the package directory as an argument and writes the tarball into the
