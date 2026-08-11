@@ -25,6 +25,34 @@ test_that("legacy 0-indexed patchIdx warns but still returns a valid image", {
   expect_false(anyNA(result))
 })
 
+# The 0-based path drops every patchIdx == 0 cell (R drops a 0 subscript) and
+# recycles a too-short vector back over the patch array - which reads like a
+# whole-image misalignment. It is not: the counter-from-0 leaves the last patch
+# layer all-zero, so patchIdx == 0 iff patches == 0, and the recycled values
+# land only where the patch is zero and are multiplied away. This pins the
+# output against the honest "one patch not shown" oracle so that a change to the
+# indexing cannot silently reintroduce the misalignment. See DECISIONS.md,
+# "4096 -> 4092 parameters", and issue #221.
+test_that("0-indexed warning branch drops exactly one patch, not the whole image", {
+  for (ns in 1:2) {
+    p0 <- generateNoisePattern(16, nscales = ns, pre_0.3.0 = TRUE)
+    expect_true(all(p0$patches[p0$patchIdx == 0] == 0)) # the masking invariant
+
+    set.seed(42)
+    params <- rnorm(max(p0$patchIdx) + 1)
+    current <- suppressWarnings(generateNoiseImage(params, p0))
+
+    # Oracle: patch idx 0 contributes nothing, every other patch k uses params[k].
+    idx <- p0$patchIdx
+    idx[idx == 0] <- NA
+    w <- params[idx]
+    w[is.na(w)] <- 0
+    oracle <- rowMeans(p0$patches * array(w, dim(p0$patches)), dims = 2)
+
+    expect_equal(current, oracle)
+  }
+})
+
 # NOTE: support for the pre-0.3.3 sinusoids/sinIdx list shape is currently
 # broken; test-known-bugs.R holds a failing test for the intended behaviour.
 

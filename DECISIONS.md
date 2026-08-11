@@ -90,6 +90,20 @@ cannot be re-created from its seed.
 The same release also fixed `sinIdx` counting from 0 rather than 1, which is what the
 `pre_0.3.0` flag exists for. The two are independent and both live in that boundary.
 
+**The 0-based path in `generateNoiseImage()` looks like it corrupts the whole image and does
+not.** When `min(patchIdx) == 0`, `params[p$patchIdx]` drops every 0-indexed cell (R drops
+rather than `NA`s a 0 subscript), returning a vector too short for the patch array, which
+`array()` then recycles — the setup for a general misalignment. It is harmless because the
+same counter-from-0 leaves the *last* patch layer never written, so `patchIdx == 0` iff
+`patches == 0` (verified at every `nscales`), and those zero-index cells sit contiguously at
+the end of the column-major order. The recycled values land only where the patch is
+identically zero and are multiplied away. Measured: the warning-branch output equals the
+honest "one patch not shown" result exactly (max abs diff 0) across 36 size/nscales/seed
+combinations, so the warning is accurate, not an understatement. Do **not** "fix" the recycle
+by 1-offsetting the index — that would change which sinusoid is dropped, altering the CI of
+every genuinely pre-0.3.0 file. `test-generateNoiseImage.R` pins the equality so the masking
+cannot be broken silently.
+
 The truncation this left behind in `generateCI()` had a dead branch for eleven years: the
 single-trial path tested for a length of 4092 and truncated to 4092, so it could never fire
 on the 4096-length input it was written for. **A backward-compatibility
