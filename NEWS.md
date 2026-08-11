@@ -105,7 +105,9 @@
   `generateNoiseImage()` as a length mismatch and it aborted with "number of parameters
   doesn't equal number of patches" — the cumulative-correlation curve could not be computed at
   all. It now applies the same truncation. Files from 0.3.0 onward already have 4092 parameters
-  and are unaffected.
+  and are unaffected. The same fix keeps a single presented stimulus two-dimensional, so a
+  one-stimulus call — which aborted with "incorrect number of dimensions" on any file — now
+  returns its (single-point) curve.
 
 - **The `base_face_files` type check raises an error you can actually read.** It wrote
   its explanation to `stderr()` and then called `stop()` with no arguments, so the

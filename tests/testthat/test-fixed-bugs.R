@@ -271,6 +271,18 @@ test_that("computeCumulativeCICorrelation truncates 4096-parameter files like ge
   # Truncation must drop exactly the four padding columns, so the 4096 file gives
   # the same curve as the already-4092 file -- not merely "runs without error".
   expect_equal(cc96, cc92)
+
+  # A single presented stimulus makes the parameter row a vector unless it is kept
+  # two-dimensional; the params[1:trial, ] slice then aborted with "incorrect
+  # number of dimensions" for any file, 4092 or 4096. drop = FALSE fixes both.
+  one96 <- suppressWarnings(
+    computeCumulativeCICorrelation(1, 1, "base", path4096)
+  )
+  one92 <- suppressWarnings(
+    computeCumulativeCICorrelation(1, 1, "base", path4092)
+  )
+  expect_length(one96, 1)
+  expect_equal(one96, one92)
 })
 
 test_that("generateCI's z-map sigma is not overwritten by the .Rdata's noise sigma", {

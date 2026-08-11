@@ -87,8 +87,12 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   }
 
 
-  # Retrieve parameters of actually presented stimuli (this will work with non-consecutive stims as well)
-  params <- stimuli_params[[baseimage]][stimuli,]
+  # Retrieve parameters of actually presented stimuli (this will work with
+  # non-consecutive stims as well). drop = FALSE keeps a single presented stimulus
+  # a one-row matrix rather than a vector, so the params[1:trial, ] slice in the
+  # cumulative loop below stays valid; without it a length-1 `stimuli` aborted
+  # with "incorrect number of dimensions" regardless of parameter count.
+  params <- stimuli_params[[baseimage]][stimuli, , drop = FALSE]
 
   # Check whether parameters were found in this .rdata file
   if (length(params) == 0) {
@@ -99,14 +103,8 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   # does, so this function can read the same old files. Without it the extra four
   # unused contrasts reach generateNoiseImage() as a length mismatch and abort.
   # See generateCI() and ChangeLog 0.3.0-29 for why 4096 was over-allocated.
-  if (!is.vector(params)) {
-    if (ncol(params) == 4096) {
-      params <- params[, 1:4092]
-    }
-  } else {
-    if (length(params) == 4096) {
-      params <- params[1:4092]
-    }
+  if (ncol(params) == 4096) {
+    params <- params[, 1:4092, drop = FALSE]
   }
 
   # Compute final classification image if necessary
