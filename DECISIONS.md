@@ -99,10 +99,16 @@ same counter-from-0 leaves the *last* patch layer never written, so `patchIdx ==
 the end of the column-major order. The recycled values land only where the patch is
 identically zero and are multiplied away. Measured: the warning-branch output equals the
 honest "one patch not shown" result exactly (max abs diff 0) across 36 size/nscales/seed
-combinations, so the warning is accurate, not an understatement. Do **not** "fix" the recycle
-by 1-offsetting the index — that would change which sinusoid is dropped, altering the CI of
-every genuinely pre-0.3.0 file. `test-generateNoiseImage.R` pins the equality so the masking
-cannot be broken silently.
+combinations, so the warning is accurate, not an understatement. This is not a self-fulfilling
+reconstruction: a stimulus file stores the patch array its own generator wrote
+(`generateStimuli2IFC()` `save()`s `p`), and the genuine pre-0.3.0 generator is the identical
+`co = 0` / `idx = 0` loop the `pre_0.3.0` flag runs — verified against the R-Forge source
+(`git show 7d0d9e6:pkg/R/rcicr.R`), where 0.3.0 only flipped the default and added the flag. So
+no genuine legacy file can carry index 0 on a populated patch, and the 0.3.0 `ChangeLog`
+independently records the effect as two single sinuses fixed in contrast rather than a
+whole-image change. Do **not** "fix" the recycle by 1-offsetting the index — that would change
+which sinusoid is dropped, altering the CI of every genuinely pre-0.3.0 file.
+`test-generateNoiseImage.R` pins the equality so the masking cannot be broken silently.
 
 The truncation this left behind in `generateCI()` had a dead branch for eleven years: the
 single-trial path tested for a length of 4092 and truncated to 4092, so it could never fire

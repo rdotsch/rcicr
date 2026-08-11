@@ -33,6 +33,16 @@ test_that("legacy 0-indexed patchIdx warns but still returns a valid image", {
 # output against the honest "one patch not shown" oracle so that a change to the
 # indexing cannot silently reintroduce the misalignment. See DECISIONS.md,
 # "4096 -> 4092 parameters", and issue #221.
+#
+# Reconstructing p with pre_0.3.0 = TRUE reproduces the genuine legacy layout
+# rather than a convenient one: a stimulus file stores the patch array its own
+# generator wrote (generateStimuli2IFC() save()s `p`), and the pre-0.3.0
+# generator is the identical co = 0 / idx = 0 loop this flag runs - verified
+# against the R-Forge source (git show 7d0d9e6:pkg/R/rcicr.R), where 0.3.0 only
+# flipped the default and added the flag. So no genuine legacy file can carry
+# index 0 on a populated patch; the same no-op first write leaves the same last
+# layer unwritten. The 0.3.0 ChangeLog independently records the effect as two
+# single sinuses fixed in contrast, not a whole-image change.
 test_that("0-indexed warning branch drops exactly one patch, not the whole image", {
   for (ns in 1:2) {
     p0 <- generateNoisePattern(16, nscales = ns, pre_0.3.0 = TRUE)
