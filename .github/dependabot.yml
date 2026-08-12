@@ -2,7 +2,7 @@ version: 2
 
 # Covers GitHub Actions only. Dependabot has no CRAN ecosystem, so the R
 # dependencies in DESCRIPTION are not watched here and cannot be -- see
-# DECISIONS.md, "Dependabot watches the actions, not the R packages", for why
+# SECURITY.md, "Dependency posture", for why
 # that gap is left open rather than filled with a scanner.
 updates:
   - package-ecosystem: "github-actions"

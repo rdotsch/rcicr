@@ -19,3 +19,6 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^RELEASING\.md$
+^MAINTENANCE\.md$
+^SECURITY\.md$
