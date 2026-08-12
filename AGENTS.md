@@ -5,8 +5,9 @@ in this repository. It is the single source of truth for them; put
 conventions here.
 
 **Do not delete `CLAUDE.md`** — it is a stub that `@`-imports this file,
-and Claude Code loads only `CLAUDE.md`. Keep this file under 200 lines;
-adherence drops above that.
+and Claude Code loads only `CLAUDE.md`. **Keep this file under 2800
+words** — counted in words, not lines, because a line budget is defeated
+by longer lines and this file has been the worst offender.
 
 ## What this is
 
@@ -56,6 +57,11 @@ things about it are *not* standard:
 
 ## Testing and CI
 
+**The workflow inventory, the five required check names, and the two
+rules for editing them (never rename a job, never convert the gate to a
+`paths:` filter) are in `MAINTENANCE.md`.** Read it before touching
+`.github/workflows/`.
+
 - `tests/testthat/` has unit tests for every pure/deterministic function
   (`deg2rad`, `generateSinusoid`, `generateGabor`,
   `generateNoisePattern`, `generateNoiseImage`, `generateCINoise`),
@@ -91,7 +97,7 @@ things about it are *not* standard:
   in the script **and** a matching `NEWS.md` “Reproducibility impact”
   entry; both are checked, and a stale `EXPECTED` entry fails too. Use
   `--quick` (~2 min, skips 512px) while iterating. Full checklist in
-  `CONTRIBUTING.md` → “Releasing”.
+  `RELEASING.md`.
   - The battery is chosen by the **reference** version, not the current
     one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash —
     `mask`, z-maps below 512px, undecorated z-maps — have no old value
@@ -105,30 +111,6 @@ things about it are *not* standard:
   [`testthat::test_local()`](https://testthat.r-lib.org/reference/test_package.html)
   set `NOT_CRAN=true` themselves, so neither can be used to verify that
   a `skip_on_cran()` actually fires.
-- `.github/workflows/reproducibility.yaml` runs the gate: `--quick` on
-  every PR to `main`, full on release PRs, `v*` tags and manual
-  dispatch. It tells them apart from `DESCRIPTION` — a version without
-  the `.9000` suffix *is* a release — so the version bump turns the full
-  gate on by itself. On a PR touching only inert files (prose, `man/`,
-  `vignettes/`, `tests/`) the job runs, reports green and does no work;
-  the allowlist is in the workflow, and anything unrecognised runs the
-  gate. **Never convert this to a `paths:` filter** — a skipped required
-  check never reports at all, which GitHub reads as pending forever,
-  making every docs-only PR unmergeable.
-- **Five required status checks on `main`**: `compare`,
-  `ubuntu-latest (release)`, `ubuntu-latest (devel)`,
-  `macos-latest (release)`, `windows-latest (release)`. They are
-  enforced by a **ruleset**, not classic branch protection, so
-  `gh api repos/rdotsch/rcicr/branches/main` reports no required
-  contexts and looks unconfigured. Query
-  `gh api repos/rdotsch/rcicr/rules/branches/main` instead.
-- `.github/workflows/R-CMD-check.yaml` runs `R CMD check` over four
-  jobs: `ubuntu-latest` on R `release` and `devel`, plus `macos-latest`
-  and `windows-latest` on `release`. macOS and Windows are the two
-  platforms CRAN gates on, and each has caught a failure that was green
-  on Linux for months. **The job names are required checks matched by
-  name** — add rows to the matrix freely, but never rename one, or the
-  renamed check reads as pending forever and blocks every PR.
 - Because the checks are required, an infrastructure flake blocks a
   merge. **This environment cannot re-run one** — `gh run rerun` returns
   `Resource not accessible by integration`, as does dispatching R-hub —
@@ -138,12 +120,6 @@ things about it are *not* standard:
   PR based on another branch gets pre-commit and nothing else — no
   `R CMD check`. Retargeting an existing PR does *not* re-fire them;
   close and reopen it.
-- `.github/workflows/test-coverage.yaml` uploads to Codecov (needs a
-  `CODECOV_TOKEN` secret); `codecov.yml` sets lenient thresholds because
-  coverage is deliberately partial. `.pre-commit-config.yaml` drives
-  pre-commit.ci with minimal language-agnostic hooks only —
-  `styler`/`lintr`/`roxygenize` were left out because `styler` would
-  reformat nearly every file and destroy `git blame`.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it
   genuinely belongs in the built package, or `R CMD check` NOTEs
   “non-standard file/directory found at top level” (and a separate NOTE
@@ -152,7 +128,7 @@ things about it are *not* standard:
   the file for the current list.
   - `^\.git$` is **not** redundant with `R CMD build`’s own exclusion —
     see
-    [`DECISIONS.md`](https://rdotsch.github.io/rcicr/DECISIONS.html#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file).
+    [`MAINTENANCE.md`](https://rdotsch.github.io/rcicr/MAINTENANCE.html#git-is-in-rbuildignore-because-a-worktrees-git-is-a-file).
     Build the release tarball at the repo root, not in a `git worktree`.
   - `.Rbuildignore` and `.gitignore` are **not** interchangeable.
     `R CMD build` works from the *working directory*, not from git, so a
@@ -160,13 +136,33 @@ things about it are *not* standard:
     tarball unless `.Rbuildignore` also excludes it. Untracking a file
     is never a substitute for `.Rbuildignore`ing it.
 
-## DECISIONS.md
+## Which file a thing goes in
 
-`DECISIONS.md` records **why** the package is the way it is: the
-measurement that ruled an option out, the alternative that looked
-obvious and was wrong, the thing that looks like a bug and is
-deliberate. It is tracked in git and organised **by theme, not by
-date**. It replaced a chronological session log; do not recreate one.
+Each doc has one job, and **each states a word budget** — over it,
+something comes out before something goes in. Put a fact in exactly one
+of them and reference it from the others; a duplicated rule drifts, and
+the copy a reader hits first is then wrong.
+
+| file | its job | budget |
+|----|----|----|
+| `AGENTS.md` | conventions for agents (this file) | 2800 |
+| `CONTRIBUTING.md` | how to contribute: setup, tests, PRs, code conventions | 2800 |
+| `RELEASING.md` | the release checklist and why it is ordered that way | 1600 |
+| `MAINTENANCE.md` | how the repo’s CI, gates and generated files are wired | 1800 |
+| `SECURITY.md` | vulnerability reporting and dependency posture | 600 |
+| `DECISIONS.md` | why the **package** behaves as it does | 5200 |
+| `NEWS.md` | what changed for users | none — trimmed at each release |
+
+Budgets are in **words, not lines**: a line budget is defeated by
+writing longer lines, which is exactly how this file grew to hold more
+words than `CONTRIBUTING.md` in two-thirds the lines. `wc -w` is the
+check.
+
+`DECISIONS.md` is the one most often misfiled into. Its subject is what
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+returns and why a number cannot change — **not** how CI is wired or how
+a release is cut. The test: would this still matter if the package were
+maintained somewhere else entirely?
 
 - **Update it as decisions are made**, not in a sweep at the end — the
   reasoning and the numbers are only cheap to write down while they are
@@ -174,13 +170,11 @@ date**. It replaced a chronological session log; do not recreate one.
 - **Add an entry when a decision was not obvious.** Rejecting a
   plausible alternative, measuring something surprising, or deliberately
   *not* fixing something all qualify. Routine changes do not.
-- **Edit entries in place** when they stop being true. It is not an
-  append-only log, and it carries no dates, state or next-steps sections
-  — the issue tracker holds what is left to do and `NEWS.md` holds what
-  changed for users.
-- **Do not restate in `DECISIONS.md` what this file or `CONTRIBUTING.md`
-  already says.** Reference it instead. A duplicated rule drifts, and
-  the copy a reader happens to hit first is then wrong.
+- **Edit entries in place** when they stop being true. It is organised
+  by theme, carries no dates, state or next-steps sections, and replaced
+  a chronological session log — do not recreate one.
+- **An edge case in a third-party tool is not a decision.** Work it out
+  again if it recurs.
 
 ## Git and merge strategy
 
@@ -225,9 +219,9 @@ it, this is a single-maintainer package, and it would add a permanent
 second merge direction for no gain. Feature branches → PR → squash onto
 `main`, and releases are marked by tags.
 
-- **The reproducibility gate is a release blocker.** `CONTRIBUTING.md` →
-  “Releasing” holds the full checklist. The v1.0.1 reference is **pinned
-  and does not advance** with each release — see
+- **The reproducibility gate is a release blocker.** `RELEASING.md`
+  holds the full checklist. The v1.0.1 reference is **pinned and does
+  not advance** with each release — see
   [`DECISIONS.md`](https://rdotsch.github.io/rcicr/DECISIONS.html#the-v101-reference-is-pinned-the-previous-release-is-a-second-run-not-a-replacement).
 - **`main` carries a `.9000` development version between releases.**
   Right after a release, `DESCRIPTION` goes to `<released>.9000`; the
