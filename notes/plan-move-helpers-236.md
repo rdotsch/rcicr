@@ -3,9 +3,17 @@
 ## Why
 
 By R convention `zzz.R` holds load hooks (`.onLoad`/`.onAttach`) and package-level odds and
-ends — it is named to sort last. This package's own convention is one function per file, named
-after the function (`deg2rad.R`, `autoscale.R`, `generateCINoise.R`). `zzz.R` currently holds
-four unrelated internal helpers and matches neither convention.
+ends — it is named to sort last.
+
+The repo's documented rule (`CONTRIBUTING.md:194`) is one file per **exported** function, named
+after it, and it already names `zzz.R` as the exception holding `globalVariables()`. Internal
+helpers are outside that rule, so **this move does not follow from it** — it is a choice about
+the files the rule says nothing about, and needs its own reason.
+
+The reason: grouping internal helpers by concern beats a catch-all named for its sort order.
+`parallel.R` and `rdata.R` say what is in them; `zzz.R` says only "last". It also stops the
+three parallel helpers being split across two files that are about neither, which is the
+concrete cost today.
 
 It is more scattered than `zzz.R` alone shows: `stopClusterSafely()`, the third parallel
 helper and the only one called from *both* pipeline halves, sits at `R/generateCI.R:423` — a
