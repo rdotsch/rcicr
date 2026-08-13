@@ -174,6 +174,13 @@
   `targetci = generateCI(...)` when you want the curve to describe the CI you will report.
   Nothing changed in what the function computes.
 
+- **`?generateCI` documents the weighting of repeated stimulus presentations.** When
+  `participants` is `NA`, repeated presentations are collapsed before building the CI: each
+  unique stimulus gets equal weight, regardless of how many times it was presented. With equal
+  repeat counts this changes nothing; with unequal counts it is a different estimand from
+  weighting each trial equally, and the difference can be substantial. Previously this was
+  described only as a performance optimisation in a code comment.
+
 - **There is now a documentation website: <https://rdotsch.github.io/rcicr/>.** The
   function reference, both vignettes and this changelog are readable without installing
   the package first. It is generated from the same sources — `README.md` is the home page,
