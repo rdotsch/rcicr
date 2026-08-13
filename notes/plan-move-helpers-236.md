@@ -42,7 +42,12 @@ defaulted ones). Rewriting them is not part of this change.
 
 Nothing executable. This is cut-and-paste between files in the same package: same functions,
 same bodies, same names, same (absent) exports. No numeric output, no behaviour, no argument.
-The release gate should report `max|d| = 0` and the full suite should pass untouched.
+The full suite should pass untouched, and the release gate should **pass unchanged** — which
+is not the same as `max|d| = 0`. The gate compares the working tree against the pinned v1.0.1
+(and v1.1.0) references, which already deviate deliberately: `tools/compare-release-output.R`
+carries `EXPECTED` entries for the InfoVal cases against v1.0.1 and the blur-based z-maps
+against v1.1.0. Those keep firing after a pure move, and must. The criterion is the gate's own:
+every `EXPECTED` entry still fires, none goes stale, and nothing new deviates.
 
 ## Scope boundary — what this does *not* take
 
