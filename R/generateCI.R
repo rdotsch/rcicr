@@ -23,6 +23,24 @@
 #' When creating multiple classification images a good strategy is to find the lowest constant that works for all
 #' classification images. This can be automatized using the \code{autoscale} function.
 #'
+#' @section Repeated presentations of the same stimulus:
+#' When \code{participants} is \code{NA} (the default), repeated presentations of the same
+#' stimulus are collapsed before building the CI: each unique stimulus gets equal weight,
+#' regardless of how many times it was presented. Where every stimulus was presented the same
+#' number of times, this is equivalent to weighting each trial equally and changes nothing. Where
+#' repeat counts differ, it changes the estimand: a stimulus presented three times counts the same
+#' as one presented once, rather than three times as much.
+#'
+#' This is worth knowing for unbalanced designs. If a participant saw some stimuli more often than
+#' others -- because of an adaptive procedure, a crashed session, or a design choice -- the CI
+#' reflects the average response per unique stimulus, not per trial. The difference can be
+#' substantial: on an 8-trial set with counts 4/2/1/1 the two weightings correlate at 0.77.
+#'
+#' \code{\link{computeCumulativeCICorrelation}} does \emph{not} aggregate and weights each trial
+#' equally, so its self-computed final CI diverges from the one this function returns under
+#' unequal counts. Pass this function's output as \code{targetci} to compare against the CI you
+#' will actually report.
+#'
 #' @export
 #' @import png
 #' @import parallel
@@ -182,9 +200,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   }
 
   if (all(is.na(participants))) {
-    # Average responses for each presented stimulus (in case stimuli have been
-    # presented multiple times, or group-wise classification images are being
-    # calculated, in order to reduce memory and processing load)
+    # Collapse repeated presentations: each unique stimulus gets equal weight,
+    # regardless of how many times it was presented.
     aggregated <- aggregate(responses, by=list(stimuli=stimuli), FUN=mean)
     responses <- aggregated$x
     stimuli <- aggregated$stimuli
