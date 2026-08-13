@@ -207,6 +207,18 @@
   one-stimulus call — which aborted with “incorrect number of
   dimensions” on any file — now returns its (single-point) curve.
 
+- **[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  with `participants` works again on more than one core.** Supplying
+  `participants` without `targetpath` — the normal thing to do when you
+  are not saving individual CIs — stopped with
+  `argument "targetpath" is missing, with no default` as soon as
+  `n_cores` was greater than 1, which is the default on any multi-core
+  machine. `foreach` inspects the loop body and fetches every variable
+  it mentions, including one used only in the branch that saves
+  individual CIs, and that branch is precisely the one that cannot run
+  when you have not asked for those files. Single-core calls were
+  unaffected, as was saving individual CIs with a `targetpath`.
+
 - **The progress bar moves again during parallel runs.**
   [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   and
