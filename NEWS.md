@@ -103,6 +103,11 @@
 
   Unmasked targets contain no `NA`, so every existing call is bit-identical.
 
+  **Reproducibility impact:** calls passing a partially masked `targetci` now return numeric
+  correlations where they previously returned all-`NA`. No existing analysis could have
+  used the old result — it carried no information — but code that checked for `NA` on the
+  returned curve will see a different answer.
+
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
   you to change the colours, and doing it stopped the call with `formal argument "col"
   matched by multiple actual arguments` before anything was drawn — the function passed its
