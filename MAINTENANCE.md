@@ -150,10 +150,11 @@ name left the *address* unchecked, on a package CRAN archived for an
 undeliverable address. A hand-written comparator is a list of the fields
 someone remembered, and it fails silently.
 
-`cffr::cff_create()` derives the whole file, so the comparison is
-structural and nothing depends on remembering a field. It also validates
-against the CFF schema — GitHub silently declines to render the “Cite
-this repository” button on a file it cannot parse.
+[`cffr::cff_create()`](https://docs.ropensci.org/cffr/reference/cff_create.html)
+derives the whole file, so the comparison is structural and nothing
+depends on remembering a field. It also validates against the CFF schema
+— GitHub silently declines to render the “Cite this repository” button
+on a file it cannot parse.
 
 Two generation settings are load-bearing. `dependencies = TRUE` emits
 380 lines of dependency authors with years read from whichever versions

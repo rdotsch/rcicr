@@ -39,9 +39,10 @@ task will hit it. The general form:
 
 A standard R package — roxygen2 docs, a testthat suite under
 `tests/testthat/`, GitHub Actions CI — so the usual
-`roxygen2::roxygenise()` / `devtools::load_all()` / `test()` / `check()`
-/ `install()` workflow applies unchanged, run from the package root. Two
-things about it are *not* standard:
+[`roxygen2::roxygenise()`](https://roxygen2.r-lib.org/reference/roxygenize.html)
+/ `devtools::load_all()` / `test()` / `check()` / `install()` workflow
+applies unchanged, run from the package root. Two things about it are
+*not* standard:
 
 - [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   spawns parallel workers via
@@ -344,7 +345,9 @@ drift.
   [`load()`](https://rdrr.io/r/base/load.html) site keeps copies of its
   arguments across the call; preserve that when adding either an
   argument or an `.Rdata` field.
-- Parallelism is via base `parallel` + `doParallel`/`foreach`, not newer
+- Parallelism is via base `parallel` + `doSNOW`/`foreach`, not newer
   alternatives (e.g. `future`) — match this pattern for new parallel
   code, and remember worker processes need `.packages='rcicr'` set on
-  `foreach` calls.
+  `foreach` calls. Tick progress bars from the parent with
+  `.options.snow = progressOption(pb, cl)`; an in-body tick only updates
+  a worker’s private copy.
