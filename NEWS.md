@@ -92,6 +92,11 @@
   noise on the far more common legacy file. Nothing warns that did not previously produce a
   wrong answer, and no numeric output changes.
 
+- **`generateStimuli2IFC()` no longer saves `trial` in the `.Rdata` file.** It was the loop
+  counter left over from stimulus generation — always equal to `n_trials`, which is already
+  saved. Nothing in the package or the documented contract reads it. Existing `.Rdata` files
+  that contain `trial` continue to work; the field is simply ignored on load.
+
 ## Reproducibility impact
 
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
