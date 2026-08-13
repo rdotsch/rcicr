@@ -37,10 +37,10 @@ Three approaches tested (`scratchpad/spike-progress.R`):
    - Build `.options.snow = list(progress = function(n) setTxtProgressBar(pb, n))` when
      `cl` is not NULL, empty list otherwise.
    - Pass `.options.snow = opts` to the `foreach()` call.
-   - Remove the two `setTxtProgressBar(pb, trial)` calls inside the loop body (lines 244
-     and 250) — they are redundant under `doSEQ` too, since the callback fires in-process
-     as well. **Verify this**: if `doSEQ` does not fire `.options.snow`, keep the in-body
-     ticks guarded by `is.null(cl)`.
+   - Keep the two `setTxtProgressBar(pb, trial)` calls inside the loop body (lines 244
+     and 250), guarded by `is.null(cl)`. `registerDoSEQ()` ignores `.options.snow`
+     entirely — measured, see "Serial path" below — so removing them would trade a broken
+     parallel bar for a broken serial one.
 
 4. **In `generateCI()`**, two more loops have the same pattern:
    - The **participant-CI loop** (`R/generateCI.R:259-273`): `pb` at 259, ticked at 273.
@@ -48,6 +48,26 @@ Three approaches tested (`scratchpad/spike-progress.R`):
    Apply the same `.options.snow` fix to both.
 
 5. **Update `NAMESPACE`** via `@importFrom doSNOW registerDoSNOW` in `zzz.R`.
+
+6. **Add a regression test** (`tests/testthat/test-parallel-progress.R`). The numeric tests
+   all pass with the bar broken, so nothing today would catch a callback omitted from one of
+   the three loops, or the serial ticks removed.
+
+   The parent's bar is observable: `capture.output(type = "output")` sinks it, while worker
+   output (`makeCluster(outfile = "")`) writes past the sink to the terminal. So captured
+   percentages are exactly the ones the *user* would see. Measured on a bare
+   `foreach`/`doSNOW` loop of 6 tasks: `0% 20% 40% 60% 80% 100%` at `ncores = 2`.
+
+   Assert for both `ncores = 1` and `ncores = 2`, on `generateStimuli2IFC()` and on
+   `generateCI()`'s participant-CI and z-map paths, that the captured output holds **more
+   than one distinct percentage** — i.e. the bar advanced rather than jumping straight to the
+   end. Match on distinct values, not an exact sequence: task completion order is not
+   deterministic under a cluster, and pinning the exact ticks would make the test flaky.
+   `skip_on_cran()` the `ncores = 2` cases, as `test-parallel-equivalence.R` does.
+
+7. **Add a `NEWS.md` entry** under the development-version heading. Progress reporting during
+   default (parallel) execution is user-visible behaviour. It goes in the bug-fix section,
+   not "Reproducibility impact" — no numeric output changes.
 
 ## What does not change
 
@@ -57,11 +77,18 @@ Three approaches tested (`scratchpad/spike-progress.R`):
 - Serial execution: `registerDoSEQ()` path is unchanged.
 - The `.packages = 'rcicr'` requirement on the `foreach` call is unchanged.
 
+## Serial path
+
+`registerDoSEQ()` does **not** fire `.options.snow`: a 6-iteration `%dopar%` under `doSEQ`
+with a counting `progress` callback fired it 0 times. The in-body ticks therefore stay,
+guarded by `is.null(cl)`, and the two mechanisms never both run on the same loop.
+
 ## Step most likely to fail
 
-Whether `registerDoSEQ()` fires the `.options.snow` callback. If it does not, the serial
-path loses its progress bar unless we keep the in-body ticks for `is.null(cl)`. The spike
-did not test this — verify before removing the in-body calls.
+The `generateStimuli2IFC()` loop ticks the bar from **two** places (lines 244 and 250) —
+line 244 is on the `return_as_dataframe` early-return path, added for issue #82 because that
+`return` exits the whole `foreach` body. Both need the same `is.null(cl)` guard, and the
+comment at line 244 explaining why it is duplicated has to survive the edit.
 
 ## Dependency cost
 
