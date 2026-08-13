@@ -117,14 +117,9 @@ test_that("responses that cancel exactly give an all-NA curve, not an endpoint o
   expect_true(all(is.na(correlations)))
 })
 
-test_that("a masked targetci makes every correlation NA", {
+test_that("a masked targetci correlates over unmasked pixels only", {
   skip_if_not_installed("withr")
 
-  # generateCI() stores NA in masked pixels and the correlations here are taken
-  # over all pixels, so a masked target yields nothing usable however strong the
-  # signal. Pinned as the documented current behaviour, not as desirable: see the
-  # issue tracker. The assertion that the *unmasked* target gives a real curve on
-  # the same data is what shows the NAs come from the mask rather than the data.
   tmp <- withr::local_tempdir()
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
   responses <- withr::with_seed(2, sample(c(1, -1), 6, replace = TRUE))
@@ -147,6 +142,31 @@ test_that("a masked targetci makes every correlation NA", {
   masked <- target(mask)
   expect_equal(sum(is.na(masked$ci)), 16)
 
-  expect_true(all(is.na(curve(masked))))
-  expect_false(anyNA(curve(target(NULL))))
+  masked_curve <- curve(masked)
+  unmasked_curve <- curve(target(NULL))
+
+  expect_false(anyNA(masked_curve))
+  expect_false(anyNA(unmasked_curve))
+  expect_equal(masked_curve[length(masked_curve)], 1, tolerance = 1e-8)
+})
+
+test_that("a fully masked targetci gives an all-NA curve", {
+  skip_if_not_installed("withr")
+
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+  responses <- withr::with_seed(2, sample(c(1, -1), 6, replace = TRUE))
+
+  all_masked <- suppressWarnings(generateCI(
+    stimuli = 1:6, responses = responses, baseimage = "base",
+    rdata = rdata_path, save_as_png = FALSE,
+    mask = matrix(0, 32, 32)
+  ))
+  expect_true(all(is.na(all_masked$ci)))
+
+  correlations <- suppressWarnings(computeCumulativeCICorrelation(
+    stimuli = 1:6, responses = responses, baseimage = "base",
+    rdata = rdata_path, targetci = all_masked
+  ))
+  expect_true(all(is.na(correlations)))
 })

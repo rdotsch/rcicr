@@ -24,11 +24,10 @@
 #' \code{NA} rather than the last one being 1. Such a curve means the responses carry no net
 #' signal, not that the call failed.
 #'
-#' An all-\code{NA} curve has one other cause, and it is not that: a \code{targetci} carrying
-#' masked pixels. \code{\link{generateCI}} stores \code{NA} in every pixel a \code{mask} excludes,
-#' and the correlations here are taken over all pixels, so a single masked pixel makes every point
-#' \code{NA} however strong the signal -- masking a 4x4 corner of a 32x32 CI is enough. Until that
-#' is addressed, correlate against an unmasked \code{targetci}.
+#' A \code{targetci} carrying masked pixels -- \code{\link{generateCI}} stores \code{NA} in every
+#' pixel a \code{mask} excludes -- is handled by correlating over the unmasked pixels only. If the
+#' mask covers \emph{every} pixel, there are no complete pairs and the curve is all-\code{NA}, same
+#' as the zero-variance case above.
 #'
 #' Where every stimulus was
 #' presented the same number of times, that final CI is identical to the one \code{generateCI}
@@ -160,7 +159,8 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
     setTxtProgressBar(pb, trial)
 
     cumCI <- generateCINoise(params[1:trial,], responses[1:trial], p)
-    correlations[corcounter] <- cor(as.vector(cumCI), as.vector(finalCI))
+    correlations[corcounter] <- cor(as.vector(cumCI), as.vector(finalCI),
+                                    use = 'pairwise.complete.obs')
     corcounter <- corcounter + 1
   }
   close(pb)
