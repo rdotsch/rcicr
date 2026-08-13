@@ -42,8 +42,10 @@ Three approaches tested (`scratchpad/spike-progress.R`):
      as well. **Verify this**: if `doSEQ` does not fire `.options.snow`, keep the in-body
      ticks guarded by `is.null(cl)`.
 
-4. **In `generateCI()`**, the z-map parallel loop (`R/generateCI.R:449-475`) has the same
-   pattern — progress bar created outside, ticked inside. Apply the same fix there.
+4. **In `generateCI()`**, two more loops have the same pattern:
+   - The **participant-CI loop** (`R/generateCI.R:259-273`): `pb` at 259, ticked at 273.
+   - The **z-map loop** (`R/generateCI.R:350-362`): `pb` at 350, ticked at 362.
+   Apply the same `.options.snow` fix to both.
 
 5. **Update `NAMESPACE`** via `@importFrom doSNOW registerDoSNOW` in `zzz.R`.
 
