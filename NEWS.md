@@ -138,6 +138,19 @@
   one-stimulus call — which aborted with "incorrect number of dimensions" on any file — now
   returns its (single-point) curve.
 
+- **The progress bar moves again during parallel runs.** `generateStimuli2IFC()` and
+  `generateCI()` build their progress bar in your session but were advancing it from inside
+  the parallel loop, where each worker holds a private copy — so under the default
+  (`ncores`/`n_cores` greater than 1) the bar sat at 0% for the whole job and jumped to 100%
+  at the end. On a 770-trial 512px set that is a long time with nothing to watch. Affects
+  stimulus generation, per-participant CIs, and `t.test` z-maps. Serial runs were never
+  affected and are unchanged.
+
+  This required swapping the `foreach` backend from `doParallel` to `doSNOW`, which is the
+  one that can report task completions back to the parent session. `doParallel` is no longer
+  a dependency; `doSNOW` and `snow` take its place, for slightly less installed than it took.
+  Nothing about how the loops compute changes, and no numeric output changes.
+
 - **The `base_face_files` type check raises an error you can actually read.** It wrote
   its explanation to `stderr()` and then called `stop()` with no arguments, so the
   condition it raised carried an empty message: `conditionMessage()` returned `""`, and
@@ -158,19 +171,6 @@
   No numeric output changes. Every check here either replaces an error with a clearer
   error, or rejects input that could not have produced correct stimuli; a call that
   succeeds today produces exactly what it did before.
-
-- **The progress bar moves again during parallel runs.** `generateStimuli2IFC()` and
-  `generateCI()` build their progress bar in your session but were advancing it from inside
-  the parallel loop, where each worker holds a private copy — so under the default
-  (`ncores`/`n_cores` greater than 1) the bar sat at 0% for the whole job and jumped to 100%
-  at the end. On a 770-trial 512px set that is a long time with nothing to watch. Affects
-  stimulus generation, per-participant CIs, and `t.test` z-maps. Serial runs were never
-  affected and are unchanged.
-
-  This required swapping the `foreach` backend from `doParallel` to `doSNOW`, which is the
-  one that can report task completions back to the parent session. `doParallel` is no longer
-  a dependency; `doSNOW` and `snow` take its place, for slightly less installed than it took.
-  Nothing about how the loops compute changes, and no numeric output changes.
 
 ## Documentation
 
