@@ -204,7 +204,7 @@
 <div class="section level3">
 <h3 id="ncores--1-runs-in-process-instead-of-building-a-one-worker-cluster">
 <code>ncores == 1</code> runs in-process instead of building a one-worker cluster<a class="anchor" aria-label="anchor" href="#ncores--1-runs-in-process-instead-of-building-a-one-worker-cluster"></a></h3>
-<p><code>startBackend()</code> in <code>zzz.R</code> registers <code>doSEQ</code> when <code>ncores &lt; 2</code>, so the same <code>%dopar%</code> loops run in the current process and <strong>no loop body changed</strong>. The test suite went from 140s to 4s; under <code>R CMD check</code>, from <code>[8s/126s]</code> to <code>[8s/37s]</code> — eight seconds of CPU against 126 elapsed was worker startup, not computation.</p>
+<p><code>startBackend()</code> in <code>parallel.R</code> registers <code>doSEQ</code> when <code>ncores &lt; 2</code>, so the same <code>%dopar%</code> loops run in the current process and <strong>no loop body changed</strong>. The test suite went from 140s to 4s; under <code>R CMD check</code>, from <code>[8s/126s]</code> to <code>[8s/37s]</code> — eight seconds of CPU against 126 elapsed was worker startup, not computation.</p>
 <p><strong>Safe because neither parallel loop draws random numbers</strong>, so there is no per-worker stream to diverge. Verified, not asserted: <code>test-parallel-equivalence.R</code> pins <code>ncores = 1</code> and <code>ncores = 2</code> to bit-identical output and spells out what would make this unsafe again.</p>
 </div>
 <div class="section level3">
