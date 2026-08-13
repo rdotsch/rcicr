@@ -152,7 +152,6 @@ See `?plotZmap`.
 | `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
 | `label`, `stimulus_path` | What the files were called and where they were written. |
 | `generator_version` | The rcicr version that wrote the file — see the caveat below. |
-| `trial` | A leftover loop counter, equal to `n_trials`. Carries no information; ignore it. |
 
 `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** two more fields to
 the same file the first time you compute an informational value:
