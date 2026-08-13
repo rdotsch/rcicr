@@ -94,6 +94,15 @@
 
 ## Bug fixes
 
+- **`computeCumulativeCICorrelation()` now returns real correlations when `targetci` was
+  generated with a mask.** `generateCI()` stores `NA` in every pixel a `mask` excludes,
+  and the correlation was taken over all pixels (`use = "everything"`), so a single masked
+  pixel made every point on the curve `NA` however strong the signal. Correlations are now
+  computed over the unmasked pixels only. A fully masked target (every pixel `NA`) still
+  returns an all-`NA` curve — there are no complete pairs to correlate.
+
+  Unmasked targets contain no `NA`, so every existing call is bit-identical.
+
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
   you to change the colours, and doing it stopped the call with `formal argument "col"
   matched by multiple actual arguments` before anything was drawn — the function passed its
