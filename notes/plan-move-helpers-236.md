@@ -68,8 +68,23 @@ Nothing about the moves. The risk is **collision with in-flight work**:
 
 Because "no behaviour change" is the entire claim, the check is that nothing observable moved:
 
-1. `git diff -M --stat` should show the moved bodies as renames/moves, not rewrites — read the
-   diff and confirm no line inside a moved function changed.
+1. **Every removed line reappears verbatim, and nothing else is added.** `-M` cannot help here:
+   it detects file *renames*, and both source files stay, so a split shows up as two
+   modifications plus two additions and says nothing about the bodies. Compare the line
+   multisets instead, ignoring blank lines (boundary blank-line churn is expected and harmless):
+
+   ```sh
+   git add -A
+   diff <(git diff --cached -U0 | grep '^-' | grep -v '^---' | sed 's/^-//' \
+            | grep -v '^[[:space:]]*$' | sort) \
+        <(git diff --cached -U0 | grep '^+' | grep -v '^+++' | sed 's/^+//' \
+            | grep -v '^[[:space:]]*$' | sort)
+   ```
+
+   Empty output is the invariant: no line was rewritten, dropped or invented. Tested on a
+   scratch repo both ways — silent on a pure move with blank-line churn, and it catches a
+   single reworded comment. `git diff --color-moved=dimmed-zebra` is the readable companion,
+   not the check.
 2. Full suite passes with **no test edited**. Any test needing a change would mean this was not
    a pure move.
 3. `R CMD check` clean — in particular no new "no visible binding" NOTE, which is what a
@@ -78,9 +93,13 @@ Because "no behaviour change" is the entire claim, the check is that nothing obs
 
 No `NEWS.md` entry: nothing user-visible changed, and `NEWS.md` is for what changed for users.
 
-Docs, checked rather than assumed — only **one** of the four `zzz.R` mentions needs editing:
+Pointers to fix, from a **repo-wide** grep (`grep -rn 'zzz\.R' . --exclude-dir=.git`) — an
+earlier docs-only grep missed the code comment and reported one fewer:
 
 - `DECISIONS.md:381` — "`startBackend()` in `zzz.R`". **Needs the new path.**
+- `R/generateStimuli2IFC.R:185` — "See `startBackend()` in `zzz.R`". **Needs the new path.**
+  A stale pointer in a comment is worse than in prose: it is read by whoever is editing the
+  loop it annotates.
 - `AGENTS.md:183`, `CONTRIBUTING.md:224` — both about `globalVariables()`, which stays. No change.
 - `CONTRIBUTING.md:194` — "`zzz.R` holds the `globalVariables()` declarations", given as the
   exception to one-file-per-function. Unchanged, and *more* true afterwards, since that becomes
