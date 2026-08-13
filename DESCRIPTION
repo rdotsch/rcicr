@@ -24,7 +24,7 @@ Imports:
     viridis,
     utils,
     parallel,
-    doParallel,
+    doSNOW,
     foreach,
     spatstat.explore,
     spatstat.geom,

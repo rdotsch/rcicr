@@ -27,6 +27,10 @@ default_ncores <- function() {
 # loop in this package draws random numbers (stimulus parameters are drawn under
 # set.seed() before the loop starts), so there is no worker RNG stream to
 # diverge from the sequential one.
+#
+# doSNOW rather than doParallel because only it honours .options.snow, whose
+# progress callback runs in the *parent*. Ticking a progress bar from inside the
+# loop body updates each worker's private copy, which nobody sees -- issue #178.
 startBackend <- function(ncores) {
   if (is.null(ncores) || is.na(ncores) || ncores < 2) {
     foreach::registerDoSEQ()
@@ -34,8 +38,18 @@ startBackend <- function(ncores) {
   }
 
   cl <- parallel::makeCluster(ncores, outfile = "")
-  doParallel::registerDoParallel(cl)
+  doSNOW::registerDoSNOW(cl)
   cl
+}
+
+# Progress callback for a %dopar% loop, as .options.snow expects it.
+#
+# Empty list when running serially: registerDoSEQ() ignores .options.snow
+# entirely, so the serial path keeps ticking the bar from inside the loop body
+# and the two mechanisms never both run on the same loop.
+progressOption <- function(pb, cl) {
+  if (is.null(cl)) return(list())
+  list(progress = function(n) setTxtProgressBar(pb, n))
 }
 
 # Snapshot a function's arguments so they can be restored after load(), which

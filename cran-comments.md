@@ -80,7 +80,7 @@ None. The package has been off CRAN since 2021.
 
 ## Notes
 
-* `parallel`/`doParallel` respect `_R_CHECK_LIMIT_CORES_`: `default_ncores()` returns 2
+* `parallel`/`doSNOW` respect `_R_CHECK_LIMIT_CORES_`: `default_ncores()` returns 2
   when it is set, so no example, test or vignette uses more than two cores under check.
 * Four test files call `skip_on_cran()` — development guards (a golden-master regression
   baseline, a pipeline smoke test, a signal-recovery test, and a serial/parallel agreement

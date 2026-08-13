@@ -388,15 +388,20 @@ run in the current process and **no loop body changed**. The test suite went fro
 under `R CMD check`, from `[8s/126s]` to `[8s/37s]` — eight seconds of CPU against 126 elapsed
 was worker startup, not computation.
 
-**Safe because neither parallel loop draws random numbers** — parameters are drawn under
-`set.seed()` before the loop — so there is no per-worker stream to diverge. Verified, not
-asserted: `ncores = 1` and `ncores = 2` give bit-identical stimulus parameters, noise basis
-and CIs, pinned by `test-parallel-equivalence.R`, which also documents what would make this
-unsafe.
+**Safe because neither parallel loop draws random numbers**, so there is no per-worker stream
+to diverge. Verified, not asserted: `test-parallel-equivalence.R` pins `ncores = 1` and
+`ncores = 2` to bit-identical output and spells out what would make this unsafe again.
 
-### Parallelism stays on `parallel` + `doParallel`/`foreach`
+### Parallelism stays on `parallel` + `foreach`
 Not `future` or `snowfall`. Issue #66 asked specifically for snowfall as a single-core
 fallback; the outcome it wanted is what `registerDoSEQ()` provides, without a dependency.
+
+The backend is `doSNOW`, which replaced `doParallel` for #178: only it honours
+`.options.snow`, whose `progress` callback runs in the **parent**, so a bar ticked inside a
+`%dopar%` body only ever moves a worker's private copy. `registerDoSEQ()` ignores
+`.options.snow` (measured), so the serial path keeps in-body ticks behind an `is.null(cl)`
+guard. A swap, not an addition — `startBackend()` was `doParallel`'s only use — though `snow`
+is new to the graph, not transitive via `doParallel`, which uses base `parallel`.
 
 ### Memory: issue #12 was solved by deletion, not by chunking
 The issue proposed spreading stimulus matrices over multiple `.RData` files. The actual cause

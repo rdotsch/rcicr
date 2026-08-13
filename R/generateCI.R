@@ -44,7 +44,7 @@
 #' @export
 #' @import png
 #' @import parallel
-#' @import doParallel
+#' @import doSNOW
 #' @import foreach
 #' @importFrom stats aggregate t.test qnorm
 #' @importFrom spatstat.geom as.im
@@ -267,10 +267,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     # For each weighted stimulus, construct the noise pattern
     pid.cis <- foreach::foreach(obs = 1:npids,
                                 .combine = 'c',
-                                .packages = 'rcicr') %dopar% {
+                                .packages = 'rcicr',
+                                .options.snow = progressOption(pb, cl)) %dopar% {
 
-      # Update progress bar
-      setTxtProgressBar(pb, obs)
+      # Serial path only; in parallel .options.snow ticks the bar in the parent.
+      if (is.null(cl)) setTxtProgressBar(pb, obs)
 
       # Select only the observations of the current participant
       pid.rows <- pids == obs
@@ -357,9 +358,10 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 
         # For each weighted stimulus, construct the complementary noise pattern
         noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c',
-                                        .packages = 'rcicr') %dopar% {
+                                        .packages = 'rcicr',
+                                        .options.snow = progressOption(pb, cl)) %dopar% {
           noiseimage <- generateNoiseImage(weightedparameters[obs, ], p)
-          setTxtProgressBar(pb, obs)
+          if (is.null(cl)) setTxtProgressBar(pb, obs)
           return(noiseimage)
         }
         if (!is.null(cl)) {
