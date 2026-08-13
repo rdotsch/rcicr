@@ -388,15 +388,16 @@ to diverge. Verified, not asserted: `test-parallel-equivalence.R` pins `ncores =
 `ncores = 2` to bit-identical output and spells out what would make this unsafe again.
 
 ### Parallelism stays on `parallel` + `foreach`
-Not `future` or `snowfall`. Issue #66 asked specifically for snowfall as a single-core
+Not `future`, `snowfall` or MPI. Issue #66 asked specifically for snowfall as a single-core
 fallback; the outcome it wanted is what `registerDoSEQ()` provides, without a dependency.
+Issue #63 asked for MPI and `doSNOW`; MPI needs the script launched under `mpirun` rather
+than a plain R session, a usability cost no speedup here justifies.
 
-The backend is `doSNOW`, which replaced `doParallel` for #178: only it honours
-`.options.snow`, whose `progress` callback runs in the **parent**, so a bar ticked inside a
-`%dopar%` body only ever moves a worker's private copy. `registerDoSEQ()` ignores
-`.options.snow` (measured), so the serial path keeps in-body ticks behind an `is.null(cl)`
-guard. A swap, not an addition — `startBackend()` was `doParallel`'s only use — though `snow`
-is new to the graph, not transitive via `doParallel`, which uses base `parallel`.
+`doSNOW` replaced `doParallel` for #178: only it honours `.options.snow`, whose `progress`
+callback runs in the **parent**, so a bar ticked inside a `%dopar%` body only moves a worker's
+private copy. `registerDoSEQ()` ignores it (measured), so the serial path keeps in-body ticks
+behind an `is.null(cl)` guard. A swap, not an addition — `doParallel` had no other use —
+though `snow` is new to the graph, not transitive via `doParallel`.
 
 ### Memory: issue #12 was solved by deletion, not by chunking
 The issue proposed spreading stimulus matrices over multiple `.RData` files. The actual cause
