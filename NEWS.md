@@ -108,8 +108,6 @@
   computed over the unmasked pixels only. A fully masked target (every pixel `NA`) still
   returns an all-`NA` curve — there are no complete pairs to correlate.
 
-  Unmasked targets contain no `NA`, so every existing call is bit-identical.
-
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
   you to change the colours, and doing it stopped the call with `formal argument "col"
   matched by multiple actual arguments` before anything was drawn — the function passed its
