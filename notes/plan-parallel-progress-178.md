@@ -24,10 +24,10 @@ Three approaches tested (`scratchpad/spike-progress.R`):
 
 ## The fix
 
-1. **Add `doSNOW` to `Imports` in `DESCRIPTION`.** It provides `registerDoSNOW()`, which
-   accepts `.options.snow = list(progress = fn)` — a callback that fires in the parent
-   process each time a task completes. `snow` (its only dependency) is already a transitive
-   dependency of `doParallel`; both are by Revolution Analytics / Microsoft.
+1. **Swap `doParallel` for `doSNOW` in `Imports` in `DESCRIPTION`.** `doSNOW` provides
+   `registerDoSNOW()`, which accepts `.options.snow = list(progress = fn)` — a callback that
+   fires in the parent process each time a task completes. This is a replacement, not an
+   addition: `startBackend()` is the only runtime use of `doParallel` in the package.
 
 2. **In `startBackend()` (`R/zzz.R`)**, replace `doParallel::registerDoParallel(cl)` with
    `doSNOW::registerDoSNOW(cl)`. They do the same thing — register a `foreach` backend on a
@@ -69,6 +69,23 @@ Three approaches tested (`scratchpad/spike-progress.R`):
    default (parallel) execution is user-visible behaviour. It goes in the bug-fix section,
    not "Reproducibility impact" — no numeric output changes.
 
+8. **Retire `doParallel` completely**, or the branch ships an unused backend and guidance that
+   contradicts the code. `R/zzz.R:37` is its only runtime use (verified by repo-wide grep);
+   every other reference is metadata or prose:
+   - `DESCRIPTION` — drop from `Imports`.
+   - `@import doParallel` in `R/generateCI.R:47` and `R/generateStimuli2IFC.R:12` — remove,
+     then regenerate `NAMESPACE` with `roxygen2::roxygenise()` so `import(doParallel)` goes.
+   - `AGENTS.md:185` — the parallel-backend convention names `doParallel`; future code told to
+     "match this pattern" would re-introduce it. Mind the 2800-word budget.
+   - `DECISIONS.md:397`, "Parallelism stays on `parallel` + `doParallel`/`foreach`" — **edit in
+     place**, do not delete. The decision it records still holds (no `future`, no `snowfall`);
+     only the registration shim changed. Add why: `doParallel` cannot report progress from the
+     parent, which is the whole of #178.
+   - `cran-comments.md:83` — claims `parallel`/`doParallel` respect `_R_CHECK_LIMIT_CORES_`.
+     The mechanism is ours (`default_ncores()` returns 2 when it is set) and is unaffected, but
+     the sentence names the backend and is a claim made **to the reviewer**, so it must match
+     the submitted tarball.
+
 ## What does not change
 
 - Numeric output: `doSNOW` dispatches to the same `parallel::makeCluster()` workers. Neither
@@ -92,7 +109,16 @@ comment at line 244 explaining why it is duplicated has to survive the edit.
 
 ## Dependency cost
 
-`doSNOW` is 36 KB installed, has one dependency (`snow`, already transitively present), is
-actively maintained, and is by the same team as `doParallel` and `foreach`. CRAN has no
-issue with it. Adding it to `Imports` means it is installed automatically; it is not
-optional.
+Measured, because an earlier draft of this plan asserted `snow` was already transitively
+present via `doParallel` and that is **false** — `doParallel` depends on base `parallel`, not
+`snow`. The real trade, installed:
+
+| | |
+|---|---|
+| removed | `doParallel` 217 KB |
+| added | `doSNOW` 31 KB + `snow` 103 KB |
+
+Net **~83 KB smaller**, but it is one genuinely new package name (`snow`), not zero. `snow`
+depends only on base `utils`, so nothing else comes with it. Both are long-standing CRAN
+packages in the `foreach` family. As an `Imports` entry it is installed automatically; it is
+not optional.
