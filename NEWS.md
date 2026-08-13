@@ -92,6 +92,13 @@
   noise on the far more common legacy file. Nothing warns that did not previously produce a
   wrong answer, and no numeric output changes.
 
+## Reproducibility impact
+
+- **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
+  correlations where it previously returned all-`NA`. No existing analysis could have used
+  the old result — it carried no information — but code that checked for `NA` on the returned
+  curve will see a different answer. Unmasked targets are bit-identical.
+
 ## Bug fixes
 
 - **`computeCumulativeCICorrelation()` now returns real correlations when `targetci` was
@@ -102,11 +109,6 @@
   returns an all-`NA` curve — there are no complete pairs to correlate.
 
   Unmasked targets contain no `NA`, so every existing call is bit-identical.
-
-  **Reproducibility impact:** calls passing a partially masked `targetci` now return numeric
-  correlations where they previously returned all-`NA`. No existing analysis could have
-  used the old result — it carried no information — but code that checked for `NA` on the
-  returned curve will see a different answer.
 
 - **`plotZmap(col = ...)` works.** Supplying a palette is how `?plotZmap` has always told
   you to change the colours, and doing it stopped the call with `formal argument "col"
