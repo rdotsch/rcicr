@@ -9,7 +9,7 @@
 #' @import jpeg
 #' @import png
 #' @import foreach
-#' @import doParallel
+#' @import doSNOW
 #' @importFrom stats setNames runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param base_face_files Named list of base face file names used as base images for stimuli, e.g. \code{list(aName = 'baseface.jpg')}. Accepts JPEG and PNG images, recognised by a \code{.png}, \code{.jpg} or \code{.jpeg} extension. Each name labels that base image's stimulus files and indexes the .Rdata file that \code{\link{generateCI}} reads back, so every element must be named, and named uniquely. Each image must be square and exactly \code{img_size} by \code{img_size} pixels: rcicr does not resize base images. All of this is checked before any stimuli are generated, and the message names the offending entry.
@@ -189,7 +189,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   }
 
   stims <- foreach::foreach(
-    trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE) %dopar% {
+    trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE,
+    .options.snow = progressOption(pb, cl)) %dopar% {
     # Each iteration only ever needs the noise for its own trial, so this is a
     # plain matrix. It used to write into a preallocated
     # zeros(img_size, img_size, n_trials) array declared before the cluster was
@@ -241,13 +242,20 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
         # rather than hoisted above the loop deliberately: `trial_noise` is
         # reassigned per base face when use_same_parameters is FALSE, so moving
         # this return would change *which* base face's noise is returned.
-        setTxtProgressBar(pb, trial)
+        if (is.null(cl)) setTxtProgressBar(pb, trial)
         return(as.vector(trial_noise))
       }
     }
 
-    # Update progress bar
-    setTxtProgressBar(pb, trial)
+    # Serial path only; in parallel the bar is driven from the parent by
+    # .options.snow, because this assignment would land in a worker's copy.
+    if (is.null(cl)) setTxtProgressBar(pb, trial)
+
+    # The body's value feeds .combine/.final even when it is discarded (it is,
+    # unless return_as_dataframe). Return it explicitly: the guard above is
+    # NULL-valued when parallel, and cbind()ing NULLs collapses the frame that
+    # .final then tries to setNames() to n_trials columns.
+    trial
   }
   if (!is.null(cl)) {
     parallel::stopCluster(cl)

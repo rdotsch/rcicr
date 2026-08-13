@@ -3,15 +3,10 @@
 Why `rcicr` behaves as it does: the measurement that ruled an option out, the alternative that
 looked obvious and was wrong, the thing that looks like a bug and is not.
 
-**This file is about the package, not about the repository.** Its subject is what
-`generateCI()` returns and why a number cannot change — not how CI is wired, how a release is
-cut, or which documents exist. Those are `MAINTENANCE.md`, `RELEASING.md` and `SECURITY.md`;
-`CONTRIBUTING.md` holds the conventions and `NEWS.md` what changed for users. A decision that
-would still matter if this package were maintained somewhere else entirely belongs here.
-
-**Add an entry when a decision was not obvious**: a plausible alternative rejected, something
-surprising measured, something deliberately not fixed. Entries are grouped by theme, not by
-date, and are edited in place when they stop being true.
+**This file is about the package, not about the repository** — a decision that would still
+matter if `rcicr` were maintained somewhere else entirely. What that excludes, when an entry
+is worth adding, and where the other material goes are in `AGENTS.md` → "Which file a thing
+goes in"; entries here are grouped by theme and edited in place.
 
 **Keep this file under 5200 words.** It is read to answer "why is this like this", and a file
 long enough to skim is one whose answer is never found. Over budget, something comes out before
@@ -388,15 +383,21 @@ run in the current process and **no loop body changed**. The test suite went fro
 under `R CMD check`, from `[8s/126s]` to `[8s/37s]` — eight seconds of CPU against 126 elapsed
 was worker startup, not computation.
 
-**Safe because neither parallel loop draws random numbers** — parameters are drawn under
-`set.seed()` before the loop — so there is no per-worker stream to diverge. Verified, not
-asserted: `ncores = 1` and `ncores = 2` give bit-identical stimulus parameters, noise basis
-and CIs, pinned by `test-parallel-equivalence.R`, which also documents what would make this
-unsafe.
+**Safe because neither parallel loop draws random numbers**, so there is no per-worker stream
+to diverge. Verified, not asserted: `test-parallel-equivalence.R` pins `ncores = 1` and
+`ncores = 2` to bit-identical output and spells out what would make this unsafe again.
 
-### Parallelism stays on `parallel` + `doParallel`/`foreach`
-Not `future` or `snowfall`. Issue #66 asked specifically for snowfall as a single-core
+### Parallelism stays on `parallel` + `foreach`
+Not `future`, `snowfall` or MPI. Issue #66 asked specifically for snowfall as a single-core
 fallback; the outcome it wanted is what `registerDoSEQ()` provides, without a dependency.
+Issue #63 asked for MPI and `doSNOW`; MPI needs the script launched under `mpirun` rather
+than a plain R session, a usability cost no speedup here justifies.
+
+`doSNOW` replaced `doParallel` for #178: only it honours `.options.snow`, whose `progress`
+callback runs in the **parent**, so a bar ticked inside a `%dopar%` body only moves a worker's
+private copy. `registerDoSEQ()` ignores it (measured), so the serial path keeps in-body ticks
+behind an `is.null(cl)` guard. A swap, not an addition — `doParallel` had no other use —
+though `snow` is new to the graph, not transitive via `doParallel`.
 
 ### Memory: issue #12 was solved by deletion, not by chunking
 The issue proposed spreading stimulus matrices over multiple `.RData` files. The actual cause
