@@ -191,7 +191,6 @@ objects (sizes shown for a 3-trial, 32px, `nscales = 2` example):
 | `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
 | `label`, `stimulus_path` | What the files were called and where they were written. |
 | `generator_version` | The rcicr version that wrote the file — see the caveat below. |
-| `trial` | A leftover loop counter, equal to `n_trials`. Carries no information; ignore it. |
 
 [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
 and
