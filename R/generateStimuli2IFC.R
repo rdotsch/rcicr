@@ -182,7 +182,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   pb <- txtProgressBar(min = 1, max = n_trials, style = 3)
 
   # NULL when ncores == 1: the loop below then runs in this process instead of
-  # in a one-worker cluster. See startBackend() in zzz.R.
+  # in a one-worker cluster. See startBackend() in parallel.R.
   cl <- startBackend(ncores)
   if (!is.null(cl)) {
     on.exit(stopClusterSafely(cl), add = TRUE)

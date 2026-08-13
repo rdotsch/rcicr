@@ -378,7 +378,7 @@ which is why a 1.11e-16 difference in the CI is a pass rather than an argument.
 ## Performance and parallelism
 
 ### `ncores == 1` runs in-process instead of building a one-worker cluster
-`startBackend()` in `zzz.R` registers `doSEQ` when `ncores < 2`, so the same `%dopar%` loops
+`startBackend()` in `parallel.R` registers `doSEQ` when `ncores < 2`, so the same `%dopar%` loops
 run in the current process and **no loop body changed**. The test suite went from 140s to 4s;
 under `R CMD check`, from `[8s/126s]` to `[8s/37s]` — eight seconds of CPU against 126 elapsed
 was worker startup, not computation.
