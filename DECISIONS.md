@@ -3,15 +3,10 @@
 Why `rcicr` behaves as it does: the measurement that ruled an option out, the alternative that
 looked obvious and was wrong, the thing that looks like a bug and is not.
 
-**This file is about the package, not about the repository.** Its subject is what
-`generateCI()` returns and why a number cannot change — not how CI is wired, how a release is
-cut, or which documents exist. Those are `MAINTENANCE.md`, `RELEASING.md` and `SECURITY.md`;
-`CONTRIBUTING.md` holds the conventions and `NEWS.md` what changed for users. A decision that
-would still matter if this package were maintained somewhere else entirely belongs here.
-
-**Add an entry when a decision was not obvious**: a plausible alternative rejected, something
-surprising measured, something deliberately not fixed. Entries are grouped by theme, not by
-date, and are edited in place when they stop being true.
+**This file is about the package, not about the repository** — a decision that would still
+matter if `rcicr` were maintained somewhere else entirely. What that excludes, when an entry
+is worth adding, and where the other material goes are in `AGENTS.md` → "Which file a thing
+goes in"; entries here are grouped by theme and edited in place.
 
 **Keep this file under 5200 words.** It is read to answer "why is this like this", and a file
 long enough to skim is one whose answer is never found. Over budget, something comes out before
