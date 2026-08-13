@@ -194,7 +194,6 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     stop('File specified in rdata did not contain img_size variable.', rdataWriterNote(environment()))
   }
 
-
   # Convert s to p (if rdata file originates from pre-0.3.3)
   if (exists('s', envir=environment(), inherits=FALSE)) {
     p <- list(patches=s$sinusoids, patchIdx=s$sinIdx, noise_type='sinusoid')
@@ -411,21 +410,6 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 }
 
 # Functions ---------------------------------------------------------------
-
-# Stop a parallel cluster if it is still running.
-# Intended for on.exit(), so that workers are released even when an error
-# interrupts a foreach loop. Without that, the socket connections leak and R
-# reports "closing unused connections" warnings later (issue #50).
-# Callers set their cluster variable to NULL after a normal stopCluster(), which
-# turns the registered on.exit() call into a no-op.
-# Input: cluster object, or NULL
-# Output: nothing
-stopClusterSafely <- function(cl) {
-  if (!is.null(cl)) {
-    try(parallel::stopCluster(cl), silent = TRUE)
-  }
-  invisible(NULL)
-}
 
 # Apply masking to a CI
 # Has the user actually supplied a mask?
