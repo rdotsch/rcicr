@@ -85,14 +85,12 @@ against a constant is undefined, so **every** point on the curve is `NA`
 rather than the last one being 1. Such a curve means the responses carry
 no net signal, not that the call failed.
 
-An all-`NA` curve has one other cause, and it is not that: a `targetci`
-carrying masked pixels.
+A `targetci` carrying masked pixels –
 [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-stores `NA` in every pixel a `mask` excludes, and the correlations here
-are taken over all pixels, so a single masked pixel makes every point
-`NA` however strong the signal – masking a 4x4 corner of a 32x32 CI is
-enough. Until that is addressed, correlate against an unmasked
-`targetci`.
+stores `NA` in every pixel a `mask` excludes – is handled by correlating
+over the unmasked pixels only. If the mask covers *every* pixel, there
+are no complete pairs and the curve is all-`NA`, same as the
+zero-variance case above.
 
 Where every stimulus was presented the same number of times, that final
 CI is identical to the one `generateCI` returns. Where repeat counts
