@@ -68,28 +68,47 @@ Nothing about the moves. The risk is **collision with in-flight work**:
 
 Because "no behaviour change" is the entire claim, the check is that nothing observable moved:
 
-1. **Every removed line reappears verbatim, and nothing else is added.** `-M` cannot help here:
-   it detects file *renames*, and both source files stay, so a split shows up as two
-   modifications plus two additions and says nothing about the bodies. Compare the line
-   multisets instead, ignoring blank lines (boundary blank-line churn is expected and harmless):
+1. **Each helper is byte-identical before and after, compared in order.** Two approaches were
+   tried and discarded first, both of which would have reported success regardless of what the
+   edit did:
+
+   - `git diff -M` detects file *renames*. Both source files stay, so a split shows as two
+     modifications plus two additions and says nothing about the bodies.
+   - A whole-patch line-multiset comparison fails on this very branch — `git add -A` also
+     stages the plan's own deletion and the two pointer rewrites, whose lines have no
+     counterpart, so it reports a difference on a *correct* move. And sorting discards order:
+     swapping `makeCluster()` and `registerDoSNOW()` inside `startBackend()` — which would
+     register a backend on a cluster that does not exist yet — passes it. Verified, not
+     supposed.
+
+   So compare per function, in order, scoped to the helper itself. Extract the definition
+   with the comment block directly above it:
 
    ```sh
-   git add -A
-   diff <(git diff --cached -U0 | grep '^-' | grep -v '^---' | sed 's/^-//' \
-            | grep -v '^[[:space:]]*$' | sort) \
-        <(git diff --cached -U0 | grep '^+' | grep -v '^+++' | sed 's/^+//' \
-            | grep -v '^[[:space:]]*$' | sort)
+   extract() {  # extract <fname> < file.R
+     awk -v fn="$1" '{ line[NR] = $0 }
+       $0 ~ "^"fn" <- function" { start = NR }
+       END { first = start; while (first > 1 && line[first-1] ~ /^#/) first--
+             last = start; while (last < NR && line[last] !~ /^\}/) last++
+             for (i = first; i <= last; i++) print line[i] }'
+   }
+   base=$(git merge-base main HEAD)
+   diff <(git show $base:R/zzz.R | extract startBackend) \
+        <(extract startBackend < R/parallel.R)
    ```
 
-   Empty output is the invariant: no line was rewritten, dropped or invented. Tested on a
-   scratch repo both ways — silent on a pure move with blank-line churn, and it catches a
-   single reworded comment. `git diff --color-moved=dimmed-zebra` is the readable companion,
-   not the check.
-2. Full suite passes with **no test edited**. Any test needing a change would mean this was not
+   Empty for all six is the invariant. Being scoped to the function, it is unaffected by the
+   plan deletion and the pointer rewrites; being a plain `diff`, it catches a reorder. Both
+   properties were checked against the real `startBackend()` before this was written down.
+
+2. **Each helper exists exactly once in `R/` afterwards** — `grep -rc '^<fn> <- function' R/`
+   summing to 1 per function. That is what a copy-instead-of-move, or a botched deletion,
+   would break, and the per-function diff above cannot see it.
+3. Full suite passes with **no test edited**. Any test needing a change would mean this was not
    a pure move.
-3. `R CMD check` clean — in particular no new "no visible binding" NOTE, which is what a
+4. `R CMD check` clean — in particular no new "no visible binding" NOTE, which is what a
    helper left behind or duplicated would produce.
-4. `NAMESPACE` byte-identical after `roxygen2::roxygenise()`.
+5. `NAMESPACE` byte-identical after `roxygen2::roxygenise()`.
 
 No `NEWS.md` entry: nothing user-visible changed, and `NEWS.md` is for what changed for users.
 
