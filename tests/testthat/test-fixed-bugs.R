@@ -379,3 +379,61 @@ test_that("the 'no parameters' error names the base image label, not the matrix"
   # below a 32px matrix, so this cannot pass vacuously.
   expect_lt(nchar(conditionMessage(err)), 200)
 })
+
+test_that("generateCI() runs in parallel when targetpath is legitimately absent", {
+  # foreach::getexports() scans the %dopar% body for free variables and get()s
+  # each one, including the targetpath in the save_individual_cis branch. With
+  # nothing being written that argument is absent and required, so the get()
+  # aborted the call -- on the default core count, for anyone using
+  # `participants` (#235). The branch it comes from never runs.
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir, img_size = 32, n_trials = 6)
+  responses <- rep(c(1, -1), 3)
+  pids <- c(1, 1, 2, 2, 3, 3)
+
+  # Serial has always worked: registerDoSEQ() exports nothing. Pinned so the
+  # fix cannot break the path that was fine.
+  expect_no_error(
+    generateCI(1:6, responses, "base", rdata, save_as_png = FALSE,
+               participants = pids, n_cores = 1)
+  )
+
+  skip_on_cran()
+
+  expect_no_error(
+    generateCI(1:6, responses, "base", rdata, save_as_png = FALSE,
+               participants = pids, n_cores = 2)
+  )
+
+  # The case a .noexport = "targetpath" fix would have broken: with the branch
+  # live, the workers do need the value. This passed before #235 was fixed and
+  # must keep passing.
+  target <- file.path(dir, "individual")
+  expect_no_error(
+    generateCI(1:6, responses, "base", rdata, save_as_png = FALSE,
+               save_individual_cis = TRUE, targetpath = target,
+               participants = pids, n_cores = 2)
+  )
+  expect_gt(length(list.files(file.path(target, "individual_cis"))), 0)
+})
+
+test_that("batchGenerateCI() still forwards a missing targetpath", {
+  # batchGenerateCI() passes `targetpath=targetpath` even when its own is
+  # absent, which is the forwarded-missing-promise case captureArgs() exists
+  # for. Binding targetpath inside generateCI() (#235) happens downstream of
+  # that forwarding, and this pins that it stays downstream.
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir, img_size = 32, n_trials = 6)
+  data <- data.frame(stim = 1:6, resp = rep(c(1, -1), 3), grp = rep(c("a", "b"), each = 3))
+
+  expect_no_error(
+    suppressWarnings(
+      batchGenerateCI(data, by = "grp", stimuli = "stim", responses = "resp",
+                      baseimage = "base", rdata = rdata, save_as_png = FALSE)
+    )
+  )
+})

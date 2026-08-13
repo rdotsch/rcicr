@@ -50,14 +50,9 @@ test_that("generateCI reports progress from both of its parallel loops", {
 
   # The participant-CI loop and the z-map loop are separate foreach calls with
   # separate bars; only `participants` reaches the first one.
-  #
-  # targetpath is passed although nothing is written: foreach::getexports()
-  # scans the loop body for free variables and get()s each one, so the
-  # targetpath reference inside the `save_individual_cis` branch aborts the
-  # parallel run even though the branch is dead. Unrelated to progress.
   participant_ci <- function(n_cores) {
     progress_pcts(generateCI(
-      1:6, responses, "base", rdata, save_as_png = FALSE, targetpath = tmp,
+      1:6, responses, "base", rdata, save_as_png = FALSE,
       participants = c(1, 1, 2, 2, 3, 3), n_cores = n_cores
     ))
   }

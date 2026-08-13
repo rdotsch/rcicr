@@ -132,6 +132,18 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
                 'out.'))
   }
 
+  # Bind targetpath even when it was not supplied. foreach::getexports() scans
+  # the %dopar% body for free variables and get()s each one, including the
+  # targetpath inside the save_individual_cis branch below - a branch that
+  # cannot run when targetpath is absent. Leaving it unbound aborted every
+  # participant-CI call with n_cores > 1, which is the default (#235).
+  #
+  # Must stay below the missing() checks above, which stop being reliable for an
+  # argument once it has been assigned to, and above captureArgs(), which skips
+  # required-and-absent arguments and so would otherwise leave this one exposed
+  # to the load() below.
+  targetpath <- if (missing(targetpath)) NULL else targetpath
+
   # Coerce stimuli/responses to plain vectors. Data read with readr or
   # manipulated with dplyr comes back as a tibble, where tbl[, "col"] stays a
   # one-column tibble rather than dropping to a vector the way df[, "col"]
