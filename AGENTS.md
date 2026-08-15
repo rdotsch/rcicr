@@ -33,7 +33,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 
 ## Testing and CI
 
-**The workflow inventory, the six required check names, and the two rules for editing them
+**The workflow inventory, the required check names, and the two rules for editing them
 (never rename a job, never convert the gate to a `paths:` filter) are in `MAINTENANCE.md`.** Read
 it before touching `.github/workflows/`.
 
