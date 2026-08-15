@@ -17,12 +17,17 @@ file is the machinery around them.
 | `test-coverage.yaml` | Codecov; needs a `CODECOV_TOKEN`. `codecov.yml` sets lenient thresholds because coverage is deliberately partial. |
 | `pkgdown.yaml` | builds the site on every PR, deploys on push to `main`. |
 | `rhub.yaml` | stock R-hub v2, `workflow_dispatch` only. |
+| `lint.yaml` | `lintr::lint_package()`, gated by `.lintr`'s `exclusions:` baseline so only a *new* lint fails it. Not yet a required check (below); `lintr` is pinned in the workflow, and `tools/regenerate-lintr-baseline.R` regenerates the baseline. |
 
 **Five required status checks on `main`**: `compare`, `ubuntu-latest (release)`,
 `ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)`. They are enforced
 by a **ruleset**, not classic branch protection, so `gh api repos/rdotsch/rcicr/branches/main`
 reports no required contexts and looks unconfigured — query
-`gh api repos/rdotsch/rcicr/rules/branches/main` instead.
+`gh api repos/rdotsch/rcicr/rules/branches/main` instead. `lint` is deliberately not among them:
+adding a check *name* to the ruleset is a repo-settings write agents here cannot make, so it
+needs the maintainer, once by hand, via GitHub → Settings → Rules → Rulesets — a UI edit rather
+than a hand-built API payload, since a malformed `PUT` risks dropping unrelated ruleset fields.
+Until then `lint` reports on PRs but does not block one.
 
 Two consequences worth knowing before editing a workflow. **Required checks are matched by
 name**, so rows can be added to a matrix freely but never renamed — a renamed check reads as
@@ -32,8 +37,10 @@ every docs-only PR unmergeable. Instead the job always runs and exits early on a
 inert paths, which is in the workflow; anything unrecognised runs the gate.
 
 `.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only.
-`styler` and `lintr` were deliberately left out: they would reformat nearly every file in one
-sweep and destroy `git blame`.
+`styler` is deliberately left out: it would reformat nearly every file in one sweep and destroy
+`git blame`. `lintr` runs as `lint.yaml` instead of a pre-commit hook — `object_usage_linter`
+needs the package *installed*, not just parsed, which the language-agnostic hooks here never
+need and a pre-commit.ci hook would have to carry on every commit.
 
 ---
 

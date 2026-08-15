@@ -1,0 +1,43 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+name: lint
+
+permissions: read-all
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      LINTR_ERROR_ON_LINT: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          # lintr is pinned: an unpinned `any::lintr` can install a newer
+          # version with different default-linter behaviour on a day
+          # nothing in this repo changed, failing this check on an upstream
+          # release rather than a real new lint -- this environment cannot
+          # rerun a failed required check (AGENTS.md), so that failure mode
+          # is worse here than usual. Bumping the pin always pairs with
+          # rerunning tools/regenerate-lintr-baseline.R.
+          #
+          # local::. installs the package itself, not just its
+          # dependencies -- object_usage_linter needs it installed
+          # (?lintr::executing_linters), not merely parsed.
+          extra-packages: any::lintr@3.4.0, local::.
+          needs: check
+
+      - name: lint
+        run: lintr::lint_package()
+        shell: Rscript {0}
