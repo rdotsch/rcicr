@@ -443,7 +443,7 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
       n <- dim(mask_matrix)[3]
       n_color <- if (n %in% c(2, 4)) n - 1L else n
       if (n_color > 1 && !all(sapply(2:n_color, function(i) {
-        identical(mask_matrix[,,i], mask_matrix[,,1])
+        identical(mask_matrix[, , i], mask_matrix[, , 1])
       }))) {
         # Only error if the colour channels genuinely differ. This stop() used
         # to run unconditionally, so even a convertible greyscale-as-RGB PNG
@@ -452,7 +452,7 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
                     'could not be converted to this encoding either. In other ',
                     'words, this is not a greyscale image.'))
       }
-      mask_matrix <- mask_matrix[,,1]
+      mask_matrix <- mask_matrix[, , 1]
     }
   } else if (is.matrix(mask) && length(dim(mask)) == 2) {
     mask_matrix <- mask

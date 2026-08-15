@@ -37,24 +37,21 @@ exclusions: list(
     "R/computeCumulativeCICorrelation.R" = list(
       commas_linter = c(158, 161),
       infix_spaces_linter = c(74, 99, 103, 107, 112, 113, 121),
-      spaces_inside_linter = c(99),
-      vector_logic_linter = c(99)
+      spaces_inside_linter = c(99)
     ),
     "R/computeInfoVal2IFC.R" = list(
       commas_linter = c(236),
       indentation_linter = c(125, 194),
       infix_spaces_linter = c(105, 133, 146, 167, 177, 183, 194),
       pipe_consistency_linter = c(132, 135, 145, 148, 150, 166),
-      spaces_inside_linter = c(234, 236),
-      vector_logic_linter = c(105, 183)
+      spaces_inside_linter = c(234, 236)
     ),
     "R/generateCI.R" = list(
-      commas_linter = c(223, 291, 439, 440, 441),
-      indentation_linter = c(181, 261, 489, 498, 501, 502, 514),
-      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 491, 513),
+      commas_linter = c(223, 291),
+      indentation_linter = c(181, 261, 499, 508, 511, 512, 524),
+      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 501, 523),
       object_name_linter = c(279, 288, 314),
-      spaces_left_parentheses_linter = c(338, 340, 351),
-      vector_logic_linter = c(180, 492)
+      spaces_left_parentheses_linter = c(338, 340, 351)
     ),
     "R/generateCI2IFC.R" = list(
       indentation_linter = c(75),
@@ -72,8 +69,7 @@ exclusions: list(
       spaces_left_parentheses_linter = c(19)
     ),
     "R/generateNoiseImage.R" = list(
-      infix_spaces_linter = c(21, 27),
-      vector_logic_linter = c(27)
+      infix_spaces_linter = c(21)
     ),
     "R/generateNoisePattern.R" = list(
       assignment_linter = c(21, 24, 27, 28, 59, 62, 68),
@@ -98,11 +94,8 @@ exclusions: list(
       spaces_left_parentheses_linter = c(153)
     ),
     "R/plotZmap.R" = list(
-      commas_linter = c(140, 147),
-      indentation_linter = c(219),
-      infix_spaces_linter = c(140),
-      seq_linter = c(16),
-      vector_logic_linter = c(132, 134)
+      indentation_linter = c(167),
+      seq_linter = c(16)
     ),
     "R/simulateNoiseIntensities.R" = list(
       commas_linter = c(33),
@@ -133,7 +126,7 @@ exclusions: list(
       object_usage_linter = c(20, 21)
     ),
     "tests/testthat/test-plotZmap.R" = list(
-      commented_code_linter = c(267)
+      commented_code_linter = c(279)
     ),
     "tests/testthat/test-rdata-writer-note.R" = list(
       object_usage_linter = c(18)
@@ -152,3 +145,4 @@ exclusions: list(
       seq_linter = c(54)
     )
   )
+
