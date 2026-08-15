@@ -31,27 +31,26 @@ mkdir -p "$R_LIBS_USER"
 # cannot build them without it.
 Rscript -e '
 lib <- Sys.getenv("R_LIBS_USER")
+repos <- "https://cloud.r-project.org"
 
-# Read Imports/Suggests from DESCRIPTION itself rather than hard-coding them
-# here -- a hard-coded copy drifts the moment a dependency is added, and
-# CONTRIBUTING.md already tells contributors to rerun this script after a
-# `git pull` that changes one, which only helps if it actually notices.
-desc_field <- function(field) {
-  raw <- read.dcf("DESCRIPTION", field)[1, field]
-  if (is.na(raw)) return(character(0))
-  pkgs <- trimws(strsplit(raw, ",")[[1]])
-  sub("\\s*\\(.*\\)$", "", pkgs)
+# Bootstrap remotes itself -- both install_deps() and the roxygen2 pin below
+# need it.
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes", repos = repos, lib = lib)
 }
-pkgs <- c(
-  desc_field("Imports"),
-  desc_field("Suggests"),
-  # dev tooling -- not a package dependency, but needed to work in this repo:
-  # lintr/pkgload for #183, devtools/remotes for the CONTRIBUTING.md
-  # "Getting set up" workflow
-  "lintr", "pkgload", "devtools", "remotes"
-)
-missing <- setdiff(pkgs, rownames(installed.packages()))
-if (length(missing)) install.packages(missing, repos = "https://cloud.r-project.org", lib = lib)
+
+# install_deps(dependencies = TRUE) reads Imports/Suggests straight from
+# DESCRIPTION -- version constraints, a Remotes: field, all of it -- so
+# nothing here needs to duplicate that list by hand and it cannot drift from
+# what R CMD INSTALL below actually requires.
+remotes::install_deps(".", dependencies = TRUE, repos = repos, upgrade = "never")
+
+# dev tooling -- not a package dependency, but needed to work in this repo:
+# lintr/pkgload for #183, devtools for the CONTRIBUTING.md "Getting set up"
+# workflow
+extra <- c("lintr", "pkgload", "devtools")
+missing_extra <- setdiff(extra, rownames(installed.packages()))
+if (length(missing_extra)) install.packages(missing_extra, repos = repos, lib = lib)
 
 # roxygen2 unpinned would drift from DESCRIPTION'"'"'s RoxygenNote, and a
 # locally-generated man/NAMESPACE diff from that drift is not a real
@@ -59,14 +58,19 @@ if (length(missing)) install.packages(missing, repos = "https://cloud.r-project.
 want <- read.dcf("DESCRIPTION", "RoxygenNote")[[1]]
 have <- tryCatch(as.character(packageVersion("roxygen2")), error = function(e) NA_character_)
 if (!identical(have, want)) {
-  remotes::install_version("roxygen2", version = want, repos = "https://cloud.r-project.org", lib = lib)
+  remotes::install_version("roxygen2", version = want, repos = repos, lib = lib)
 }
 
 # install.packages() only warns on a failed build, so a script that stops
 # only on a nonzero exit status can silently finish "successfully" missing a
 # tool -- confirmed: devtools previously failed here (missing system libs,
-# now added above) and this step did not catch it. Verify explicitly.
-still_missing <- setdiff(c(pkgs, "roxygen2"), rownames(installed.packages()))
+# now added above) and this step did not catch it. Verify explicitly, using
+# dev_package_deps() again rather than a second hard-coded list.
+deps <- as.data.frame(remotes::dev_package_deps(".", dependencies = TRUE))
+still_missing <- c(
+  deps$package[is.na(deps$installed)],
+  setdiff(c(extra, "roxygen2"), rownames(installed.packages()))
+)
 if (length(still_missing)) {
   stop("Failed to install: ", paste(still_missing, collapse = ", "))
 }
