@@ -62,29 +62,60 @@ highest-priority item on the resulting to-fix list.
    This is how a future intentionally-accepted lint gets added to the
    baseline, and how the baseline shrinks as items get fixed — rerun it and
    diff, don't hand-edit the block.
-3. **A step in `R-CMD-check.yaml`'s `ubuntu-latest (release)` job**, not a new
-   workflow — Codex caught that the original plan here (a standalone
-   `lint.yaml`) does not actually enforce "no new lints": a non-required
-   check can be red and merged past anyway, same as any other optional
-   check. This is exactly the constraint `MAINTENANCE.md` already documents
-   for the stale-`man/` gate: adding a new check *name* to the
-   required-checks ruleset is a repo-settings write this environment cannot
-   make, so a new job would report without ever blocking, while a step
-   inside the already-required job inherits its gate for free. Added via
-   `extra-packages: any::lintr` on the existing `setup-r-dependencies` step,
-   then `Rscript -e 'lintr::lint_package()'` with `LINTR_ERROR_ON_LINT: true`
-   as a new step, `if: matrix.config.os == 'ubuntu-latest' && matrix.config.r
-   == 'release'`, placed after the existing stale-`man/`/`CITATION.cff` steps
-   for the same reason they are last: a failure there cannot cost us the
-   check results.
+3. **`.github/workflows/lint.yaml`** — one `ubuntu-latest` job, `r-lib/actions`
+   pattern matching `R-CMD-check.yaml` (checkout, `setup-r`,
+   `setup-r-dependencies` with `extra-packages: any::lintr` and
+   `needs: check`), then `Rscript -e 'lintr::lint_package()'` with
+   `LINTR_ERROR_ON_LINT: true`.
+
+   Codex's first review on this plan caught that a standalone workflow does
+   not enforce "no new lints" by itself: a non-required check can be red and
+   merged past anyway. That is the same constraint `MAINTENANCE.md` already
+   documents for the stale-`man/` gate — but there the fix was folding the
+   check into an existing required job because adding a check *name* to the
+   ruleset is a repo-settings write **this environment** cannot make. It is
+   not a write the maintainer is blocked from: `rdotsch` reviewed both
+   options and chose the standalone workflow for the clean separate
+   pass/fail, accepting one manual step in exchange.
+
+   **Maintainer action required after this PR merges** — the check reports
+   but does not block until this runs. Verified against the live ruleset
+   (`gh api repos/rdotsch/rcicr/rulesets/19791793`, rule type
+   `required_status_checks`, currently 5 contexts: `compare`,
+   `ubuntu-latest (devel)`, `ubuntu-latest (release)`,
+   `macos-latest (release)`, `windows-latest (release)`) — this is a
+   repo-settings write, so a PR cannot do it and this environment's
+   credentials cannot either; only `rdotsch` can. Safest as a UI edit rather
+   than a hand-built API payload, since a malformed `PUT` to a ruleset risks
+   dropping fields (bypass actors, enforcement) that a partial edit did not
+   intend to touch: GitHub → this repo → Settings → Rules → Rulesets →
+   "Protect main" → add `lint` to the required status checks, once the `lint`
+   job has reported at least once (GitHub only offers check names it has
+   seen). `MAINTENANCE.md`'s "Five required status checks" becomes six; the
+   PR description says so explicitly so it is not merged and forgotten.
 4. **`.Rbuildignore`**: add `^\.lintr$` (dotfile at top level, not part of the
    built package — same reasoning as the other repo-root config files already
    listed).
-5. **`MAINTENANCE.md`**: extends the existing "stale-`man/` gate" subsection
-   — same job, same reason a new job cannot enforce anything — rather than
-   adding a new row to the workflow table. Current count is 1546/1800 words
-   — tight, so this stays short and the detail above lives in the PR
-   description instead.
+4b. **No `.pre-commit-config.yaml` change.** Considered: the `exclusions:`
+   baseline means a pre-commit `lintr` hook would only ever flag *new* lints
+   too, which weakens half of `.pre-commit-config.yaml`'s existing "would
+   reformat nearly every file... destroy `git blame`" reasoning — but that
+   reasoning was really about `styler` (which rewrites files); `lintr` never
+   writes anything. The half that still holds: `object_usage_linter` needs
+   the package *installed*, not just parsed, so a pre-commit.ci hook would
+   need the full compiled toolchain (the same one #240's `tools/dev-setup.sh`
+   exists to rebuild) available on every commit in the hosted runner — a materially
+   heavier hook than the current language-agnostic ones, and its own piece
+   of infrastructure rather than a rider on #183. `rdotsch` confirmed: PR
+   check only. Local/editor linting remains available on demand
+   (`Rscript -e 'lintr::lint_package()'`, or lintr's own editor integration).
+5. **`MAINTENANCE.md`**: a row in the workflow table for `lint.yaml`, and a
+   note next to "Five required status checks" that `lint` is not among them
+   yet — pending the maintainer's manual ruleset edit above — so the count
+   does not go stale the moment this merges and stays wrong until someone
+   notices. Update it to six only once the ruleset actually says six.
+   Current count is 1546/1800 words — tight, so this stays short and the
+   detail above lives in the PR description instead.
 
 No changes to `R/`, `NEWS.md`, or the `.Rdata` contract — this is tooling
 only, matching the issue's "zero-line diff to `R/`" framing.
