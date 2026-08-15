@@ -216,6 +216,87 @@ test_that("applyMask rejects a PNG whose colour channels genuinely differ", {
   )
 })
 
+test_that("applyMask ignores the alpha channel of a 2-channel PNG", {
+  # png::readPNG() decodes an 8-bit greyscale-plus-alpha PNG to a 2-channel
+  # array. This used to crash applyMask() unconditionally (subscript out of
+  # bounds indexing channel 3), even though plotZmap()'s own inline mask code
+  # already accepted the identical-planes case. Alpha is never colour
+  # information and must be ignored regardless of whether it is uniform.
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  identical_alpha <- array(0, dim = c(8, 8, 2))
+  identical_alpha[, , 2] <- 1
+  path_identical <- file.path(dir, "ga_identical.png")
+  png::writePNG(identical_alpha, path_identical)
+  expect_no_error(
+    rcicr:::applyMask(matrix(1, 8, 8), mask = path_identical, img_size = 8)
+  )
+
+  differing_alpha <- array(0, dim = c(8, 8, 2))
+  differing_alpha[1, 1, 1] <- 1
+  differing_alpha[, , 2] <- 0.5
+  path_differing <- file.path(dir, "ga_differing.png")
+  png::writePNG(differing_alpha, path_differing)
+  expect_no_error(
+    rcicr:::applyMask(matrix(1, 8, 8), mask = path_differing, img_size = 8)
+  )
+})
+
+test_that("applyMask ignores a differing alpha channel of a 4-channel PNG", {
+  # An RGBA mask with a genuine RGB pattern and a constant (fully opaque)
+  # alpha plane already succeeded through applyMask() before this change --
+  # confirmed on unmodified main. This pins that it still does: alpha is
+  # dropped before the colour-channel comparison, whether or not it matches
+  # the other channels.
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  rgba <- array(0, dim = c(8, 8, 4))
+  rgba[1:4, , 1:3] <- 1
+  rgba[, , 4] <- 1
+  path <- file.path(dir, "rgba.png")
+  png::writePNG(rgba, path)
+
+  expect_no_error(
+    rcicr:::applyMask(matrix(1, 8, 8), mask = path, img_size = 8)
+  )
+})
+
+test_that("applyMask still rejects a 4-channel PNG whose RGB planes differ", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  rgba <- array(0, dim = c(8, 8, 4))
+  rgba[, , 1] <- 1
+  rgba[, , 4] <- 1
+  path <- file.path(dir, "rgba_rgb_differs.png")
+  png::writePNG(rgba, path)
+
+  expect_error(
+    rcicr:::applyMask(matrix(1, 8, 8), mask = path, img_size = 8),
+    "not a greyscale image"
+  )
+})
+
+test_that("applyMask accepts a rectangular img_size and reports both dims", {
+  # plotZmap() is not restricted to square zmaps and passes
+  # img_size = c(nrow(zmap), ncol(zmap)); applyMask()'s dim() == img_size
+  # comparison already handles this via recycling, but the size-mismatch
+  # message used to hardcode img_size for both dimensions.
+  masked <- rcicr:::applyMask(matrix(1, 4, 6), mask = matrix(1, 4, 6),
+                              img_size = c(4, 6))
+  expect_equal(dim(masked), c(4, 6))
+
+  err <- expect_error(
+    rcicr:::applyMask(matrix(1, 4, 6), mask = matrix(0, 4, 4),
+                      img_size = c(4, 6)),
+    "same dimensions"
+  )
+  msg <- conditionMessage(err)
+  expect_match(msg, "4 x 6")
+})
+
 # --------------------------------------------------------------------------
 # generateStimuli2IFC(): base image import
 # --------------------------------------------------------------------------

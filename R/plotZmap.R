@@ -122,71 +122,19 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   # Create target directory
   dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
-  # If a mask is specified, import and check it
-  if (!(is.null(mask))) {
-    # Read in the mask from a PNG image if specified
-    if (!is.matrix(mask)) {
-      mask <- png::readPNG(mask)
-    }
-    # Are mask and zmap the same size?
-    if (nrow(zmap) == dim(mask)[1] && ncol(zmap) == dim(mask)[2]) {
-      # Are all the values either 0/1, or TRUE/FALSE?
-      if (all(mask %in% c(0, 1)) || all(mask %in% c(TRUE, FALSE))) {
-        # If we have more than 1 layer (i.e. the PNG was not greyscale but RGB or
-        # CMYK), are all the layers identical? If so, remove superfluous layers
-        if (length(dim(mask)) != 2) {
-          iden <- c()
-          for (i in 2:dim(mask)[3]) {
-            if (identical(mask[,,i-1], mask[,,i])) {
-              iden <- c(iden, TRUE)
-            } else {
-              iden <- c(iden, FALSE)
-            }
-          }
-          if (all(iden)) {
-            mask <- mask[,,1]
-          } else {
-            stop('Error in importing Z-map mask: color channels are not identical.')
-          }
-        }
-      } else {
-        stop('Error in importing Z-map mask: pixel values are not limited to black (0) and white (1).')
-      }
-    } else {
-      stop('Error in importing Z-map mask: mask and Z-map are not the same size.')
-    }
-    # Convert to boolean: 0 (black, FALSE) marks the region to mask, for a
-    # matrix and a PNG alike.
-    #
-    # The single convention is deliberate and was verified against the working
-    # sibling rather than taken from the docs: generateCI()'s applyMask() does
-    # `mask_matrix == 0` unconditionally (R/generateCI.R), so the same mask
-    # passed to generateCI() and plotZmap() must mask the same region. Both
-    # functions' roxygen claimed 1/TRUE meant masked for a matrix while black
-    # (0) meant masked for a PNG -- two opposite conventions in one sentence,
-    # and contradicted by the only implementation that ever ran. The docs were
-    # corrected to match the code, not the other way round: applyMask()'s
-    # behaviour is what users' existing masks were built against.
-    #
-    # This conversion used to be two in-place assignments --
-    # `mask[mask == 0] <- TRUE` then `mask[mask == 1] <- FALSE` -- which set
-    # *every* cell to FALSE whatever the input: the first assignment coerces
-    # TRUE to 1, so the second matches the cells it had just set as well as the
-    # originally-true ones. A swap without a temporary.
-    mask <- mask == 0
-  }
-
   # Apply threshold
   zmap[abs(zmap) < threshold] <- NA
 
-  # Apply the mask. Masked cells drop out of the z-map exactly as sub-threshold
-  # cells do, which is what the documentation has promised since 2016 --
-  # commit 18e07cb landed the import half as "add mask import ... (todo:
-  # applying the mask)" and the todo was never picked up, so the argument was
-  # validated and then silently discarded in every released version.
-  # The mask was validated and then never applied; see NEWS.md 1.2.0.
+  # Import, validate and apply the mask -- shared with generateCI(), which
+  # applyMask() was written for first (see R/generateCI.R and issue #185).
+  # Masked cells drop out of the z-map exactly as sub-threshold cells do
+  # above, which is what the documentation has promised since 2016 -- commit
+  # 18e07cb landed the import half as "add mask import ... (todo: applying
+  # the mask)" and the todo was never picked up, so the argument was
+  # validated and then silently discarded in every released version until
+  # 1.2.0 (see NEWS.md).
   if (!is.null(mask)) {
-    zmap[mask] <- NA
+    zmap <- applyMask(zmap, mask, img_size = c(nrow(zmap), ncol(zmap)), context = 'z-map')
   }
 
   # Plot

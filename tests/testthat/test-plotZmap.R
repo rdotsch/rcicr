@@ -259,7 +259,19 @@ test_that("mismatched mask and zmap dimensions error", {
       zmap = matrix(0, 8, 8), mask = matrix(0, 4, 4), sigma = 3,
       targetpath = tmp, size = 200
     ),
-    "not the same size"
+    "same dimensions"
+  )
+})
+
+test_that("plotZmap rejects a mask that is neither a string nor a matrix", {
+  tmp <- withr::local_tempdir()
+
+  expect_error(
+    plotZmap(
+      zmap = matrix(0, 8, 8), mask = TRUE, sigma = 3,
+      targetpath = tmp, size = 200
+    ),
+    "neither a string nor a matrix"
   )
 })
 
