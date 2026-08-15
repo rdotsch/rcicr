@@ -41,7 +41,7 @@ it before touching `.github/workflows/`.
 - `tests/testthat/helper-fixtures.R` provides shared fixtures: `make_square_png()` (synthetic base face — never a real photo), `make_fixture_rdata()` (runs a tiny `generateStimuli2IFC()` and returns the `.Rdata` path), `seed_reference_norms()` (pre-seeds a `reference_norms` vector so `computeInfoVal2IFC()` skips the expensive/interactive reference-distribution path).
 - `tests/testthat/test-fixed-bugs.R` holds regression tests for the P0 bugs found in the modernization pass. They assert *intended* behaviour — never the buggy output they replaced. If one fails, that is a regression; do **not** "fix" it by asserting the broken result, which locks the bug back in.
 - `tests/testthat/test-regression-baseline.R` is a golden master pinning the numeric output of the default pipeline — noise basis, classification image, scaling, infoVal — to the values produced *before* the P0 fixes. **If a change turns it red, that change alters researchers' results** and must be documented in `NEWS.md` under "Reproducibility impact" before merging. It is not a test to casually update.
-- `tools/compare-release-output.R` is the **release gate**: it installs a released version (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference is allowed only with a matching `EXPECTED` entry in the script **and** a `NEWS.md` "Reproducibility impact" entry; a stale `EXPECTED` entry also fails. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `RELEASING.md`.
+- `tools/compare-release-output.R` is the **release gate**: it installs a released version (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference needs both an `EXPECTED` entry in the script and a matching `NEWS.md` "Reproducibility impact" entry — a stale `EXPECTED` entry fails too. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `RELEASING.md`.
   - The battery is chosen by the **reference** version, not the current one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash — `mask`, z-maps below 512px, undecorated z-maps — have no old value to compare against. Before adding a configuration, check the reference version can execute it; a crash on the reference side aborts the whole gate.
   - It needs ~1.5 GB of RAM at 512px and the reference version's own dependencies — `--install-deps` puts them in a throwaway library rather than the user's.
 - Both `devtools::test()` and `testthat::test_local()` set `NOT_CRAN=true` themselves, so neither can verify a `skip_on_cran()` actually fires.
@@ -97,9 +97,9 @@ would this still matter if the package were maintained somewhere else entirely?
   then deleted on that same branch so the squash leaves `main` one commit and no plan file.
   Full procedure in `CONTRIBUTING.md` → "Plan first, in the same pull request"; read it there.
   Prose, `man/`, `NEWS.md` wording and comment-only edits are exempt.
-- **Fork a subagent for a PR's implementation work when others are in flight.** Inline status
-  checks are cheap, but code, tests and review rounds fill context others do not need — a fork
-  inherits full context for free.
+- **Use `subagent_type: "fork"`, not a generic subagent, for a PR's implementation work when
+  others are in flight.** A fork inherits the parent's full context free; any other type
+  starts cold and needs the PR and prior decisions handed over explicitly.
 - **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`). One
   commit per PR keeps history readable and makes `git revert` of a whole change
   straightforward, which matters here because a PR is usually one self-contained fix plus its
