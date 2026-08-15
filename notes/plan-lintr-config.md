@@ -64,9 +64,20 @@ highest-priority item on the resulting to-fix list.
    diff, don't hand-edit the block.
 3. **`.github/workflows/lint.yaml`** — one `ubuntu-latest` job, `r-lib/actions`
    pattern matching `R-CMD-check.yaml` (checkout, `setup-r`,
-   `setup-r-dependencies` with `extra-packages: any::lintr` and
-   `needs: check`), then `Rscript -e 'lintr::lint_package()'` with
-   `LINTR_ERROR_ON_LINT: true`.
+   `setup-r-dependencies` with `extra-packages: any::lintr@3.4.0` — pinned,
+   not `any::lintr` — and `needs: check`), then
+   `Rscript -e 'lintr::lint_package()'` with `LINTR_ERROR_ON_LINT: true`.
+
+   Second Codex finding, same review round: unpinned `lintr` can install a
+   newer version with different default-linter behavior on a day nothing in
+   this repo changed, failing the (eventually required) job on an upstream
+   release rather than a real new lint — the same failure mode already
+   documented for `roxygen2`/`cffr`, and worse here because
+   `gh run rerun`/dispatch don't work in this environment (`AGENTS.md`). Pin
+   to `3.4.0`, the version this baseline was generated with. Bumping it is
+   deliberate and always pairs with rerunning
+   `tools/regenerate-lintr-baseline.R` — same shape as bumping
+   `RoxygenNote` alongside the roxygen2 pin.
 
    Codex's first review on this plan caught that a standalone workflow does
    not enforce "no new lints" by itself: a non-required check can be red and
