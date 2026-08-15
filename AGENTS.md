@@ -89,16 +89,15 @@ for editing them (never rename a job, never convert the gate to a
   “Reproducibility impact” before merging. It is not a test to casually
   update.
 - `tools/compare-release-output.R` is the **release gate**: it installs
-  a released version from its own commit (default `v1.0.1`, tagged
-  retroactively at `b6ab269`) into a temporary library, runs it and the
-  working tree through `tools/compare-harness.R`, and compares every
-  output. It answers what the golden master cannot — that test pins
-  values *this repo computed for itself*, whereas the gate runs the
-  actual old code. A difference is allowed only with an `EXPECTED` entry
-  in the script **and** a matching `NEWS.md` “Reproducibility impact”
-  entry; both are checked, and a stale `EXPECTED` entry fails too. Use
-  `--quick` (~2 min, skips 512px) while iterating. Full checklist in
-  `RELEASING.md`.
+  a released version (default `v1.0.1`, tagged retroactively at
+  `b6ab269`) into a temporary library, runs it and the working tree
+  through `tools/compare-harness.R`, and compares every output. It
+  answers what the golden master cannot — that test pins values *this
+  repo computed for itself*, whereas the gate runs the actual old code.
+  A difference needs both an `EXPECTED` entry in the script and a
+  matching `NEWS.md` “Reproducibility impact” entry — a stale `EXPECTED`
+  entry fails too. Use `--quick` (~2 min, skips 512px) while iterating.
+  Full checklist in `RELEASING.md`.
   - The battery is chosen by the **reference** version, not the current
     one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash —
     `mask`, z-maps below 512px, undecorated z-maps — have no old value
@@ -110,8 +109,8 @@ for editing them (never rename a job, never convert the gate to a
     rather than the user’s.
 - Both `devtools::test()` and
   [`testthat::test_local()`](https://testthat.r-lib.org/reference/test_package.html)
-  set `NOT_CRAN=true` themselves, so neither can be used to verify that
-  a `skip_on_cran()` actually fires.
+  set `NOT_CRAN=true` themselves, so neither can verify a
+  `skip_on_cran()` actually fires.
 - Because the checks are required, an infrastructure flake blocks a
   merge. **This environment cannot re-run one** — `gh run rerun` returns
   `Resource not accessible by integration`, as does dispatching R-hub —
@@ -192,6 +191,10 @@ maintained somewhere else entirely?
   no plan file. Full procedure in `CONTRIBUTING.md` → “Plan first, in
   the same pull request”; read it there. Prose, `man/`, `NEWS.md`
   wording and comment-only edits are exempt.
+- **Use `subagent_type: "fork"` (not a generic subagent) for a PR’s
+  implementation work alongside others in flight.** A fork inherits full
+  context for free; other types start cold and need the PR and prior
+  decisions handed over.
 - **Merge pull requests to `main` with squash merges**
   (`gh pr merge <n> --squash`). One commit per PR keeps history readable
   and makes `git revert` of a whole change straightforward, which
@@ -251,14 +254,12 @@ second merge direction for no gain. Feature branches → PR → squash onto
   a version and the whole file NOTEs. Name the version in the body text
   instead.
 - **Write claims that survive on someone else’s machine.** A bare
-  wall-clock number measured here (“the example set runs in about nine
-  seconds”) can be contradicted by the reader’s own log, and has been.
-  Give a ratio, a comparison to a fixed bar (CRAN’s five-second
-  per-example limit), or just “faster”. Absolute times are fine where
-  the ratio is the point — “about 6x faster, 1.66s to 0.28s per call” —
-  and where a user will feel the difference; they are noise when they
-  only describe our hardware. Same rule for `cran-comments.md`, where
-  the reviewer *has* their own log.
+  wall-clock number (“runs in about nine seconds”) can be contradicted
+  by the reader’s own log, and has been. Give a ratio, a comparison to a
+  fixed bar (CRAN’s five-second per-example limit), or just “faster” —
+  absolute times are fine only where the ratio itself is the point
+  (“about 6x faster, 1.66s to 0.28s”). Same rule for `cran-comments.md`,
+  where the reviewer has their own log.
 - **Order `NEWS.md` entries largest-impact first** within each section —
   changes to numeric output or return values, then behaviour changes,
   then bug fixes that only ever produced errors, then message-only
