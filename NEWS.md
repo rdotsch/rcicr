@@ -97,13 +97,11 @@
   saved. Nothing in the package or the documented contract reads it. Existing `.Rdata` files
   that contain `trial` continue to work; the field is simply ignored on load.
 
-- **`plotZmap(mask = ...)` now accepts a mask with an alpha channel, and a non-square
-  `zmap`/`mask` pair.** It previously required every colour channel of a multi-channel PNG
-  mask to match exactly, so a greyscale-plus-alpha or RGBA mask whose alpha plane happened to
-  differ from its colour planes was rejected — alpha carries no colour information and is now
-  always ignored, matching `generateCI(mask = ...)`. A mask for a rectangular `zmap` (never
-  required to be square, though the internal mask-checking code assumed it was) is also now
-  accepted and correctly compared against both dimensions. `plotZmap(mask = ...)` also now
+- **`plotZmap(mask = ...)` now accepts a mask with an alpha channel.** It previously required
+  every colour channel of a multi-channel PNG mask to match exactly, so a greyscale-plus-alpha
+  or RGBA mask whose alpha plane happened to differ from its colour planes was rejected — alpha
+  carries no colour information and is now always ignored, matching `generateCI(mask = ...)`.
+  A rectangular `zmap`/mask pair continues to work as before. `plotZmap(mask = ...)` also now
   rejects a mask that is neither a string nor a matrix with a clear error, instead of failing
   later inside `png::readPNG()` with an unrelated message.
 
