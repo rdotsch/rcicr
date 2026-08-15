@@ -13,6 +13,11 @@
 # installed R packages are skipped.
 set -euo pipefail
 
+# install_deps(".") and read.dcf("DESCRIPTION", ...) below resolve relative to
+# the working directory, not this script's location -- so invoking this by
+# path from elsewhere would read (or fail to find) the wrong DESCRIPTION.
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 sudo apt-get update -qq
 sudo apt-get install -y -qq \
   build-essential gfortran pandoc \
@@ -79,5 +84,4 @@ if (length(still_missing)) {
 # generateStimuli2IFC() spawns parallel workers that each `library(rcicr)`,
 # so anything touching it needs the package actually installed -- see
 # CONTRIBUTING.md "Getting set up".
-R CMD INSTALL --no-multiarch --with-keep.source -l "$R_LIBS_USER" \
-  "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+R CMD INSTALL --no-multiarch --with-keep.source -l "$R_LIBS_USER" .
