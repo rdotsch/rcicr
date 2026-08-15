@@ -470,8 +470,8 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
     stop(paste0('Mask is not of the same dimensions as the ', context, '! ',
                 '(', context, ' dimensions: ', img_size[1], ' x ',
                 img_size[length(img_size)],
-                '; mask dimensions: ', dim(mask_matrix)[2],
-                ' by ', dim(mask_matrix)[1], ').'))
+                '; mask dimensions: ', dim(mask_matrix)[1],
+                ' by ', dim(mask_matrix)[2], ').'))
   }
 
   # Check if the mask is binary
