@@ -64,9 +64,19 @@ highest-priority item on the resulting to-fix list.
    diff, don't hand-edit the block.
 3. **`.github/workflows/lint.yaml`** — one `ubuntu-latest` job, `r-lib/actions`
    pattern matching `R-CMD-check.yaml` (checkout, `setup-r`,
-   `setup-r-dependencies` with `extra-packages: any::lintr@3.4.0` — pinned,
-   not `any::lintr` — and `needs: check`), then
+   `setup-r-dependencies` with `extra-packages: any::lintr@3.4.0,
+   local::.` — pinned, not `any::lintr` — and `needs: check`), then
    `Rscript -e 'lintr::lint_package()'` with `LINTR_ERROR_ON_LINT: true`.
+
+   Third Codex finding: `setup-r-dependencies` with `needs: check` installs
+   the package's *dependencies*, not the package itself — `local::.` is what
+   installs `rcicr` into the runner. Without it, `object_usage_linter` (kept
+   enabled; needs the package installed, per this plan's own opening
+   paragraph) runs against an uninstalled package, and once `lint` is
+   required that can block every PR on a false positive rather than a real
+   new lint. This is the r-lib/actions lint.yaml example's own pattern —
+   the plan's earlier draft named that example as the template but had
+   dropped this part of it.
 
    Second Codex finding, same review round: unpinned `lintr` can install a
    newer version with different default-linter behavior on a day nothing in
