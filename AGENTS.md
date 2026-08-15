@@ -97,9 +97,9 @@ would this still matter if the package were maintained somewhere else entirely?
   then deleted on that same branch so the squash leaves `main` one commit and no plan file.
   Full procedure in `CONTRIBUTING.md` → "Plan first, in the same pull request"; read it there.
   Prose, `man/`, `NEWS.md` wording and comment-only edits are exempt.
-- **Use `subagent_type: "fork"`, not a generic subagent, for a PR's implementation work when
-  others are in flight.** A fork inherits the parent's full context free; any other type
-  starts cold and needs the PR and prior decisions handed over explicitly.
+- **Use `subagent_type: "fork"` (not a generic subagent) for a PR's implementation work
+  alongside others in flight.** A fork inherits full context free; other types start cold and
+  need the PR and prior decisions handed over.
 - **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`). One
   commit per PR keeps history readable and makes `git revert` of a whole change
   straightforward, which matters here because a PR is usually one self-contained fix plus its
