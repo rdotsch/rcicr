@@ -33,7 +33,7 @@ A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`
 
 ## Testing and CI
 
-**The workflow inventory, the five required check names, and the two rules for editing them
+**The workflow inventory, the required check names, and the two rules for editing them
 (never rename a job, never convert the gate to a `paths:` filter) are in `MAINTENANCE.md`.** Read
 it before touching `.github/workflows/`.
 
@@ -41,10 +41,10 @@ it before touching `.github/workflows/`.
 - `tests/testthat/helper-fixtures.R` provides shared fixtures: `make_square_png()` (synthetic base face — never a real photo), `make_fixture_rdata()` (runs a tiny `generateStimuli2IFC()` and returns the `.Rdata` path), `seed_reference_norms()` (pre-seeds a `reference_norms` vector so `computeInfoVal2IFC()` skips the expensive/interactive reference-distribution path).
 - `tests/testthat/test-fixed-bugs.R` holds regression tests for the P0 bugs found in the modernization pass. They assert *intended* behaviour — never the buggy output they replaced. If one fails, that is a regression; do **not** "fix" it by asserting the broken result, which locks the bug back in.
 - `tests/testthat/test-regression-baseline.R` is a golden master pinning the numeric output of the default pipeline — noise basis, classification image, scaling, infoVal — to the values produced *before* the P0 fixes. **If a change turns it red, that change alters researchers' results** and must be documented in `NEWS.md` under "Reproducibility impact" before merging. It is not a test to casually update.
-- `tools/compare-release-output.R` is the **release gate**: it installs a released version from its own commit (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference is allowed only with an `EXPECTED` entry in the script **and** a matching `NEWS.md` "Reproducibility impact" entry; both are checked, and a stale `EXPECTED` entry fails too. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `RELEASING.md`.
+- `tools/compare-release-output.R` is the **release gate**: it installs a released version (default `v1.0.1`, tagged retroactively at `b6ab269`) into a temporary library, runs it and the working tree through `tools/compare-harness.R`, and compares every output. It answers what the golden master cannot — that test pins values *this repo computed for itself*, whereas the gate runs the actual old code. A difference needs both an `EXPECTED` entry in the script and a matching `NEWS.md` "Reproducibility impact" entry — a stale `EXPECTED` entry fails too. Use `--quick` (~2 min, skips 512px) while iterating. Full checklist in `RELEASING.md`.
   - The battery is chosen by the **reference** version, not the current one (`RCICR_COMPARE_REF_VERSION`): calls that used to crash — `mask`, z-maps below 512px, undecorated z-maps — have no old value to compare against. Before adding a configuration, check the reference version can execute it; a crash on the reference side aborts the whole gate.
   - It needs ~1.5 GB of RAM at 512px and the reference version's own dependencies — `--install-deps` puts them in a throwaway library rather than the user's.
-- Both `devtools::test()` and `testthat::test_local()` set `NOT_CRAN=true` themselves, so neither can be used to verify that a `skip_on_cran()` actually fires.
+- Both `devtools::test()` and `testthat::test_local()` set `NOT_CRAN=true` themselves, so neither can verify a `skip_on_cran()` actually fires.
 - Because the checks are required, an infrastructure flake blocks a merge. **This environment cannot re-run one** — `gh run rerun` returns `Resource not accessible by integration`, as does dispatching R-hub — so re-runs and workflow dispatches need the maintainer and the Actions tab.
 - **The workflows only trigger on PRs targeting `main`**, so a stacked PR based on another branch gets pre-commit and nothing else — no `R CMD check`. Retargeting an existing PR does *not* re-fire them; close and reopen it.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in the built package, or `R CMD check` NOTEs "non-standard file/directory found at top level" (and a separate NOTE for dotfiles). Add it in the same commit as the file. It is a set of *regexes anchored with `^`*, not globs (e.g. `^DECISIONS\.md$`); read the file for the current list.
@@ -97,6 +97,9 @@ would this still matter if the package were maintained somewhere else entirely?
   then deleted on that same branch so the squash leaves `main` one commit and no plan file.
   Full procedure in `CONTRIBUTING.md` → "Plan first, in the same pull request"; read it there.
   Prose, `man/`, `NEWS.md` wording and comment-only edits are exempt.
+- **Use `subagent_type: "fork"` (not a generic subagent) for a PR's implementation work
+  alongside others in flight.** A fork inherits full context for free; other types start cold
+  and need the PR and prior decisions handed over.
 - **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`). One
   commit per PR keeps history readable and makes `git revert` of a whole change
   straightforward, which matters here because a PR is usually one self-contained fix plus its
@@ -142,13 +145,11 @@ onto `main`, and releases are marked by tags.
   to build the news database, and a `##` heading containing something version-shaped makes it
   treat `##` as the *version* level — after which every other section title fails to yield a
   version and the whole file NOTEs. Name the version in the body text instead.
-- **Write claims that survive on someone else's machine.** A bare wall-clock number measured
-  here ("the example set runs in about nine seconds") can be contradicted by the reader's own
-  log, and has been. Give a ratio, a comparison to a fixed bar (CRAN's five-second
-  per-example limit), or just "faster". Absolute times are fine where the ratio is the point
-  — "about 6x faster, 1.66s to 0.28s per call" — and where a user will feel the difference;
-  they are noise when they only describe our hardware. Same rule for `cran-comments.md`,
-  where the reviewer *has* their own log.
+- **Write claims that survive on someone else's machine.** A bare wall-clock number ("runs in
+  about nine seconds") can be contradicted by the reader's own log, and has been. Give a ratio,
+  a comparison to a fixed bar (CRAN's five-second per-example limit), or just "faster" — absolute
+  times are fine only where the ratio itself is the point ("about 6x faster, 1.66s to 0.28s").
+  Same rule for `cran-comments.md`, where the reviewer has their own log.
 - **Order `NEWS.md` entries largest-impact first** within each section — changes to numeric
   output or return values, then behaviour changes, then bug fixes that only ever produced
   errors, then message-only fixes. Someone who stops reading after three bullets should have
