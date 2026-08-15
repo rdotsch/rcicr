@@ -208,12 +208,15 @@ NA`. Sequencing is unchanged: threshold is applied first, then the mask, exactly
 - `testthat::test_local()` — full suite green, including the updated and new assertions above.
 - `lintr::lint_package()` — zero new lints (the `.lintr` baseline from #183 must not need
   regenerating; if it does, that is a signal something more than intended changed).
-- `tools/compare-release-output.R --quick` — the release gate. Checked what its `mask` scenario
-  actually calls (`tools/compare-harness.R:271-278`): only `generateCI(mask = ...)`, never
-  `plotZmap(mask = ...)`. So the gate covers `applyMask()`'s import/validate logic (now shared)
-  but not `plotZmap()`'s specific call site — that side's regression coverage is
-  `tests/testthat/test-plotZmap.R` alone, which is why its existing mask tests (same-half,
-  all-zero, matrix-vs-PNG-agree, dimension-mismatch) all have to keep passing unchanged, not
-  just the new ones.
+- `tools/compare-release-output.R --quick` for the default v1.0.1 reference, **and**
+  `tools/compare-release-output.R --ref=v1.1.0 --quick` — the `mask` extra is gated behind
+  `SINCE = c(mask = "1.1.0", ...)` in `tools/compare-harness.R`, so the default v1.0.1 run skips
+  it entirely and only the `--ref=v1.1.0` run actually exercises `applyMask()`'s import/validate
+  logic. Checked what that scenario calls (`tools/compare-harness.R:271-278`): only
+  `generateCI(mask = ...)`, never `plotZmap(mask = ...)`. So even the v1.1.0 run covers
+  `applyMask()`'s shared logic but not `plotZmap()`'s specific call site — that side's
+  regression coverage is `tests/testthat/test-plotZmap.R` alone, which is why its existing mask
+  tests (same-half, all-zero, matrix-vs-PNG-agree, dimension-mismatch) all have to keep passing
+  unchanged, not just the new ones.
 - `NEWS.md` gets an entry describing the dedup, the 2-channel bug fix, and the two resolved
   error-path differences (points 3-4 above) explicitly.
