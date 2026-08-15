@@ -51,6 +51,7 @@
 </div>
 <div class="section level2">
 <h2 id="getting-set-up">Getting set up<a class="anchor" aria-label="anchor" href="#getting-set-up"></a></h2>
+<p>On a fresh Ubuntu machine with only R installed (no compiler, no package library) – <code>tools/dev-setup.sh</code> is Ubuntu-specific, it shells out to <code>apt-get</code> – it installs the system toolchain and every Imports/Suggests package from source, then installs the package itself. Idempotent – rerun it after pulling a dependency change.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span>      <span class="co"># not load_all() -- see below</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
