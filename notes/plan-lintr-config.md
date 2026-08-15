@@ -62,23 +62,29 @@ highest-priority item on the resulting to-fix list.
    This is how a future intentionally-accepted lint gets added to the
    baseline, and how the baseline shrinks as items get fixed — rerun it and
    diff, don't hand-edit the block.
-3. **`.github/workflows/lint.yaml`** — one `ubuntu-latest` job, `r-lib/actions`
-   pattern matching `R-CMD-check.yaml` (checkout, `setup-r`,
-   `setup-r-dependencies` with `extra-packages: any::lintr` and
-   `needs: check`), then `Rscript -e 'lintr::lint_package()'` with
-   `LINTR_ERROR_ON_LINT: true`. **Not** added to the required-checks ruleset —
-   that needs a repo-settings write this environment cannot make (same
-   constraint documented in `MAINTENANCE.md` for the stale-`man/` gate), and
-   it does not need to be required for "no new lints" to hold: the baseline
-   already excludes every existing lint, so any lint the job reports is by
-   definition new, and a non-required red check is still visible on the PR.
+3. **A step in `R-CMD-check.yaml`'s `ubuntu-latest (release)` job**, not a new
+   workflow — Codex caught that the original plan here (a standalone
+   `lint.yaml`) does not actually enforce "no new lints": a non-required
+   check can be red and merged past anyway, same as any other optional
+   check. This is exactly the constraint `MAINTENANCE.md` already documents
+   for the stale-`man/` gate: adding a new check *name* to the
+   required-checks ruleset is a repo-settings write this environment cannot
+   make, so a new job would report without ever blocking, while a step
+   inside the already-required job inherits its gate for free. Added via
+   `extra-packages: any::lintr` on the existing `setup-r-dependencies` step,
+   then `Rscript -e 'lintr::lint_package()'` with `LINTR_ERROR_ON_LINT: true`
+   as a new step, `if: matrix.config.os == 'ubuntu-latest' && matrix.config.r
+   == 'release'`, placed after the existing stale-`man/`/`CITATION.cff` steps
+   for the same reason they are last: a failure there cannot cost us the
+   check results.
 4. **`.Rbuildignore`**: add `^\.lintr$` (dotfile at top level, not part of the
    built package — same reasoning as the other repo-root config files already
    listed).
-5. **`MAINTENANCE.md`**: one row in the workflow table, plus enough of the
-   above reasoning that the next person doesn't reconstruct it from a diff.
-   Current count is 1546/1800 words — tight, so this stays short and the
-   detail above lives in the PR description instead.
+5. **`MAINTENANCE.md`**: extends the existing "stale-`man/` gate" subsection
+   — same job, same reason a new job cannot enforce anything — rather than
+   adding a new row to the workflow table. Current count is 1546/1800 words
+   — tight, so this stays short and the detail above lives in the PR
+   description instead.
 
 No changes to `R/`, `NEWS.md`, or the `.Rdata` contract — this is tooling
 only, matching the issue's "zero-line diff to `R/`" framing.
