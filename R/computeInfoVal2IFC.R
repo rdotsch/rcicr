@@ -102,7 +102,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
-  if (!force_gen_ref_dist & !exists("reference_norms", envir=environment(), inherits=FALSE)) {
+  if (!force_gen_ref_dist && !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
     # Pre-computed reference distribution table (TODO: read from external file).
     #
@@ -180,7 +180,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     # explicitly asked for one. force_gen_ref_dist previously only skipped the
     # lookup-table branch above and never reached here, so it was silently
     # ignored whenever reference_norms already existed in the .Rdata file.
-    if (force_gen_ref_dist | !exists("reference_norms", envir=environment(), inherits=FALSE)) {
+    if (force_gen_ref_dist || !exists("reference_norms", envir=environment(), inherits=FALSE)) {
 
       # Reference norms not present in rdata file (or regeneration forced).
       #

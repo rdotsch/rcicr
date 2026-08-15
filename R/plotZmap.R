@@ -129,9 +129,9 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
       mask <- png::readPNG(mask)
     }
     # Are mask and zmap the same size?
-    if (nrow(zmap) == dim(mask)[1] & ncol(zmap) == dim(mask)[2]) {
+    if (nrow(zmap) == dim(mask)[1] && ncol(zmap) == dim(mask)[2]) {
       # Are all the values either 0/1, or TRUE/FALSE?
-      if (all(mask %in% c(0, 1)) | all(mask %in% c(TRUE, FALSE))) {
+      if (all(mask %in% c(0, 1)) || all(mask %in% c(TRUE, FALSE))) {
         # If we have more than 1 layer (i.e. the PNG was not greyscale but RGB or
         # CMYK), are all the layers identical? If so, remove superfluous layers
         if (length(dim(mask)) != 2) {

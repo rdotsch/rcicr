@@ -96,7 +96,7 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   list2env(.args, envir = environment())
 
   # Check whether critical variables have been loaded
-  if (!exists('s', envir=environment(), inherits=FALSE) & !exists('p', envir=environment(), inherits=FALSE) ) {
+  if (!exists('s', envir=environment(), inherits=FALSE) && !exists('p', envir=environment(), inherits=FALSE) ) {
     stop('File specified in rdata argument did not contain s or p variable.', rdataWriterNote(environment()))
   }
 
