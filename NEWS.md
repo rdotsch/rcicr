@@ -202,7 +202,16 @@
   so both accept a 2-channel mask, and a 4-channel (RGBA) mask continues to work exactly as
   before. The mask-size-mismatch message now names what the mask is being checked against
   ("stimuli" from `generateCI()`, "z-map" from `plotZmap()`) instead of always saying
-  "stimuli".
+  "stimuli", and reports the mask's dimensions in the same row-by-column order as the
+  target's rather than transposed.
+
+- **A multi-channel PNG mask one pixel wide or tall is now rejected instead of silently
+  masking everything.** Dropping the colour channel from such a mask also dropped its
+  singleton spatial dimension, leaving a plain vector whose absent dimensions made the
+  size check pass vacuously; the mask was then recycled by linear indexing. A 1-by-8 RGB
+  mask against an 8-by-8 stimulus set returned an entirely `NA` classification image with
+  no error or warning. It now fails the size check and says so. Masks of any other shape
+  are unaffected.
 
 ## Documentation
 

@@ -452,7 +452,14 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
                     'could not be converted to this encoding either. In other ',
                     'words, this is not a greyscale image.'))
       }
-      mask_matrix <- mask_matrix[, , 1]
+      # `[, , 1]` alone would also drop a singleton *spatial* dimension, leaving
+      # a dim-less vector -- and `all(NULL == img_size)` is vacuously TRUE, so a
+      # 1-by-8 mask would pass the size check below for a 2-by-4 target and then
+      # be applied by linear indexing. plotZmap()'s previous inline code checked
+      # the PNG's spatial dimensions before dropping channels and so rejected it.
+      spatial <- dim(mask_matrix)[1:2]
+      mask_matrix <- matrix(mask_matrix[, , 1],
+                            nrow = spatial[1], ncol = spatial[2])
     }
   } else if (is.matrix(mask) && length(dim(mask)) == 2) {
     mask_matrix <- mask

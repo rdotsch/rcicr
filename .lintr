@@ -48,8 +48,8 @@ exclusions: list(
     ),
     "R/generateCI.R" = list(
       commas_linter = c(223, 291),
-      indentation_linter = c(181, 261, 499, 508, 511, 512, 524),
-      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 501, 523),
+      indentation_linter = c(181, 261, 506, 515, 518, 519, 531),
+      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 508, 530),
       object_name_linter = c(279, 288, 314),
       spaces_left_parentheses_linter = c(338, 340, 351)
     ),

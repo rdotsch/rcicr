@@ -279,6 +279,25 @@ test_that("applyMask still rejects a 4-channel PNG whose RGB planes differ", {
   )
 })
 
+test_that("applyMask rejects a multi-channel PNG mask with a singleton dimension", {
+  # A 1-by-8 RGB mask against a 2-by-4 target: dropping the channel dimension
+  # with a bare `[, , 1]` also drops the singleton row dimension, and the
+  # resulting vector's NULL dim() makes the size check vacuously TRUE, so the
+  # mismatched mask used to be applied by linear indexing instead of rejected.
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  rgb <- array(0, dim = c(1, 8, 3))
+  path <- file.path(dir, "singleton.png")
+  png::writePNG(rgb, path)
+
+  expect_error(
+    rcicr:::applyMask(matrix(1, 2, 4), mask = path, img_size = c(2, 4),
+                      context = "z-map"),
+    "same dimensions"
+  )
+})
+
 test_that("applyMask accepts a rectangular img_size and reports both dims", {
   # plotZmap() is not restricted to square zmaps and passes
   # img_size = c(nrow(zmap), ncol(zmap)); applyMask()'s dim() == img_size
