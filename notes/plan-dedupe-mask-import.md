@@ -36,22 +36,38 @@ shape, disappears entirely under the revision above — see below), each checked
 suite for whether resolving it toward `applyMask()`'s behaviour changes anything currently
 tested or reachable through documented usage:
 
-1. **Size check no longer needs generalising.** The first draft worried that `applyMask()`
-   compares against a scalar `img_size` while `plotZmap()` compares `nrow(zmap)`/`ncol(zmap)`
-   separately, and proposed a `target_dims` vector to reconcile them. That concern only existed
-   because of the abandoned `importMask()` indirection. Calling `applyMask(zmap, mask, img_size =
-   nrow(zmap))` directly needs no such change: `img_size` is just "the dimension to check the
-   mask against", and every z-map is square (built from a square CI), so `nrow(zmap)` is exactly
-   the right scalar to pass. `applyMask()`'s own signature and size-check logic are untouched.
+1. **Size check: wrong to assume every z-map is square.** An earlier revision of this plan
+   argued `plotZmap(mask = zmap, img_size = nrow(zmap))` needed no generalisation because
+   "every z-map is square (built from a square CI)" — true for z-maps `generateCI()` builds
+   internally, false as a constraint on `plotZmap()` itself. It is a public, exported function;
+   its roxygen for `mask` says only "the same dimensions as zmap", never square, and nothing in
+   its body requires `nrow(zmap) == ncol(zmap))`. A caller passing a rectangular `zmap` with a
+   matching rectangular mask works on current `main` (`nrow(zmap) == dim(mask)[1] && ncol(zmap)
+   == dim(mask)[2]`, checked independently) and would wrongly error under a single scalar
+   `img_size`, caught by review before it was written, not after.
+
+   Checked rather than assumed how much actually needs to change: `applyMask()`'s existing
+   comparison, `dim(mask_matrix) == img_size`, already works correctly for a length-2 `img_size`
+   with no edit at all — R recycles a length-1 `img_size` against `dim()`'s length-2 result
+   (today's scalar behaviour, unchanged) and compares element-wise against a length-2 one
+   (verified directly: `applyMask(matrix(1,4,6), matrix(0,4,6), img_size = c(4,6))` returns a
+   4×6 result on unmodified `main`). Only the size-mismatch *message* hardcodes `img_size` for
+   both dimensions and needs a small change — see the shared-helper code below. `plotZmap()`
+   passes `img_size = c(nrow(zmap), ncol(zmap))` instead of a bare scalar; `generateCI()`'s
+   existing calls keep passing a scalar, unaffected.
 
 2. **Error wording mentions "stimuli" unconditionally** in `applyMask()`'s size-mismatch
    message, which is inaccurate when called from `plotZmap()`. Resolution: `applyMask()` gains
-   one new optional parameter, `context = 'stimuli'`. `generateCI()`'s existing call sites pass
-   nothing and get byte-for-byte the same message as today; `plotZmap()` passes `context =
-   'z-map'`. `tests/testthat/test-error-paths.R:159-168` only asserts the substrings `"same
-   dimensions"`, `"8"`, `"4"` — none of which depend on the context word — so this is safe
-   against the pinned assertions, and the new parameter is additive so no existing call
-   (positional or named) breaks.
+   one new optional parameter, `context = 'stimuli'`, used everywhere the message currently
+   hardcodes the word. `generateCI()`'s existing call sites pass nothing and get the same
+   substantive message as today, with one incidental correction: the current text reads "...the
+   stimuli! (stimulus dimensions: ..." — plural then singular, a pre-existing inconsistency
+   (checked directly against `R/generateCI.R:461-462`) — which a single `context` value used in
+   both places normalizes to "stimuli" throughout. Not byte-for-byte identical, then, but not a
+   claim worth engineering around either: `tests/testthat/test-error-paths.R:159-168` only
+   asserts the substrings `"same dimensions"`, `"8"`, `"4"`, none of which depend on the word,
+   and the new parameter is additive so no existing call (positional or named) breaks.
+   `plotZmap()` passes `context = 'z-map'`.
 
 3. **Multi-channel collapsing.** `applyMask()` hardcodes three channels
    (`list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3])`), so it throws `subscript out
@@ -138,15 +154,21 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
   # ... same import/validate logic as today, with:
   #  - the channel-collapse block generalised per point 3's alpha-aware n_color rule
   #  - "stimuli" in the size-mismatch message replaced by the `context` argument (point 2)
+  #  - the size-mismatch message's two hardcoded `img_size` reads replaced by
+  #    `img_size[1]` and `img_size[length(img_size)]`, so it reports correctly whether
+  #    img_size is a scalar (generateCI()'s calls, unchanged output) or length-2 (point 1)
 }
 ```
+
+`img_size = nrow(ci)` stays the default (unchanged — every `generateCI()` call site already
+passes a scalar or relies on this default, both untouched).
 
 `R/plotZmap.R`'s ~50-line inline `if (!is.null(mask)) { ... }` import/validate block (current
 `main` lines ~126-177) is deleted and replaced with:
 
 ```r
 if (!is.null(mask)) {
-  zmap <- applyMask(zmap, mask, img_size = nrow(zmap), context = 'z-map')
+  zmap <- applyMask(zmap, mask, img_size = c(nrow(zmap), ncol(zmap)), context = 'z-map')
 }
 ```
 
@@ -164,8 +186,14 @@ NA`. Sequencing is unchanged: threshold is applied first, then the mask, exactly
 - No other existing test asserts `plotZmap()`'s previous mask-import wording (checked via
   `grep` across `tests/testthat/`), so nothing else needs updating.
 - `tests/testthat/test-error-paths.R`'s four `applyMask()` guard tests need no change: every
-  existing call (three positional args plus `img_size =`) keeps its exact signature and exact
-  message text for every case they cover, since `context` is additive with a default.
+  existing call (three positional args plus `img_size =`) keeps its exact signature, and the
+  substrings they assert (`"same dimensions"`, `"8"`, `"4"`, `"other than 0 or 1"`, `"not a
+  greyscale image"`, `"neither a string nor a matrix"`) are all still present — see point 2 on
+  the one incidental wording normalization that does not affect any of them.
+- Add a test for the rectangular-mask case found during review: `applyMask()` (and so
+  `plotZmap()`) accepts a mask whose dimensions match a non-square target passed as
+  `img_size = c(rows, cols)`, and still reports both dimensions correctly (not the same value
+  twice) when they do not match.
 - Add one new test exercising `plotZmap()`'s newly-inherited "neither a string nor a matrix"
   guard directly (`plotZmap(mask = TRUE, ...)` or similar), since this is new observable
   behaviour for that function and nothing currently covers it.
