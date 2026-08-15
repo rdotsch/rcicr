@@ -74,18 +74,48 @@ if (!identical(have, want)) {
   remotes::install_version("roxygen2", version = want, repos = repos, lib = lib)
 }
 
+# dev_package_deps()$diff compares the installed version against CRAN'"'"'s
+# latest, not against DESCRIPTION'"'"'s own constraint -- confirmed directly:
+# temporarily requiring withr (>= 99.0.0) against an installed 3.0.3 still
+# reported diff = 0. So on a rerun after a `git pull` raises a Suggests
+# minimum, upgrade = "never" above leaves the old version in place and a
+# check based on dev_package_deps() alone would not catch it. Check
+# DESCRIPTION'"'"'s declared constraints against installed versions directly,
+# and upgrade only the packages that actually fail one.
+cmp_ops <- list(">=" = `>=`, ">" = `>`, "<=" = `<=`, "<" = `<`, "==" = `==`, "!=" = `!=`)
+constraints <- desc::desc_get_deps()
+constraints <- constraints[constraints$package != "R" & constraints$version != "*", ]
+unmet <- Map(function(pkg, spec) {
+  op <- regmatches(spec, regexpr("^[<>=!]+", spec))
+  req <- trimws(sub("^[<>=!]+", "", spec))
+  have <- tryCatch(as.character(packageVersion(pkg)), error = function(e) NA_character_)
+  if (!is.na(have) && cmp_ops[[op]](package_version(have), package_version(req))) NA_character_ else pkg
+}, constraints$package, constraints$version)
+unmet <- unique(unlist(unmet, use.names = FALSE))
+unmet <- unmet[!is.na(unmet)]
+if (length(unmet)) install.packages(unmet, repos = repos, lib = lib)
+
 # install.packages() only warns on a failed build, so a script that stops
 # only on a nonzero exit status can silently finish "successfully" missing a
 # tool -- confirmed: devtools previously failed here (missing system libs,
 # now added above) and this step did not catch it. Verify explicitly, using
-# dev_package_deps() again rather than a second hard-coded list.
+# dev_package_deps() and the constraint check above rather than a second
+# hard-coded list.
 deps <- as.data.frame(remotes::dev_package_deps(".", dependencies = TRUE))
+still_unmet <- vapply(unmet, function(pkg) {
+  spec <- constraints$version[constraints$package == pkg]
+  op <- regmatches(spec, regexpr("^[<>=!]+", spec))
+  req <- trimws(sub("^[<>=!]+", "", spec))
+  have <- tryCatch(as.character(packageVersion(pkg)), error = function(e) NA_character_)
+  is.na(have) || !cmp_ops[[op]](package_version(have), package_version(req))
+}, logical(1))
 still_missing <- c(
   deps$package[is.na(deps$installed)],
+  unmet[still_unmet],
   setdiff(c(extra, "roxygen2"), rownames(installed.packages()))
 )
 if (length(still_missing)) {
-  stop("Failed to install: ", paste(still_missing, collapse = ", "))
+  stop("Failed to install: ", paste(unique(still_missing), collapse = ", "))
 }
 '
 
