@@ -30,7 +30,7 @@ $SUDO apt-get update -qq
 $SUDO apt-get install -y -qq \
   build-essential gfortran pandoc \
   libpng-dev libjpeg-dev libcurl4-openssl-dev libxml2-dev \
-  libfreetype-dev libtiff-dev libharfbuzz-dev libfribidi-dev libfontconfig-dev \
+  libfreetype-dev libtiff-dev libharfbuzz-dev libfribidi-dev libfontconfig1-dev \
   libgit2-dev
 
 # R's default site-library is root-owned on a plain apt install, and a

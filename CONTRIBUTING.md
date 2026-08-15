@@ -32,9 +32,9 @@ configurations, and compares. Every release has to pass it — see `RELEASING.md
 
 ## Getting set up
 
-On a fresh machine with only R installed (no compiler, no package library),
-`tools/dev-setup.sh` installs the system toolchain and every
-Imports/Suggests package from source, then installs the package itself.
+On a fresh Ubuntu machine with only R installed (no compiler, no package library) --
+`tools/dev-setup.sh` is Ubuntu-specific, it shells out to `apt-get` -- it installs the system
+toolchain and every Imports/Suggests package from source, then installs the package itself.
 Idempotent -- rerun it after pulling a dependency change.
 
 ```r

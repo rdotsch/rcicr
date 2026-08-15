@@ -174,8 +174,8 @@ Two things worth knowing before you write code against this file:
 
 ## Development
 
-On a fresh machine with no compiler or R package library yet, `tools/dev-setup.sh` builds one —
-see CONTRIBUTING.md → "Getting set up" for details.
+On a fresh Ubuntu machine with no compiler or R package library yet, `tools/dev-setup.sh` builds
+one — see CONTRIBUTING.md → "Getting set up" for details.
 
 ``` r
 devtools::load_all()   # load the package for interactive development
