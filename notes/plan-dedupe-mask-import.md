@@ -65,24 +65,49 @@ tested or reachable through documented usage:
    `png::writePNG()`. So routing `plotZmap()` through `applyMask()` unchanged would have broken
    a call that works today — caught by review, not by the earlier draft's own reasoning.
 
-   Resolution: fix `applyMask()`'s channel-collapse in place, since it is now the one
-   implementation both functions share. Generalise to arbitrary channel count `n =
-   dim(mask_matrix)[3]`: collapse when every channel is identical to channel 1
-   (`all(sapply(2:n, function(i) identical(mask_matrix[,,i], mask_matrix[,,1])))`), else the
-   existing "not a greyscale image" error. This is equivalent to `plotZmap()`'s
-   pairwise-consecutive loop by transitivity (so its currently-working 2-channel and 3-channel
-   calls are unaffected) and equivalent to `applyMask()`'s current behaviour for the tested
-   3-channel case (same three channels, same comparison, same result) — a genuine bug fix for
-   `generateCI()` too: a 2-channel mask PNG crashes it today, and will not after this change.
-   For 4-channel (RGBA) input the new logic is *stricter* than today's hardcoded check (which
-   silently ignores channel 4): the alpha channel must now match too, or the mask is rejected as
-   non-greyscale. Untested either way (`test-error-paths.R:194-217` only covers 3-channel RGB) —
-   reject-on-mismatch is the safer default for previously-unreachable input, matching how every
-   other guard in this function already errs toward rejecting an ambiguous mask over guessing.
+   **First revision, made in review:** generalising to "all `n` channels must match channel 1"
+   (as an earlier draft of this plan proposed) is *also* wrong, caught by a second review
+   comment. `applyMask()`'s current channels-1:3-only check is not incidental — for an RGBA
+   mask whose RGB planes carry a genuine binary pattern and whose alpha plane is a constant
+   (e.g. fully opaque, the common case for a mask authored in an external tool), `applyMask()`
+   **succeeds today** by ignoring alpha, and real `generateCI()` scripts can depend on that.
+   Verified directly: built exactly this array (RGB planes = a varying 0/1 pattern, alpha =
+   constant 1) and confirmed `applyMask()` accepts it on current `main` while `plotZmap()`
+   — using its all-channels-must-match loop — rejects the *same file*. So the two functions
+   already disagree on this exact input; "all channels must match" would have resolved that
+   disagreement by breaking the one call that currently works, not by fixing the drift.
 
-   Added to the test plan below: a 2-channel (greyscale + alpha) mask with identical planes must
-   succeed through `applyMask()` directly (and so through both callers), and one with differing
-   planes must error as non-greyscale — the exact case review caught, pinned so it cannot
+   Resolution: alpha is not colour information, so it should never be compared. Generalise
+   using PNG's own channel semantics instead of a generic "all channels equal" rule — a
+   trailing channel is alpha whenever the total is even (2 = greyscale+alpha, 4 = RGBA); every
+   other channel is colour and must agree with channel 1:
+
+   ```r
+   n <- dim(mask_matrix)[3]
+   n_color <- if (n %in% c(2, 4)) n - 1L else n
+   if (n_color > 1 && !all(sapply(2:n_color, function(i) {
+     identical(mask_matrix[,,i], mask_matrix[,,1])
+   }))) {
+     stop(<existing "not a greyscale image" message>)
+   }
+   mask_matrix <- mask_matrix[,,1]
+   ```
+
+   Checked against six cases by direct execution, not just read through: 3-channel
+   identical/differing (the two existing tests — unchanged results), 2-channel
+   identical/differing (Codex's first finding — both now succeed, ignoring alpha), and
+   4-channel with uniform RGB but differing alpha in both orders (Codex's second finding — the
+   RGBA case still succeeds through `applyMask()` exactly as today, since alpha is dropped
+   before the comparison; a 4-channel case where the RGB planes themselves differ still errors).
+   No case that currently succeeds in either function changes result. What changes is only:
+   `applyMask()` on 2-channel input goes from an unconditional crash to success (a bug fix,
+   channel content does not matter — alpha was never compared for 3- or 4-channel input either);
+   and `plotZmap()` on a 2-channel mask with a differing alpha plane goes from erroring to
+   succeeding (previously-erroring path only, same category as points 2 and 4).
+
+   Added to the test plan below: a 2-channel mask (identical planes, and differing planes) must
+   succeed through `applyMask()` directly, and a 4-channel mask with uniform RGB but a differing
+   alpha plane must also still succeed — the two cases review caught, pinned so neither can
    regress again.
 
 4. **Type-check on a non-string, non-matrix mask.** `applyMask()` explicitly rejects it
@@ -94,12 +119,13 @@ tested or reachable through documented usage:
    to any currently-succeeding call.
 
 None of the four points changes the result of any call that currently succeeds through either
-function, except point 3's 2-channel case, which changes `generateCI()` from crashing to working
-(a bug fix) and leaves `plotZmap()`'s already-working behaviour unchanged. Points 3 (RGBA) and 4
-change the *error path* for inputs nothing in the test suite or documented usage reaches today.
-This is not a numeric-output or call-syntax change under the "guiding constraint" in
-`AGENTS.md`, but it is still an observable behaviour change worth a `NEWS.md` entry, named
-explicitly rather than left for someone to notice.
+function. Point 3 changes two previously-*erroring* paths to succeed (a 2-channel mask crashing
+`applyMask()` unconditionally; a 2-channel mask with a differing alpha plane erroring in
+`plotZmap()`) while leaving every currently-succeeding call — including the 4-channel RGBA case
+found in review — at its current result. Point 4 changes the error path for an input nothing in
+the test suite or documented usage reaches today. This is not a numeric-output or call-syntax
+change under the "guiding constraint" in `AGENTS.md`, but it is still an observable behaviour
+change worth a `NEWS.md` entry, named explicitly rather than left for someone to notice.
 
 ## The change itself
 
@@ -110,7 +136,7 @@ gains one additive parameter and a generalised channel-collapse loop:
 ```r
 applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
   # ... same import/validate logic as today, with:
-  #  - the channel-collapse block generalised to arbitrary n = dim(mask_matrix)[3] (point 3)
+  #  - the channel-collapse block generalised per point 3's alpha-aware n_color rule
   #  - "stimuli" in the size-mismatch message replaced by the `context` argument (point 2)
 }
 ```
@@ -143,9 +169,11 @@ NA`. Sequencing is unchanged: threshold is applied first, then the mask, exactly
 - Add one new test exercising `plotZmap()`'s newly-inherited "neither a string nor a matrix"
   guard directly (`plotZmap(mask = TRUE, ...)` or similar), since this is new observable
   behaviour for that function and nothing currently covers it.
-- Add a test pinning the 2-channel (greyscale + alpha) case found during review: a mask PNG with
-  identical grayscale and alpha planes succeeds through `applyMask()` directly, one with
-  differing planes errors as non-greyscale — see point 3 above.
+- Add tests pinning the two channel-count cases found during review, all through `applyMask()`
+  directly: a 2-channel (greyscale + alpha) mask succeeds whether the planes are identical or
+  differing (alpha is always ignored); a 4-channel (RGBA) mask with uniform RGB planes and a
+  differing alpha plane succeeds (matching current `main`'s behaviour exactly); a 4-channel mask
+  whose RGB planes themselves differ still errors as non-greyscale — see point 3 above.
 
 ## Verification before marking ready
 
