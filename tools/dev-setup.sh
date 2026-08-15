@@ -18,8 +18,16 @@ set -euo pipefail
 # path from elsewhere would read (or fail to find) the wrong DESCRIPTION.
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-sudo apt-get update -qq
-sudo apt-get install -y -qq \
+# A minimal container commonly runs as root with no sudo installed at all, so
+# `sudo apt-get` fails with "sudo: command not found" before anything is
+# installed. Only reach for sudo when not already root.
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+  SUDO="sudo"
+fi
+
+$SUDO apt-get update -qq
+$SUDO apt-get install -y -qq \
   build-essential gfortran pandoc \
   libpng-dev libjpeg-dev libcurl4-openssl-dev libxml2-dev \
   libfreetype-dev libtiff-dev libharfbuzz-dev libfribidi-dev libfontconfig-dev \
