@@ -31,12 +31,20 @@ mkdir -p "$R_LIBS_USER"
 # cannot build them without it.
 Rscript -e '
 lib <- Sys.getenv("R_LIBS_USER")
+
+# Read Imports/Suggests from DESCRIPTION itself rather than hard-coding them
+# here -- a hard-coded copy drifts the moment a dependency is added, and
+# CONTRIBUTING.md already tells contributors to rerun this script after a
+# `git pull` that changes one, which only helps if it actually notices.
+desc_field <- function(field) {
+  raw <- read.dcf("DESCRIPTION", field)[1, field]
+  if (is.na(raw)) return(character(0))
+  pkgs <- trimws(strsplit(raw, ",")[[1]])
+  sub("\\s*\\(.*\\)$", "", pkgs)
+}
 pkgs <- c(
-  # DESCRIPTION Imports
-  "matlab", "png", "jpeg", "dplyr", "scales", "viridis", "doSNOW", "foreach",
-  "spatstat.explore", "spatstat.geom", "tibble", "yesno",
-  # DESCRIPTION Suggests
-  "testthat", "covr", "withr", "knitr", "rmarkdown",
+  desc_field("Imports"),
+  desc_field("Suggests"),
   # dev tooling -- not a package dependency, but needed to work in this repo:
   # lintr/pkgload for #183, devtools/remotes for the CONTRIBUTING.md
   # "Getting set up" workflow
