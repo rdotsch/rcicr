@@ -63,7 +63,7 @@
 </ul></div>
 <div class="section level2">
 <h2 id="testing-and-ci">Testing and CI<a class="anchor" aria-label="anchor" href="#testing-and-ci"></a></h2>
-<p><strong>The workflow inventory, the five required check names, and the two rules for editing them (never rename a job, never convert the gate to a <code>paths:</code> filter) are in <code>MAINTENANCE.md</code>.</strong> Read it before touching <code>.github/workflows/</code>.</p>
+<p><strong>The workflow inventory, the required check names, and the two rules for editing them (never rename a job, never convert the gate to a <code>paths:</code> filter) are in <code>MAINTENANCE.md</code>.</strong> Read it before touching <code>.github/workflows/</code>.</p>
 <ul><li>
 <code>tests/testthat/</code> has unit tests for every pure/deterministic function (<code>deg2rad</code>, <code>generateSinusoid</code>, <code>generateGabor</code>, <code>generateNoisePattern</code>, <code>generateNoiseImage</code>, <code>generateCINoise</code>), light/targeted tests for the I/O-heavy ones, and an end-to-end smoke test (<code>test-smoke-pipeline.R</code>).</li>
 <li>

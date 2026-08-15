@@ -58,8 +58,8 @@ applies unchanged, run from the package root. Two things about it are
 
 ## Testing and CI
 
-**The workflow inventory, the five required check names, and the two
-rules for editing them (never rename a job, never convert the gate to a
+**The workflow inventory, the required check names, and the two rules
+for editing them (never rename a job, never convert the gate to a
 `paths:` filter) are in `MAINTENANCE.md`.** Read it before touching
 `.github/workflows/`.
 
