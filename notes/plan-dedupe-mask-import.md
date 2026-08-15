@@ -41,13 +41,37 @@ tested or reachable through documented usage:
    `"8"`, `"4"` — none of which depend on the context word — so this is safe against the pinned
    assertions.
 
-3. **RGB/RGBA channel collapsing.** `applyMask()` checks channels 1:3 for identity (ignoring a
-   4th/alpha channel if present). `plotZmap()` loops over *all* layers pairwise, so a
-   4-channel PNG needs channel 4 (alpha) to match too, or it errors. No test exercises an RGBA
-   mask for either function (`test-error-paths.R:194-217` only covers a 3-channel RGB mask).
-   Resolution: use `applyMask()`'s channel-1:3 logic in the shared helper — this is a behaviour
-   change for `plotZmap()` on an untested, undocumented input (an RGBA mask), making it match
-   `generateCI()`'s established behaviour instead of erroring where `generateCI()` would not.
+3. **Multi-channel collapsing.** `applyMask()` hardcodes three channels
+   (`list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3])`), so it throws `subscript out
+   of bounds` — not a clean error — on any PNG with `dim()[3] != 3`. `plotZmap()` instead loops
+   `for (i in 2:dim(mask)[3])`, which works for any channel count including 2 (an 8-bit
+   grayscale-plus-alpha PNG, which `png::readPNG()` decodes to a 2-channel array). Verified
+   directly rather than assumed: on current `main`,
+   `plotZmap(mask = <2-channel PNG, planes identical>, decoration = FALSE, ...)` **succeeds**,
+   while the equivalent `applyMask()` call on the same file throws `subscript out of bounds` —
+   confirmed by sourcing both files and calling each against a real 2-channel PNG written with
+   `png::writePNG()`. So naively adopting `applyMask()`'s hardcoded-3 logic, as an earlier draft
+   of this plan did, would have broken a call that works today on `plotZmap()` — caught by
+   review, not by the earlier draft's own (insufficiently checked) reasoning.
+
+   Resolution: neither existing implementation is right to copy as-is. The shared helper
+   generalises to arbitrary channel count `n = dim(mask_matrix)[3]`: collapse when every channel
+   is identical to channel 1 (`all(sapply(2:n, function(i) identical(mask_matrix[,,i],
+   mask_matrix[,,1])))`), else the existing "not a greyscale image" error. This is equivalent to
+   `plotZmap()`'s pairwise-consecutive loop by transitivity (so its currently-working
+   2-channel and 3-channel calls are unaffected) and equivalent to `applyMask()`'s current
+   behaviour for the tested 3-channel case (same three channels, same comparison, same result).
+   For 4-channel (RGBA) input it is *stricter* than `applyMask()`'s current hardcoded check
+   (which silently ignores channel 4): now the alpha channel must match too, or the mask is
+   rejected as non-greyscale rather than silently accepted with alpha discarded. Untested either
+   way (`test-error-paths.R:194-217` only covers 3-channel RGB) — reject-on-mismatch is the
+   safer default for previously-unreachable input, matching how every other guard in this helper
+   already errs toward rejecting an ambiguous mask rather than guessing.
+
+   Added to the test plan below: a 2-channel (greyscale + alpha) mask with identical planes must
+   still succeed through both `applyMask()` and `plotZmap()`, and one with differing planes must
+   still error as non-greyscale through both — the exact case review caught, pinned so it cannot
+   regress again.
 
 4. **Type-check on a non-string, non-matrix mask.** `applyMask()` explicitly rejects it
    (`"neither a string nor a matrix"`, tested). `plotZmap()` has no such check — it calls
@@ -71,7 +95,9 @@ New file `R/importMask.R`:
 ```r
 importMask <- function(mask, target_dims, context = 'stimuli') {
   # ... exact logic of the current applyMask() import/validate block, generalised
-  # per points 1-2 above, returning a logical matrix (TRUE = masked, i.e. mask == 0).
+  # per points 1-2 above, plus the channel-count generalisation from point 3
+  # (collapse when every channel equals channel 1, for any n = dim()[3] >= 2),
+  # returning a logical matrix (TRUE = masked, i.e. mask == 0).
 }
 ```
 
@@ -110,6 +136,9 @@ expects a boolean matrix in that convention).
 - Add one new test exercising `plotZmap()`'s newly-shared "neither a string nor a matrix" guard
   directly (`plotZmap(mask = TRUE, ...)` or similar), since this is new observable behaviour for
   that function and nothing currently covers it.
+- Add a test pinning the 2-channel (greyscale + alpha) case found during review: a mask PNG with
+  identical grayscale and alpha planes succeeds (through both `applyMask()` and `plotZmap()`),
+  one with differing planes errors as non-greyscale (through both) — see point 3 above.
 
 ## Verification before marking ready
 
