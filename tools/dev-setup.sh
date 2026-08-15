@@ -3,9 +3,11 @@
 # has only R itself preinstalled -- no compiler, no CRAN binary repo
 # configured, so install.packages() fails outright until a toolchain exists,
 # then fails to compile from source without libpng/libjpeg/libxml2/libcurl
-# headers. Verified end-to-end from that starting point: apt packages below
-# plus every Imports/Suggests package plus lintr/devtools/roxygen2 all
-# installed clean, and `R CMD INSTALL` on the package itself succeeded.
+# headers (and, for devtools' pkgdown/ragg/textshaping/systemfonts/gert
+# chain, freetype/tiff/harfbuzz/fribidi/fontconfig/libgit2). Verified
+# end-to-end from that starting point: apt packages below plus every
+# Imports/Suggests package plus lintr/devtools/roxygen2 all installed
+# clean, and `R CMD INSTALL` on the package itself succeeded.
 #
 # Idempotent -- rerun after a `git pull` that adds a dependency; already-
 # installed R packages are skipped.
@@ -13,8 +15,10 @@ set -euo pipefail
 
 sudo apt-get update -qq
 sudo apt-get install -y -qq \
-  build-essential gfortran \
-  libpng-dev libjpeg-dev libcurl4-openssl-dev libxml2-dev
+  build-essential gfortran pandoc \
+  libpng-dev libjpeg-dev libcurl4-openssl-dev libxml2-dev \
+  libfreetype-dev libtiff-dev libharfbuzz-dev libfribidi-dev libfontconfig-dev \
+  libgit2-dev
 
 # R's default site-library is root-owned on a plain apt install, and a
 # non-interactive Rscript can neither write there nor prompt to create a
@@ -23,6 +27,8 @@ sudo apt-get install -y -qq \
 R_LIBS_USER="$(Rscript -e 'cat(Sys.getenv("R_LIBS_USER"))')"
 mkdir -p "$R_LIBS_USER"
 
+# pandoc: both vignettes use rmarkdown::html_vignette, so devtools::check()
+# cannot build them without it.
 Rscript -e '
 lib <- Sys.getenv("R_LIBS_USER")
 pkgs <- c(
@@ -36,8 +42,8 @@ pkgs <- c(
   # "Getting set up" workflow
   "lintr", "pkgload", "devtools", "remotes"
 )
-pkgs <- setdiff(pkgs, rownames(installed.packages()))
-if (length(pkgs)) install.packages(pkgs, repos = "https://cloud.r-project.org", lib = lib)
+missing <- setdiff(pkgs, rownames(installed.packages()))
+if (length(missing)) install.packages(missing, repos = "https://cloud.r-project.org", lib = lib)
 
 # roxygen2 unpinned would drift from DESCRIPTION'"'"'s RoxygenNote, and a
 # locally-generated man/NAMESPACE diff from that drift is not a real
@@ -46,6 +52,15 @@ want <- read.dcf("DESCRIPTION", "RoxygenNote")[[1]]
 have <- tryCatch(as.character(packageVersion("roxygen2")), error = function(e) NA_character_)
 if (!identical(have, want)) {
   remotes::install_version("roxygen2", version = want, repos = "https://cloud.r-project.org", lib = lib)
+}
+
+# install.packages() only warns on a failed build, so a script that stops
+# only on a nonzero exit status can silently finish "successfully" missing a
+# tool -- confirmed: devtools previously failed here (missing system libs,
+# now added above) and this step did not catch it. Verify explicitly.
+still_missing <- setdiff(c(pkgs, "roxygen2"), rownames(installed.packages()))
+if (length(still_missing)) {
+  stop("Failed to install: ", paste(still_missing, collapse = ", "))
 }
 '
 
