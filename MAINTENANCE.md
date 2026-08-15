@@ -17,17 +17,18 @@ file is the machinery around them.
 | `test-coverage.yaml` | Codecov; needs a `CODECOV_TOKEN`. `codecov.yml` sets lenient thresholds because coverage is deliberately partial. |
 | `pkgdown.yaml` | builds the site on every PR, deploys on push to `main`. |
 | `rhub.yaml` | stock R-hub v2, `workflow_dispatch` only. |
-| `lint.yaml` | `lintr::lint_package()`, gated by `.lintr`'s `exclusions:` baseline so only a *new* lint fails it. Not yet a required check (below); `lintr` is pinned in the workflow, and `tools/regenerate-lintr-baseline.R` regenerates the baseline. |
+| `lint.yaml` | `lintr::lint_package()`, gated by `.lintr`'s `exclusions:` baseline so only a *new* lint fails it. A required check (below); `lintr` is pinned in the workflow, and `tools/regenerate-lintr-baseline.R` regenerates the baseline. |
 
-**Five required status checks on `main`**: `compare`, `ubuntu-latest (release)`,
-`ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)`. They are enforced
-by a **ruleset**, not classic branch protection, so `gh api repos/rdotsch/rcicr/branches/main`
-reports no required contexts and looks unconfigured — query
-`gh api repos/rdotsch/rcicr/rules/branches/main` instead. `lint` is deliberately not among them:
-adding a check *name* to the ruleset is a repo-settings write agents here cannot make, so it
-needs the maintainer, once by hand, via GitHub → Settings → Rules → Rulesets — a UI edit rather
-than a hand-built API payload, since a malformed `PUT` risks dropping unrelated ruleset fields.
-Until then `lint` reports on PRs but does not block one.
+**Six required status checks on `main`**: `compare`, `ubuntu-latest (release)`,
+`ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)`, `lint`. They are
+enforced by a **ruleset**, not classic branch protection, so
+`gh api repos/rdotsch/rcicr/branches/main` reports no required contexts and looks unconfigured —
+query `gh api repos/rdotsch/rcicr/rules/branches/main` instead. `lint` was added last, once the
+maintainer added its check *name* to the ruleset by hand via GitHub → Settings → Rules →
+Rulesets: adding a name to the ruleset is a repo-settings write agents here cannot make, so a
+newly added workflow's check reports on PRs but does not block one until the maintainer does
+this — a UI edit rather than a hand-built API payload, since a malformed `PUT` risks dropping
+unrelated ruleset fields.
 
 Two consequences worth knowing before editing a workflow. **Required checks are matched by
 name**, so rows can be added to a matrix freely but never renamed — a renamed check reads as
