@@ -24,7 +24,7 @@ generateNoiseImage <- function(params, p) {
   # Abort stimulus generation if number of params doesn't equal number of patches
   if (length(params) != max(p$patchIdx)) {
 
-    if ((length(params) == max(p$patchIdx) + 1)& (min(p$patchIdx) == 0)) {
+    if ((length(params) == max(p$patchIdx) + 1) && (min(p$patchIdx) == 0)) {
       # Some versions of dependencies created patch indices starting with 0, latest dependencies
       # start counting at 1. Fix this.
 

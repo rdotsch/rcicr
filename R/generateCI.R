@@ -177,7 +177,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
   list2env(.args, envir = environment())
 
   # Check whether critical variables have been loaded
-  if (!exists('s', envir=environment(), inherits=FALSE) &
+  if (!exists('s', envir=environment(), inherits=FALSE) &&
       !exists('p', envir=environment(), inherits=FALSE)) {
     stop('File specified in rdata did not contain s or p variable.', rdataWriterNote(environment()))
   }
@@ -489,7 +489,7 @@ applyScaling <- function(base, ci, scaling, constant) {
   # Scaling with a constant scaling factor
   } else if (scaling == 'constant') {
     scaled <- (ci + constant) / (2*constant)
-    if (max(scaled[!is.na(scaled)]) > 1.0 | min(scaled[!is.na(scaled)]) < 0) {
+    if (max(scaled[!is.na(scaled)]) > 1.0 || min(scaled[!is.na(scaled)]) < 0) {
       warning(paste0('Chosen constant value for constant scaling made noise ',
                      'of classification image exceed possible intensity range ',
                      'of pixels (<0 or >1). Choose a lower value, or clipping ',
