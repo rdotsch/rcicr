@@ -86,3 +86,31 @@ test_that("generateCI masks the intended region, from a matrix or a PNG alike", 
   # ...and the two forms agree exactly, so neither can drift in polarity.
   expect_equal(from_matrix, from_png)
 })
+
+test_that("generateCI rejects a one-cell NA mask instead of silently ignoring it", {
+  # hasMask()'s sentinel test was length(mask) == 1L && is.na(mask), which
+  # matrix(NA, 1, 1) also satisfies -- so generateCI() read a malformed
+  # one-cell mask as "no mask given" and returned an entirely unmasked CI with
+  # no error or warning (found reviewing issue #246). The mask argument was
+  # plainly meant as a mask, so discarding it in silence is the wrong-output
+  # failure mode, not a harmless one. It now reaches applyMask() and is
+  # rejected there -- on the size check first, since one cell cannot match a
+  # 32x32 stimulus set; test-plotZmap.R covers the non-binary rejection that
+  # follows when the sizes do match.
+  tmp <- withr::local_tempdir()
+  rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
+
+  args <- list(
+    stimuli = 1:6, responses = c(1, -1, 1, -1, 1, -1),
+    baseimage = "base", rdata = rdata_path, save_as_png = FALSE
+  )
+
+  expect_error(
+    do.call(generateCI, c(args, list(mask = matrix(NA, 1, 1)))),
+    "not of the same dimensions as the stimuli"
+  )
+
+  # The scalar sentinel still means "no mask" -- it is this argument's default,
+  # so every unmasked call depends on it -- and gives an unmasked CI.
+  expect_false(anyNA(do.call(generateCI, c(args, list(mask = NA)))$ci))
+})

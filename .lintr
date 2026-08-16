@@ -48,8 +48,8 @@ exclusions: list(
     ),
     "R/generateCI.R" = list(
       commas_linter = c(223, 291),
-      indentation_linter = c(181, 261, 506, 515, 518, 519, 531),
-      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 508, 530),
+      indentation_linter = c(181, 261, 510, 519, 522, 523, 535),
+      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 512, 534),
       object_name_linter = c(279, 288, 314),
       spaces_left_parentheses_linter = c(338, 340, 351)
     ),
@@ -145,3 +145,4 @@ exclusions: list(
       seq_linter = c(54)
     )
   )
+

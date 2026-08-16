@@ -133,7 +133,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   # the mask)" and the todo was never picked up, so the argument was
   # validated and then silently discarded in every released version until
   # 1.2.0 (see NEWS.md).
-  if (!is.null(mask)) {
+  if (hasMask(mask)) {
     zmap <- applyMask(zmap, mask, img_size = c(nrow(zmap), ncol(zmap)), context = 'z-map')
   }
 

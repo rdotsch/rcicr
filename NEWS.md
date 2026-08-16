@@ -38,6 +38,16 @@
   `generateCI()`'s own z-map figures are undecorated and unaffected. See
   `?plotZmap`, "Reproducibility across platforms".
 
+- **`generateCI(mask = matrix(NA, 1, 1))` now reports the malformed mask instead of silently
+  ignoring it.** The internal test for "was a mask supplied?" asked whether the argument was a
+  single `NA`, which a one-cell `NA` matrix also is — so such a mask was mistaken for the `NA`
+  default, discarded without a word, and an entirely **unmasked** classification image came
+  back. A call that passes a mask and gets an unmasked CI is the failure worth catching early;
+  it now stops in the same mask validation every other malformed mask reaches. Only a one-cell
+  all-`NA` matrix is affected: `mask = NA` still means "no mask" (it is the default, so every
+  unmasked call relies on it), and `matrix(1, 1, 1)`, larger matrices, PNG paths and `NULL` are
+  all unchanged.
+
 - **`generateStimuli2IFC()` now checks `base_face_files` before it generates anything,
   and names the entry it cannot use.** Four inputs used to get past the old check and
   fail from inside a parallel worker with `attempt to select less than one element in
@@ -99,6 +109,13 @@
   A rectangular `zmap`/mask pair continues to work as before. `plotZmap(mask = ...)` also now
   rejects a mask that is neither a string nor a matrix with a clear error, instead of failing
   later inside `png::readPNG()` with an unrelated message.
+
+- **`plotZmap(mask = NA)` now means "no mask", as it already does in `generateCI()`.** The two
+  functions detected a supplied mask differently — `plotZmap()` asked only whether the argument
+  was non-`NULL` — so the same sentinel meant opposite things: `generateCI()` read `NA` as "no
+  mask" while `plotZmap()` passed it on and stopped with `The mask argument is neither a string
+  nor a matrix!`. `NaN` behaved the same way. Both now render an unmasked z-map. No call that
+  worked before changes: the inputs affected all raised that error.
 
 - **`generateStimuli2IFC()` no longer saves `trial` in the `.Rdata` file.** It was the loop
   counter left over from stimulus generation — always equal to `n_trials`, which is already
