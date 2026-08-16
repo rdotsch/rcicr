@@ -34,8 +34,25 @@ exempted.
 | `spaces_left_parentheses` | 4 | whitespace |
 | `spaces_inside` | 3 | whitespace |
 
-**The 7 assignments** are all plain statement-level, including one indexed assignment
-(`patchIdx[...] = idx`), where `<-` is exactly equivalent.
+**The assignments: 12, not the 7 the linter reports.** Raised in review, and confirmed wider
+than the finding. `assignment_linter` has blind spots — it misses the four inside the
+`if (pre_0.3.0)` branches at `generateNoisePattern.R:32-36`, and one at `generateCI.R:255`
+(`params = -params`). Counted from the AST rather than from the linter or a regex, by walking
+the parse data for `EQ_ASSIGN`:
+
+```
+R/generateCI.R            1   (line 255)
+R/generateNoisePattern.R 11   (lines 21, 24, 27, 28, 32, 33, 35, 36, 59, 62, 68)
+total                    12
+```
+
+All 12 are plain statement-level, including one indexed assignment (`patchIdx[...] = idx`),
+where `<-` is exactly equivalent. **Fix all 12**, not the 7 that lint: a zero-lint result would
+otherwise certify a file that still violates the convention.
+
+**And the convention's own claim is false.** `CONTRIBUTING.md:192` reads "Assignment | `<-`,
+never `=` | Already universal — there are zero `=` assignments in `R/`." There are 12. Fixing
+them all makes the sentence true, which is better than rewording it to admit exceptions.
 
 **The 6 pipes** are all in `computeInfoVal2IFC.R`, in the `ref_lookup` region that
 `AGENTS.md` flags as delicate. Rewriting them is the wrong fix: the package uses `%>%` 7 times
@@ -74,12 +91,14 @@ worth handling even if some file keeps an entry today, because the next cleanup 
 
 1. Parse-tree comparison per file, as last round — `git diff -w` is not evidence here because it
    ignores whitespace inside string literals too, and these files are full of `stop()`/`paste0()`
-   message text. Expected: 5 of 6 identical, `generateNoisePattern.R` differing in exactly 7
-   deparsed lines, all `=` -> `<-`.
+   message text. Expected: 4 of 6 identical, `generateNoisePattern.R` differing in exactly 11
+   deparsed lines and `generateCI.R` in 1, all `=` -> `<-`.
 2. Full suite including `test-regression-baseline.R`.
 3. The reproducibility gate runs on its own (`R/` is not inert) and must be green with no
    `EXPECTED` entry.
 4. `lint_package()` is 0, and `.lintr` parses — check by running the linter, not by reading it.
+   Separately, the AST walk for `EQ_ASSIGN` over `R/` returns 0, which the linter cannot
+   establish since it cannot see 5 of the 12.
 5. Drift check: insert lines at the top of `generateCI.R`, confirm still 0.
 
 ## `MAINTENANCE.md`
