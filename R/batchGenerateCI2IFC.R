@@ -48,7 +48,7 @@
 #'   data = data, by = "participant", stimuli = "stimulus", responses = "response",
 #'   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 #' ))
-batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png=TRUE, targetpath, antiCI=FALSE, scaling='autoscale', constant=0.1, label='') {
+batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png = TRUE, targetpath, antiCI = FALSE, scaling = 'autoscale', constant = 0.1, label = '') {
 
   # targetpath is required, not defaulted: a default path writes to the user's
   # filespace uninvited, which CRAN policy does not allow.
@@ -70,9 +70,9 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
   cis <- list()
 
   # Remove by = NA's from data
-  data <- data[!is.na(data[,by]), ]
+  data <- data[!is.na(data[, by]), ]
 
-  by.levels <- unique(data[,by])
+  by.levels <- unique(data[, by])
   # dplyr::progress_estimated() is deprecated; use the base R progress bar
   pb <- txtProgressBar(min = 0, max = length(by.levels), style = 3)
   pb_i <- 0
@@ -84,19 +84,19 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     setTxtProgressBar(pb, pb_i)
 
     # Get subset of data
-    unitdata <- data[data[,by] == unit, ]
+    unitdata <- data[data[, by] == unit, ]
 
     # Specify filename for CI PNG
     if (label == '') {
-      filename <- paste0(baseimage, '_', by, '_', unitdata[1,by])
+      filename <- paste0(baseimage, '_', by, '_', unitdata[1, by])
     } else {
-      filename <- paste0(baseimage, '_', label, '_', by, '_', unitdata[1,by])
+      filename <- paste0(baseimage, '_', label, '_', by, '_', unitdata[1, by])
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
     cis[[filename]] <- generateCI2IFC(
-      stimuli = unitdata[,stimuli],
-      responses = unitdata[,responses],
+      stimuli = unitdata[, stimuli],
+      responses = unitdata[, responses],
       baseimage = baseimage,
       rdata = rdata,
       save_as_png = save_as_png,
@@ -104,11 +104,12 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
       targetpath = targetpath,
       antiCI = antiCI,
       scaling = scaling,
-      constant = constant)
+      constant = constant
+    )
   }
 
   if (doAutoscale) {
-    cis <- autoscale(cis, save_as_pngs=save_as_png, targetpath=targetpath)
+    cis <- autoscale(cis, save_as_pngs = save_as_png, targetpath = targetpath)
   }
 
   close(pb)

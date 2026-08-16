@@ -20,9 +20,9 @@ generateCINoise <- function(stimuli, responses, p) {
   weighted <- stimuli * responses
 
   # Only aggregate if more than one stimulus/response row
-  if(is.null(dim(weighted))) {
+  if (is.null(dim(weighted))) {
     params <- weighted
-  } else{
+  } else {
     # Compute mean and return to original variance
     params <- colMeans(weighted) #* sqrt(length(responses))
   }

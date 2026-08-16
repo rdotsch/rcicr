@@ -71,7 +71,7 @@
 #' correlations <- suppressWarnings(computeCumulativeCICorrelation(
 #'   stimuli = 1:6, responses = responses, baseimage = "face", rdata = rdata_file
 #' ))
-computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata, targetci=list(), step=1) {
+computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata, targetci = list(), step = 1) {
 
   # Coerce to plain vectors: tibble columns stay one-column tibbles rather than
   # dropping to vectors (see the same handling in generateCI()).
@@ -96,21 +96,21 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   list2env(.args, envir = environment())
 
   # Check whether critical variables have been loaded
-  if (!exists('s', envir=environment(), inherits=FALSE) && !exists('p', envir=environment(), inherits=FALSE) ) {
+  if (!exists('s', envir = environment(), inherits = FALSE) && !exists('p', envir = environment(), inherits = FALSE)) {
     stop('File specified in rdata argument did not contain s or p variable.', rdataWriterNote(environment()))
   }
 
-  if (!exists('base_faces', envir=environment(), inherits=FALSE)) {
+  if (!exists('base_faces', envir = environment(), inherits = FALSE)) {
     stop('File specified in rdata argument did not contain base_faces variable.', rdataWriterNote(environment()))
   }
 
-  if (!exists('stimuli_params', envir=environment(), inherits=FALSE)) {
+  if (!exists('stimuli_params', envir = environment(), inherits = FALSE)) {
     stop('File specified in rdata argument did not contain stimuli_params variable.', rdataWriterNote(environment()))
   }
 
   # Convert s to p (if rdata file originates from pre-0.3.3)
-  if (exists('s', envir=environment(), inherits=FALSE)) {
-    p <- list(patches=s$sinusoids, patchIdx=s$sinIdx, noise_type='sinusoid')
+  if (exists('s', envir = environment(), inherits = FALSE)) {
+    p <- list(patches = s$sinusoids, patchIdx = s$sinIdx, noise_type = 'sinusoid')
     rm(s)
   }
 
@@ -118,7 +118,7 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   # Get base image
   base <- base_faces[[baseimage]]
   if (is.null(base)) {
-    stop(paste0('File specified in rdata argument did not contain any reference to base image label: ', baseimage, ' (NOTE: file contains references to the following base image label(s): ', paste(names(base_faces), collapse=', '), ')'))
+    stop(paste0('File specified in rdata argument did not contain any reference to base image label: ', baseimage, ' (NOTE: file contains references to the following base image label(s): ', paste(names(base_faces), collapse = ', '), ')'))
   }
 
 
@@ -155,10 +155,10 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
 
   correlations <- vector()
   corcounter <- 1
-  for (trial in seq(1,length(responses), step)) {
+  for (trial in seq(1, length(responses), step)) {
     setTxtProgressBar(pb, trial)
 
-    cumCI <- generateCINoise(params[1:trial,], responses[1:trial], p)
+    cumCI <- generateCINoise(params[1:trial, ], responses[1:trial], p)
     correlations[corcounter] <- cor(as.vector(cumCI), as.vector(finalCI),
                                     use = 'pairwise.complete.obs')
     corcounter <- corcounter + 1

@@ -42,27 +42,27 @@ test_that("every exported function still starts with its released arguments", {
   compared <- 0
 
   for (version in baselines) {
-  released <- readRDS(test_path("fixtures", paste0("released-formals-", version, ".rds")))
-  for (nm in exports) {
-    old <- released[[nm]]
-    if (is.null(old)) next  # added after this release; nothing to preserve
-    new <- names(formals(get(nm, envir = asNamespace("rcicr"))))
-    compared <- compared + 1
+    released <- readRDS(test_path("fixtures", paste0("released-formals-", version, ".rds")))
+    for (nm in exports) {
+      old <- released[[nm]]
+      if (is.null(old)) next  # added after this release; nothing to preserve
+      new <- names(formals(get(nm, envir = asNamespace("rcicr"))))
+      compared <- compared + 1
 
-    # A prefix, not an equality: appending an optional argument is allowed, and
-    # is how every argument added since 1.0.1 went in.
-    #
-    expect_equal(
-      new[seq_along(old)], old,
-      info = paste0(
-        nm, "() no longer starts with the arguments it shipped with in ",
-        version, ". ",
-        "Released: ", paste(old, collapse = ", "), ". ",
-        "Now: ", paste(new, collapse = ", "), ". ",
-        "Append new arguments instead of inserting them."
+      # A prefix, not an equality: appending an optional argument is allowed, and
+      # is how every argument added since 1.0.1 went in.
+      #
+      expect_equal(
+        new[seq_along(old)], old,
+        info = paste0(
+          nm, "() no longer starts with the arguments it shipped with in ",
+          version, ". ",
+          "Released: ", paste(old, collapse = ", "), ". ",
+          "Now: ", paste(new, collapse = ", "), ". ",
+          "Append new arguments instead of inserting them."
+        )
       )
-    )
-  }
+    }
   }
 
   # Guards the guard: a fixture that failed to load, or an export list that came
