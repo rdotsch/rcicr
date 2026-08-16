@@ -1,0 +1,137 @@
+# Plan: split `generateCI()` (#184)
+
+`R/generateCI.R` is 589 lines. The exported function's body is 305 of them (lines 114-418)
+and mixes argument validation, `.Rdata` loading, parameter selection, CI computation over two
+different designs, masking, scaling, PNG writing, two z-map methods and parallelism.
+
+**Nothing about the public function changes.** Not the signature, not the argument meanings,
+not a single number it returns. This is an internal reorganisation, and the golden master
+(`test-regression-baseline.R`) plus the release gate are what hold that claim to account.
+
+## What is actually in the 305 lines
+
+Measured on `3ed6349`, the base of this branch:
+
+| lines | what | already extractable? |
+|---|---|---|
+| 114-163 | write-path checks, tibble coercion, length check | partly — `missing()` must stay in the frame |
+| 165-203 | `captureArgs`/`load`/`list2env`, four `exists()` checks, `s` -> `p` | yes |
+| 205-214 | base image lookup + error | yes, pure |
+| 216-222 | response aggregation (collapse repeats) | yes, pure |
+| 224-252 | parameter row selection + 4096 -> 4092 truncation | yes, pure |
+| 254-259 | `antiCI` sign flip | trivial, leave inline |
+| 261-324 | CI computation: single-shot vs per-participant `foreach` | yes, riskiest |
+| 326-340 | mask / scale / combine / save | already helpers, leave |
+| 342-410 | two z-map methods + `plotZmap()` call | yes |
+| 412-418 | return assembly | trivial, leave inline |
+
+The four helpers the issue names (`applyMask`, `applyScaling`, `combine`, `saveToImage`)
+already exist at lines 420-589, along with `hasMask`. **They are not moving and not being
+renamed.** `R/plotZmap.R:136-137` calls `hasMask()` and `applyMask()`, and
+`test-plotZmap.R`, `test-error-paths.R` reach both through `rcicr:::`. Renaming any of them
+breaks those call sites for no gain.
+
+## Target shape
+
+Follows the per-concern file convention `R/rdata.R` and `R/parallel.R` already set, rather
+than growing one file:
+
+**`R/ci-inputs.R`** (new) — pure, no I/O, no globals:
+
+- `coerceTrialVectors(stimuli, responses, participants)` -> list of three vectors; does the
+  `unlist()` coercion and the equal-length check.
+- `selectBaseImage(base_faces, baseimage)` -> matrix; raises the "did not contain any
+  reference to base image label" error naming the available keys.
+- `aggregateResponses(stimuli, responses)` -> list(stimuli, responses); the `aggregate()`
+  collapse of repeated presentations.
+- `selectStimulusParams(stimuli_params, baseimage, stimuli)` -> matrix or vector; row
+  selection, the empty check, and the 4096 -> 4092 pre-0.3.0 truncation in both its
+  multi-trial and single-trial forms.
+
+**`R/rdata.R`** (extend) — `loadStimulusParams(rdata)` -> list(p, base_faces,
+stimuli_params, img_size). Runs `load()` in *its own* frame, validates the four required
+objects, converts `s` -> `p`, and calls `rdataWriterNote()` on that frame.
+
+**`R/ci-compute.R`** (new) — `computeParticipantCIs(...)` -> list(ci, pid_cis). The
+`foreach` block, including the individual-CI save branch.
+
+**`R/zmap-compute.R`** (new) — `computeZmapQuick(ci, sigma, threshold, img_size)` and
+`computeZmapTTest(ci, params, responses, p, pid_cis, img_size, n_cores)`.
+
+`generateCI()`'s body lands at roughly 100 lines: validate -> load -> select -> compute ->
+present -> return, each step one call.
+
+## What I verified, and how
+
+- **Baseline is green.** `devtools::install()` then `testthat::test_local()` on `3ed6349`,
+  R 4.5.2, rcicr 1.2.3.9000. No failures, no errors.
+- **`pid.cis` is a real cross-branch dependency.** `R/generateCI.R:392` (`noiseimages <-
+  pid.cis`) reads a variable created inside the *participants* branch of the CI computation,
+  60 lines earlier and in a different `if`. Any extraction has to make that an explicit
+  argument rather than a shared frame.
+- **That line is not covered by any test.** Checked every `test_that` block in
+  `tests/testthat/` for one setting both `participants` and `zmapmethod = 't.test'`. The
+  single file mentioning both, `test-parallel-progress.R:46`, uses them in *separate*
+  `generateCI()` calls (`participant_ci()` and `zmap_ci()`), so the combined branch never
+  runs.
+- **The combined path does work today, and I have its numbers.** 32px, 12 trials, 3
+  participants, seed 1, `nscales = 1`: `zmap[1:3, 1]` is
+  `-0.0379431539017, -0.2251794128693, -0.3224847810780`; `sign(zmap) == sign(ci)`; no NAs.
+  This becomes a test before anything is extracted — see stage 0.
+
+## Staging
+
+One PR per stage, squashed, so a red gate bisects to a stage rather than to a 300-line
+rewrite. Ordered by rising risk:
+
+- **Stage 0 — cover the uncovered branch.** Add the `participants` + `t.test` test above.
+  No `R/` change. This is the safety net stages 3 and 4 rest on, so it goes first.
+- **Stage 1 — `R/ci-inputs.R`.** The four pure helpers, with direct unit tests including
+  the single-trial 4096 truncation, which currently has no test of its own.
+- **Stage 2 — `loadStimulusParams()`.** Removes `captureArgs()`/`list2env()` from
+  `generateCI()` entirely: with `load()` confined to a helper's frame there is no user
+  argument in scope for a `.Rdata` field to clobber. `captureArgs()` stays — it is still
+  `generateReferenceDistribution2IFC()`'s guard, and `test-load-argument-guards.R` pins it.
+- **Stage 3 — `computeParticipantCIs()`.**
+- **Stage 4 — the two z-map helpers.**
+
+This branch carries stage 0 and stage 1, then deletes this file. Stages 2-4 get their own
+PRs off `main`. **The staging list goes onto issue #184 before this PR is squashed**, since
+this file does not survive the branch and the tracker is where status lives.
+
+## The step most likely to fail: stage 3
+
+`foreach::getexports()` scans the `%dopar%` body for free variables and `get()`s each one
+from the enclosing frame. This has already broken once here — #235, where `targetpath` was
+unbound in a branch that could not execute, and every `participants` call with the default
+`n_cores > 1` aborted anyway. Line 136-146's comment exists because of it.
+
+Moving the loop body into a package function changes the free-variable set at the loop site.
+Today `targetpath`, `mask`, `img_size`, `individual_scaling`, `individual_scaling_constant`,
+`baseimage`, `antiCI`, `participants` and `save_individual_cis` are all free in that body and
+are exported to workers by name. Afterwards they become `computeParticipantCIs()` arguments,
+and the body's free set is drawn from *its* frame instead. That is the improvement, and it is
+exactly where an unbound name would reappear.
+
+So stage 3 is not merged on a serial run. It must show:
+
+- `n_cores = 1` and `n_cores = 2` returning identical CIs — `test-parallel-equivalence.R`
+  already has the shape to copy;
+- the `save_individual_cis` branch writing its PNGs under `n_cores = 2`, which is the
+  configuration #235 broke;
+- `targetpath` absent entirely (`save_as_png = FALSE`, `n_cores = 2`), which is the
+  configuration that made #235 visible.
+
+Stage 4 inherits a smaller version of the same risk in the `t.test` z-map loop.
+
+## Open for review
+
+1. **Five PRs for one issue, or fewer?** Stages 0+1 are genuinely low-risk and could carry
+   stage 2. I have kept stage 2 separate because it deletes the `captureArgs()` call that a
+   documented bug (the `sigma` clobber) exists to prevent, and that deserves its own diff.
+2. **File names.** `ci-inputs.R` / `ci-compute.R` / `zmap-compute.R` follow `rdata.R` and
+   `parallel.R`. An alternative is one `generateCI-internals.R`, which keeps the grep locality
+   but recreates a 300-line file.
+3. **Should stage 2 keep `captureArgs()` in `generateCI()` as belt-and-braces?** My view is
+   no: two mechanisms guarding the same hazard is how one of them rots unnoticed. But it is a
+   deliberate removal of a guard, so it is worth a second opinion.
