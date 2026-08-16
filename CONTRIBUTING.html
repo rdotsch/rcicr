@@ -160,6 +160,10 @@
 <td>one file per exported function, named after it</td>
 <td>
 <code>R/generateCI.R</code> holds <code><a href="reference/generateCI.html">generateCI()</a></code>. <code>zzz.R</code> holds the <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code> declarations.</td>
+</tr><tr><td>Roxygen</td>
+<td>exported functions only</td>
+<td>
+<code>man/</code> holds exactly the 17 exports plus the package doc; internal helpers use plain <code>#</code> comments, including the ones sharing a file with an exported function. Roxygen on a non-exported function either publishes a help page for something no user can call, or needs <code>@noRd</code> — a comment in stricter syntax. There are none.</td>
 </tr><tr><td>Namespacing</td>
 <td>prefer <code>@importFrom pkg fn</code> over <code>@import pkg</code>
 </td>
