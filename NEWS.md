@@ -97,6 +97,14 @@
   saved. Nothing in the package or the documented contract reads it. Existing `.Rdata` files
   that contain `trial` continue to work; the field is simply ignored on load.
 
+- **`plotZmap(mask = ...)` now accepts a mask with an alpha channel.** It previously required
+  every colour channel of a multi-channel PNG mask to match exactly, so a greyscale-plus-alpha
+  or RGBA mask whose alpha plane happened to differ from its colour planes was rejected — alpha
+  carries no colour information and is now always ignored, matching `generateCI(mask = ...)`.
+  A rectangular `zmap`/mask pair continues to work as before. `plotZmap(mask = ...)` also now
+  rejects a mask that is neither a string nor a matrix with a clear error, instead of failing
+  later inside `png::readPNG()` with an unrelated message.
+
 ## Reproducibility impact
 
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
@@ -185,6 +193,25 @@
   No numeric output changes. Every check here either replaces an error with a clearer
   error, or rejects input that could not have produced correct stimuli; a call that
   succeeds today produces exactly what it did before.
+
+- **`generateCI(mask = ...)` no longer crashes on a greyscale-plus-alpha PNG mask.** The
+  internal mask importer hardcoded three colour channels, so any 2-channel PNG (the form
+  `png::readPNG()` produces for 8-bit greyscale-plus-alpha) failed with `subscript out of
+  bounds` rather than a clean error — `plotZmap(mask = ...)`'s separate, now-removed mask code
+  already accepted the same file. Mask import is now shared between the two functions (#185),
+  so both accept a 2-channel mask, and a 4-channel (RGBA) mask continues to work exactly as
+  before. The mask-size-mismatch message now names what the mask is being checked against
+  ("stimuli" from `generateCI()`, "z-map" from `plotZmap()`) instead of always saying
+  "stimuli", and reports the mask's dimensions in the same row-by-column order as the
+  target's rather than transposed.
+
+- **A multi-channel PNG mask one pixel wide or tall is now rejected instead of silently
+  masking everything.** Dropping the colour channel from such a mask also dropped its
+  singleton spatial dimension, leaving a plain vector whose absent dimensions made the
+  size check pass vacuously; the mask was then recycled by linear indexing. A 1-by-8 RGB
+  mask against an 8-by-8 stimulus set returned an entirely `NA` classification image with
+  no error or warning. It now fails the size check and says so. Masks of any other shape
+  are unaffected.
 
 ## Documentation
 

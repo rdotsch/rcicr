@@ -191,6 +191,23 @@ test_that("applyMask accepts integer and logical matrix masks", {
   expect_equal(logical_masked[!is.na(logical_masked)], ci[!is.na(logical_masked)])
 })
 
+# The region applyMask() actually masked, as a logical matrix. The accept tests
+# below assert this rather than only expect_no_error(): a channel collapse that
+# picked the wrong plane would still not error. The gate's mask_rgba config
+# covers the 4-channel half of that numerically; the 2-channel half can only be
+# covered here, because no reference version can read a 2-channel PNG at all
+# (see SINCE in tools/compare-harness.R).
+masked_region <- function(mask, n = 8) {
+  is.na(rcicr:::applyMask(matrix(1, n, n), mask = mask, img_size = n))
+}
+
+# Asymmetric on both axes, so a transpose or a flip fails too.
+mask_pattern <- function(n = 8) {
+  p <- matrix(1, n, n)
+  p[1:3, 1:5] <- 0
+  p
+}
+
 test_that("applyMask rejects a PNG whose colour channels genuinely differ", {
   skip_if_not_installed("withr")
 
@@ -208,12 +225,130 @@ test_that("applyMask rejects a PNG whose colour channels genuinely differ", {
   expect_error(rcicr:::applyMask(matrix(1, 8, 8), mask = path, img_size = 8),
                "not a greyscale image")
 
+  pattern <- mask_pattern()
   grey_as_rgb <- array(0, dim = c(8, 8, 3))
+  for (i in 1:3) grey_as_rgb[, , i] <- pattern
   png::writePNG(grey_as_rgb, file.path(dir, "grey.png"))
-  expect_no_error(
-    rcicr:::applyMask(matrix(1, 8, 8), mask = file.path(dir, "grey.png"),
-                      img_size = 8)
+  expect_equal(masked_region(file.path(dir, "grey.png")), pattern == 0)
+})
+
+test_that("applyMask ignores the alpha channel of a 2-channel PNG", {
+  # png::readPNG() decodes an 8-bit greyscale-plus-alpha PNG to a 2-channel
+  # array. This used to crash applyMask() unconditionally (subscript out of
+  # bounds indexing channel 3), even though plotZmap()'s own inline mask code
+  # already accepted the identical-planes case. Alpha is never colour
+  # information and must be ignored regardless of whether it is uniform.
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  pattern <- mask_pattern()
+
+  identical_alpha <- array(0, dim = c(8, 8, 2))
+  identical_alpha[, , 1] <- pattern
+  identical_alpha[, , 2] <- 1
+  path_identical <- file.path(dir, "ga_identical.png")
+  png::writePNG(identical_alpha, path_identical)
+  expect_equal(masked_region(path_identical), pattern == 0)
+
+  # Alpha is the inverse of the greyscale plane, so collapsing to the wrong
+  # plane inverts the masked region rather than erroring -- silently, which is
+  # the failure this assertion exists to catch.
+  inverted_alpha <- array(0, dim = c(8, 8, 2))
+  inverted_alpha[, , 1] <- pattern
+  inverted_alpha[, , 2] <- 1 - pattern
+  path_inverted <- file.path(dir, "ga_inverted.png")
+  png::writePNG(inverted_alpha, path_inverted)
+  expect_equal(masked_region(path_inverted), pattern == 0)
+
+  # A non-binary alpha additionally proves alpha is dropped before the
+  # 0/1 check, which it would otherwise fail.
+  fractional_alpha <- array(0, dim = c(8, 8, 2))
+  fractional_alpha[, , 1] <- pattern
+  fractional_alpha[, , 2] <- 0.5
+  path_fractional <- file.path(dir, "ga_fractional.png")
+  png::writePNG(fractional_alpha, path_fractional)
+  expect_equal(masked_region(path_fractional), pattern == 0)
+})
+
+test_that("applyMask ignores a differing alpha channel of a 4-channel PNG", {
+  # An RGBA mask with a genuine RGB pattern and a constant (fully opaque)
+  # alpha plane already succeeded through applyMask() before this change --
+  # confirmed on unmodified main. This pins that it still does: alpha is
+  # dropped before the colour-channel comparison, whether or not it matches
+  # the other channels.
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  pattern <- mask_pattern()
+
+  rgba <- array(0, dim = c(8, 8, 4))
+  for (i in 1:3) rgba[, , i] <- pattern
+  rgba[, , 4] <- 1
+  path <- file.path(dir, "rgba.png")
+  png::writePNG(rgba, path)
+  expect_equal(masked_region(path), pattern == 0)
+
+  # As above: an inverted alpha makes a wrong-plane collapse show up as an
+  # inverted region instead of an error.
+  rgba_inverted <- array(0, dim = c(8, 8, 4))
+  for (i in 1:3) rgba_inverted[, , i] <- pattern
+  rgba_inverted[, , 4] <- 1 - pattern
+  path_inverted <- file.path(dir, "rgba_inverted.png")
+  png::writePNG(rgba_inverted, path_inverted)
+  expect_equal(masked_region(path_inverted), pattern == 0)
+})
+
+test_that("applyMask still rejects a 4-channel PNG whose RGB planes differ", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  rgba <- array(0, dim = c(8, 8, 4))
+  rgba[, , 1] <- 1
+  rgba[, , 4] <- 1
+  path <- file.path(dir, "rgba_rgb_differs.png")
+  png::writePNG(rgba, path)
+
+  expect_error(
+    rcicr:::applyMask(matrix(1, 8, 8), mask = path, img_size = 8),
+    "not a greyscale image"
   )
+})
+
+test_that("applyMask rejects a multi-channel PNG mask with a singleton dimension", {
+  # A 1-by-8 RGB mask against a 2-by-4 target: dropping the channel dimension
+  # with a bare `[, , 1]` also drops the singleton row dimension, and the
+  # resulting vector's NULL dim() makes the size check vacuously TRUE, so the
+  # mismatched mask used to be applied by linear indexing instead of rejected.
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+
+  rgb <- array(0, dim = c(1, 8, 3))
+  path <- file.path(dir, "singleton.png")
+  png::writePNG(rgb, path)
+
+  expect_error(
+    rcicr:::applyMask(matrix(1, 2, 4), mask = path, img_size = c(2, 4),
+                      context = "z-map"),
+    "same dimensions"
+  )
+})
+
+test_that("applyMask accepts a rectangular img_size and reports both dims", {
+  # plotZmap() is not restricted to square zmaps and passes
+  # img_size = c(nrow(zmap), ncol(zmap)); applyMask()'s dim() == img_size
+  # comparison already handles this via recycling, but the size-mismatch
+  # message used to hardcode img_size for both dimensions.
+  masked <- rcicr:::applyMask(matrix(1, 4, 6), mask = matrix(1, 4, 6),
+                              img_size = c(4, 6))
+  expect_equal(dim(masked), c(4, 6))
+
+  err <- expect_error(
+    rcicr:::applyMask(matrix(1, 4, 6), mask = matrix(0, 4, 4),
+                      img_size = c(4, 6)),
+    "same dimensions"
+  )
+  msg <- conditionMessage(err)
+  expect_match(msg, "4 x 6")
 })
 
 # --------------------------------------------------------------------------

@@ -422,9 +422,12 @@ hasMask <- function(mask) {
   !is.null(mask) && !(length(mask) == 1L && is.na(mask))
 }
 
-# Input: CI, mask (either a string or a matrix), expected stimulus size
-# Output: masked CI (input CI, but masked pixels are NA)
-applyMask <- function(ci, mask, img_size = nrow(ci)) {
+# Input: CI (or z-map), mask (either a string or a matrix), expected target
+# size, and a label for the size-mismatch message (what the mask is being
+# checked against -- generateCI() and plotZmap() share this helper, and "the
+# stimuli" is only accurate for the former)
+# Output: masked matrix (input matrix, but masked pixels are NA)
+applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
   # If mask argument is a string, treat it as a path to a bitmap and try to read
   # it into a matrix. If it is a matrix, use it. Else, throw an error
   if (typeof(mask) == 'character') {
@@ -432,20 +435,31 @@ applyMask <- function(ci, mask, img_size = nrow(ci)) {
 
     # Check if the PNG uses a greyscale color palette
     if (length(dim(mask_matrix)) != 2) {
-      # If the PNG uses the RGB color palette but the image itself is totally
-      # greyscale (i.e. the red, green and blue color channels are identical),
-      # read it in anyway
+      # A trailing channel is alpha -- not colour information, and never
+      # compared -- whenever the total channel count is even: 2 (greyscale +
+      # alpha) or 4 (RGBA). Every other channel must agree with channel 1 for
+      # the image to be greyscale-as-RGB(A).
       # Thanks https://stackoverflow.com/a/30850654
-      rgb_channels <- list(mask_matrix[,,1], mask_matrix[,,2], mask_matrix[,,3])
-      if (all(sapply(rgb_channels, FUN = identical, mask_matrix[,,1]))) {
-        mask_matrix <- mask_matrix[,,1]
-      } else {
-        # Only error if the channels genuinely differ. This stop() used to run
-        # unconditionally, so even a convertible greyscale-as-RGB PNG failed.
+      n <- dim(mask_matrix)[3]
+      n_color <- if (n %in% c(2, 4)) n - 1L else n
+      if (n_color > 1 && !all(sapply(2:n_color, function(i) {
+        identical(mask_matrix[, , i], mask_matrix[, , 1])
+      }))) {
+        # Only error if the colour channels genuinely differ. This stop() used
+        # to run unconditionally, so even a convertible greyscale-as-RGB PNG
+        # failed.
         stop(paste0('This PNG is not encoded with a greyscale color palette and ',
                     'could not be converted to this encoding either. In other ',
                     'words, this is not a greyscale image.'))
       }
+      # `[, , 1]` alone would also drop a singleton *spatial* dimension, leaving
+      # a dim-less vector -- and `all(NULL == img_size)` is vacuously TRUE, so a
+      # 1-by-8 mask would pass the size check below for a 2-by-4 target and then
+      # be applied by linear indexing. plotZmap()'s previous inline code checked
+      # the PNG's spatial dimensions before dropping channels and so rejected it.
+      spatial <- dim(mask_matrix)[1:2]
+      mask_matrix <- matrix(mask_matrix[, , 1],
+                            nrow = spatial[1], ncol = spatial[2])
     }
   } else if (is.matrix(mask) && length(dim(mask)) == 2) {
     mask_matrix <- mask
@@ -453,15 +467,18 @@ applyMask <- function(ci, mask, img_size = nrow(ci)) {
     stop('The mask argument is neither a string nor a matrix!')
   }
 
-  # Check if mask is of the same size as the stimuli (i.e. img_size). This used
+  # Check if mask is of the same size as the target (i.e. img_size). This used
   # to compare against a hardcoded 512, so masks failed for every other
   # stimulus size, and reported img_size - which is not in scope here - in the
-  # error message.
+  # error message. img_size[1] / img_size[length(img_size)] read correctly
+  # whether img_size is a scalar (generateCI()'s calls) or the length-2
+  # c(rows, cols) plotZmap() passes for a possibly-rectangular zmap.
   if (!all(dim(mask_matrix) == img_size)) {
-    stop(paste0('Mask is not of the same dimensions as the stimuli! ',
-                '(stimulus dimensions: ', img_size, ' x ', img_size,
-                '; mask dimensions: ', dim(mask_matrix)[2],
-                ' by ', dim(mask_matrix)[1], ').'))
+    stop(paste0('Mask is not of the same dimensions as the ', context, '! ',
+                '(', context, ' dimensions: ', img_size[1], ' x ',
+                img_size[length(img_size)],
+                '; mask dimensions: ', dim(mask_matrix)[1],
+                ' by ', dim(mask_matrix)[2], ').'))
   }
 
   # Check if the mask is binary

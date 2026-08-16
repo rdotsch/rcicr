@@ -52,6 +52,7 @@ setwd(workdir)
 #   zmap_quick   generateCI(zmap=TRUE, zmapmethod='quick')  -- includes plotZmap()
 #   zmap_ttest   generateCI(zmap=TRUE, zmapmethod='t.test') -- one t-test per pixel
 #   mask         generateCI(mask=) -- masked pixels come back NA        [>= 1.1.0]
+#   mask_rgba    generateCI(mask=) with a 4-channel PNG mask            [>= 1.1.0]
 #   zmap_plain   a z-map with zmapdecoration = FALSE                    [>= 1.1.0]
 #
 # zmap_plain is also the only way to cover a z-map below 512px here. Decoration
@@ -76,10 +77,14 @@ setwd(workdir)
 # quantisation and clamping that the in-memory matrices do not.
 
 ALL_EXTRAS <- c("ci2ifc", "subset", "participants", "batch", "cumulative",
-                "zmap_quick", "zmap_ttest", "mask", "zmap_plain")
+                "zmap_quick", "zmap_ttest", "mask", "mask_rgba", "zmap_plain")
 
 # Oldest reference version that can run each extra without crashing.
-SINCE <- c(mask = "1.1.0", zmap_plain = "1.1.0")
+# mask_rgba shares mask's floor: 1.1.0 and 1.2.3 were both run against a
+# 4-channel mask before it was added here, and each returned a mask rather
+# than an error. A 2-channel mask has no floor that works -- every reference
+# version indexes channel 3 unconditionally and dies -- so it stays out.
+SINCE <- c(mask = "1.1.0", mask_rgba = "1.1.0", zmap_plain = "1.1.0")
 
 REF_VERSION <- package_version(Sys.getenv("RCICR_COMPARE_REF_VERSION", "1.0.1"))
 message("battery for reference version ", REF_VERSION)
@@ -275,6 +280,16 @@ run_config <- function(cfg) {
                      mask = file.path(basedir, sprintf("mask_%d.png", cfg$img_size)))
     out$mask_ci <- ci$ci
     out$mask_scaled <- ci$scaled
+  }
+
+  if ("mask_rgba" %in% ex) {
+    ci <- generateCI(stimuli = stimuli, responses = responses,
+                     baseimage = "base1", rdata = rdata, scaling = "independent",
+                     antiCI = cfg$anti, save_as_png = FALSE, targetpath = ci_dir,
+                     mask = file.path(basedir,
+                                      sprintf("mask_rgba_%d.png", cfg$img_size)))
+    out$mask_rgba_ci <- ci$ci
+    out$mask_rgba_scaled <- ci$scaled
   }
 
   zmap_calls <- list(
