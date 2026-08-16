@@ -191,6 +191,22 @@ test_that("applyMask accepts integer and logical matrix masks", {
   expect_equal(logical_masked[!is.na(logical_masked)], ci[!is.na(logical_masked)])
 })
 
+# The region applyMask() actually masked, as a logical matrix. The accept tests
+# below assert this rather than only expect_no_error(): a channel collapse that
+# picked the wrong plane would still not error, and the release gate cannot
+# catch it either -- its mask fixture is single-channel, so it never enters the
+# collapse branch at all (tools/compare-release-output.R, make_mask()).
+masked_region <- function(mask, n = 8) {
+  is.na(rcicr:::applyMask(matrix(1, n, n), mask = mask, img_size = n))
+}
+
+# Asymmetric on both axes, so a transpose or a flip fails too.
+mask_pattern <- function(n = 8) {
+  p <- matrix(1, n, n)
+  p[1:3, 1:5] <- 0
+  p
+}
+
 test_that("applyMask rejects a PNG whose colour channels genuinely differ", {
   skip_if_not_installed("withr")
 
@@ -208,12 +224,11 @@ test_that("applyMask rejects a PNG whose colour channels genuinely differ", {
   expect_error(rcicr:::applyMask(matrix(1, 8, 8), mask = path, img_size = 8),
                "not a greyscale image")
 
+  pattern <- mask_pattern()
   grey_as_rgb <- array(0, dim = c(8, 8, 3))
+  for (i in 1:3) grey_as_rgb[, , i] <- pattern
   png::writePNG(grey_as_rgb, file.path(dir, "grey.png"))
-  expect_no_error(
-    rcicr:::applyMask(matrix(1, 8, 8), mask = file.path(dir, "grey.png"),
-                      img_size = 8)
-  )
+  expect_equal(masked_region(file.path(dir, "grey.png")), pattern == 0)
 })
 
 test_that("applyMask ignores the alpha channel of a 2-channel PNG", {
@@ -225,22 +240,33 @@ test_that("applyMask ignores the alpha channel of a 2-channel PNG", {
   skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
 
+  pattern <- mask_pattern()
+
   identical_alpha <- array(0, dim = c(8, 8, 2))
+  identical_alpha[, , 1] <- pattern
   identical_alpha[, , 2] <- 1
   path_identical <- file.path(dir, "ga_identical.png")
   png::writePNG(identical_alpha, path_identical)
-  expect_no_error(
-    rcicr:::applyMask(matrix(1, 8, 8), mask = path_identical, img_size = 8)
-  )
+  expect_equal(masked_region(path_identical), pattern == 0)
 
-  differing_alpha <- array(0, dim = c(8, 8, 2))
-  differing_alpha[1, 1, 1] <- 1
-  differing_alpha[, , 2] <- 0.5
-  path_differing <- file.path(dir, "ga_differing.png")
-  png::writePNG(differing_alpha, path_differing)
-  expect_no_error(
-    rcicr:::applyMask(matrix(1, 8, 8), mask = path_differing, img_size = 8)
-  )
+  # Alpha is the inverse of the greyscale plane, so collapsing to the wrong
+  # plane inverts the masked region rather than erroring -- silently, which is
+  # the failure this assertion exists to catch.
+  inverted_alpha <- array(0, dim = c(8, 8, 2))
+  inverted_alpha[, , 1] <- pattern
+  inverted_alpha[, , 2] <- 1 - pattern
+  path_inverted <- file.path(dir, "ga_inverted.png")
+  png::writePNG(inverted_alpha, path_inverted)
+  expect_equal(masked_region(path_inverted), pattern == 0)
+
+  # A non-binary alpha additionally proves alpha is dropped before the
+  # 0/1 check, which it would otherwise fail.
+  fractional_alpha <- array(0, dim = c(8, 8, 2))
+  fractional_alpha[, , 1] <- pattern
+  fractional_alpha[, , 2] <- 0.5
+  path_fractional <- file.path(dir, "ga_fractional.png")
+  png::writePNG(fractional_alpha, path_fractional)
+  expect_equal(masked_region(path_fractional), pattern == 0)
 })
 
 test_that("applyMask ignores a differing alpha channel of a 4-channel PNG", {
@@ -252,15 +278,23 @@ test_that("applyMask ignores a differing alpha channel of a 4-channel PNG", {
   skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
 
+  pattern <- mask_pattern()
+
   rgba <- array(0, dim = c(8, 8, 4))
-  rgba[1:4, , 1:3] <- 1
+  for (i in 1:3) rgba[, , i] <- pattern
   rgba[, , 4] <- 1
   path <- file.path(dir, "rgba.png")
   png::writePNG(rgba, path)
+  expect_equal(masked_region(path), pattern == 0)
 
-  expect_no_error(
-    rcicr:::applyMask(matrix(1, 8, 8), mask = path, img_size = 8)
-  )
+  # As above: an inverted alpha makes a wrong-plane collapse show up as an
+  # inverted region instead of an error.
+  rgba_inverted <- array(0, dim = c(8, 8, 4))
+  for (i in 1:3) rgba_inverted[, , i] <- pattern
+  rgba_inverted[, , 4] <- 1 - pattern
+  path_inverted <- file.path(dir, "rgba_inverted.png")
+  png::writePNG(rgba_inverted, path_inverted)
+  expect_equal(masked_region(path_inverted), pattern == 0)
 })
 
 test_that("applyMask still rejects a 4-channel PNG whose RGB planes differ", {

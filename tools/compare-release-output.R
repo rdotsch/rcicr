@@ -216,14 +216,31 @@ make_base <- function(n, path, shift = 0) {
   png::writePNG(g, path)
 }
 # A mask has to be exactly 0/1, and 0 (black) is the region masked away.
-make_mask <- function(n, path) {
+mask_disc <- function(n) {
   ax <- seq(-1, 1, length.out = n)
-  png::writePNG(outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6)), path)
+  outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6))
+}
+make_mask <- function(n, path) {
+  png::writePNG(mask_disc(n), path)
+}
+# The same disc as an RGBA image. png::readPNG() hands a single-channel PNG
+# straight back as a 2D matrix, so the plain mask above never reaches the
+# channel-collapse branch of the importer -- this one is the only fixture here
+# that does. Alpha is deliberately opaque rather than a copy of the disc: the
+# reference versions compare channels 1-3 only, and an alpha plane that differs
+# from them must not change the result on either side.
+make_mask_rgba <- function(n, path) {
+  disc <- mask_disc(n)
+  rgba <- array(0, dim = c(n, n, 4))
+  for (i in 1:3) rgba[, , i] <- disc
+  rgba[, , 4] <- 1
+  png::writePNG(rgba, path)
 }
 for (sz in c(64, 128, 512)) {
   make_base(sz, file.path(basedir, sprintf("base1_%d.png", sz)))
   make_base(sz, file.path(basedir, sprintf("base2_%d.png", sz)), shift = 0.3)
   make_mask(sz, file.path(basedir, sprintf("mask_%d.png", sz)))
+  make_mask_rgba(sz, file.path(basedir, sprintf("mask_rgba_%d.png", sz)))
 }
 
 run_side <- function(lib, tag) {
