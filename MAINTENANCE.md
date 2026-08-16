@@ -53,14 +53,14 @@ which the language-agnostic hooks here never need and a pre-commit.ci
 hook would have to carry on every commit.
 
 **Exclusions are never pinned to line numbers** — they do not survive an
-edit above them, and once shifted seven at once, failing CI far below
-the change. Cosmetic linters get `<linter> = Inf`, covering the file; a
-later one of the same kind there goes unnoticed, the right trade for
-code deliberately not reformatted. Where a hit means something is
-*wrong* — `object_usage`, `commented_code`, `object_name`,
-`object_length`, `seq` — the line carries `# nolint: <linter>.`, and
-`tools/regenerate-lintr-baseline.R` refuses to baseline those, naming
-the line and comment.
+edit above them, and once shifted seven at once, failing CI far below.
+Fix a lint where you can: a clean file leaves `exclusions:` entirely.
+Six dense legacy files keep `<linter> = Inf`; a later cosmetic lint
+there goes unnoticed, the right trade for code deliberately not
+reformatted. Where a hit means something is *wrong* — `object_usage`,
+`commented_code`, `object_name`, `object_length`, `seq` — the line
+carries `# nolint: <linter>.`, which `tools/regenerate-lintr-baseline.R`
+refuses to baseline.
 
 ------------------------------------------------------------------------
 
