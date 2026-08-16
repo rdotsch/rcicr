@@ -197,6 +197,7 @@ outside the package can call them:
 | Sequences | `seq_len()`/`seq_along()`, not `1:n` | `1:0` counts *backwards*, so `1:length(x)` on an empty vector iterates twice. |
 | Returns | explicit `return()` at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds `generateCI()`. `zzz.R` holds the `globalVariables()` declarations. |
+| Roxygen | exported functions only | `man/` holds exactly the 17 exports plus the package doc; internal helpers use plain `#` comments, including the ones sharing a file with an exported function. Roxygen on a non-exported function either publishes a help page for something no user can call, or needs `@noRd` — a comment in stricter syntax. There are none. |
 | Namespacing | prefer `@importFrom pkg fn` over `@import pkg` | `@import matlab` masks `base::sum()` with MATLAB semantics across six files — a live trap, issue #182. |
 
 Line length is not enforced; 35 lines in `R/` already exceed 100 characters. Wrap new code

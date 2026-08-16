@@ -145,22 +145,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   # to the load() below.
   targetpath <- if (missing(targetpath)) NULL else targetpath
 
-  # Coerce stimuli/responses to plain vectors. Data read with readr or
-  # manipulated with dplyr comes back as a tibble, where tbl[, "col"] stays a
-  # one-column tibble rather than dropping to a vector the way df[, "col"]
-  # does. That made aggregate() below fail with the opaque message
-  # "arguments must have same length".
-  stimuli <- unlist(stimuli, use.names = FALSE)
-  responses <- unlist(responses, use.names = FALSE)
-  if (!all(is.na(participants))) {
-    participants <- unlist(participants, use.names = FALSE)
-  }
-
-  if (length(stimuli) != length(responses)) {
-    stop(paste0('stimuli and responses must have the same length (stimuli: ',
-      length(stimuli), ', responses: ', length(responses), ').'
-    ))
-  }
+  # Must stay above captureArgs() below, which snapshots what these resolve to.
+  trials <- coerceTrialVectors(stimuli, responses, participants)
+  stimuli <- trials$stimuli
+  responses <- trials$responses
+  participants <- trials$participants
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name (the same
@@ -202,54 +191,15 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     rm(s)
   }
 
-  # Get base image
-  base <- base_faces[[baseimage]]
-  if (is.null(base)) {
-    # If no base face with the given name is found in Rdata file, throw error
-    stop(paste0('File specified in rdata argument did not contain any ',
-      'reference to base image label: ', baseimage, ' (NOTE: file ',
-      'contains references to the following base image label(s): ',
-      paste(names(base_faces), collapse = ', '), ')'
-    ))
-  }
+  base <- selectBaseImage(base_faces, baseimage)
 
   if (all(is.na(participants))) {
-    # Collapse repeated presentations: each unique stimulus gets equal weight,
-    # regardless of how many times it was presented.
-    aggregated <- aggregate(responses, by = list(stimuli = stimuli), FUN = mean)
-    responses <- aggregated$x
+    aggregated <- aggregateResponses(stimuli, responses)
     stimuli <- aggregated$stimuli
+    responses <- aggregated$responses
   }
 
-  # Retrieve parameters of actually presented stimuli (this will work with
-  # non-consecutive stims as well)
-  params <- stimuli_params[[baseimage]][stimuli, ]
-
-  # Check whether parameters were found in this .rdata file
-  if (length(params) == 0) {
-    stop(paste0('No parameters found for base image: ', baseimage))
-  }
-
-  # Check whether number of parameters are 4096 (this was the case in older
-  # versions of rcicr) and should be truncated to 4092 to work well in this new
-  # version. rcicr 0.3.0 stopped drawing 4 random contrasts per trial that no
-  # patch index ever referred to: 6 orientations x 2 phases x sum(4^0..4^4) is
-  # 4092, while pre-0.3.0 allocated a round 4096. See ChangeLog, 0.3.0-29.
-  if (!is.vector(params)) {
-    if (ncol(params) == 4096) {
-      params <- params[, 1:4092]
-    }
-  } else {
-    # In case we only have a single trial as input. This tested
-    # `length(params) == 4092` and then truncated to 4092 -- a no-op that could
-    # never fire on the 4096-parameter input it exists for, so a single-trial CI
-    # from a pre-0.3.0 file died in generateNoiseImage() with "number of
-    # parameters doesn't equal number of patches". The multi-trial branch above
-    # was always correct.
-    if (length(params) == 4096) {
-      params <- params[1:4092]
-    }
-  }
+  params <- selectStimulusParams(stimuli_params, baseimage, stimuli)
 
   # Generate CI(s) ----------------------------------------------------------
 
