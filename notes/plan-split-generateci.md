@@ -77,7 +77,8 @@ present -> return, each step one call.
 - **The combined path does work today, and I have its numbers.** 32px, 12 trials, 3
   participants, seed 1, `nscales = 1`: `zmap[1:3, 1]` is
   `-0.0379431539017, -0.2251794128693, -0.3224847810780`; `sign(zmap) == sign(ci)`; no NAs.
-  This becomes a test before anything is extracted — see stage 0.
+  Those three cells are a smoke check that the path runs, **not** the pin: stage 0 stores the
+  whole matrix, for the reason given there.
 
 ## Staging
 
@@ -86,6 +87,16 @@ rewrite. Ordered by rising risk:
 
 - **Stage 0 — cover the uncovered branch.** Add the `participants` + `t.test` test above.
   No `R/` change. This is the safety net stages 3 and 4 rest on, so it goes first.
+
+  **It pins the whole z-map, not a sample of it.** Three cells plus signs would pass while
+  every other magnitude moved — and this is the one branch where stage 3 could change
+  researchers' numbers with nothing else watching. The test compares the full 32x32 matrix
+  element-wise against a reference captured from the pre-refactor tree and stored as an
+  `.rds` fixture, alongside the whole-matrix summaries that
+  `test-regression-baseline.R:137-150` uses for the same job (`sum(abs())`, `sd`, `min`,
+  `max`, spot cells). The summaries alone are the house idiom and cover every cell, but they
+  are not an element-wise comparison; the fixture makes it one, and `fixtures/` already holds
+  references of this kind (`zmap-raster-reference-input.rds`).
 - **Stage 1 — `R/ci-inputs.R`.** The four pure helpers, with direct unit tests of each
   helper's contract. The 4096 -> 4092 truncation is **already pinned end to end** by
   `test-fixed-bugs.R:196-233`, which exercises both the single-trial and multi-trial branches
