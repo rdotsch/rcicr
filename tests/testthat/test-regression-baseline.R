@@ -35,7 +35,7 @@ baseline_rdata <- function(dir, img_size = 64, n_trials = 20, seed = 1) {
   dir.create(input)
   dir.create(output)
   bf <- file.path(input, "base.png")
-  make_square_png(bf, size = img_size, seed = seed)
+  make_square_png(bf, size = img_size, seed = seed) # nolint: object_usage_linter.
 
   generateStimuli2IFC(
     base_face_files = list(face = bf),

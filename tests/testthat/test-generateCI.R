@@ -60,7 +60,7 @@ test_that("generateCI masks the intended region, from a matrix or a PNG alike", 
   tmp <- withr::local_tempdir()
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 
-  mask <- matrix(1, 32, 32) # 1 = kept
+  mask <- matrix(1, 32, 32) # 1 = kept # nolint: commented_code_linter.
   mask[1:10, 1:10] <- 0     # 0 = masked, as black is in a PNG
 
   mask_file <- file.path(tmp, "mask.png")

@@ -15,7 +15,7 @@
 # Builds a fixture missing `stimuli_params`, with whatever version fields the
 # caller asks for. `p_version = NULL` drops it, so the fallback is exercised.
 broken_rdata <- function(dir, top_version = "keep", p_version = "keep") {
-  rdata <- make_fixture_rdata(dir)
+  rdata <- make_fixture_rdata(dir) # nolint: object_usage_linter.
   e <- new.env()
   load(rdata, envir = e)
 

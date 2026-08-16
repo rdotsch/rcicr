@@ -61,7 +61,7 @@
 #'
 #' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 #' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_ncores(), response_seed=NULL, save_rdata=TRUE) {
+generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_ncores(), response_seed=NULL, save_rdata=TRUE) { # nolint: object_length_linter.
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name. This
@@ -197,7 +197,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
     # varied null is distinguishable from one carrying the default. NULL records
     # the default stream. Files written before this version simply lack the
     # field, which is why every read of it must be guarded with exists().
-    reference_norms_seed <- response_seed
+    reference_norms_seed <- response_seed # nolint: object_usage_linter.
 
     # Save everything that came from (or belongs in) the stimulus file, but none
     # of this function's own arguments or scratch variables. Writing `rdata` and

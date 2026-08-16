@@ -51,7 +51,7 @@ show <- function(m, title, zlim = range(m, na.rm = TRUE)) {
   op <- par(mar = c(0, 0, 1.4, 0))
   # image() takes [x, y] with y increasing upwards, so a matrix indexed
   # [row, col] has to be transposed and flipped to display the right way up.
-  image(t(m[nrow(m):1, ]), col = gray.colors(256), axes = FALSE, asp = 1,
+  image(t(m[nrow(m):1, ]), col = gray.colors(256), axes = FALSE, asp = 1, # nolint: seq_linter.
         main = title, zlim = zlim, useRaster = TRUE)
   par(op)
 }

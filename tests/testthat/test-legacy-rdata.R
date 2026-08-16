@@ -38,12 +38,12 @@ gabor_fixture <- "1.0.1-gabor"
 legacy_fixtures <- c(legacy_versions, gabor_fixture)
 
 legacy_fixture <- function(version) {
-  path <- test_path("fixtures", paste0("legacy-rdata-", version, ".Rdata"))
+  path <- test_path("fixtures", paste0("legacy-rdata-", version, ".Rdata")) # nolint: object_usage_linter.
   # Committed, mandatory assets, so a missing one fails rather than skips: a skip
   # reads as "this passed" at a glance, and the scenario it would hide -- the
   # fixture deleted, renamed, or left out of a built package -- is precisely the
   # safeguard silently disappearing while CI stays green.
-  expect_true(file.exists(path), info = paste("missing legacy fixture:", path))
+  expect_true(file.exists(path), info = paste("missing legacy fixture:", path)) # nolint: object_usage_linter.
   path
 }
 
@@ -63,8 +63,8 @@ local_fixture_copy <- function(version, env = parent.frame()) {
   dest <- file.path(dir, basename(legacy_fixture(version)))
   file.copy(legacy_fixture(version), dest)
 
-  base_png <- make_square_png(file.path(dir, "base.png"), size = 32, seed = 1)
-  mutate_rdata(dest, base_face_files = list(base = base_png))
+  base_png <- make_square_png(file.path(dir, "base.png"), size = 32, seed = 1) # nolint: object_usage_linter.
+  mutate_rdata(dest, base_face_files = list(base = base_png)) # nolint: object_usage_linter.
 
   dest
 }

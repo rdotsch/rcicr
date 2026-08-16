@@ -10,14 +10,14 @@
 #' matrix with the same size to easily change contrasts.
 #' @examples
 #' generateNoisePattern(256)
-generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid', sigma=25, pre_0.3.0=FALSE) {
+generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid', sigma=25, pre_0.3.0=FALSE) { # nolint: object_name_linter.
   # Settings of sinusoids
   orientations <- c(0, 30, 60, 90, 120, 150)
   phases <- c(0, pi/2)
   scales <- 2^(0:(nscales-1))
 
   # Size of patches per scale
-  mg <- matlab::meshgrid(1:img_size, 1:img_size,1:length(scales))
+  mg <- matlab::meshgrid(1:img_size, 1:img_size,1:length(scales)) # nolint: seq_linter.
   patchSize = mg$x / mg$y
 
   # Number of patch layers needed

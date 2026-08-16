@@ -276,7 +276,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
     }
 
     # For each weighted stimulus, construct the noise pattern
-    pid.cis <- foreach::foreach(obs = 1:npids,
+    pid.cis <- foreach::foreach(obs = 1:npids, # nolint: object_name_linter.
                                 .combine = 'c',
                                 .packages = 'rcicr',
                                 .options.snow = progressOption(pb, cl)) %dopar% {
@@ -285,7 +285,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
       if (is.null(cl)) setTxtProgressBar(pb, obs)
 
       # Select only the observations of the current participant
-      pid.rows <- pids == obs
+      pid.rows <- pids == obs # nolint: object_name_linter.
 
       # Construct the noise pattern
       ci <- generateCINoise(params[pid.rows,], responses[pid.rows], p)
@@ -311,7 +311,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
       parallel::stopCluster(cl)
     }
     cl <- NULL
-    dim(pid.cis) <- c(img_size, img_size, npids)
+    dim(pid.cis) <- c(img_size, img_size, npids) # nolint: object_name_linter.
 
     # Average across participants for final CI and return to original variance
     ci <- apply(pid.cis, c(1, 2), mean) #* sqrt(npids)

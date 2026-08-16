@@ -27,11 +27,11 @@
 #
 # To regenerate after a deliberate change:
 #
-#   mkdir -p /tmp/rel101
+#   mkdir -p /tmp/rel101 # nolint: commented_code_linter.
 #   for f in $(git ls-tree --name-only v1.0.1 R/); do
 #     git show v1.0.1:$f > /tmp/rel101/$(basename $f); done
 #   # source them into an environment, then
-#   # saveRDS(lapply(fns, function(f) names(formals(f))), fixture_path)
+#   # saveRDS(lapply(fns, function(f) names(formals(f))), fixture_path) # nolint: commented_code_linter.
 #
 # Regenerating is the deliberate act. Doing it to make this test pass is how a
 # reordered signature reaches a user.

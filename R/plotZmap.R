@@ -13,7 +13,7 @@ zmapDefaultPalette <- function() rev(terrain.colors(255))
 # the z-map would cover slightly more than 0..1 and sit shifted against the
 # background drawn underneath it.
 drawZmapLayer <- function(zmap, col, add = FALSE, ...) {
-  z <- t(zmap[nrow(zmap):1, , drop = FALSE])
+  z <- t(zmap[nrow(zmap):1, , drop = FALSE]) # nolint: seq_linter.
   # A fully masked or entirely sub-threshold z-map is all NA, where range() of
   # nothing gives c(Inf, -Inf) and a warning from each end. raster::plot() drew
   # that empty map silently; pinning zlim keeps the call well-defined.
