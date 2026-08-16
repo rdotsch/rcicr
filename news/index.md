@@ -58,6 +58,20 @@
   [`?plotZmap`](https://rdotsch.github.io/rcicr/reference/plotZmap.md),
   “Reproducibility across platforms”.
 
+- **`generateCI(mask = matrix(NA, 1, 1))` now reports the malformed mask
+  instead of silently ignoring it.** The internal test for “was a mask
+  supplied?” asked only whether the argument was a single `NA` — which a
+  one-cell `NA` matrix, a one-element `array(NA)` and a `list(NA)` all
+  are. Such a mask was mistaken for the `NA` default, discarded without
+  a word, and an entirely **unmasked** classification image came back. A
+  call that passes a mask and gets an unmasked CI is the failure worth
+  catching early; it now stops in the same mask validation every other
+  malformed mask reaches. The sentinel is now specifically an atomic
+  scalar with no dimensions, so `mask = NA` still means “no mask” — it
+  is the default, and every unmasked call relies on it — while
+  `matrix(1, 1, 1)`, larger matrices, PNG paths and `NULL` are
+  unchanged.
+
 - **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   now checks `base_face_files` before it generates anything, and names
   the entry it cannot use.** Four inputs used to get past the old check
@@ -146,6 +160,20 @@
   of failing later inside
   [`png::readPNG()`](https://rdrr.io/pkg/png/man/readPNG.html) with an
   unrelated message.
+
+- **`plotZmap(mask = NA)` now means “no mask”, as it already does in
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).**
+  The two functions detected a supplied mask differently —
+  [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  asked only whether the argument was non-`NULL` — so the same sentinel
+  meant opposite things:
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  read `NA` as “no mask” while
+  [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  passed it on and stopped with
+  `The mask argument is neither a string nor a matrix!`. `NaN` behaved
+  the same way. Both now render an unmasked z-map. No call that worked
+  before changes: the inputs affected all raised that error.
 
 - **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   no longer saves `trial` in the `.Rdata` file.** It was the loop
