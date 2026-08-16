@@ -145,4 +145,3 @@ exclusions: list(
       seq_linter = c(54)
     )
   )
-
