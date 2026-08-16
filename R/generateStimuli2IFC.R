@@ -19,7 +19,7 @@
 #' @param label Label to prepend to each file for your convenience.
 #' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
 #' @param seed Integer seeding the random number generator (for reproducibility).
-#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all <U+2014> every pixel the same value <U+2014> has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.
+#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all — every pixel the same value — has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
