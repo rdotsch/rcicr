@@ -82,8 +82,10 @@ present -> return, each step one call.
 
 ## Staging
 
-One PR per stage, squashed, so a red gate bisects to a stage rather than to a 300-line
-rewrite. Ordered by rising risk:
+Five stages across **four PRs**, squashed, so a red gate bisects to a stage rather than to a
+300-line rewrite. Stages 0 and 1 share this branch — stage 0 changes no `R/` code and stage 1
+is the pure-helper move, so they carry one plan between them; stages 2, 3 and 4 each get their
+own. Ordered by rising risk:
 
 - **Stage 0 — cover the uncovered branch.** Add the `participants` + `t.test` test above.
   No `R/` change. This is the safety net stages 3 and 4 rest on, so it goes first.
@@ -165,9 +167,11 @@ Stage 4 inherits a smaller version of the same risk in the `t.test` z-map loop.
 
 ## Open for review
 
-1. **Five PRs for one issue, or fewer?** Stages 0+1 are genuinely low-risk and could carry
-   stage 2. I have kept stage 2 separate because it deletes the `captureArgs()` call that a
-   documented bug (the `sigma` clobber) exists to prevent, and that deserves its own diff.
+1. **Four PRs for one issue, or three?** As planned: stages 0+1 here, then one each for 2, 3
+   and 4. The three-PR alternative folds stage 2 into this branch — stages 0+1 are genuinely
+   low-risk and could carry it. I have kept it separate because it deletes the `captureArgs()`
+   call that a documented bug (the `sigma` clobber) exists to prevent, and that deserves its
+   own diff and its own review rather than riding along behind a pure-helper move.
 2. **File names.** `ci-inputs.R` / `ci-compute.R` / `zmap-compute.R` follow `rdata.R` and
    `parallel.R`. An alternative is one `generateCI-internals.R`, which keeps the grep locality
    but recreates a 300-line file.
