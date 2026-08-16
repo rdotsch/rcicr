@@ -17,7 +17,7 @@ file is the machinery around them.
 | `test-coverage.yaml` | Codecov; needs a `CODECOV_TOKEN`. `codecov.yml` sets lenient thresholds because coverage is deliberately partial. |
 | `pkgdown.yaml` | builds the site on every PR, deploys on push to `main`. |
 | `rhub.yaml` | stock R-hub v2, `workflow_dispatch` only. |
-| `lint.yaml` | `lintr::lint_package()`, gated by `.lintr`'s `exclusions:` baseline so only a *new* lint fails it. A required check (below); `lintr` is pinned in the workflow, and `tools/regenerate-lintr-baseline.R` regenerates the baseline. |
+| `lint.yaml` | `lintr::lint_package()`, which must come back clean — `.lintr` holds the config and an empty `exclusions:`. A required check (below); `lintr` is pinned there, and `tools/regenerate-lintr-baseline.R` rebuilds `exclusions:` if ever needed. |
 
 **The required status checks on `main`** are `compare`, `ubuntu-latest (release)`,
 `ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)` and `lint` — query
@@ -39,18 +39,17 @@ every docs-only PR unmergeable. Instead the job always runs and exits early on a
 inert paths, which is in the workflow; anything unrecognised runs the gate.
 
 `.pre-commit-config.yaml` drives pre-commit.ci with minimal language-agnostic hooks only.
-`styler` is deliberately left out: it would reformat nearly every file in one sweep and destroy
-`git blame`. `lintr` runs as `lint.yaml` instead of a pre-commit hook — `object_usage_linter`
-needs the package *installed*, not just parsed, which the language-agnostic hooks here never
-need and a pre-commit.ci hook would have to carry on every commit.
+`lintr` runs as `lint.yaml` rather than a pre-commit hook — `object_usage_linter` needs the
+package *installed*, not just parsed, which a pre-commit.ci hook would carry on every commit.
+**`styler` is a tool, not a hook** — as a hook it needs an R toolchain, and `tidyverse_style()` rewrites single quotes to double,
+reversing what `.lintr` records by disabling `quotes_linter`. Scope it to
+`I(c("spaces", "indention"))`, in its own commit; #255 tracks the rest.
 
-**Exclusions are never pinned to line numbers** — they do not survive an edit above them, and
-once shifted seven at once, failing CI far below. Fix a lint where you can: a clean
-file leaves `exclusions:` entirely. Six dense legacy files keep
-`<linter> = Inf`; a later cosmetic lint there goes unnoticed, the right trade for code
-deliberately not reformatted. Where a hit means something is *wrong* — `object_usage`,
-`commented_code`, `object_name`, `object_length`, `seq` — the line carries
-`# nolint: <linter>.`, which `tools/regenerate-lintr-baseline.R` refuses to baseline.
+**`exclusions:` is empty; do not add to it lightly.** Fix the lint instead. Exclusions are never
+pinned to line numbers, which do not survive an edit above them — once shifted seven at once,
+failing CI far below. For a false positive the line carries `# nolint: <linter>.`, which
+`tools/regenerate-lintr-baseline.R` refuses to baseline for linters meaning something is
+genuinely wrong (`object_usage`, `commented_code`, `object_name`, `seq`).
 
 ---
 

@@ -61,13 +61,20 @@ by_file <- split(df, df$filename)
 by_file <- by_file[sort(names(by_file))]
 file_blocks <- vapply(names(by_file), function(f) format_file_block(f, by_file[[f]]), character(1))
 
-exclusions_block <- paste0(
-  "exclusions: list(\n",
-  paste(file_blocks, collapse = ",\n"),
-  # No trailing newline: writeLines() adds one per element, and a second left
-  # a blank line at EOF that pre-commit.ci then stripped in its own commit.
-  "\n  )"
-)
+exclusions_block <- if (length(file_blocks) == 0L) {
+  # The empty case needs the one-line form. A multi-line `list(\n\n  )` does not
+  # parse, and lint_package() then aborts on the config instead of reporting
+  # zero -- a .lintr that errors is worse than a stale one.
+  "exclusions: list()"
+} else {
+  paste0(
+    "exclusions: list(\n",
+    paste(file_blocks, collapse = ",\n"),
+    # No trailing newline: writeLines() adds one per element, and a second left
+    # a blank line at EOF that pre-commit.ci then stripped in its own commit.
+    "\n  )"
+  )
+}
 
 lintr_lines <- readLines(".lintr")
 exclusions_start <- grep("^exclusions:", lintr_lines)

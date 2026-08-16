@@ -17,40 +17,11 @@ linters: linters_with_defaults(
     # Not a default linter. CONTRIBUTING.md: "TRUE/FALSE, never T/F... All
     # occurrences were replaced in 1.2.2." Nothing else guards against
     # reintroducing it.
-    T_and_F_symbol_linter = T_and_F_symbol_linter()
+    T_and_F_symbol_linter = T_and_F_symbol_linter(),
+    # The package uses %>% seven times and |> never, so it is already
+    # consistent -- the linter merely defaults to preferring native. %>% comes
+    # from dplyr, an Import regardless for count/filter/summarise, so switching
+    # would shed no dependency. A stray |> still fires under this setting.
+    pipe_consistency_linter = pipe_consistency_linter(pipe = "%>%")
   )
-exclusions: list(
-    "R/batchGenerateCI.R" = list(
-      commas_linter = Inf,
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
-    "R/computeInfoVal2IFC.R" = list(
-      commas_linter = Inf,
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf,
-      pipe_consistency_linter = Inf,
-      spaces_inside_linter = Inf
-    ),
-    "R/generateCI.R" = list(
-      commas_linter = Inf,
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf,
-      spaces_left_parentheses_linter = Inf
-    ),
-    "R/generateNoisePattern.R" = list(
-      assignment_linter = Inf,
-      commas_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
-    "R/generateReferenceDistribution.R" = list(
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
-    "R/generateStimuli2IFC.R" = list(
-      commas_linter = Inf,
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf,
-      spaces_left_parentheses_linter = Inf
-    )
-  )
+exclusions: list()

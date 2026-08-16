@@ -64,7 +64,6 @@
 #' )
 #'
 #' computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
-
 computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL) {
 
   # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug
@@ -102,7 +101,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
-  if (!force_gen_ref_dist && !exists("reference_norms", envir=environment(), inherits=FALSE)) {
+  if (!force_gen_ref_dist && !exists("reference_norms", envir = environment(), inherits = FALSE)) {
 
     # Pre-computed reference distribution table (TODO: read from external file).
     #
@@ -121,29 +120,29 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     # To repopulate: run generateReferenceDistribution2IFC() at each parameter
     # combination and record median(reference_norms) and mad(reference_norms).
     ref_lookup <- tribble(
-      ~ref_seed, ~ref_img_size, ~ref_iter, ~ref_n_trials, ~ref_median,   ~ref_mad,
-    #  1,         512,           10000,     100,           1097.7394,     52.54232,
-    #  1,         512,           10000,     300,           634.0318,      30.51781,
-    #  1,         512,           10000,     500,           490.4709,      23.71276,
-    #  1,         512,           10000,     1000,          347.2960,      16.64761
+      ~ref_seed, ~ref_img_size, ~ref_iter, ~ref_n_trials, ~ref_median, ~ref_mad,
+      #  1,         512,           10000,     100,           1097.7394,     52.54232,
+      #  1,         512,           10000,     300,           634.0318,      30.51781,
+      #  1,         512,           10000,     500,           490.4709,      23.71276,
+      #  1,         512,           10000,     1000,          347.2960,      16.64761
     )
 
     # Check whether we have a perfect match
     ref_values <- ref_lookup %>%
-      filter(ref_seed==seed, ref_img_size==img_size, ref_n_trials==n_trials, ref_iter==iter)
+      filter(ref_seed == seed, ref_img_size == img_size, ref_n_trials == n_trials, ref_iter == iter)
 
     if (ref_values %>% count() == 1) {
       # We have a match, use the values
       write("Pre-computed reference values matching your exact parameters found.", stdout())
 
       ref_median <- ref_values$ref_median
-      ref_mad    <- ref_values$ref_mad
-      ref_iter   <- ref_values$ref_iter
+      ref_mad <- ref_values$ref_mad
+      ref_iter <- ref_values$ref_iter
 
     } else {
       # Check whether at least seed, img_size, and n_trials match
       ref_values <- ref_lookup %>%
-        filter(ref_seed==seed, ref_img_size==img_size, ref_n_trials==n_trials)
+        filter(ref_seed == seed, ref_img_size == img_size, ref_n_trials == n_trials)
 
       if (ref_values %>% count() > 0) {
         write("I found pre-computed reference values that matched seed, image size, and number of trials, but not the number of reference distribution iterations.", stdout())
@@ -164,23 +163,23 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
         if (user_response) {
           write(paste0("Using pre-computed reference values for ", max_ref_iter, " instead of ", iter, " iterations."), stdout())
           ref_values <- ref_lookup %>%
-            filter(ref_seed==seed, ref_img_size==img_size, ref_n_trials==n_trials, ref_iter==max_ref_iter)
+            filter(ref_seed == seed, ref_img_size == img_size, ref_n_trials == n_trials, ref_iter == max_ref_iter)
 
           ref_median <- ref_values$ref_median
-          ref_mad    <- ref_values$ref_mad
-          ref_iter   <- ref_values$ref_iter
+          ref_mad <- ref_values$ref_mad
+          ref_iter <- ref_values$ref_iter
         }
       }
     }
   }
 
-  if (!exists("ref_median", envir=environment(), inherits=FALSE)) {
+  if (!exists("ref_median", envir = environment(), inherits = FALSE)) {
 
     # Regenerate when there is no cached distribution, or when the caller
     # explicitly asked for one. force_gen_ref_dist previously only skipped the
     # lookup-table branch above and never reached here, so it was silently
     # ignored whenever reference_norms already existed in the .Rdata file.
-    if (force_gen_ref_dist || !exists("reference_norms", envir=environment(), inherits=FALSE)) {
+    if (force_gen_ref_dist || !exists("reference_norms", envir = environment(), inherits = FALSE)) {
 
       # Reference norms not present in rdata file (or regeneration forced).
       #
@@ -191,7 +190,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       cache_ref_dist <- is.null(response_seed)
 
       reference_norms <- generateReferenceDistribution2IFC(
-        rdata, iter=iter, response_seed=response_seed, save_rdata=cache_ref_dist)
+        rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
+      )
 
       if (cache_ref_dist) {
 
@@ -212,8 +212,9 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       } else {
 
         write(paste0("Reference distribution simulated with response_seed = ", response_seed,
-                     ". This is an independent draw of the null, not the reference distribution ",
-                     "stored in the .Rdata file, and it has deliberately not been saved there."), stdout())
+                ". This is an independent draw of the null, not the reference distribution ",
+                "stored in the .Rdata file, and it has deliberately not been saved there."
+              ), stdout())
 
       }
 
@@ -225,15 +226,15 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
     # Compute reference values
     ref_median <- median(reference_norms)
-    ref_mad    <- mad(reference_norms)
-    ref_iter   <- length(reference_norms)
+    ref_mad <- mad(reference_norms)
+    ref_iter <- length(reference_norms)
   }
 
   # Compute informational value metric
   cinorm <- norm(matrix(target_ci[["ci"]]), "f")
-  infoVal <- (cinorm - ref_median ) / (ref_mad)
+  infoVal <- (cinorm - ref_median) / (ref_mad)
 
-  write( paste0("Informational value: z = ", infoVal, " (ci norm = ", cinorm,"; reference median = ", ref_median, "; MAD = ", ref_mad, "; iterations = ", ref_iter,  ")"), stdout() )
+  write(paste0("Informational value: z = ", infoVal, " (ci norm = ", cinorm, "; reference median = ", ref_median, "; MAD = ", ref_mad, "; iterations = ", ref_iter, ")"), stdout())
 
   return(infoVal)
 

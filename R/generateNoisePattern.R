@@ -10,30 +10,30 @@
 #' matrix with the same size to easily change contrasts.
 #' @examples
 #' generateNoisePattern(256)
-generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid', sigma=25, pre_0.3.0=FALSE) { # nolint: object_name_linter.
+generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinusoid', sigma = 25, pre_0.3.0 = FALSE) { # nolint: object_name_linter.
   # Settings of sinusoids
   orientations <- c(0, 30, 60, 90, 120, 150)
-  phases <- c(0, pi/2)
-  scales <- 2^(0:(nscales-1))
+  phases <- c(0, pi / 2)
+  scales <- 2^(0:(nscales - 1))
 
   # Size of patches per scale
-  mg <- matlab::meshgrid(1:img_size, 1:img_size,1:length(scales)) # nolint: seq_linter.
-  patchSize = mg$x / mg$y
+  mg <- matlab::meshgrid(1:img_size, 1:img_size, 1:length(scales)) # nolint: seq_linter.
+  patchSize <- mg$x / mg$y
 
   # Number of patch layers needed
-  nrPatches = length(scales) * length(orientations) * length(phases)
+  nrPatches <- length(scales) * length(orientations) * length(phases)
 
   # Preallocate memory
-  patches = matlab::zeros(c(img_size, img_size, nrPatches))
-  patchIdx = matlab::zeros(c(img_size, img_size, nrPatches))
+  patches <- matlab::zeros(c(img_size, img_size, nrPatches))
+  patchIdx <- matlab::zeros(c(img_size, img_size, nrPatches))
 
   # Counters
   if (pre_0.3.0) {
-    co = 0 # patch layer counter
-    idx = 0 # contrast index counter
+    co <- 0 # patch layer counter
+    idx <- 0 # contrast index counter
   } else {
-    co = 1 # patch layer counter
-    idx = 1 # contrast index counter
+    co <- 1 # patch layer counter
+    idx <- 1 # contrast index counter
   }
 
   for (scale in scales) {
@@ -42,34 +42,34 @@ generateNoisePattern <- function(img_size=512, nscales=5, noise_type='sinusoid',
         # Generate single patch
         size <- patchSize[scale, img_size]
 
-        if (noise_type=='gabor') {
+        if (noise_type == 'gabor') {
           p <- generateGabor(size, 1.5, orientation, phase, sigma, 1)
         } else {
           p <- generateSinusoid(size, 2, orientation, phase, 1)
         }
 
         # Repeat to fill scale
-        patches[,,co] <- matlab::repmat(p, scale)
+        patches[, , co] <- matlab::repmat(p, scale)
 
         # Create index matrix
         for (col in 1:scale) {
           for (row in 1:scale) {
 
             # Insert absolute index for later contrast weighting
-            patchIdx[(size * (row-1) + 1) : (size * row), (size * (col-1) + 1) : (size * col), co] = idx
+            patchIdx[(size * (row - 1) + 1):(size * row), (size * (col - 1) + 1):(size * col), co] <- idx
 
             # Update contrast counter
-            idx = idx + 1
+            idx <- idx + 1
 
           }
         }
 
         # Update layer counter
-        co = co + 1
+        co <- co + 1
 
       }
     }
   }
 
-  return(list(patches=patches, patchIdx=patchIdx, noise_type=noise_type, generator_version=utils::packageVersion('rcicr')))
+  return(list(patches = patches, patchIdx = patchIdx, noise_type = noise_type, generator_version = utils::packageVersion('rcicr')))
 }

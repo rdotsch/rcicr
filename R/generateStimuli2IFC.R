@@ -19,7 +19,7 @@
 #' @param label Label to prepend to each file for your convenience.
 #' @param use_same_parameters Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).
 #' @param seed Integer seeding the random number generator (for reproducibility).
-#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all — every pixel the same value — has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.
+#' @param maximize_baseimage_contrast Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all <U+2014> every pixel the same value <U+2014> has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.
 #' @param noise_type String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).
 #' @param nscales Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.
 #' @param sigma Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).
@@ -42,16 +42,17 @@
 #'   ncores = 1,
 #'   nscales = 1
 #' )
-generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, stimulus_path, label='rcic', use_same_parameters=TRUE, seed=1, maximize_baseimage_contrast=TRUE, noise_type='sinusoid', nscales=5, sigma=25, ncores=default_ncores(), return_as_dataframe=FALSE, save_as_png=TRUE, save_rdata=TRUE) {
+generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512, stimulus_path, label = 'rcic', use_same_parameters = TRUE, seed = 1, maximize_baseimage_contrast = TRUE, noise_type = 'sinusoid', nscales = 5, sigma = 25, ncores = default_ncores(), return_as_dataframe = FALSE, save_as_png = TRUE, save_rdata = TRUE) {
 
   # stimulus_path is required, not defaulted: a default path writes to the
   # user's filespace uninvited, which CRAN policy does not allow.
   writes_to_disk <- save_as_png || save_rdata
   if (writes_to_disk && missing(stimulus_path)) {
     stop(paste0('No stimulus_path was given. Supply stimulus_path = <a ',
-                'directory> to say where the stimuli and the .Rdata file ',
-                'should go. Use tempdir() if you only want to try the ',
-                'function out.'))
+      'directory> to say where the stimuli and the .Rdata file ',
+      'should go. Use tempdir() if you only want to try the ',
+      'function out.'
+    ))
   }
 
   validateBaseFaceFiles(base_face_files)
@@ -69,15 +70,19 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       if (img_format == 'png') png::readPNG(filename) else jpeg::readJPEG(filename),
       error = function(e) {
         stop(paste0('Base image "', base_face, '" (', filename, ') could not ',
-                    'be read as ', img_format, ': ', conditionMessage(e)),
-             call. = FALSE)
-      })
+            'be read as ', img_format, ': ', conditionMessage(e)
+          ),
+          call. = FALSE
+        )
+      }
+    )
 
     # Check if base face is square. If not, throw an error
     if (dim(img)[1] != dim(img)[2]) {
       stop(paste0('Base image "', base_face, '" (', filename, ') is not ',
-                  'square! It\'s ', dim(img)[1], ' by ', dim(img)[2],
-                  ' pixels. Please use a square base face.'))
+        'square! It\'s ', dim(img)[1], ' by ', dim(img)[2],
+        ' pixels. Please use a square base face.'
+      ))
     }
 
     # Change base face to greyscale if necessary
@@ -92,11 +97,12 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # (when the noise is added to the base image).
     if (nrow(img) != img_size) {
       stop(paste0('Base image "', base_face, '" (', filename, ') is ',
-                  nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
-                  img_size, '. rcicr does not resize base images: please ',
-                  'either resize the image to ', img_size, ' by ', img_size,
-                  ' pixels, or call generateStimuli2IFC() with img_size = ',
-                  nrow(img), '.'))
+        nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
+        img_size, '. rcicr does not resize base images: please ',
+        'either resize the image to ', img_size, ' by ', img_size,
+        ' pixels, or call generateStimuli2IFC() with img_size = ',
+        nrow(img), '.'
+      ))
     }
 
     # If necessary, rescale to maximize contrast
@@ -107,11 +113,12 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       # stimuli, so rejecting it outright would break a legitimate call.
       if (max(img) == min(img)) {
         stop(paste0('Base image "', base_face, '" (', filename, ') has no ',
-                    'contrast: every pixel is ', min(img), '. Contrast cannot ',
-                    'be maximized on a uniform image, and doing so would make ',
-                    'the base image entirely NaN. Use a base image with some ',
-                    'variation, or call generateStimuli2IFC() with ',
-                    'maximize_baseimage_contrast = FALSE.'))
+          'contrast: every pixel is ', min(img), '. Contrast cannot ',
+          'be maximized on a uniform image, and doing so would make ',
+          'the base image entirely NaN. Use a base image with some ',
+          'variation, or call generateStimuli2IFC() with ',
+          'maximize_baseimage_contrast = FALSE.'
+        ))
       }
 
       img <- (img - min(img)) / (max(img) - min(img))
@@ -122,7 +129,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   }
 
   # Initialize #
-  p <- generateNoisePattern(img_size, noise_type=noise_type, nscales=nscales, sigma=sigma)
+  p <- generateNoisePattern(img_size, noise_type = noise_type, nscales = nscales, sigma = sigma)
 
   # Only create the directory when something is written to it.
   # generateReferenceDistribution2IFC() calls this with both save flags FALSE
@@ -150,7 +157,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
   stimuli_params <- list()
 
   # Compute number of parameters needed  #
-  nparams <- sum(6*2*(2^(0:(nscales-1)))^2)
+  nparams <- sum(6 * 2 * (2^(0:(nscales - 1)))^2)
 
   # Generate parameters #
   if (use_same_parameters) {
@@ -158,7 +165,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # Generate stimuli parameters, one set for all base faces
     params <- matlab::zeros(n_trials, nparams)
     for (trial in 1:n_trials) {
-      params[trial,] <- (runif(nparams) * 2) - 1
+      params[trial, ] <- (runif(nparams) * 2) - 1
     }
 
     # Assign to each base face the same set
@@ -172,7 +179,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       # Generate stimuli parameters, unique to each base face
       stimuli_params[[base_face]] <- matlab::zeros(n_trials, nparams)
       for (trial in 1:n_trials) {
-        stimuli_params[[base_face]][trial,] <- (runif(nparams) * 2) - 1
+        stimuli_params[[base_face]][trial, ] <- (runif(nparams) * 2) - 1
       }
     }
 
@@ -190,7 +197,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
   stims <- foreach::foreach(
     trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE,
-    .options.snow = progressOption(pb, cl)) %dopar% {
+    .options.snow = progressOption(pb, cl)
+  ) %dopar% {
     # Each iteration only ever needs the noise for its own trial, so this is a
     # plain matrix. It used to write into a preallocated
     # zeros(img_size, img_size, n_trials) array declared before the cluster was
@@ -202,13 +210,13 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
       # One parameter set is shared by every base face, so any key gives the
       # same values; take the first explicitly rather than relying on `base_face`
       # still holding a value left over from the base-image loop above.
-      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial,], p)
+      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial, ], p)
     }
 
     for (base_face in names(base_faces)) {
       if (!use_same_parameters) {
         # compute noise pattern unique to this base face
-        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial,], p)
+        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], p)
       }
 
       # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
@@ -220,7 +228,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
       # write to file
       if (save_as_png) {
-        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep="_"), sep='/'))
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep = "_"), sep = '/'))
       }
 
       # compute inverted stimulus
@@ -231,7 +239,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
 
       # write to file
       if (save_as_png) {
-        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep="_"), sep='/'))
+        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep = "_"), sep = '/'))
       }
 
       # Return CI
@@ -280,7 +288,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials=770, img_size=512, sti
     # set later (notably generateReferenceDistribution2IFC(), which builds the
     # infoVal null distribution) reproduces the same noise basis. They were
     # previously omitted, so re-generation silently fell back to the defaults.
-    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, use_same_parameters, generator_version, file=paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format="%b_%d_%Y_%H_%M.Rdata"), sep="_"), sep='/'), envir=environment())
+    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, use_same_parameters, generator_version, file = paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format = "%b_%d_%Y_%H_%M.Rdata"), sep = "_"), sep = '/'), envir = environment())
   }
 
   # Return CIs
@@ -313,29 +321,33 @@ validateBaseFaceFiles <- function(base_face_files) {
 
   if (!is.list(base_face_files)) {
     stop(paste0('base_face_files must be a named list, ', example,
-                '. It is of class ',
-                paste(class(base_face_files), collapse = '/'), '.'))
+      '. It is of class ',
+      paste(class(base_face_files), collapse = '/'), '.'
+    ))
   }
 
   if (length(base_face_files) == 0) {
     stop(paste0('base_face_files is empty. Supply at least one base image, ',
-                example, '.'))
+      example, '.'
+    ))
   }
 
   nms <- names(base_face_files)
   if (is.null(nms) || any(is.na(nms) | nms == '')) {
     stop(paste0('Every element of base_face_files must be named. The names ',
-                'label the stimulus files and index the .Rdata file that ',
-                'generateCI() reads back, so they cannot be left off: ',
-                example, '.'))
+      'label the stimulus files and index the .Rdata file that ',
+      'generateCI() reads back, so they cannot be left off: ',
+      example, '.'
+    ))
   }
 
   if (anyDuplicated(nms)) {
     stop(paste0('base_face_files has duplicate names (',
-                paste(unique(nms[duplicated(nms)]), collapse = ', '),
-                '). Only the first entry under each name would be used, and ',
-                'the rest would be silently skipped, so give every base image ',
-                'its own name.'))
+      paste(unique(nms[duplicated(nms)]), collapse = ', '),
+      '). Only the first entry under each name would be used, and ',
+      'the rest would be silently skipped, so give every base image ',
+      'its own name.'
+    ))
   }
 
   for (base_face in nms) {
@@ -343,20 +355,23 @@ validateBaseFaceFiles <- function(base_face_files) {
 
     if (!is.character(filename) || length(filename) != 1 || is.na(filename)) {
       stop(paste0('Base image "', base_face, '" must be a single file name, ',
-                  'but it is of class ', paste(class(filename), collapse = '/'),
-                  ' and length ', length(filename), '. ', example, '.'))
+        'but it is of class ', paste(class(filename), collapse = '/'),
+        ' and length ', length(filename), '. ', example, '.'
+      ))
     }
 
     if (is.na(baseImageFormat(filename))) {
       stop(paste0('Base image "', base_face, '" (', filename, ') must be a ',
-                  'PNG or JPEG file, named with a .png, .jpg or .jpeg ',
-                  'extension.'))
+        'PNG or JPEG file, named with a .png, .jpg or .jpeg ',
+        'extension.'
+      ))
     }
 
     if (!file.exists(filename)) {
       stop(paste0('Base image "', base_face, '" does not exist: ', filename,
-                  '. Paths are resolved relative to the working directory, ',
-                  getwd(), '.'))
+        '. Paths are resolved relative to the working directory, ',
+        getwd(), '.'
+      ))
     }
   }
 
