@@ -138,3 +138,62 @@ test_that("a z-map is written where zmaptargetpath asks for it", {
   expect_true(file.exists(file.path(target, "base.png")))
   expect_false(dir.exists(file.path(tmp, "zmaps")))
 })
+
+# --------------------------------------------------------------------------
+# participants + t.test together: the branch that reuses the participant CIs
+# --------------------------------------------------------------------------
+
+test_that("the participants + t.test z-map is pinned to its pre-split values", {
+  # With `participants` set, the t.test z-map does not build a noise image per
+  # trial: it short-circuits to `noiseimages <- pid.cis` and reuses the
+  # per-participant CIs computed 60 lines earlier, in a different branch. That
+  # cross-branch reuse is the one construct in generateCI() that an extraction
+  # can sever silently, and until this test nothing exercised the two arguments
+  # together -- test-parallel-progress.R sets each, but in separate calls.
+  #
+  # The reference was captured on the pre-split tree and is compared
+  # element-wise on purpose. Signs, dimensions and a handful of sampled cells
+  # would all still pass while every other magnitude moved, and this branch
+  # feeds a number researchers report.
+  #
+  # Note for anyone mutation-testing this path: the t-test statistic is
+  # invariant to a uniform rescaling of its input, so `pid.cis * k` is a no-op
+  # here and proves nothing about the assertions below. Perturb the mean
+  # (`pid.cis + k`) instead, which this test does catch.
+  skip_on_cran()
+
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 12, nscales = 1, seed = 1)
+
+  res <- generateCI(
+    stimuli = 1:12, responses = rep(c(1, -1), 6), baseimage = "base",
+    rdata = rdata, save_as_png = FALSE,
+    participants = rep(c("a", "b", "c"), each = 4),
+    zmap = TRUE, zmapmethod = "t.test", zmapdecoration = FALSE,
+    n_cores = 1, zmaptargetpath = file.path(tmp, "zmaps")
+  )
+
+  reference <- readRDS(test_path("fixtures", "zmap-participants-ttest.rds"))
+  expect_equal(res$zmap, reference, tolerance = 1e-8)
+
+  # Whole-matrix summaries in the idiom of test-regression-baseline.R, so a
+  # failure says *how* the z-map moved rather than only that it did.
+  expect_equal(dim(res$zmap), c(32, 32))
+  expect_false(anyNA(res$zmap))
+  expect_equal(base::sum(abs(res$zmap)), 830.0627741650, tolerance = 1e-8)
+
+  # The t.test z-map takes its sign from the CI, so this cannot pass while the
+  # CI and the z-map have drifted apart from each other.
+  expect_equal(sign(res$zmap), sign(res$ci))
+
+  # ...and the reference must be the *participants* one. Pooling every trial
+  # instead goes down the per-trial noise-image loop, which is the branch this
+  # test exists to keep separate.
+  pooled <- generateCI(
+    stimuli = 1:12, responses = rep(c(1, -1), 6), baseimage = "base",
+    rdata = rdata, save_as_png = FALSE,
+    zmap = TRUE, zmapmethod = "t.test", zmapdecoration = FALSE,
+    n_cores = 1, zmaptargetpath = file.path(tmp, "zmaps2")
+  )
+  expect_false(isTRUE(all.equal(res$zmap, pooled$zmap, check.attributes = FALSE)))
+})
