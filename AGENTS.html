@@ -78,7 +78,7 @@
 <li>It needs ~1.5 GB of RAM at 512px and the reference version’s own dependencies — <code>--install-deps</code> puts them in a throwaway library rather than the user’s.</li>
 </ul></li>
 <li>Both <code>devtools::test()</code> and <code><a href="https://testthat.r-lib.org/reference/test_package.html" class="external-link">testthat::test_local()</a></code> set <code>NOT_CRAN=true</code> themselves, so neither can verify a <code>skip_on_cran()</code> actually fires.</li>
-<li>Because the checks are required, an infrastructure flake blocks a merge. <strong>This environment cannot re-run one</strong> — <code>gh run rerun</code> returns <code>Resource not accessible by integration</code>, as does dispatching R-hub — so re-runs and workflow dispatches need the maintainer and the Actions tab.</li>
+<li>Because the checks are required, an infrastructure flake blocks a merge. <strong>Re-run it from here</strong> — <code>gh run rerun &lt;id&gt; --failed</code> works, and a workflow dispatch is permitted too: probe it with a bogus ref, which returns 422 (allowed, bad ref) rather than 403 (no permission).</li>
 <li>
 <strong>The workflows only trigger on PRs targeting <code>main</code></strong>, so a stacked PR based on another branch gets pre-commit and nothing else — no <code>R CMD check</code>. Retargeting an existing PR does <em>not</em> re-fire them; close and reopen it.</li>
 <li>

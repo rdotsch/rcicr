@@ -112,10 +112,9 @@ for editing them (never rename a job, never convert the gate to a
   set `NOT_CRAN=true` themselves, so neither can verify a
   `skip_on_cran()` actually fires.
 - Because the checks are required, an infrastructure flake blocks a
-  merge. **This environment cannot re-run one** — `gh run rerun` returns
-  `Resource not accessible by integration`, as does dispatching R-hub —
-  so re-runs and workflow dispatches need the maintainer and the Actions
-  tab.
+  merge. **Re-run it from here** — `gh run rerun <id> --failed` works,
+  and a workflow dispatch is permitted too: probe it with a bogus ref,
+  which returns 422 (allowed, bad ref) rather than 403 (no permission).
 - **The workflows only trigger on PRs targeting `main`**, so a stacked
   PR based on another branch gets pre-commit and nothing else — no
   `R CMD check`. Retargeting an existing PR does *not* re-fire them;
