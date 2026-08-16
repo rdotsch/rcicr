@@ -193,9 +193,10 @@ test_that("applyMask accepts integer and logical matrix masks", {
 
 # The region applyMask() actually masked, as a logical matrix. The accept tests
 # below assert this rather than only expect_no_error(): a channel collapse that
-# picked the wrong plane would still not error, and the release gate cannot
-# catch it either -- its mask fixture is single-channel, so it never enters the
-# collapse branch at all (tools/compare-release-output.R, make_mask()).
+# picked the wrong plane would still not error. The gate's mask_rgba config
+# covers the 4-channel half of that numerically; the 2-channel half can only be
+# covered here, because no reference version can read a 2-channel PNG at all
+# (see SINCE in tools/compare-harness.R).
 masked_region <- function(mask, n = 8) {
   is.na(rcicr:::applyMask(matrix(1, n, n), mask = mask, img_size = n))
 }
