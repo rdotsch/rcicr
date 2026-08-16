@@ -90,14 +90,26 @@ rewrite. Ordered by rising risk:
   the single-trial 4096 truncation, which currently has no test of its own.
 - **Stage 2 — `loadStimulusParams()`.** Removes `captureArgs()`/`list2env()` from
   `generateCI()` entirely: with `load()` confined to a helper's frame there is no user
-  argument in scope for a `.Rdata` field to clobber. `captureArgs()` stays — it is still
-  `generateReferenceDistribution2IFC()`'s guard, and `test-load-argument-guards.R` pins it.
+  argument in scope for a `.Rdata` field to clobber. `captureArgs()` itself stays — its
+  other callers are `computeInfoVal2IFC()` (`R/computeInfoVal2IFC.R`) and
+  `computeCumulativeCICorrelation()` (`R/computeCumulativeCICorrelation.R`), and
+  `test-load-argument-guards.R:16-90` pins both against exactly this hazard.
+  `generateReferenceDistribution2IFC()` is *not* one of them: it hand-rolls an explicit
+  `.args` list at `R/generateReferenceDistribution.R:78-89` and restores each field by name.
 - **Stage 3 — `computeParticipantCIs()`.**
 - **Stage 4 — the two z-map helpers.**
 
-This branch carries stage 0 and stage 1, then deletes this file. Stages 2-4 get their own
-PRs off `main`. **The staging list goes onto issue #184 before this PR is squashed**, since
-this file does not survive the branch and the tracker is where status lives.
+This branch carries stage 0 and stage 1, then deletes this file.
+
+**Stages 2-4 each change `R/` behaviour, so each begins with its own plan commit on its own
+branch and its own plan-only draft review** — `AGENTS.md` "Git and merge strategy" and
+`CONTRIBUTING.md` "Plan first, in the same pull request" apply per PR, not once per issue.
+Those plans are short: this one's analysis does not have to be repeated, only the stage's own
+target shape, what it verified, and how it will be shown correct. Copying the staging list to
+issue #184 records *what is left* and does not substitute for that procedure.
+
+**The staging list still goes onto issue #184 before this PR is squashed**, since this file
+does not survive the branch and the tracker is where status lives.
 
 ## The step most likely to fail: stage 3
 
