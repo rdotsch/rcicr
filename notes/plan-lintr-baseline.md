@@ -118,6 +118,8 @@ in `git blame` for those 25 lines, which is the price named above.
    `lint_package()` stays 0, remove it.
 5. Prove the guard still works: introduce one new cosmetic lint in an unbaselined file and one
    new `object_usage` lint, confirm each is reported.
-6. Update the `lint.yaml` row in `MAINTENANCE.md` (budget 1800 words — check `wc -w` after) and
-   add a `DECISIONS.md` entry for why the cosmetic guard is deliberately coarser.
+6. Update the `lint.yaml` row in `MAINTENANCE.md`, and record there — and only there — why the
+   cosmetic guard is deliberately coarser. Not `DECISIONS.md`: that file's test is "would this
+   still matter if the package were maintained somewhere else entirely", and a lint baseline
+   would not. Check `wc -w MAINTENANCE.md` against its 1800-word budget afterwards.
 7. Delete this file, mark the draft ready, answer the Codex review, squash.
