@@ -11,12 +11,12 @@
 #' # nrep and img_size are kept small here so the example is fast; the defaults
 #' # (1000 replications at 512px) are what you want for a real estimate.
 #' simulateNoiseIntensities(nrep = 10, img_size = 64)
-simulateNoiseIntensities <- function(nrep=1000, img_size=512) {
+simulateNoiseIntensities <- function(nrep = 1000, img_size = 512) {
 
   results <- matlab::zeros(nrep, 2)
   # img_size was previously ignored here, hardcoding a 512px noise pattern
   # regardless of what the caller asked for.
-  s <- generateNoisePattern(img_size=img_size)
+  s <- generateNoisePattern(img_size = img_size)
 
   # The progress bar used to be sized with `data[, by]`, neither of which is a
   # parameter of this function - `data` resolved to utils::data, so every call
@@ -30,7 +30,7 @@ simulateNoiseIntensities <- function(nrep=1000, img_size=512) {
     params <- (runif(max(s$patchIdx)) * 2) - 1
 
     noise <- generateNoiseImage(params, s)
-    results[i,] <- range(noise)
+    results[i, ] <- range(noise)
   }
   close(pb)
   boxplot(results)

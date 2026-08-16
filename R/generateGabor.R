@@ -14,9 +14,9 @@
 generateGabor <- function(img_size, cycles, angle, phase, sigma, contrast) {
 
   s <- generateSinusoid(img_size, cycles, angle, phase, contrast)
-  x0 <- scales::rescale(1:img_size, to= c(-.5,.5))
+  x0 <- scales::rescale(1:img_size, to = c(-.5, .5))
   gauss <- matlab::meshgrid(x0, x0)
-  gauss_mask = exp( -(((gauss$x^2)+(gauss$y^2)) / (2* (sigma/img_size)^2)) )
+  gauss_mask <- exp(-(((gauss$x^2) + (gauss$y^2)) / (2 * (sigma / img_size)^2)))
   return(gauss_mask * s)
 
 }

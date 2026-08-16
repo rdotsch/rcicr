@@ -26,7 +26,7 @@
 #'   participant2 = list(ci = matrix(runif(64, -0.3, 0.3), 8, 8), base = matrix(0.5, 8, 8))
 #' )
 #' scaled_cis <- autoscale(cis, save_as_pngs = FALSE)
-autoscale <- function(cis, save_as_pngs=TRUE, targetpath) {
+autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
 
   # targetpath is required, not defaulted: a default path writes to the user's
   # filespace uninvited, which CRAN policy does not allow.
@@ -52,21 +52,21 @@ autoscale <- function(cis, save_as_pngs=TRUE, targetpath) {
                   'is no range to scale it against. If it was masked, check that ',
                   'the mask does not cover the whole image.'))
     }
-    ranges[which(ciname==names(cis)), ] <- range(ci_values, na.rm = TRUE)
+    ranges[which(ciname == names(cis)), ] <- range(ci_values, na.rm = TRUE)
   }
 
   # Determine the lowest possible scaling factor constant
-  if (abs(min(ranges[,1])) > max(ranges[,2])) {
-    constant <- abs(min(ranges[,1]))
+  if (abs(min(ranges[, 1])) > max(ranges[, 2])) {
+    constant <- abs(min(ranges[, 1]))
   }  else {
-    constant <- max(ranges[,2])
+    constant <- max(ranges[, 2])
   }
 
   write(paste0("Using scaling factor constant:", constant), stdout())
 
   # Scale all noise patterns
   for (ciname in names(cis)) {
-    cis[[ciname]]$scaled <-  (cis[[ciname]]$ci + constant) / (2*constant)
+    cis[[ciname]]$scaled <-  (cis[[ciname]]$ci + constant) / (2 * constant)
 
     # Note that $combined is deliberately NOT updated here. It stays as the
     # caller supplied it, so whatever combination was made before autoscaling

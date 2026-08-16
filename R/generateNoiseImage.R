@@ -18,7 +18,7 @@ generateNoiseImage <- function(params, p) {
   # hit max(NULL) and always aborted - meaning the backward compatibility this
   # code provides never actually worked.
   if ('sinusoids' %in% names(p)) {
-    p <- list(patches=p$sinusoids, patchIdx=p$sinIdx, noise_type='sinusoid')
+    p <- list(patches = p$sinusoids, patchIdx = p$sinIdx, noise_type = 'sinusoid')
   }
 
   # Abort stimulus generation if number of params doesn't equal number of patches

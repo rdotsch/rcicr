@@ -58,7 +58,7 @@
 #'   stimuli = 1:6, responses = responses, baseimage = "face",
 #'   rdata = rdata_file, save_as_png = FALSE
 #' )
-generateCI2IFC <- function(stimuli, responses, baseimage, rdata, save_as_png=TRUE, filename='', targetpath, antiCI=FALSE, scaling='independent', constant=0.1) {
+generateCI2IFC <- function(stimuli, responses, baseimage, rdata, save_as_png = TRUE, filename = '', targetpath, antiCI = FALSE, scaling = 'independent', constant = 0.1) {
 
   # targetpath is required, not defaulted: a default path writes to the user's
   # filespace uninvited, which CRAN policy does not allow.
@@ -81,6 +81,7 @@ generateCI2IFC <- function(stimuli, responses, baseimage, rdata, save_as_png=TRU
     targetpath = targetpath,
     antiCI = antiCI,
     scaling = scaling,
-    scaling_constant = constant))
+    scaling_constant = constant
+  ))
 
 }

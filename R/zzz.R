@@ -8,5 +8,5 @@ if (getRversion() >= "2.15.1")
 
       # Suppress checking notes for variables in foreach loop (parallel runs)
       "obs"
-      )
+    )
   )

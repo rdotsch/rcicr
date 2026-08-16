@@ -20,24 +20,10 @@ linters: linters_with_defaults(
     T_and_F_symbol_linter = T_and_F_symbol_linter()
   )
 exclusions: list(
-    "R/autoscale.R" = list(
-      commas_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
     "R/batchGenerateCI.R" = list(
       commas_linter = Inf,
       indentation_linter = Inf,
       infix_spaces_linter = Inf
-    ),
-    "R/batchGenerateCI2IFC.R" = list(
-      commas_linter = Inf,
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
-    "R/computeCumulativeCICorrelation.R" = list(
-      commas_linter = Inf,
-      infix_spaces_linter = Inf,
-      spaces_inside_linter = Inf
     ),
     "R/computeInfoVal2IFC.R" = list(
       commas_linter = Inf,
@@ -52,24 +38,6 @@ exclusions: list(
       infix_spaces_linter = Inf,
       spaces_left_parentheses_linter = Inf
     ),
-    "R/generateCI2IFC.R" = list(
-      indentation_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
-    "R/generateCINoise.R" = list(
-      brace_linter = Inf,
-      spaces_left_parentheses_linter = Inf
-    ),
-    "R/generateGabor.R" = list(
-      assignment_linter = Inf,
-      commas_linter = Inf,
-      infix_spaces_linter = Inf,
-      spaces_inside_linter = Inf,
-      spaces_left_parentheses_linter = Inf
-    ),
-    "R/generateNoiseImage.R" = list(
-      infix_spaces_linter = Inf
-    ),
     "R/generateNoisePattern.R" = list(
       assignment_linter = Inf,
       commas_linter = Inf,
@@ -79,32 +47,10 @@ exclusions: list(
       indentation_linter = Inf,
       infix_spaces_linter = Inf
     ),
-    "R/generateSinusoid.R" = list(
-      assignment_linter = Inf
-    ),
     "R/generateStimuli2IFC.R" = list(
       commas_linter = Inf,
       indentation_linter = Inf,
       infix_spaces_linter = Inf,
       spaces_left_parentheses_linter = Inf
-    ),
-    "R/plotZmap.R" = list(
-      indentation_linter = Inf
-    ),
-    "R/simulateNoiseIntensities.R" = list(
-      commas_linter = Inf,
-      infix_spaces_linter = Inf
-    ),
-    "R/zzz.R" = list(
-      indentation_linter = Inf
-    ),
-    "tests/testthat/test-computeInfoVal2IFC.R" = list(
-      indentation_linter = Inf
-    ),
-    "tests/testthat/test-generateReferenceDistribution2IFC.R" = list(
-      indentation_linter = Inf
-    ),
-    "tests/testthat/test-released-signatures.R" = list(
-      indentation_linter = Inf
     )
   )

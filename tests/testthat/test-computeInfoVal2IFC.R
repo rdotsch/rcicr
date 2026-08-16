@@ -45,7 +45,8 @@ test_that("response_seed regenerates the null even when the .Rdata already has o
 
   iv_cached <- computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_path)
   iv_seeded <- suppressWarnings(computeInfoVal2IFC(
-    target_ci = target_ci, rdata = rdata_path, iter = 8, response_seed = 99))
+    target_ci = target_ci, rdata = rdata_path, iter = 8, response_seed = 99
+  ))
 
   expect_false(identical(iv_cached, iv_seeded))
 

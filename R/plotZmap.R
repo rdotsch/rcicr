@@ -168,7 +168,8 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
         'pointsize ', pointsize, ': the margins, labels and colour scale need ',
         'at least ', ceiling(max(needed) * size / par('din')[1]) + 1, 'px. ',
         'Use a larger size, a smaller pointsize, or decoration = FALSE, which ',
-        'draws the z-map alone and works at any size.'))
+        'draws the z-map alone and works at any size.'
+      ))
     }
 
     # Widen the right margin so the colour bar has somewhere to go. raster::plot()

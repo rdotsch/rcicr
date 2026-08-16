@@ -73,7 +73,8 @@ test_that("an .Rdata file predating noise_type still works, and says so", {
   }
 
   warnings_seen <- collect_warnings(
-    generateReferenceDistribution2IFC(rdata_path, iter = 3, ncores = 1))
+    generateReferenceDistribution2IFC(rdata_path, iter = 3, ncores = 1)
+  )
 
   expect_true(any(grepl("does not contain `noise_type`", warnings_seen, fixed = TRUE)))
 
@@ -90,7 +91,8 @@ test_that("an .Rdata file predating noise_type still works, and says so", {
   expect_false(any(grepl(
     "does not contain `noise_type`",
     collect_warnings(generateReferenceDistribution2IFC(fresh, iter = 3, ncores = 1)),
-    fixed = TRUE)))
+    fixed = TRUE
+  )))
 })
 
 test_that("the reference distribution is fixed by the stimulus file, not the caller's RNG state", {
@@ -178,7 +180,8 @@ test_that("response_seed reaches the responses, and never the stimulus rebuild",
   )
 
   suppressWarnings(generateReferenceDistribution2IFC(
-    rdata_path, iter = 8, ncores = 1, response_seed = 99))
+    rdata_path, iter = 8, ncores = 1, response_seed = 99
+  ))
 
   # The stimulus seed stored in the file, not the response seed we passed.
   stored <- new.env()
@@ -195,7 +198,8 @@ test_that("save_rdata = FALSE returns the norms without touching the file", {
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 
   norms <- suppressWarnings(generateReferenceDistribution2IFC(
-    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = FALSE))
+    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = FALSE
+  ))
 
   expect_length(norms, 8)
   expect_true(all(norms > 0))
@@ -207,7 +211,8 @@ test_that("save_rdata = FALSE returns the norms without touching the file", {
   # Discriminating case: the same call with save_rdata = TRUE does write it,
   # so the assertion above is about the flag and not about the call failing.
   suppressWarnings(generateReferenceDistribution2IFC(
-    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = TRUE))
+    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = TRUE
+  ))
   e2 <- new.env()
   load(rdata_path, envir = e2)
   expect_equal(e2$reference_norms, norms)
