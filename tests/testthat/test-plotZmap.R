@@ -514,3 +514,69 @@ test_that("generateCI forwards zmappointsize to the z-map", {
   expect_no_error(do.call(generateCI, c(args, list(zmappointsize = 6))))
   expect_true(file.exists(file.path(zmaps, "base.png")))
 })
+
+test_that("plotZmap treats a scalar NA mask as no mask, like generateCI", {
+  # plotZmap() guarded applyMask() with !is.null(mask) while generateCI() used
+  # hasMask(), so the same sentinel meant opposite things: NA reached
+  # applyMask() here and died on "neither a string nor a matrix", where
+  # generateCI() -- whose mask argument *defaults* to NA -- read it as "no
+  # mask" (issue #246). NaN takes the same path and was equally rejected.
+  #
+  # Asserted as a relationship between renders, never absolute pixels: the
+  # sentinel renders must equal the no-mask render and differ from a real
+  # mask's, so the test cannot pass on a plotZmap() that masks everything.
+  tmp <- withr::local_tempdir()
+
+  half <- matrix(1, 8, 8)
+  half[, 1:4] <- 0
+
+  none <- render_zmap(tmp, matrix(5, 8, 8), "sentinel_none")
+  masked <- render_zmap(tmp, matrix(5, 8, 8), "sentinel_half", mask = half)
+
+  expect_equal(render_zmap(tmp, matrix(5, 8, 8), "sentinel_na", mask = NA), none)
+  expect_equal(render_zmap(tmp, matrix(5, 8, 8), "sentinel_nan", mask = NaN), none)
+  expect_false(isTRUE(all.equal(masked, none)))
+})
+
+test_that("a one-cell NA matrix is validated as a mask, not read as the sentinel", {
+  # hasMask() collapsed to length(mask) == 1L && is.na(mask), which matrix(NA,
+  # 1, 1) satisfies -- so a malformed one-cell mask was indistinguishable from
+  # the scalar NA sentinel and silently discarded. generateCI() returned a
+  # fully unmasked CI with no error or warning; plotZmap() only escaped
+  # because its own guard was the inconsistent one this change removes.
+  # Both must reach applyMask() and be rejected there.
+  tmp <- withr::local_tempdir()
+  one_cell <- matrix(NA, 1, 1)
+
+  expect_true(rcicr:::hasMask(one_cell))
+
+  # Against an 8x8 target the size check fires first; at matching size the
+  # binary check does. Both are the validation this test exists to keep.
+  expect_error(
+    render_zmap(tmp, matrix(5, 8, 8), "onecell", mask = one_cell),
+    "not of the same dimensions"
+  )
+  expect_error(
+    rcicr:::applyMask(matrix(1, 1, 1), one_cell, img_size = 1),
+    "values other than 0 or 1"
+  )
+
+  # The sentinels it must not swallow, and the valid one-cell mask it must not
+  # start rejecting.
+  expect_false(rcicr:::hasMask(NA))
+  expect_false(rcicr:::hasMask(NaN))
+  expect_false(rcicr:::hasMask(NULL))
+  expect_false(rcicr:::hasMask(NA_character_))
+  expect_true(rcicr:::hasMask(matrix(1, 1, 1)))
+  expect_true(rcicr:::hasMask(matrix(NA, 2, 2)))
+
+  # A dim attribute is not the only thing length-1 NA-ness fails to exclude:
+  # list(NA) is length 1 and is.na() too, with no dim to catch it. The sentinel
+  # is an *atomic* scalar, so malformed containers reach validation as well.
+  expect_true(rcicr:::hasMask(list(NA)))
+  expect_true(rcicr:::hasMask(array(NA)))
+  expect_error(
+    render_zmap(tmp, matrix(5, 8, 8), "listna", mask = list(NA)),
+    "neither a string nor a matrix"
+  )
+})

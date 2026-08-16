@@ -34,7 +34,9 @@ file_blocks <- vapply(names(by_file), function(f) format_file_block(f, by_file[[
 exclusions_block <- paste0(
   "exclusions: list(\n",
   paste(file_blocks, collapse = ",\n"),
-  "\n  )\n"
+  # No trailing newline: writeLines() adds one per element, and a second left
+  # a blank line at EOF that pre-commit.ci then stripped in its own commit.
+  "\n  )"
 )
 
 lintr_lines <- readLines(".lintr")

@@ -416,10 +416,15 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants=NA,
 # The `mask` argument defaults to NA, so a plain `!is.na(mask)` test returns a
 # whole matrix when a mask *is* supplied - which R >= 4.2 rejects outright with
 # "the condition has length > 1". This collapses the test to a single logical.
+# The sentinel is specifically an atomic scalar with no dim: matrix(NA, 1, 1)
+# and list(NA) are also length 1 and is.na(), and both used to be read as "no
+# mask" and discarded in silence rather than reaching the validation that
+# rejects them.
 # Input: mask (NA, NULL, a string path, or a matrix)
 # Output: TRUE if a mask was supplied
 hasMask <- function(mask) {
-  !is.null(mask) && !(length(mask) == 1L && is.na(mask))
+  !is.null(mask) &&
+    !(is.atomic(mask) && length(mask) == 1L && is.na(mask) && is.null(dim(mask)))
 }
 
 # Input: CI (or z-map), mask (either a string or a matrix), expected target
