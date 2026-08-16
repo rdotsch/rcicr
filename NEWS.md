@@ -39,14 +39,14 @@
   `?plotZmap`, "Reproducibility across platforms".
 
 - **`generateCI(mask = matrix(NA, 1, 1))` now reports the malformed mask instead of silently
-  ignoring it.** The internal test for "was a mask supplied?" asked whether the argument was a
-  single `NA`, which a one-cell `NA` matrix also is — so such a mask was mistaken for the `NA`
-  default, discarded without a word, and an entirely **unmasked** classification image came
-  back. A call that passes a mask and gets an unmasked CI is the failure worth catching early;
-  it now stops in the same mask validation every other malformed mask reaches. Only a one-cell
-  all-`NA` matrix is affected: `mask = NA` still means "no mask" (it is the default, so every
-  unmasked call relies on it), and `matrix(1, 1, 1)`, larger matrices, PNG paths and `NULL` are
-  all unchanged.
+  ignoring it.** The internal test for "was a mask supplied?" asked only whether the argument
+  was a single `NA` — which a one-cell `NA` matrix, a one-element `array(NA)` and a `list(NA)`
+  all are. Such a mask was mistaken for the `NA` default, discarded without a word, and an
+  entirely **unmasked** classification image came back. A call that passes a mask and gets an
+  unmasked CI is the failure worth catching early; it now stops in the same mask validation
+  every other malformed mask reaches. The sentinel is now specifically an atomic scalar with no
+  dimensions, so `mask = NA` still means "no mask" — it is the default, and every unmasked call
+  relies on it — while `matrix(1, 1, 1)`, larger matrices, PNG paths and `NULL` are unchanged.
 
 - **`generateStimuli2IFC()` now checks `base_face_files` before it generates anything,
   and names the entry it cannot use.** Four inputs used to get past the old check and

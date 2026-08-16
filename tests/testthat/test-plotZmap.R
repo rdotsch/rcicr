@@ -569,4 +569,14 @@ test_that("a one-cell NA matrix is validated as a mask, not read as the sentinel
   expect_false(rcicr:::hasMask(NA_character_))
   expect_true(rcicr:::hasMask(matrix(1, 1, 1)))
   expect_true(rcicr:::hasMask(matrix(NA, 2, 2)))
+
+  # A dim attribute is not the only thing length-1 NA-ness fails to exclude:
+  # list(NA) is length 1 and is.na() too, with no dim to catch it. The sentinel
+  # is an *atomic* scalar, so malformed containers reach validation as well.
+  expect_true(rcicr:::hasMask(list(NA)))
+  expect_true(rcicr:::hasMask(array(NA)))
+  expect_error(
+    render_zmap(tmp, matrix(5, 8, 8), "listna", mask = list(NA)),
+    "neither a string nor a matrix"
+  )
 })
