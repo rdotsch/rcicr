@@ -61,7 +61,7 @@
 #'
 #' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 #' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_ncores(), response_seed=NULL, save_rdata=TRUE) { # nolint: object_length_linter.
+generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE) { # nolint: object_length_linter.
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name. This
@@ -76,30 +76,32 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   # would overwrite it here and then be written back, corrupting the record of
   # how the stimuli were generated.
   .args <- list(rdata = rdata, iter = iter, ncores = ncores,
-                response_seed = response_seed, save_rdata = save_rdata)
+    response_seed = response_seed, save_rdata = save_rdata
+  )
 
   # Load parameter file (created when generating stimuli)
   load(rdata)
 
-  rdata         <- .args$rdata
-  iter          <- .args$iter
-  ncores        <- .args$ncores
+  rdata <- .args$rdata
+  iter <- .args$iter
+  ncores <- .args$ncores
   response_seed <- .args$response_seed
-  save_rdata    <- .args$save_rdata
+  save_rdata <- .args$save_rdata
 
   # Recover the noise-basis parameters used for the real stimuli. These were
   # not saved before this version, so .Rdata files written by older rcicr lack
   # them. Falling back to the defaults silently would rebuild the reference
   # distribution on a *different* noise basis than participants actually saw,
   # producing a wrong infoVal - so warn loudly rather than guessing quietly.
-  if (!exists('nscales', envir=environment(), inherits=FALSE)) {
+  if (!exists('nscales', envir = environment(), inherits = FALSE)) {
     nscales <- 5
     warning(paste0('This .Rdata file does not contain `nscales`, so the default ',
-                   '(5) is assumed for the reference distribution. rcicr did not ',
-                   'save it before 1.1.0. If the stimuli were generated with a ',
-                   'different nscales, the resulting infoVal will be wrong - ',
-                   'regenerate the stimulus set with this version of rcicr to fix ',
-                   'this.'))
+      '(5) is assumed for the reference distribution. rcicr did not ',
+      'save it before 1.1.0. If the stimuli were generated with a ',
+      'different nscales, the resulting infoVal will be wrong - ',
+      'regenerate the stimulus set with this version of rcicr to fix ',
+      'this.'
+    ))
   }
   # Same story for noise_type, which older .Rdata files also lack. Without this
   # the re-generation below failed outright with "object 'noise_type' not
@@ -110,14 +112,15 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   #
   # It is resolved before sigma because whether a missing sigma matters at all
   # depends on it.
-  if (!exists('noise_type', envir=environment(), inherits=FALSE)) {
+  if (!exists('noise_type', envir = environment(), inherits = FALSE)) {
     noise_type <- 'sinusoid'
     warning(paste0('This .Rdata file does not contain `noise_type`, so the ',
-                   'default (sinusoid) is assumed for the reference distribution. ',
-                   'Older files do not carry it. If the stimuli were generated ',
-                   'with noise_type = "gabor", the resulting infoVal will be ',
-                   'wrong - regenerate the stimulus set with this version of ',
-                   'rcicr to fix this.'))
+      'default (sinusoid) is assumed for the reference distribution. ',
+      'Older files do not carry it. If the stimuli were generated ',
+      'with noise_type = "gabor", the resulting infoVal will be ',
+      'wrong - regenerate the stimulus set with this version of ',
+      'rcicr to fix this.'
+    ))
   }
   # sigma reaches the noise basis only through generateGabor(), so for sinusoidal
   # noise the default is inert: the reference norms are identical whatever it is,
@@ -125,22 +128,23 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   # gabor noise it is exactly as load-bearing as nscales - measured on a 1.0.1
   # gabor file, the norms move from 0.681/0.689/0.680 at 25 to 0.615/0.620/0.626
   # at 10 - so that case gets the same loud warning.
-  if (!exists('sigma', envir=environment(), inherits=FALSE)) {
+  if (!exists('sigma', envir = environment(), inherits = FALSE)) {
     sigma <- 25
     if (noise_type == 'gabor') {
       warning(paste0('This .Rdata file does not contain `sigma`, so the default ',
-                     '(25) is assumed for the reference distribution. rcicr did ',
-                     'not save it before 1.1.0. These stimuli use gabor noise, ',
-                     'where sigma determines the noise basis, so if they were ',
-                     'generated with a different sigma the resulting infoVal ',
-                     'will be wrong - regenerate the stimulus set with this ',
-                     'version of rcicr to fix this.'))
+        '(25) is assumed for the reference distribution. rcicr did ',
+        'not save it before 1.1.0. These stimuli use gabor noise, ',
+        'where sigma determines the noise basis, so if they were ',
+        'generated with a different sigma the resulting infoVal ',
+        'will be wrong - regenerate the stimulus set with this ',
+        'version of rcicr to fix this.'
+      ))
     }
   }
 
   # Re-generate stimuli based on rdata parameters in matrix form
   write("Re-generating stimuli based on rdata file, please wait...", stdout())
-  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed=seed, noise_type=noise_type, nscales=nscales, sigma=sigma, ncores=ncores, return_as_dataframe=TRUE, save_as_png=FALSE, save_rdata=FALSE)
+  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed = seed, noise_type = noise_type, nscales = nscales, sigma = sigma, ncores = ncores, return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE)
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
@@ -169,21 +173,21 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
   reference_norms <- vector(length = iter)
 
   for (i in 1:iter) {
-      setTxtProgressBar(pb, i)
+    setTxtProgressBar(pb, i)
 
-      # Generate random responses for this iteration.
-      # This is exactly what the deprecated purrr::rbernoulli(n, p) did
-      # internally. It is spelled out rather than swapped for rbinom() on
-      # purpose: rbinom() consumes the random stream differently, so it would
-      # silently change every reference distribution - and therefore every
-      # infoVal - computed from a given seed.
-      responses <- ((runif(n_trials) > 0.5) * 2) - 1
+    # Generate random responses for this iteration.
+    # This is exactly what the deprecated purrr::rbernoulli(n, p) did
+    # internally. It is spelled out rather than swapped for rbinom() on
+    # purpose: rbinom() consumes the random stream differently, so it would
+    # silently change every reference distribution - and therefore every
+    # infoVal - computed from a given seed.
+    responses <- ((runif(n_trials) > 0.5) * 2) - 1
 
-      # Compute classification image for this iteration
-      ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
+    # Compute classification image for this iteration
+    ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
 
-      # Save norm for this iteration
-      reference_norms[i] <- norm(ci, "f")
+    # Save norm for this iteration
+    reference_norms[i] <- norm(ci, "f")
   }
 
   close(pb)
@@ -208,10 +212,12 @@ generateReferenceDistribution2IFC <- function(rdata, iter=10000, ncores=default_
     # seed, and it is a description of the norms rather than an input.
     outfile <- rdata
     internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
-                   "rdata", "iter", "ncores", "response_seed", "save_rdata",
-                   "outfile", "internals")
-    save(list=setdiff(ls(all.names=TRUE), internals), file=outfile,
-         envir=environment())
+      "rdata", "iter", "ncores", "response_seed", "save_rdata",
+      "outfile", "internals"
+    )
+    save(list = setdiff(ls(all.names = TRUE), internals), file = outfile,
+      envir = environment()
+    )
 
   }
 

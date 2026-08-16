@@ -48,16 +48,17 @@
 #'   data = data, by = "participant", stimuli = "stimulus", responses = "response",
 #'   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 #' ))
-batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png=TRUE, targetpath, label='', antiCI=FALSE, scaling='autoscale', constant=0.1) {
+batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png = TRUE, targetpath, label = '', antiCI = FALSE, scaling = 'autoscale', constant = 0.1) {
 
   # targetpath is required, not defaulted: a default path writes to the user's
   # filespace uninvited, which CRAN policy does not allow.
   if (save_as_png && missing(targetpath)) {
     stop(paste0('save_as_png is TRUE but no targetpath was given. Supply ',
-                'targetpath = <a directory> to say where the PNGs should go, ',
-                'or set save_as_png = FALSE to compute the classification ',
-                'images without writing them. Use tempdir() if you only want ',
-                'to try the function out.'))
+      'targetpath = <a directory> to say where the PNGs should go, ',
+      'or set save_as_png = FALSE to compute the classification ',
+      'images without writing them. Use tempdir() if you only want ',
+      'to try the function out.'
+    ))
   }
 
   if (scaling == 'autoscale') {
@@ -69,46 +70,47 @@ batchGenerateCI <- function(data, by, stimuli, responses, baseimage, rdata, save
 
   # Match batchGenerateCI2IFC(): rows without a grouping value cannot name
   # an output CI and should not be turned into a spurious NA group.
-  data <- data[!is.na(data[,by]), ]
+  data <- data[!is.na(data[, by]), ]
 
   # dplyr::progress_estimated() is deprecated; use the base R progress bar
-  pb <- txtProgressBar(min = 0, max = length(unique(data[,by])), style = 3)
+  pb <- txtProgressBar(min = 0, max = length(unique(data[, by])), style = 3)
   cis <- list()
   pb_i <- 0
 
-  for (unit in unique(data[,by])) {
+  for (unit in unique(data[, by])) {
 
     # Update progress bar
     pb_i <- pb_i + 1
     setTxtProgressBar(pb, pb_i)
 
     # Get subset of data
-    unitdata <- data[data[,by] == unit, ]
+    unitdata <- data[data[, by] == unit, ]
 
     # Specify filename for CI PNG
     if (label == '') {
-      filename <- paste0(baseimage, '_', by, '_', unitdata[1,by])
+      filename <- paste0(baseimage, '_', by, '_', unitdata[1, by])
     } else {
-      filename <- paste0(baseimage, '_', label, '_', by, '_', unitdata[1,by])
+      filename <- paste0(baseimage, '_', label, '_', by, '_', unitdata[1, by])
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
     cis[[filename]] <- generateCI(
-      stimuli=unitdata[,stimuli],
-      responses=unitdata[,responses],
-      baseimage=baseimage,
-      rdata=rdata,
-      save_as_png=save_as_png,
-      filename=paste0(filename),
-      targetpath=targetpath,
-      antiCI=antiCI,
-      scaling=scaling,
-      scaling_constant=constant,
-      participants=NA)
+      stimuli = unitdata[, stimuli],
+      responses = unitdata[, responses],
+      baseimage = baseimage,
+      rdata = rdata,
+      save_as_png = save_as_png,
+      filename = paste0(filename),
+      targetpath = targetpath,
+      antiCI = antiCI,
+      scaling = scaling,
+      scaling_constant = constant,
+      participants = NA
+    )
   }
 
   if (doAutoscale) {
-    cis <- autoscale(cis, save_as_pngs=save_as_png, targetpath=targetpath)
+    cis <- autoscale(cis, save_as_pngs = save_as_png, targetpath = targetpath)
   }
 
   close(pb)
