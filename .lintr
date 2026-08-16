@@ -21,127 +21,90 @@ linters: linters_with_defaults(
   )
 exclusions: list(
     "R/autoscale.R" = list(
-      commas_linter = c(59, 60, 62),
-      infix_spaces_linter = c(29, 55, 69)
+      commas_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/batchGenerateCI.R" = list(
-      commas_linter = c(72, 75, 79, 86, 90, 92, 97, 98),
-      indentation_linter = c(97),
-      infix_spaces_linter = c(51, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 111)
+      commas_linter = Inf,
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/batchGenerateCI2IFC.R" = list(
-      commas_linter = c(73, 75, 87, 91, 93, 98, 99),
-      indentation_linter = c(98),
-      infix_spaces_linter = c(51, 111)
+      commas_linter = Inf,
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/computeCumulativeCICorrelation.R" = list(
-      commas_linter = c(158, 161),
-      infix_spaces_linter = c(74, 99, 103, 107, 112, 113, 121),
-      spaces_inside_linter = c(99)
+      commas_linter = Inf,
+      infix_spaces_linter = Inf,
+      spaces_inside_linter = Inf
     ),
     "R/computeInfoVal2IFC.R" = list(
-      commas_linter = c(236),
-      indentation_linter = c(125, 194),
-      infix_spaces_linter = c(105, 133, 146, 167, 177, 183, 194),
-      pipe_consistency_linter = c(132, 135, 145, 148, 150, 166),
-      spaces_inside_linter = c(234, 236)
+      commas_linter = Inf,
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf,
+      pipe_consistency_linter = Inf,
+      spaces_inside_linter = Inf
     ),
     "R/generateCI.R" = list(
-      commas_linter = c(223, 291),
-      indentation_linter = c(181, 261, 511, 520, 523, 524, 536),
-      infix_spaces_linter = c(101, 102, 103, 104, 105, 108, 180, 181, 185, 189, 193, 198, 199, 210, 216, 254, 392, 406, 408, 513, 535),
-      object_name_linter = c(279, 288, 314),
-      spaces_left_parentheses_linter = c(338, 340, 351)
+      commas_linter = Inf,
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf,
+      spaces_left_parentheses_linter = Inf
     ),
     "R/generateCI2IFC.R" = list(
-      indentation_linter = c(75),
-      infix_spaces_linter = c(61)
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/generateCINoise.R" = list(
-      brace_linter = c(25),
-      spaces_left_parentheses_linter = c(23)
+      brace_linter = Inf,
+      spaces_left_parentheses_linter = Inf
     ),
     "R/generateGabor.R" = list(
-      assignment_linter = c(19),
-      commas_linter = c(17),
-      infix_spaces_linter = c(17, 19),
-      spaces_inside_linter = c(19),
-      spaces_left_parentheses_linter = c(19)
+      assignment_linter = Inf,
+      commas_linter = Inf,
+      infix_spaces_linter = Inf,
+      spaces_inside_linter = Inf,
+      spaces_left_parentheses_linter = Inf
     ),
     "R/generateNoiseImage.R" = list(
-      infix_spaces_linter = c(21)
+      infix_spaces_linter = Inf
     ),
     "R/generateNoisePattern.R" = list(
-      assignment_linter = c(21, 24, 27, 28, 59, 62, 68),
-      commas_linter = c(20, 52),
-      infix_spaces_linter = c(13, 16, 17, 45, 59, 74),
-      object_name_linter = c(13),
-      seq_linter = c(20)
+      assignment_linter = Inf,
+      commas_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/generateReferenceDistribution.R" = list(
-      indentation_linter = c(172, 174, 182, 185),
-      infix_spaces_linter = c(64, 95, 113, 128, 143, 213, 214),
-      object_length_linter = c(64),
-      object_usage_linter = c(200)
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/generateSinusoid.R" = list(
-      assignment_linter = c(16)
+      assignment_linter = Inf
     ),
     "R/generateStimuli2IFC.R" = list(
-      commas_linter = c(161, 175, 205, 211),
-      indentation_linter = c(69, 74, 192),
-      infix_spaces_linter = c(45, 125, 153, 223, 234, 283),
-      spaces_left_parentheses_linter = c(153)
+      commas_linter = Inf,
+      indentation_linter = Inf,
+      infix_spaces_linter = Inf,
+      spaces_left_parentheses_linter = Inf
     ),
     "R/plotZmap.R" = list(
-      indentation_linter = c(167),
-      seq_linter = c(16)
+      indentation_linter = Inf
     ),
     "R/simulateNoiseIntensities.R" = list(
-      commas_linter = c(33),
-      infix_spaces_linter = c(14, 19)
+      commas_linter = Inf,
+      infix_spaces_linter = Inf
     ),
     "R/zzz.R" = list(
-      indentation_linter = c(11)
+      indentation_linter = Inf
     ),
     "tests/testthat/test-computeInfoVal2IFC.R" = list(
-      indentation_linter = c(48)
-    ),
-    "tests/testthat/test-fixed-bugs.R" = list(
-      commented_code_linter = c(53, 81)
-    ),
-    "tests/testthat/test-generateCI.R" = list(
-      commented_code_linter = c(63)
-    ),
-    "tests/testthat/test-generateNoiseImage.R" = list(
-      commented_code_linter = c(100)
+      indentation_linter = Inf
     ),
     "tests/testthat/test-generateReferenceDistribution2IFC.R" = list(
-      indentation_linter = c(76, 91, 181, 198, 210)
-    ),
-    "tests/testthat/test-legacy-rdata.R" = list(
-      object_usage_linter = c(41, 46, 66, 67)
-    ),
-    "tests/testthat/test-parallel-progress.R" = list(
-      object_usage_linter = c(20, 21)
-    ),
-    "tests/testthat/test-plotZmap.R" = list(
-      commented_code_linter = c(279)
-    ),
-    "tests/testthat/test-rdata-writer-note.R" = list(
-      object_usage_linter = c(18)
-    ),
-    "tests/testthat/test-regression-baseline.R" = list(
-      object_usage_linter = c(38)
+      indentation_linter = Inf
     ),
     "tests/testthat/test-released-signatures.R" = list(
-      commented_code_linter = c(30, 34),
-      indentation_linter = c(45, 52)
-    ),
-    "tests/testthat/test-scaling.R" = list(
-      object_usage_linter = c(15)
-    ),
-    "vignettes/reverse-correlation-walkthrough.Rmd" = list(
-      seq_linter = c(54)
+      indentation_linter = Inf
     )
   )

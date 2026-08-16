@@ -12,7 +12,7 @@
 
 make_ci_fixture <- function(env = parent.frame()) {
   tmp <- withr::local_tempdir(.local_envir = env)
-  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 12, nscales = 1, seed = 1)
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 12, nscales = 1, seed = 1) # nolint: object_usage_linter.
   list(tmp = tmp, rdata = rdata, responses = rep(c(1, -1), 6))
 }
 

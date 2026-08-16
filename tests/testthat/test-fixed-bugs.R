@@ -50,7 +50,7 @@ test_that("computeInfoVal2IFC(force_gen_ref_dist = TRUE) regenerates the referen
 })
 
 test_that("generateCI accepts tibble columns as well as data.frame columns", {
-  # Issues #70 and #123. tbl[, "col"] stays a 1-column tibble
+  # Issues #70 and #123. tbl[, "col"] stays a 1-column tibble # nolint: commented_code_linter.
   # where df[, "col"] drops to a vector, so aggregate() fails with
   # "arguments must have same length". Since readr/dplyr return tibbles by
   # default this is now the normal path for a modern user.
@@ -78,7 +78,7 @@ test_that("generateCI applies a matrix mask", {
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 
   mask <- matrix(1, 32, 32)
-  mask[1:10, 1:10] <- 0 # black (0) = masked
+  mask[1:10, 1:10] <- 0 # black (0) = masked # nolint: commented_code_linter.
 
   set.seed(1)
   ci <- generateCI(

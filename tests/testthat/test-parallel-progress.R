@@ -17,8 +17,8 @@ progress_pcts <- function(expr) {
 }
 
 expect_progress <- function(pcts, label) {
-  expect_gt(length(pcts), 1)
-  expect_true("100%" %in% pcts, info = label)
+  expect_gt(length(pcts), 1) # nolint: object_usage_linter.
+  expect_true("100%" %in% pcts, info = label) # nolint: object_usage_linter.
 }
 
 test_that("generateStimuli2IFC reports progress serially and in parallel", {

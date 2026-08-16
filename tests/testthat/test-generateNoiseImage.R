@@ -97,7 +97,7 @@ test_that("noise is the per-pixel mean across patch layers (independent oracle)"
 
 test_that("vectorised averaging matches the original apply() implementation", {
   # Before 1.1.0 the average was computed as
-  #   apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean)
+  #   apply(p$patches * array(params[p$patchIdx], dim(p$patches)), 1:2, mean) # nolint: commented_code_linter.
   # This pins the current implementation to that one across noise types, spatial
   # scales and seeds. The two are not bit-identical -- they sum in a different
   # order, so they differ by about 1 ULP -- hence a tolerance rather than

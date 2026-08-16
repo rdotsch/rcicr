@@ -276,7 +276,7 @@ test_that("plotZmap rejects a mask that is neither a string nor a matrix", {
 })
 
 test_that("the z-map is drawn in the orientation raster::plot() used", {
-  # #186 swapped raster::plot() for graphics::image(), which lays matrix rows
+  # #186 swapped raster::plot() for graphics::image(), which lays matrix rows # nolint: commented_code_linter.
   # along x and counts y upward. Drawn naively the z-map comes out transposed
   # and vertically flipped -- over a base face, drawn separately by
   # rasterImage(), that is a silently wrong figure rather than an error.
