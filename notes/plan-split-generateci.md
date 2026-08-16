@@ -86,8 +86,13 @@ rewrite. Ordered by rising risk:
 
 - **Stage 0 — cover the uncovered branch.** Add the `participants` + `t.test` test above.
   No `R/` change. This is the safety net stages 3 and 4 rest on, so it goes first.
-- **Stage 1 — `R/ci-inputs.R`.** The four pure helpers, with direct unit tests including
-  the single-trial 4096 truncation, which currently has no test of its own.
+- **Stage 1 — `R/ci-inputs.R`.** The four pure helpers, with direct unit tests of each
+  helper's contract. The 4096 -> 4092 truncation is **already pinned end to end** by
+  `test-fixed-bugs.R:196-233`, which exercises both the single-trial and multi-trial branches
+  and compares the single-trial CI against the exact expected noise image. That regression
+  stays as it is and is the real guard; the helper-level test asserts
+  `selectStimulusParams()`'s own contract on the inputs it can be handed directly, and must
+  not be written as if the behaviour were newly covered.
 - **Stage 2 — `loadStimulusParams()`.** Removes `captureArgs()`/`list2env()` from
   `generateCI()` entirely: with `load()` confined to a helper's frame there is no user
   argument in scope for a `.Rdata` field to clobber. `captureArgs()` itself stays — its
@@ -97,7 +102,15 @@ rewrite. Ordered by rising risk:
   `generateReferenceDistribution2IFC()` is *not* one of them: it hand-rolls an explicit
   `.args` list at `R/generateReferenceDistribution.R:78-89` and restores each field by name.
 - **Stage 3 — `computeParticipantCIs()`.**
-- **Stage 4 — the two z-map helpers.**
+- **Stage 4 — the two z-map helpers.** Carries its own parallel comparison, for a gap stage 0
+  does not close: the `t.test` z-map's `foreach` loop runs only on the *participant-free*
+  path, because with `participants` set the branch short-circuits to `noiseimages <- pid.cis`.
+  Every existing exercise of that loop forces one core — `test-regression-baseline.R:105-119`
+  and `tools/compare-harness.R:295-308` both pass `n_cores = 1`, and
+  `test-parallel-progress.R` runs two but asserts only that a progress bar appeared. So stage
+  4 must add an `n_cores = 1` vs `n_cores = 2` **z-map value** equality test on the
+  participant-free `t.test` path, or it could change parallel z-map numbers with nothing to
+  catch it.
 
 This branch carries stage 0 and stage 1, then deletes this file.
 
@@ -127,8 +140,11 @@ exactly where an unbound name would reappear.
 
 So stage 3 is not merged on a serial run. It must show:
 
-- `n_cores = 1` and `n_cores = 2` returning identical CIs — `test-parallel-equivalence.R`
-  already has the shape to copy;
+- `n_cores = 1` and `n_cores = 2` returning identical CIs. `test-parallel-equivalence.R:12`
+  has the shape to copy but **does not currently cover this**: it varies `ncores` for
+  *stimulus generation*, and its two `generateCI()` calls neither set `n_cores` nor pass
+  `participants`, so the participant loop never runs and both calls use the same core count.
+  This is a new comparison, not an extension of an existing one;
 - the `save_individual_cis` branch writing its PNGs under `n_cores = 2`, which is the
   configuration #235 broke;
 - `targetpath` absent entirely (`save_as_png = FALSE`, `n_cores = 2`), which is the
