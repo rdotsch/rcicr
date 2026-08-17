@@ -26,17 +26,27 @@ every saved field, precisely because the exposure is structural.
 ## Target shape
 
 `loadStimulusParams(rdata)` in `R/rdata.R`, beside `captureArgs()` and `rdataWriterNote()`
-which are already there. It runs `load()` in *its own* frame — a frame containing no user
-argument — validates, and returns what `generateCI()` actually uses:
+which are already there. It loads into a **dedicated environment** —
+`new.env(parent = emptyenv())`, not the helper's own frame — validates, and returns what
+`generateCI()` actually uses:
 
 ```
 loadStimulusParams(rdata) -> list(p, base_faces, stimuli_params, img_size)
 ```
 
+The dedicated environment rather than the helper's frame is deliberate, and an earlier draft
+of this plan got it wrong by saying "its own frame — a frame containing no user argument".
+The helper's frame is not argument-free: it holds the formal `rdata`, and an older
+`generateReferenceDistribution2IFC()` saved *its* `rdata` argument into the file, so that name
+occurs in real files (`test-load-argument-guards.R:57-59` pins the same collision for
+`computeInfoVal2IFC()`). Loading into the frame would only be safe as long as nothing read
+`rdata` after the load — a narrowed hazard, not an eliminated one. A separate environment
+removes it outright, and a direct test covers the `rdata`-carrying file.
+
 It absorbs `R/generateCI.R:163-192`: the `captureArgs()`/`load()`/`list2env()` trio, the four
 `exists()` checks with their `rdataWriterNote()` calls, and the pre-0.3.3 `s` -> `p`
-conversion. `rdataWriterNote()` already takes an environment argument, so it is called on the
-helper's frame with no change to it.
+conversion. `rdataWriterNote()` already takes an environment argument, so it is called on that
+dedicated environment with no change to it.
 
 At the call site those 30 lines become:
 
@@ -90,8 +100,10 @@ touching, the extraction is wrong.
   `generateCI()`'s frame, and confirm `test-fixed-bugs.R:288` goes red. If it stays green the
   test is not watching what this stage claims it watches.
 - A direct unit test of `loadStimulusParams()`'s own contract: the four fields returned, the
-  pre-0.3.3 `s` -> `p` conversion, and each of the four missing-object errors carrying its
-  `rdataWriterNote()` suffix.
+  pre-0.3.3 `s` -> `p` conversion, `s` winning over a `p` the file also holds, each of the four
+  missing-object errors carrying its `rdataWriterNote()` suffix, a file carrying its own
+  `rdata` field, and — called from a frame of known contents — that nothing is left behind in
+  the caller.
 - `test-regression-baseline.R` and `test-load-argument-guards.R` green, untouched.
 
 ## Open question
