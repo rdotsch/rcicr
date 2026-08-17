@@ -582,18 +582,21 @@ it forces the promise, and a wrapper forwarding its own missing argument
 —
 [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
 passing `targetpath = targetpath` — makes that promise a missing symbol.
+Its callers are now
+[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+and
+[`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md);
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+instead loads into a private environment, so it has no frame to guard.
 
-The fix must not over-correct.
 [`missing()`](https://rdrr.io/r/base/missing.html) reports a *defaulted*
 argument missing too when the caller did not supply it, and skipping
-those would silently reopen the hazard the guard exists for: a default
-is the value the function goes on to use, and is exactly as replaceable
-by a field in the `.Rdata` as one passed explicitly. Dropping them
+those reopens the hazard: a default is the value the function uses, and
+is as replaceable by an `.Rdata` field as an explicit one. Dropping them
 removed the `step` guard in
 [`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
-and the test caught it. The predicate is therefore *required* (no
-default in [`formals()`](https://rdrr.io/r/base/formals.html)) **and**
-absent — not absent alone.
+and the test caught it. The predicate is *required* (no default in
+[`formals()`](https://rdrr.io/r/base/formals.html)) **and** absent.
 
 ## Documentation
 
