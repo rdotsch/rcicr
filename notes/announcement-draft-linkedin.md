@@ -29,7 +29,9 @@ What that meant in practice:
 
 → And one correction I'd rather not be writing: for nine years, `generateCI(participants = ..., save_individual_cis = TRUE)` saved each person's image under the **wrong participant's filename**. The images were right; the names weren't. It never reached CRAN, and it never touched `batchGenerateCI()` or `batchGenerateCI2IFC()` — the documented way to get per-participant images, and what most analyses use.
 
-**If you've published one of these figures, check your scripts.** Search them for `save_individual_cis`: if it isn't there, you're fine. If it is, check whether your `participants` vector was in sorted order — if it wasn't, the filenames are wrong, and the fix is a rename rather than a re-run. `NEWS.md` gives the exact mapping.
+And it doesn't take odd data to trigger. Sorting is lexical, so `"p10"` sorts before `"p2"` — a study with participants in the ordinary order p1, p2, p3… is affected from the tenth participant onward.
+
+**If you've published one of these figures, check your scripts.** Search them for `save_individual_cis`: if it isn't there, you're fine. If it is, `NEWS.md` has a two-step check and the exact mapping — the fix is a rename, not a re-run.
 
 The timing of that last one is the part I keep thinking about. The feature was a contribution from someone else, and I merged it on 15 August 2017 — which makes it mine; reviewing is the job. My last real commits are from that September. It landed as I was walking out, and then there was nobody there to read it — for nine years. **The AI found it**, not by hunting for bugs but by starting on an unrelated change, reading the line that picks each participant's trials and the line that names their file, and noticing they disagree. An unmaintained package doesn't usually fail from a lack of judgement. It fails from a lack of anyone reading it.
 

@@ -133,10 +133,26 @@
 
   **Affected:** a direct call to
   `generateCI(participants = ..., save_individual_cis = TRUE)` where the `participants`
-  vector is not already in sorted order. That includes any data frame not sorted by
-  participant, `"p2"` appearing before `"p10"` (sorting is lexical), and numeric IDs
-  collected out of order. Such a call produced correct images under incorrect filenames, so
-  a figure published as participant `p2` may be someone else's classification image.
+  vector is not already in sorted order. Such a call produced correct images under incorrect
+  filenames, so a figure published as participant `p2` may be someone else's classification
+  image.
+
+  **Do not assume tidy data was safe — the common case is affected.** Sorting is *lexical*,
+  so text labels like `"p10"` sort before `"p2"`. A study whose participants appear in
+  collection order `p1, p2, ..., p10` is therefore affected from the tenth participant
+  onward, even though nothing about that data is out of order in any ordinary sense:
+
+  | `participants`, in collection order | affected |
+  |---|---|
+  | `"p1"` … `"p9"` | no |
+  | `"p1"` … `"p10"` or beyond | **yes** |
+  | `"p01"` … `"p12"` (zero-padded) | no |
+  | `"1"` … `"12"` (character) | **yes** |
+  | `1` … `12` (numeric) | no |
+
+  Unpadded text IDs and ten or more participants is the ordinary shape of a reverse
+  correlation study, so if that describes yours and you used the call above, check rather
+  than assume.
 
   **Not affected — and this is the documented route, so most analyses are in this group:**
 
@@ -165,9 +181,10 @@
   concerns you. If your per-participant images came from `batchGenerateCI()` or
   `batchGenerateCI2IFC()`, the same applies: those cannot reach the defect.
 
-  *Step 2 — if it does appear, was your `participants` vector in sorted order?* Look at how
-  you built it. If it came from a data frame sorted by participant, the names were correct.
-  If not, they were not. Where you still have the vector, one expression decides it:
+  *Step 2 — if it does appear, was your `participants` vector in sorted order?* Note "sorted"
+  means lexically sorted for text labels, per the table above — sorting your data frame by a
+  `"p1"`-style column does not make it safe once you reach ten participants. Where you still
+  have the vector, one expression settles it:
 
   ```r
   identical(unique(participants), sort(unique(participants)))   # TRUE = names were correct

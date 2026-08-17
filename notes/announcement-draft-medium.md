@@ -63,7 +63,9 @@ All of this is written up in `NEWS.md` under a section called "Reproducibility i
 
 This one is not a rounding difference, and it deserves its own heading rather than a line in a fix list.
 
-If you called `generateCI()` with a `participants` vector **and** `save_individual_cis = TRUE`, the per-participant images written to `individual_cis/` could be saved under the wrong participant's filename. The loop picked each participant's trials in *sorted* order but took the filename from order of *appearance*. When those two orders differ — any data frame not sorted by participant, `"p2"` filed before `"p10"` because sorting is lexical, IDs collected out of order — every file in that folder got somebody else's ID.
+If you called `generateCI()` with a `participants` vector **and** `save_individual_cis = TRUE`, the per-participant images written to `individual_cis/` could be saved under the wrong participant's filename. The loop picked each participant's trials in *sorted* order but took the filename from order of *appearance*. Whenever those two orders differ, every file in that folder got somebody else's ID.
+
+Here's the part that makes this worse than it sounds, and the part I got wrong when I first wrote this section: I assumed it took unusual data to trigger. It doesn't. Sorting is lexical, so `"p10"` sorts before `"p2"` — which means a study whose participants appear in the perfectly ordinary order `p1, p2, p3, …` is affected the moment it reaches its tenth participant. Nine participants, fine. Ten, wrong filenames. Zero-padded labels (`p01`, `p02`) are safe, and genuinely numeric IDs are safe, but unpadded text labels and twenty-odd participants is simply what a reverse correlation study looks like.
 
 The images themselves were always computed correctly. It is purely a naming error. But a naming error on a per-participant figure is not a small thing: if you published one of those images as participant `p2`, it may be a different participant's classification image.
 
