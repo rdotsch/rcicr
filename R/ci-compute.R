@@ -56,8 +56,13 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
         individual_scaling_constant
       )
       combined <- combine(scaled, base)
+      # sort(), not unique(): obs indexes the *sorted* factor levels built
+      # above, so naming the file from appearance order gave every participant
+      # someone else's ID whenever the two orders disagreed. sort(unique(x))
+      # is factor()'s own level order, and keeps the caller's type so numeric
+      # IDs still format exactly as they did.
       saveToImage(baseimage, combined, paste0(targetpath, '/individual_cis'),
-        unique(participants)[obs], antiCI
+        sort(unique(participants))[obs], antiCI
       )
     }
 

@@ -47,6 +47,7 @@ setwd(workdir)
 #   ci2ifc       generateCI2IFC() -- the 2IFC entry point, a wrapper over generateCI()
 #   subset       non-contiguous `stimuli` -- the stimulus-number -> parameter-row lookup
 #   participants generateCI(participants=) -- the per-participant average path
+#   individual_cis save_individual_cis=TRUE, MD5 per filename -- see below
 #   batch        batchGenerateCI() + autoscale() -- the whole-batch scaling constant
 #   cumulative   computeCumulativeCICorrelation()
 #   zmap_quick   generateCI(zmap=TRUE, zmapmethod='quick')  -- includes plotZmap()
@@ -75,9 +76,18 @@ setwd(workdir)
 # stimulus_pngs = TRUE additionally writes the stimuli to disk and MD5s them:
 # the PNG files are what participants actually see, and they go through
 # quantisation and clamping that the in-memory matrices do not.
+#
+# individual_cis is the one extra whose subject is a *filename*, not a number,
+# so it is MD5-per-basename rather than a matrix. Its participant IDs are
+# deliberately in non-sorted order: the labelling defect it covers (#261) only
+# appears when appearance order and sorted order disagree, and `participants`
+# above cannot show it -- rep(paste0("p", 1:4), ...) is already sorted. Every
+# reference version writes the same *set* of names here, permuted rather than
+# different, so the keys line up across runs and only the values move.
 
-ALL_EXTRAS <- c("ci2ifc", "subset", "participants", "batch", "cumulative",
-                "zmap_quick", "zmap_ttest", "mask", "mask_rgba", "zmap_plain")
+ALL_EXTRAS <- c("ci2ifc", "subset", "participants", "individual_cis", "batch",
+                "cumulative", "zmap_quick", "zmap_ttest", "mask", "mask_rgba",
+                "zmap_plain")
 
 # Oldest reference version that can run each extra without crashing.
 # mask_rgba shares mask's floor: 1.1.0 and 1.2.3 were both run against a
@@ -251,6 +261,25 @@ run_config <- function(cfg) {
                      n_cores = 1)
     out$participants_ci <- ci$ci
     out$participants_scaled <- ci$scaled
+  }
+
+  if ("individual_cis" %in% ex) {
+    # Appearance order c("pb", "pa"), sorted order c("pa", "pb"). Kept separate
+    # from the `participants` extra above rather than making that one unsorted:
+    # changing its IDs would regroup its trials and move participants_ci and
+    # participants_scaled too, adding deviations that have nothing to do with
+    # the filenames under test.
+    ind_dir <- file.path(ci_dir, "individual")
+    unlink(ind_dir, recursive = TRUE)
+    pids <- rep(c("pb", "pa"), each = ceiling(cfg$n_trials / 2))[seq_len(cfg$n_trials)]
+    generateCI(stimuli = stimuli, responses = responses, participants = pids,
+               baseimage = "base1", rdata = rdata, scaling = "independent",
+               antiCI = cfg$anti, save_as_png = FALSE, save_individual_cis = TRUE,
+               targetpath = ind_dir, n_cores = 1)
+    pngs <- sort(list.files(file.path(ind_dir, "individual_cis"),
+                            pattern = "[.]png$", full.names = TRUE))
+    if (!length(pngs)) stop("no individual-CI PNGs written in ", ind_dir)
+    out$individual_cis <- stats::setNames(unname(tools::md5sum(pngs)), basename(pngs))
   }
 
   if ("batch" %in% ex) {

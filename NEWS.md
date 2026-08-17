@@ -124,12 +124,49 @@
 
 ## Reproducibility impact
 
+- **Individual-CI PNGs written by `generateCI(save_individual_cis = TRUE)` were labelled
+  with the wrong participant, and are now labelled correctly.** If you have such files on
+  disk from an earlier version, the images are fine but the names may not be — a figure you
+  published as participant `p2` may be someone else's classification image.
+
+  **Whether your files are affected** takes two expressions on the `participants` vector you
+  passed, and no re-run:
+
+  ```r
+  identical(unique(participants), sort(unique(participants)))   # TRUE = always correct
+  ```
+
+  They differ when the data is not sorted by participant — including `"p2"` appearing before
+  `"p10"`, since sorting is lexical, and numeric IDs collected out of order.
+
+  **Recovering existing output is a rename, not a re-run.** The mapping is exact: the file
+  named `unique(participants)[i]` holds the classification image of
+  `sort(unique(participants))[i]`.
+
+  ```r
+  old <- unique(participants)         # the names the files were given
+  new <- sort(unique(participants))   # the participants they actually hold
+  ```
+
+  Affected versions are 1.0.1 through 1.2.3, and any install from the development branch
+  since August 2017. No version released on CRAN ever wrote a mislabelled file. Nothing
+  `generateCI()` returns was affected — the group classification image is a mean across
+  participants, the per-participant stack and every z-map built from it were internally
+  consistent throughout, and analyses that never set `save_individual_cis = TRUE` are
+  untouched.
+
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
   the old result — it carried no information — but code that checked for `NA` on the returned
   curve will see a different answer. Unmasked targets are bit-identical.
 
 ## Bug fixes
+
+- **`generateCI(save_individual_cis = TRUE)` names each PNG for the participant it was
+  actually computed from.** The loop selects participants by sorted level order and the
+  filename was taken from order of appearance, so the two disagreed for any data not already
+  sorted by participant. See "Reproducibility impact" above for how to tell whether files you
+  already have are affected, and how to correct them without recomputing anything.
 
 - **`computeCumulativeCICorrelation()` now returns real correlations when `targetci` was
   generated with a mask.** `generateCI()` stores `NA` in every pixel a `mask` excludes,
