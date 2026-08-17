@@ -71,6 +71,14 @@ The images themselves were always computed correctly. It is purely a naming erro
 
 **And it never reached CRAN.** rcicr was on CRAN from July 2014 until it was archived in June 2021, and the last release there, 0.3.4.1 from July 2016, predates the `save_individual_cis` option by thirteen months. Nobody who ran `install.packages('rcicr')` ever got a mislabelled file. The defect entered the development branch on 15 August 2017 — in, of all things, the commit that first made saving individual images work at all — and every GitHub release since carries it.
 
+There is a mitigation here, and I want to give it its actual weight rather than hide behind it. From January 2017 the README carried a blunt warning about exactly this scenario — the section was headed "Using the dev version (AT YOUR OWN RISK!)", followed by a "Caution!!" that said in bold: *"We do not recommend that you use the development version for analysis meant for publication. Please wait until we make a new version available on CRAN for that."*
+
+That warning was up seven months before the bug landed, and for the first four years of its life it was good advice with a working alternative behind it: CRAN had a clean version to fall back on.
+
+Then it stopped being advice at all. CRAN archived the package in June 2021, so "wait until we make a new version available on CRAN" pointed at nothing — GitHub had become the only way to get rcicr, and the warning told you not to publish with the only version that existed. I removed the section in September 2022, and what replaced it told people to run `install.packages('rcicr')`, which by then hadn't worked for over a year.
+
+So: the warning covers the years when following it was possible, and doesn't cover the years since. Those are also the years I wasn't looking. I don't think "the README said at your own risk" is a defence for the period when there was no other risk to take.
+
 **If you have published one of these figures, check your analysis scripts — you don't need to re-run anything.**
 
 First: search your scripts for `save_individual_cis`. If it doesn't appear, you never wrote these files and none of this touches you. If your per-participant images came out of `batchGenerateCI()` or `batchGenerateCI2IFC()`, likewise — those cannot reach it. That one step clears most analyses.
