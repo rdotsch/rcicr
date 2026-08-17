@@ -111,18 +111,53 @@ Wording follows the house rules: no version number in a `##` heading (it breaks 
 news parsing), and largest-impact first within each section — this outranks the entries already
 under "Reproducibility impact", since it is the one that can invalidate a published figure.
 
+## The release gate covers this
+
+An earlier draft of this plan argued the gate should stay out of it, on the grounds that the
+battery is chosen by the reference version. That was wrong, and the Codex review on #262 caught
+it. The reference-version restriction is specifically about calls where the reference
+**crashes** — `mask`, undecorated z-maps, small z-maps — because a crash has no old value to
+compare against. v1.0.1 does not crash here: its `generateCI()` carries `save_individual_cis`,
+`targetpath` and `n_cores` (checked against `git show v1.0.1:R/generateCI.R`), so it runs this
+path and writes the mislabelled files. A change that alters researchers' output while the gate
+reports success is exactly what the gate exists to prevent.
+
+So: a new `individual_cis` extra in `tools/compare-harness.R`, with **no `SINCE` floor**, since
+nothing crashes.
+
+- It calls `generateCI(participants = ..., save_individual_cis = TRUE, save_as_png = FALSE,
+  targetpath = ..., n_cores = 1)` with participant IDs **deliberately out of sorted order** —
+  the existing `participants` extra uses `rep(paste0("p", 1:4), ...)`, whose appearance order
+  already equals its sorted order, so it could never show this.
+- It captures `stats::setNames(unname(tools::md5sum(pngs)), basename(pngs))` over
+  `<targetpath>/individual_cis`, reusing the idiom `stimulus_pngs` already uses at
+  `compare-harness.R:206`. MD5-keyed-by-basename is the right shape because the defect *is* a
+  filename-to-content mapping.
+- Do **not** perturb the existing `participants` extra to make it unsorted. Its grouping of
+  trials to participants would change with it, moving `participants_ci` and
+  `participants_scaled` and manufacturing two unrelated deviations.
+
+Both versions write the same *set* of filenames — the labels are permuted, not different — so
+the keys align across runs and the deviation is a clean set of changed values rather than
+missing keys.
+
+Then an `EXPECTED` entry per config that lists the extra, `ref = "v1.0.1"`,
+`news = "Reproducibility impact"`, whose reason states that the old bytes under each name
+belonged to a different participant. Adding the extra to `ALL_EXTRAS` picks it up in
+`defaults-512-sinusoid` automatically; the marginal cost there is writing four PNGs, since that
+config already runs the `participants` extra.
+
 ## The step most likely to fail
 
-**The release gate will stay green, and that is not evidence.** `tools/compare-harness.R:246`
-runs its `participants` configuration with `save_as_png = FALSE` and never sets
-`save_individual_cis`, so the gate has never executed this write path. I am not adding a
-configuration for it: the battery is chosen by the reference version, v1.0.1 has the bug, and a
-new configuration would only manufacture an `EXPECTED` entry recording it. The suite test above
-is the check that matters; the gate's silence here proves nothing either way.
+**The `EXPECTED` entry firing for the wrong reason.** The gate fails a *stale* expectation as
+well as an undocumented deviation, so if the individual-CI MD5s were to differ for some reason
+beyond the relabelling — PNG encoding, scaling, anything — the entry would still be satisfied
+and would mask it. Mitigation: confirm the deviating keys are exactly the permuted pair, and
+that a sorted-ID run shows no deviation at all.
 
-Second most likely: the PNG read-back. `png::readPNG()` returns a 2D matrix for greyscale and
-3D for RGB(A) — the reproduction hit this — so the test must handle both rather than indexing
-`[, , 1]` blind.
+Second most likely: the PNG read-back in the test. `png::readPNG()` returns a 2D matrix for
+greyscale and 3D for RGB(A) — the reproduction hit this — so the test must handle both rather
+than indexing `[, , 1]` blind.
 
 ## Not in this change
 
