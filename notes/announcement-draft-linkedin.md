@@ -31,8 +31,6 @@ What that meant in practice:
 
 The timing of that last one is the part I keep thinking about. The feature was a contribution from someone else, and I merged it on 15 August 2017 — which makes it mine; reviewing is the job. My last real commits are from that September. It landed as I was walking out, and then there was nobody there to read it — for nine years. **The AI found it**, not by hunting for bugs but by starting on an unrelated change, reading the line that picks each participant's trials and the line that names their file, and noticing they disagree. An unmaintained package doesn't usually fail from a lack of judgement. It fails from a lack of anyone reading it.
 
-I've written up honestly where the assistant helped and where it got things wrong — including a benchmark it reported as 29x that was actually 6x, because it had timed only the step it changed rather than the whole function. The mistakes weren't hallucinated APIs. They were confident, plausible, specific and wrong — errors of *verification*, which is exactly the part you can't delegate.
-
 If you have an rcicr analysis in a drawer, the thing to read is `NEWS.md` — specifically the section called "Reproducibility impact."
 
 Full write-up: [link to Medium post]
