@@ -4,7 +4,7 @@
 
 ---
 
-Twelve years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. It went up on CRAN in July 2014 and people have used it in published work since.
+Twelve years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. The first commit is dated 28 July 2014 and its message reads, in full, "V0.1 first commit". It was on CRAN three days later, and people have published with it since.
 
 Then I left academia. That was 2017; my last real commits are from that September.
 
