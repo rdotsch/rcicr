@@ -81,6 +81,17 @@ EXPECTED <- list(
                       "participants and must still match."),
        news = "Reproducibility impact"),
 
+  # Listed for both references, unlike the entries around it, because the defect
+  # is in both: the mislabelling dates to 0.4.0 and every tagged release since
+  # carries it, so neither run can report this as stale.
+  list(ref = "v1.2.3",
+       key = c("defaults-512-sinusoid/individual_cis",
+               "sinusoid-128-nscales3/individual_cis"),
+       reason = paste("Same defect as the v1.0.1 entry above -- v1.2.3 names individual-CI",
+                      "PNGs from order of appearance too. The pixels are unchanged; which",
+                      "MD5 sits under which filename is what moves."),
+       news = "Reproducibility impact"),
+
   list(ref = "v1.1.0",
        key = c("defaults-512-sinusoid/zmap_quick",
                "defaults-512-sinusoid/zmap_plain",
@@ -122,7 +133,10 @@ expectation_for <- function(key) {
 # pattern must match cell for cell, which is what caught the sigma bug (1,282
 # cells changed side) while every numeric tolerance here would have passed it.
 
-EXACT_RE  <- "^(patchIdx|stimuli_params_|base_face_|stimulus_pngs)"
+# stimulus_pngs and individual_cis are MD5 digests, not numbers: they belong on
+# the bit-identical branch both because a hash has no meaningful tolerance and
+# because the numeric branch below calls abs() on them.
+EXACT_RE  <- "^(patchIdx|stimuli_params_|base_face_|stimulus_pngs|individual_cis)"
 IMAGE_RE  <- "^(patches|noise_image|ci|combined|scaled_|ci2ifc|subset_|participants_|batch_)"
 ULP       <- .Machine$double.eps      # 2.22e-16
 ULPS      <- 8
