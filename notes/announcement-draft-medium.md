@@ -53,6 +53,30 @@ All of this is written up in `NEWS.md` under a section called "Reproducibility i
 
 **One more, for completeness.** A performance change (below) made `generateNoiseImage()` compute its average in a different summation order. The results differ by about one unit in the last place — roughly 1e-19 on pixel values of order 0.01. Nothing that reaches a printed number, and at the golden master's own configuration the output is bit-identical. I'm mentioning a difference eight orders of magnitude below anything observable because the standard I set was that *any* numeric change gets written down, rather than discovered later by someone re-running a five-year-old script.
 
+## A correction: some individual-CI images were saved under the wrong participant's name
+
+This one is not a rounding difference, and it deserves its own heading rather than a line in a fix list.
+
+If you called `generateCI()` with a `participants` vector **and** `save_individual_cis = TRUE`, the per-participant images written to `individual_cis/` could be saved under the wrong participant's filename. The loop picked each participant's trials in *sorted* order but took the filename from order of *appearance*. When those two orders differ — any data frame not sorted by participant, `"p2"` filed before `"p10"` because sorting is lexical, IDs collected out of order — every file in that folder got somebody else's ID.
+
+The images themselves were always computed correctly. It is purely a naming error. But a naming error on a per-participant figure is not a small thing: if you published one of those images as participant `p2`, it may be a different participant's classification image.
+
+**Here is who this does not touch, and it is most people.** The documented way to compute per-participant classification images has always been the batch functions — `batchGenerateCI2IFC()` in the old CRAN documentation and in the official demo script, `batchGenerateCI()` in the current vignette. None of those, and not `generateCI2IFC()` either, even exposes the two arguments involved. They split the data themselves and name each image from the grouping value directly, so they never reach the code that was wrong. Nothing `generateCI()` *returns* was affected either — the group classification image is an average across participants, so it doesn't depend on their order, and no z-map or stored number ever changed.
+
+**And it never reached CRAN.** rcicr was on CRAN from July 2014 until it was archived in June 2021, and the last release there, 0.3.4.1 from July 2016, predates the `save_individual_cis` option by thirteen months. Nobody who ran `install.packages('rcicr')` ever got a mislabelled file. The defect entered the development branch on 15 August 2017 — in, of all things, the commit that first made saving individual images work at all — and every GitHub release since carries it.
+
+**You can check your own output in one line, without re-running anything:**
+
+```r
+identical(unique(participants), sort(unique(participants)))   # TRUE means your files were fine
+```
+
+And if it comes back `FALSE`, the fix is a rename rather than a recomputation, because the mapping is exact — the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
+
+I want to be straight about the timeline: this sat in the code for nine years and none of the work described above found it. The test suite didn't, because the test that covered this function checked the *filenames* it produced and not which participant was inside each one — and it used IDs that were already in sorted order, where the bug is invisible. The release gate didn't, because it never exercised that path at all. It surfaced only when I went to add an unrelated feature to the same function and read the two lines next to each other. Both gaps are now closed: the regression test compares image contents against each participant's own data, and the release gate exercises the path with deliberately unsorted IDs and would fail if the pixels ever moved.
+
+The honest lesson is the one in the section below about benchmarks. A green test suite is evidence about what you thought to check, and a test whose title says "writes one PNG per participant" while its assertions only count filenames is exactly the sort of thing that reads as covered and isn't.
+
 ## The other half: making it maintainable
 
 **A test suite where there was none.** 56 tests across 20 files: unit tests for every pure function, targeted tests for the I/O-heavy ones, the golden master, a regression test for each fixed bug, and an end-to-end test that simulates an observer with a known mental template and checks that the pipeline actually recovers it. That last one is my favourite, because nothing else in the suite tested the thing the package exists to do.

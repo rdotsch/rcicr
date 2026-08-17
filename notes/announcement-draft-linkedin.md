@@ -21,6 +21,8 @@ What that meant in practice:
 
 → Two fixes genuinely *do* change a result — both in the "informational value" metric, both because the old number was computed against the wrong null distribution. Those are documented explicitly, with the exact conditions, rather than buried.
 
+→ And one correction I'd rather not be writing: for nine years, one optional way of saving per-participant images wrote them under the **wrong participant's filename**. The images were right; the names weren't. It never reached CRAN and it never touched the documented route for per-participant images — but if you used that specific option, the article tells you how to check in one line, and how to fix it by renaming rather than re-running. It's the same lesson as the rest: the test covering that function counted the filenames it produced and never looked at which participant was inside each one.
+
 → 27 dependencies down to 15. A 1.5 GB array no longer copied to every parallel worker. Core computation ~6x faster.
 
 I also used an AI coding assistant throughout, and wrote up honestly where it helped and where it got things wrong — including a benchmark it reported as 29x that was actually 6x, because it had timed only the step it changed rather than the whole function. The mistakes weren't hallucinated APIs. They were confident, plausible, specific and wrong — errors of *verification*, which is exactly the part you can't delegate.
