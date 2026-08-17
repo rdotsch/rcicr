@@ -61,3 +61,58 @@ rdataWriterNote <- function(env) {
 
   paste0(' The file was written by rcicr ', version, '.')
 }
+
+# Read a stimulus .Rdata file into a frame of its own and return the four
+# objects the CI pipeline uses.
+#
+# The point is where it loads. load() assigns into whatever environment it is
+# given, so reading the file directly inside generateCI() put every field of it
+# in scope alongside that function's arguments, where a shared name silently
+# won: the noise `sigma` stored since 1.1.0 replaced the z-map blur `sigma`, and
+# the value the caller passed was ignored. That is why generateCI() no longer
+# calls captureArgs(); computeInfoVal2IFC() and computeCumulativeCICorrelation()
+# still load into their own frames and still need it.
+#
+# A dedicated environment rather than this function's own frame, because the
+# frame is not argument-free either: it holds `rdata`, and an older
+# generateReferenceDistribution2IFC() saved its own `rdata` argument into the
+# file, so that name occurs in real files. Loading into the frame would be safe
+# only for as long as nothing read `rdata` after the load -- a hazard narrowed
+# rather than removed.
+loadStimulusParams <- function(rdata) {
+  env <- new.env(parent = emptyenv())
+  load(rdata, envir = env)
+
+  has <- function(name) exists(name, envir = env, inherits = FALSE)
+  take <- function(name) get(name, envir = env, inherits = FALSE)
+
+  if (!has('s') && !has('p')) {
+    stop('File specified in rdata did not contain s or p variable.', rdataWriterNote(env))
+  }
+
+  if (!has('base_faces')) {
+    stop('File specified in rdata did not contain base_faces variable.', rdataWriterNote(env))
+  }
+
+  if (!has('stimuli_params')) {
+    stop('File specified in rdata did not contain stimuli_params variable.', rdataWriterNote(env))
+  }
+
+  if (!has('img_size')) {
+    stop('File specified in rdata did not contain img_size variable.', rdataWriterNote(env))
+  }
+
+  # Convert s to p (if rdata file originates from pre-0.3.3). Checked before p
+  # because that is the precedence the in-frame version had: it overwrote a
+  # loaded p whenever s was also present.
+  p <- if (has('s')) {
+    s <- take('s')
+    list(patches = s$sinusoids, patchIdx = s$sinIdx, noise_type = 'sinusoid')
+  } else {
+    take('p')
+  }
+
+  return(list(p = p, base_faces = take('base_faces'),
+    stimuli_params = take('stimuli_params'), img_size = take('img_size')
+  ))
+}

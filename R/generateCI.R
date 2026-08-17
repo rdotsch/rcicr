@@ -140,56 +140,22 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   # participant-CI call with n_cores > 1, which is the default (#235).
   #
   # Must stay below the missing() checks above, which stop being reliable for an
-  # argument once it has been assigned to, and above captureArgs(), which skips
-  # required-and-absent arguments and so would otherwise leave this one exposed
-  # to the load() below.
+  # argument once it has been assigned to.
   targetpath <- if (missing(targetpath)) NULL else targetpath
 
-  # Must stay above captureArgs() below, which snapshots what these resolve to.
   trials <- coerceTrialVectors(stimuli, responses, participants)
   stimuli <- trials$stimuli
   responses <- trials$responses
   participants <- trials$participants
 
-  # load() assigns straight into this function's frame, so any object stored in
-  # the .Rdata file silently overwrites an argument of the same name (the same
-  # hazard handled in generateReferenceDistribution2IFC()). `sigma` is the live
-  # case: since 1.1.0 the file carries the *noise* sigma - 25 by default - which
-  # replaced this function's z-map blur sigma of 3, so every z-map made from a
-  # 1.1.0-generated stimulus set was smoothed with the wrong constant and the
-  # sigma the caller passed was ignored. Keep private copies of every argument
-  # and restore them after loading, so a field added to the .Rdata later cannot
-  # quietly capture another one.
-  .args <- captureArgs(environment())
-
-  # Load parameter file (created when generating stimuli)
-  load(rdata)
-
-  list2env(.args, envir = environment())
-
-  # Check whether critical variables have been loaded
-  if (!exists('s', envir = environment(), inherits = FALSE) &&
-        !exists('p', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata did not contain s or p variable.', rdataWriterNote(environment()))
-  }
-
-  if (!exists('base_faces', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata did not contain base_faces variable.', rdataWriterNote(environment()))
-  }
-
-  if (!exists('stimuli_params', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata did not contain stimuli_params variable.', rdataWriterNote(environment()))
-  }
-
-  if (!exists('img_size', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata did not contain img_size variable.', rdataWriterNote(environment()))
-  }
-
-  # Convert s to p (if rdata file originates from pre-0.3.3)
-  if (exists('s', envir = environment(), inherits = FALSE)) {
-    p <- list(patches = s$sinusoids, patchIdx = s$sinIdx, noise_type = 'sinusoid')
-    rm(s)
-  }
+  # Loaded in a frame of its own, so no field of the .Rdata is ever in scope
+  # beside this function's arguments -- see loadStimulusParams() in R/rdata.R for
+  # what that prevents.
+  loaded <- loadStimulusParams(rdata)
+  p <- loaded$p
+  base_faces <- loaded$base_faces
+  stimuli_params <- loaded$stimuli_params
+  img_size <- loaded$img_size
 
   base <- selectBaseImage(base_faces, baseimage)
 
