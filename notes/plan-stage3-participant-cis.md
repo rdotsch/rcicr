@@ -78,8 +78,10 @@ currently checks that the participant loop returns the same numbers on two cores
 Worth fixing that comment in passing, since it is the reason the gap reads as covered.
 
 It must compare **both** returned elements — the group `ci` and the per-participant `pid_cis`
-that feed the z-map — element-wise, not summaries. Guarded with `skip_on_cran()` in the idiom
-of `test-fixed-bugs.R:403`, since it spawns a real cluster.
+that feed the z-map — element-wise, not summaries. Comparing the group CI alone would be
+materially weaker than it looks: it is a mean across participants, so it is blind to any change
+in their *order*, which is exactly what a `.combine` bug in a parallel loop produces. Guarded
+with `skip_on_cran()` in the idiom of `test-fixed-bugs.R:403`, since it spawns a real cluster.
 
 Neither loop in this package draws random numbers, so there is no worker RNG stream to
 diverge; equality here should be exact rather than tolerance-based, and the test will assert it
@@ -88,10 +90,23 @@ that way. If that turns out to be false the assumption is wrong and worth knowin
 ## How I will show it correct
 
 - Full suite, installed (not just `load_all()`), plus `lintr::lint_package()`.
-- **Mutation check**: perturb one participant's CI inside the helper and confirm both the new
-  comparison and stage 0's z-map pin go red. Stage 0's note applies — the t statistic is
-  invariant to a uniform rescaling of its input, so the perturbation must shift the mean rather
-  than scale it.
+- **Mutation checks — one per test, and they cannot be the same mutation.** An earlier draft of
+  this plan proposed a single perturbation inside the helper and claimed it would redden both
+  the new comparison and stage 0's z-map pin. It would not: the helper is shared by both core
+  counts, so an alteration there reaches the `n_cores = 1` and `n_cores = 2` runs *equally* and
+  they stay element-wise identical. An equivalence test can only be reddened by a
+  **path-specific** mutation.
+
+  - *For stage 0's z-map pin*: perturb one participant's CI inside the helper. Stage 0's note
+    applies — the t statistic is invariant to a uniform rescaling of its input, so this must
+    shift the mean rather than scale it.
+  - *For the new equivalence test*: gate the perturbation on the backend, `if (!is.null(cl))`,
+    so only the parallel run is altered. Both returned elements should go red.
+  - *And a second, sharper one*: iterate the parallel path in reverse order only. Because the
+    group CI is a **mean across participants** it is invariant to their order, so this leaves
+    `ci` identical and reddens `pid_cis` alone. That is the concrete demonstration of why the
+    comparison must cover both returned elements rather than the group CI — and it is the
+    mutation most likely to model a real `foreach` `.combine` ordering bug.
 - The release gate (`tools/compare-release-output.R`), which runs the actual v1.0.1 code rather
   than values this repo computed for itself.
 
