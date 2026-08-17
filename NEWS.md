@@ -148,12 +148,17 @@
   new <- sort(unique(participants))   # the participants they actually hold
   ```
 
-  Affected versions are 1.0.1 through 1.2.3, and any install from the development branch
-  since August 2017. No version released on CRAN ever wrote a mislabelled file. Nothing
-  `generateCI()` returns was affected — the group classification image is a mean across
-  participants, the per-participant stack and every z-map built from it were internally
-  consistent throughout, and analyses that never set `save_individual_cis = TRUE` are
-  untouched.
+  **Every release carries this defect** — 1.0.1 (January 2023) through 1.2.3 (August 2026).
+  It was introduced on 15 August 2017, in the commit that first made individual-CI saving
+  work at all, and the development branch has carried it continuously from that date to this
+  release. There were no releases at all between 2017 and 2023, so a copy obtained in those
+  years came from the branch and is affected too. **No CRAN release is affected**: the last
+  one, 0.3.4.1, predates the `save_individual_cis` option entirely.
+
+  **Nothing `generateCI()` returns was affected** — the group classification image is a mean
+  across participants, the per-participant stack and every z-map built from it were
+  internally consistent throughout, and analyses that never set `save_individual_cis = TRUE`
+  are untouched.
 
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
