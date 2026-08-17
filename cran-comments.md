@@ -90,16 +90,16 @@ submission; `NEWS.md` carries their entries.
 
 ## Test environments
 
-<!-- Step 2 of RELEASING.md: replace every line below with results from THIS release
-     branch before submitting. Do not carry over 1.2.3's results -- they describe a
-     different tree. -->
+<!-- Step 2 of RELEASING.md: win-builder and the local line are still outstanding and
+     must be filled in from THIS release branch before submitting. -->
 
-* local: `R CMD check --as-cran` — PENDING
 * GitHub Actions: ubuntu-latest on R release and R devel, macos-latest and windows-latest
-  on R release — PENDING
+  on R release — all green
+* R-hub, R-devel on Linux (2026-06-21 r90185), macOS (2026-06-24 r90190) and Windows
+  (2026-08-15 r90413 ucrt) — `Status: OK` on all three, no notes
+* local: `R CMD check --as-cran` — PENDING
 * win-builder, R-devel — PENDING
 * win-builder, R-release — PENDING
-* R-hub, R-devel on Linux, Windows and macOS — PENDING
 
 ## R CMD check results
 
