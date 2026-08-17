@@ -9,7 +9,7 @@ numbers. `test-regression-baseline.R` and the release gate hold that claim to ac
 
 ## The problem this stage removes
 
-`generateCI()` calls `load(rdata)` in its own frame (`R/generateCI.R:167`). `load()` assigns
+`generateCI()` calls `load(rdata)` in its own frame (`R/generateCI.R:166`). `load()` assigns
 straight into that frame, so any object in the `.Rdata` silently overwrites an argument of
 the same name. This is not hypothetical: since 1.1.0 the file carries the *noise* `sigma`
 (25 by default), which replaced the z-map blur `sigma` of 3, so every z-map built from a
@@ -33,12 +33,12 @@ argument — validates, and returns what `generateCI()` actually uses:
 loadStimulusParams(rdata) -> list(p, base_faces, stimuli_params, img_size)
 ```
 
-It absorbs `R/generateCI.R:165-192`: the `captureArgs()`/`load()`/`list2env()` trio, the four
+It absorbs `R/generateCI.R:163-192`: the `captureArgs()`/`load()`/`list2env()` trio, the four
 `exists()` checks with their `rdataWriterNote()` calls, and the pre-0.3.3 `s` -> `p`
 conversion. `rdataWriterNote()` already takes an environment argument, so it is called on the
 helper's frame with no change to it.
 
-At the call site those 28 lines become:
+At the call site those 30 lines become:
 
 ```r
 loaded <- loadStimulusParams(rdata)
@@ -77,7 +77,7 @@ touching, the extraction is wrong.
 - **`test-fixed-bugs.R:422-439`** — `batchGenerateCI()` forwarding a *missing* `targetpath`.
   This is the forwarded-missing-promise case `captureArgs()` was written for. The
   `targetpath <- if (missing(targetpath)) NULL else targetpath` binding at
-  `R/generateCI.R:147` is what actually handles it and **stays**; only its ordering comment
+  `R/generateCI.R:146` is what actually handles it and **stays**; only its ordering comment
   changes, because the "must stay above `captureArgs()`" constraint disappears with
   `captureArgs()`. The `missing()` checks at `R/generateCI.R:120-134` still must run before
   anything assigns to those names.
