@@ -160,6 +160,13 @@
   internally consistent throughout, and analyses that never set `save_individual_cis = TRUE`
   are untouched.
 
+  **The batch functions never wrote these files**, so per-participant analyses run the way
+  the documentation has always described them are unaffected. `batchGenerateCI()`,
+  `batchGenerateCI2IFC()` and `generateCI2IFC()` do not expose `participants` or
+  `save_individual_cis` at all: they split the data themselves and name each image from the
+  grouping value directly. Only a direct
+  `generateCI(participants = ..., save_individual_cis = TRUE)` call is affected.
+
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
   the old result — it carried no information — but code that checked for `NA` on the returned

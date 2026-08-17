@@ -53,7 +53,21 @@ INSTALL_DEPS <- "--install-deps" %in% args
 #      about all of them, not a net cast wide.
 # ref: which reference this applies to -- a deviation from v1.0.1 is not a
 #      deviation from v1.1.0, and listing it for both would make one of the two
-#      runs report a stale expectation.
+#      runs report a stale expectation. A defect present in both references is
+#      the exception, and needs an entry per reference.
+# check: optional predicate(ref_value, cur_value). Without one the key excuses
+#      *any* deviation in that output, including a later, unrelated regression
+#      in the same place. Supply one wherever the expected change has a shape
+#      that can be tested.
+
+# The shape of the individual-CI relabelling: the same images under corrected
+# names. Filenames must be unchanged and the hashes a permutation of each other,
+# which holds only if every pixel is untouched. A regression in individual
+# scaling or in PNG writing changes a hash to one that is not in the other
+# side's set, and so is reported rather than absorbed by the entries below.
+relabelled_only <- function(a, b) {
+  identical(names(a), names(b)) && identical(sort(unname(a)), sort(unname(b)))
+}
 
 EXPECTED <- list(
   list(ref = "v1.0.1", key = "sinusoid-64-nscales3-infoval/infoval",
@@ -79,6 +93,7 @@ EXPECTED <- list(
                       "sits under which filename. Only the individual-CI PNGs are affected;",
                       "participants_ci and participants_scaled are means across",
                       "participants and must still match."),
+       check = relabelled_only,
        news = "Reproducibility impact"),
 
   # Listed for both references, unlike the entries around it, because the defect
@@ -90,6 +105,7 @@ EXPECTED <- list(
        reason = paste("Same defect as the v1.0.1 entry above -- v1.2.3 names individual-CI",
                       "PNGs from order of appearance too. The pixels are unchanged; which",
                       "MD5 sits under which filename is what moves."),
+       check = relabelled_only,
        news = "Reproducibility impact"),
 
   list(ref = "v1.1.0",
@@ -375,6 +391,16 @@ for (cfg in cur_meta$configs) {
     key <- paste0(cfg, "/", nm)
     res <- compare_one(nm, ref_res[[nm]], cur_res[[nm]])
     exp <- expectation_for(key)
+    # An expectation may also carry `check`, a predicate on the two values. A
+    # key on its own accepts *any* deviation in that output, so a second,
+    # unrelated regression in the same place is waved through as the deviation
+    # already on file. Where the expected change has a shape that can be
+    # stated, state it: the entry then only excuses the difference it describes.
+    if (!is.null(exp) && is.function(exp$check) &&
+        !isTRUE(exp$check(ref_res[[nm]], cur_res[[nm]]))) {
+      res$detail <- paste0(res$detail, " -- and NOT the change on file for this key")
+      exp <- NULL
+    }
     if (identical(res$status, "OK")) {
       n_ok <- n_ok + 1L
       say(sprintf("  %-24s OK        %s", nm, res$detail))
