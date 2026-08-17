@@ -71,11 +71,17 @@ The images themselves were always computed correctly. It is purely a naming erro
 
 **And it never reached CRAN.** rcicr was on CRAN from July 2014 until it was archived in June 2021, and the last release there, 0.3.4.1 from July 2016, predates the `save_individual_cis` option by thirteen months. Nobody who ran `install.packages('rcicr')` ever got a mislabelled file. The defect entered the development branch on 15 August 2017 — in, of all things, the commit that first made saving individual images work at all — and every GitHub release since carries it.
 
-**You can check your own output in one line, without re-running anything:**
+**If you have published one of these figures, check your analysis scripts — you don't need to re-run anything.**
+
+First: search your scripts for `save_individual_cis`. If it doesn't appear, you never wrote these files and none of this touches you. If your per-participant images came out of `batchGenerateCI()` or `batchGenerateCI2IFC()`, likewise — those cannot reach it. That one step clears most analyses.
+
+Second, if it does appear: look at how you built the `participants` vector. If it came from a data frame already sorted by participant, your filenames were right. If it didn't, they weren't. Where you still have the vector, one line decides it:
 
 ```r
 identical(unique(participants), sort(unique(participants)))   # TRUE means your files were fine
 ```
+
+I'd start with the script rather than the code, because most people no longer have the session that produced the figure — but they do still have the script.
 
 And if it comes back `FALSE`, the fix is a rename rather than a recomputation, because the mapping is exact — the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
 

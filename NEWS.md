@@ -157,12 +157,24 @@
     2021; the last release, 0.3.4.1 (July 2016), predates the `save_individual_cis` option
     entirely. `install.packages('rcicr')` never produced a mislabelled file at any point.
 
-  **To tell whether your own output is affected**, two expressions on the vector you passed —
-  no re-run:
+  **If you have published from individual-CI images, check your analysis scripts.** Two
+  steps, neither of which requires re-running anything.
+
+  *Step 1 — did you use the affected call at all?* Search your scripts for
+  `save_individual_cis`. If it does not appear, you never wrote these files and nothing here
+  concerns you. If your per-participant images came from `batchGenerateCI()` or
+  `batchGenerateCI2IFC()`, the same applies: those cannot reach the defect.
+
+  *Step 2 — if it does appear, was your `participants` vector in sorted order?* Look at how
+  you built it. If it came from a data frame sorted by participant, the names were correct.
+  If not, they were not. Where you still have the vector, one expression decides it:
 
   ```r
-  identical(unique(participants), sort(unique(participants)))   # TRUE = always correct
+  identical(unique(participants), sort(unique(participants)))   # TRUE = names were correct
   ```
+
+  Reading the script is the better first step, because most people no longer have the R
+  session — and step 1 alone clears the majority of analyses.
 
   **Recovering existing output is a rename, not a re-run.** The mapping is exact: the file
   named `unique(participants)[i]` holds the classification image of
