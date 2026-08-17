@@ -135,6 +135,29 @@ pixel-for-pixel on a colleague's machine is not a different result. Every other 
 package writes comes straight from the pixel array via `png::writePNG()` and is unaffected.
 See `?plotZmap`.
 
+### Where the code lives
+
+Apart from `generateCI()` itself, every function named in the table below is **internal** —
+not exported, and not callable from your own scripts. They are split by concern rather than
+by which exported function happens to call them. (The walkthrough above names only the
+exported functions it needed; for the full public API, see the function reference on the
+[documentation site](https://rdotsch.github.io/rcicr/) or `help(package = "rcicr")`.)
+
+The usual reason to look is `generateCI()`, whose body reads as one call per step — validate,
+load, select, compute, present, return — with the steps themselves in these files:
+
+| file | what is in it |
+|---|---|
+| `R/generateCI.R` | `generateCI()` itself, plus the presentation helpers `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
+| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
+| `R/ci-inputs.R` | turning the caller's arguments into a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
+| `R/ci-compute.R` | `computeParticipantCIs()` — one CI per participant, plus their average |
+| `R/zmap-compute.R` | `computeZmapQuick()` and `computeZmapTTest()` |
+| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
+
+The mask helpers live in `R/generateCI.R` rather than a file of their own because
+`plotZmap()` shares them — masking a z-map and masking a CI are the same operation.
+
 ## Anatomy of the `.Rdata` file
 
 `generateStimuli2IFC()` writes one file named
