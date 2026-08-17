@@ -184,6 +184,118 @@
 
 ### Reproducibility impact
 
+- **Individual-CI PNGs written by
+  `generateCI(save_individual_cis = TRUE)` carried the wrong
+  participant’s name, and are now named correctly.** The per-participant
+  loop selects each participant’s trials by *sorted* order and took the
+  output filename from order of *appearance*. Where those two orders
+  differ, every file in `<targetpath>/individual_cis` was given another
+  participant’s ID. The pixels were always right; only the names were
+  wrong.
+
+  **Affected:** a direct call to
+  `generateCI(participants = ..., save_individual_cis = TRUE)` where the
+  `participants` vector is not already in sorted order. Such a call
+  produced correct images under incorrect filenames, so a figure
+  published as participant `p2` may be someone else’s classification
+  image.
+
+  **Do not assume tidy data was safe — the common case is affected.**
+  Sorting is *lexical*, so text labels like `"p10"` sort before `"p2"`.
+  A study whose participants appear in collection order
+  `p1, p2, ..., p10` is therefore affected from the tenth participant
+  onward, even though nothing about that data is out of order in any
+  ordinary sense:
+
+  | `participants`, in collection order | affected |
+  |-------------------------------------|----------|
+  | `"p1"` … `"p9"`                     | no       |
+  | `"p1"` … `"p10"` or beyond          | **yes**  |
+  | `"p01"` … `"p12"` (zero-padded)     | no       |
+  | `"1"` … `"12"` (character)          | **yes**  |
+  | `1` … `12` (numeric)                | no       |
+
+  Unpadded text IDs and ten or more participants is the ordinary shape
+  of a reverse correlation study, so if that describes yours and you
+  used the call above, check rather than assume.
+
+  **Not affected — and this is the documented route, so most analyses
+  are in this group:**
+
+  - **[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md),
+    [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+    and
+    [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md).**
+    None of them exposes `participants` or `save_individual_cis` at all;
+    they split the data themselves and name each image from the grouping
+    value directly, never reaching the code that was wrong.
+    Per-participant classification images computed the way the package
+    documentation has recommended since the CRAN era —
+    [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md),
+    and
+    [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+    in the current vignette — were correctly labelled throughout.
+  - **Everything
+    [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+    returns.** The group classification image is a mean across
+    participants and so does not depend on their order; the
+    per-participant stack, and every z-map built from it, were
+    internally consistent throughout. No returned value, and no number
+    in any `.Rdata` file, ever changed.
+  - **Any call that left `save_individual_cis` at its default `FALSE`.**
+    No individual-CI file was written, so there was nothing to mislabel.
+  - **Participants already in sorted order**, where the two orderings
+    coincide.
+  - **Every CRAN release.** rcicr was on CRAN from July 2014 until it
+    was archived in June 2021; the last release, 0.3.4.1 (July 2016),
+    predates the `save_individual_cis` option entirely.
+    `install.packages('rcicr')` never produced a mislabelled file at any
+    point.
+
+  **If you have published from individual-CI images, check your analysis
+  scripts.** Two steps, neither of which requires re-running anything.
+
+  *Step 1 — did you use the affected call at all?* Search your scripts
+  for `save_individual_cis`. If it does not appear, you never wrote
+  these files and nothing here concerns you. If your per-participant
+  images came from
+  [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+  or
+  [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md),
+  the same applies: those cannot reach the defect.
+
+  *Step 2 — if it does appear, was your `participants` vector in sorted
+  order?* Note “sorted” means lexically sorted for text labels, per the
+  table above — sorting your data frame by a `"p1"`-style column does
+  not make it safe once you reach ten participants. Where you still have
+  the vector, one expression settles it:
+
+  ``` r
+
+  identical(unique(participants), sort(unique(participants)))   # TRUE = names were correct
+  ```
+
+  Reading the script is the better first step, because most people no
+  longer have the R session — and step 1 alone clears the majority of
+  analyses.
+
+  **Recovering existing output is a rename, not a re-run.** The mapping
+  is exact: the file named `unique(participants)[i]` holds the
+  classification image of `sort(unique(participants))[i]`.
+
+  ``` r
+
+  old <- unique(participants)         # the names the files were given
+  new <- sort(unique(participants))   # the participants they actually hold
+  ```
+
+  **Every release from 1.0.1 (January 2023) through 1.2.3 (August 2026)
+  carries the defect**, as does every install from the development
+  branch from 15 August 2017 onward — the date it was introduced, in the
+  commit that first made individual-CI saving work at all. There were no
+  releases between 2017 and 2023, so a copy obtained in those years came
+  from the branch and is affected too.
+
 - **[`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
   with a masked `targetci`** now returns numeric correlations where it
   previously returned all-`NA`. No existing analysis could have used the
@@ -192,6 +304,14 @@
   targets are bit-identical.
 
 ### Bug fixes
+
+- **`generateCI(save_individual_cis = TRUE)` names each PNG for the
+  participant it was actually computed from.** The loop selects
+  participants by sorted level order and the filename was taken from
+  order of appearance, so the two disagreed for any data not already
+  sorted by participant. See “Reproducibility impact” above for how to
+  tell whether files you already have are affected, and how to correct
+  them without recomputing anything.
 
 - **[`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
   now returns real correlations when `targetci` was generated with a

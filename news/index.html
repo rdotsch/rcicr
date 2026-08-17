@@ -70,11 +70,58 @@
 <div class="section level3">
 <h3 id="reproducibility-impact-development-version">Reproducibility impact<a class="anchor" aria-label="anchor" href="#reproducibility-impact-development-version"></a></h3>
 <ul><li>
-<strong><code><a href="../reference/computeCumulativeCICorrelation.html">computeCumulativeCICorrelation()</a></code> with a masked <code>targetci</code></strong> now returns numeric correlations where it previously returned all-<code>NA</code>. No existing analysis could have used the old result — it carried no information — but code that checked for <code>NA</code> on the returned curve will see a different answer. Unmasked targets are bit-identical.</li>
+<p><strong>Individual-CI PNGs written by <code>generateCI(save_individual_cis = TRUE)</code> carried the wrong participant’s name, and are now named correctly.</strong> The per-participant loop selects each participant’s trials by <em>sorted</em> order and took the output filename from order of <em>appearance</em>. Where those two orders differ, every file in <code>&lt;targetpath&gt;/individual_cis</code> was given another participant’s ID. The pixels were always right; only the names were wrong.</p>
+<p><strong>Affected:</strong> a direct call to <code>generateCI(participants = ..., save_individual_cis = TRUE)</code> where the <code>participants</code> vector is not already in sorted order. Such a call produced correct images under incorrect filenames, so a figure published as participant <code>p2</code> may be someone else’s classification image.</p>
+<p><strong>Do not assume tidy data was safe — the common case is affected.</strong> Sorting is <em>lexical</em>, so text labels like <code>"p10"</code> sort before <code>"p2"</code>. A study whose participants appear in collection order <code>p1, p2, ..., p10</code> is therefore affected from the tenth participant onward, even though nothing about that data is out of order in any ordinary sense:</p>
+<table class="table"><thead><tr><th>
+<code>participants</code>, in collection order</th>
+<th>affected</th>
+</tr></thead><tbody><tr><td>
+<code>"p1"</code> … <code>"p9"</code>
+</td>
+<td>no</td>
+</tr><tr><td>
+<code>"p1"</code> … <code>"p10"</code> or beyond</td>
+<td><strong>yes</strong></td>
+</tr><tr><td>
+<code>"p01"</code> … <code>"p12"</code> (zero-padded)</td>
+<td>no</td>
+</tr><tr><td>
+<code>"1"</code> … <code>"12"</code> (character)</td>
+<td><strong>yes</strong></td>
+</tr><tr><td>
+<code>1</code> … <code>12</code> (numeric)</td>
+<td>no</td>
+</tr></tbody></table><p>Unpadded text IDs and ten or more participants is the ordinary shape of a reverse correlation study, so if that describes yours and you used the call above, check rather than assume.</p>
+<p><strong>Not affected — and this is the documented route, so most analyses are in this group:</strong></p>
+<ul><li>
+<strong><code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> and <code><a href="../reference/generateCI2IFC.html">generateCI2IFC()</a></code>.</strong> None of them exposes <code>participants</code> or <code>save_individual_cis</code> at all; they split the data themselves and name each image from the grouping value directly, never reaching the code that was wrong. Per-participant classification images computed the way the package documentation has recommended since the CRAN era — <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code>, and <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> in the current vignette — were correctly labelled throughout.</li>
+<li>
+<strong>Everything <code><a href="../reference/generateCI.html">generateCI()</a></code> returns.</strong> The group classification image is a mean across participants and so does not depend on their order; the per-participant stack, and every z-map built from it, were internally consistent throughout. No returned value, and no number in any <code>.Rdata</code> file, ever changed.</li>
+<li>
+<strong>Any call that left <code>save_individual_cis</code> at its default <code>FALSE</code>.</strong> No individual-CI file was written, so there was nothing to mislabel.</li>
+<li>
+<strong>Participants already in sorted order</strong>, where the two orderings coincide.</li>
+<li>
+<strong>Every CRAN release.</strong> rcicr was on CRAN from July 2014 until it was archived in June 2021; the last release, 0.3.4.1 (July 2016), predates the <code>save_individual_cis</code> option entirely. <code>install.packages('rcicr')</code> never produced a mislabelled file at any point.</li>
+</ul><p><strong>If you have published from individual-CI images, check your analysis scripts.</strong> Two steps, neither of which requires re-running anything.</p>
+<p><em>Step 1 — did you use the affected call at all?</em> Search your scripts for <code>save_individual_cis</code>. If it does not appear, you never wrote these files and nothing here concerns you. If your per-participant images came from <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> or <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code>, the same applies: those cannot reach the defect.</p>
+<p><em>Step 2 — if it does appear, was your <code>participants</code> vector in sorted order?</em> Note “sorted” means lexically sorted for text labels, per the table above — sorting your data frame by a <code>"p1"</code>-style column does not make it safe once you reach ten participants. Where you still have the vector, one expression settles it:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>   <span class="co"># TRUE = names were correct</span></span></code></pre></div>
+<p>Reading the script is the better first step, because most people no longer have the R session — and step 1 alone clears the majority of analyses.</p>
+<p><strong>Recovering existing output is a rename, not a re-run.</strong> The mapping is exact: the file named <code>unique(participants)[i]</code> holds the classification image of <code>sort(unique(participants))[i]</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">old</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span>         <span class="co"># the names the files were given</span></span>
+<span><span class="va">new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span><span class="op">)</span>   <span class="co"># the participants they actually hold</span></span></code></pre></div>
+<p><strong>Every release from 1.0.1 (January 2023) through 1.2.3 (August 2026) carries the defect</strong>, as does every install from the development branch from 15 August 2017 onward — the date it was introduced, in the commit that first made individual-CI saving work at all. There were no releases between 2017 and 2023, so a copy obtained in those years came from the branch and is affected too.</p>
+</li>
+<li><p><strong><code><a href="../reference/computeCumulativeCICorrelation.html">computeCumulativeCICorrelation()</a></code> with a masked <code>targetci</code></strong> now returns numeric correlations where it previously returned all-<code>NA</code>. No existing analysis could have used the old result — it carried no information — but code that checked for <code>NA</code> on the returned curve will see a different answer. Unmasked targets are bit-identical.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
-<ul><li><p><strong><code><a href="../reference/computeCumulativeCICorrelation.html">computeCumulativeCICorrelation()</a></code> now returns real correlations when <code>targetci</code> was generated with a mask.</strong> <code><a href="../reference/generateCI.html">generateCI()</a></code> stores <code>NA</code> in every pixel a <code>mask</code> excludes, and the correlation was taken over all pixels (<code>use = "everything"</code>), so a single masked pixel made every point on the curve <code>NA</code> however strong the signal. Correlations are now computed over the unmasked pixels only. A fully masked target (every pixel <code>NA</code>) still returns an all-<code>NA</code> curve — there are no complete pairs to correlate.</p></li>
+<ul><li><p><strong><code>generateCI(save_individual_cis = TRUE)</code> names each PNG for the participant it was actually computed from.</strong> The loop selects participants by sorted level order and the filename was taken from order of appearance, so the two disagreed for any data not already sorted by participant. See “Reproducibility impact” above for how to tell whether files you already have are affected, and how to correct them without recomputing anything.</p></li>
+<li><p><strong><code><a href="../reference/computeCumulativeCICorrelation.html">computeCumulativeCICorrelation()</a></code> now returns real correlations when <code>targetci</code> was generated with a mask.</strong> <code><a href="../reference/generateCI.html">generateCI()</a></code> stores <code>NA</code> in every pixel a <code>mask</code> excludes, and the correlation was taken over all pixels (<code>use = "everything"</code>), so a single masked pixel made every point on the curve <code>NA</code> however strong the signal. Correlations are now computed over the unmasked pixels only. A fully masked target (every pixel <code>NA</code>) still returns an all-<code>NA</code> curve — there are no complete pairs to correlate.</p></li>
 <li><p><strong><code>plotZmap(col = ...)</code> works.</strong> Supplying a palette is how <code><a href="../reference/plotZmap.html">?plotZmap</a></code> has always told you to change the colours, and doing it stopped the call with <code>formal argument "col" matched by multiple actual arguments</code> before anything was drawn — the function passed its own <code>col</code> alongside yours. This affected every released version; the argument is now taken as an override, and is used for the colour bar as well as the map.</p></li>
 <li>
 <p><strong>A base image with no contrast no longer becomes an all-<code>NaN</code> base image.</strong> Under <code>maximize_baseimage_contrast = TRUE</code>, the default, <code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> rescales with <code>(img - min(img)) / (max(img) - min(img))</code> — which is 0/0 when every pixel is the same value. The resulting <code>NaN</code> base face was written into the <code>.Rdata</code> with no error and no warning, every classification image computed from that stimulus set inherited it, and the stimuli themselves came out uniformly black, <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code> clamping <code>NaN</code> to zero. It now stops with an error naming the file.</p>
@@ -131,7 +178,7 @@
 <ul><li>
 <p><strong>Functions that write files now require you to say where.</strong> <code>stimulus_path</code> (<code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code>), <code>targetpath</code> (<code><a href="../reference/generateCI.html">generateCI()</a></code>, <code><a href="../reference/generateCI2IFC.html">generateCI2IFC()</a></code>, <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code>, <code><a href="../reference/autoscale.html">autoscale()</a></code>, <code><a href="../reference/plotZmap.html">plotZmap()</a></code>) and <code>zmaptargetpath</code> (<code><a href="../reference/generateCI.html">generateCI()</a></code>) have lost their defaults. They used to be <code>./stimuli</code>, <code>./cis</code> and <code>./zmaps</code>, which meant a default call created directories in whatever your working directory happened to be — writing to your filespace without being asked, which CRAN policy does not permit.</p>
 <p><strong>What to change in your scripts.</strong> If you relied on the old defaults, name them:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># before</span></span>
 <span><span class="fu"><a href="../reference/generateCI.html">generateCI</a></span><span class="op">(</span><span class="va">stimuli</span>, <span class="va">responses</span>, <span class="st">"face"</span>, <span class="va">rdata</span><span class="op">)</span></span>
 <span></span>
