@@ -181,62 +181,12 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     # averaging across participants
   } else {
 
-    # First generate a CI for each participant, then average across participants
-    pids <- as.numeric(factor(participants))
-    npids <- length(unique(pids))
-
-    # Initialize progress bar
-    pb <- txtProgressBar(min = 1, max = npids, style = 3)
-
-    # Create cluster for parallel processing
-    cl <- startBackend(n_cores)
-    if (!is.null(cl)) {
-      on.exit(stopClusterSafely(cl), add = TRUE)
-    }
-
-    # For each weighted stimulus, construct the noise pattern
-    pid.cis <- foreach::foreach(obs = 1:npids, # nolint: object_name_linter.
-      .combine = 'c',
-      .packages = 'rcicr',
-      .options.snow = progressOption(pb, cl)
-    ) %dopar% {
-
-      # Serial path only; in parallel .options.snow ticks the bar in the parent.
-      if (is.null(cl)) setTxtProgressBar(pb, obs)
-
-      # Select only the observations of the current participant
-      pid.rows <- pids == obs # nolint: object_name_linter.
-
-      # Construct the noise pattern
-      ci <- generateCINoise(params[pid.rows, ], responses[pid.rows], p)
-
-      # Check if individual CIs should be saved. If so, generate and save them
-      if (save_individual_cis) {
-        if (hasMask(mask)) {
-          individual_ci <- applyMask(ci, mask, img_size)
-        } else {
-          individual_ci <- ci
-        }
-        scaled <- applyScaling(base, individual_ci, individual_scaling,
-          individual_scaling_constant
-        )
-        combined <- combine(scaled, base)
-        saveToImage(baseimage, combined, paste0(targetpath, '/individual_cis'),
-          unique(participants)[obs], antiCI
-        )
-      }
-
-      # Return the CI
-      return(ci)
-    }
-    if (!is.null(cl)) {
-      parallel::stopCluster(cl)
-    }
-    cl <- NULL
-    dim(pid.cis) <- c(img_size, img_size, npids) # nolint: object_name_linter.
-
-    # Average across participants for final CI and return to original variance
-    ci <- apply(pid.cis, c(1, 2), mean) #* sqrt(npids)
+    participant_cis <- computeParticipantCIs(params, responses, participants, p,
+      base, baseimage, img_size, mask, n_cores, save_individual_cis, targetpath,
+      individual_scaling, individual_scaling_constant, antiCI
+    )
+    ci <- participant_cis$ci
+    pid.cis <- participant_cis$pid_cis # nolint: object_name_linter.
   }
 
   # Check if a mask has been set. If so, apply it to the CI
