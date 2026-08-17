@@ -173,6 +173,37 @@ via [`png::writePNG()`](https://rdrr.io/pkg/png/man/writePNG.html) and
 is unaffected. See
 [`?plotZmap`](https://rdotsch.github.io/rcicr/reference/plotZmap.md).
 
+### Where the code lives
+
+Apart from
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+itself, every function named in the table below is **internal** — not
+exported, and not callable from your own scripts. They are split by
+concern rather than by which exported function happens to call them.
+(The walkthrough above names only the exported functions it needed; for
+the full public API, see the function reference on the [documentation
+site](https://rdotsch.github.io/rcicr/) or
+[`help(package = "rcicr")`](https://rdotsch.github.io/rcicr/reference).)
+
+The usual reason to look is
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
+whose body reads as one call per step — validate, load, select, compute,
+present, return — with the steps themselves in these files:
+
+| file | what is in it |
+|----|----|
+| `R/generateCI.R` | [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md) itself, plus the presentation helpers `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
+| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
+| `R/ci-inputs.R` | turning the caller’s arguments into a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
+| `R/ci-compute.R` | `computeParticipantCIs()` — one CI per participant, plus their average |
+| `R/zmap-compute.R` | `computeZmapQuick()` and `computeZmapTTest()` |
+| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
+
+The mask helpers live in `R/generateCI.R` rather than a file of their
+own because
+[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+shares them — masking a z-map and masking a CI are the same operation.
+
 ## Anatomy of the `.Rdata` file
 
 [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
