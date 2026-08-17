@@ -177,6 +177,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   # If "participants" argument is not given, compute one CI based on all data
   if (all(is.na(participants))) {
     ci <- generateCINoise(params, responses, p)
+    # Bound so the t.test z-map below can switch on it. NULL is what "no
+    # per-participant CIs to reuse, build the stack from trials" looks like.
+    pid.cis <- NULL # nolint: object_name_linter.
     # If it is given, create a CI for each participant and a group CI by
     # averaging across participants
   } else {
@@ -210,60 +213,15 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   if (zmapbool) {
 
     if (zmapmethod == 'quick') {
-      # Blur CI
-      zmap <- as.matrix(blur(as.im(ci), sigma = sigma))
-
-      # Create z-map
-      zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
-
-      # Apply threshold
-      zmap[zmap > -threshold & zmap < threshold] <- NA
+      zmap <- computeZmapQuick(ci, sigma, threshold, img_size)
     }
 
     if (zmapmethod == 't.test') {
-
-      # Compute one CI in one single step based on all data
-      if (all(is.na(participants))) {
-        # Weigh the stimulus parameters of each trial using the given responses
-        weightedparameters <- params * responses
-
-        # Get number of observations
-        n_observations <- length(responses)
-
-        # Initialize progress bar
-        pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
-
-        # Create cluster for parallel processing
-        cl <- startBackend(n_cores)
-        if (!is.null(cl)) {
-          on.exit(stopClusterSafely(cl), add = TRUE)
-        }
-
-        # For each weighted stimulus, construct the complementary noise pattern
-        noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c',
-          .packages = 'rcicr',
-          .options.snow = progressOption(pb, cl)
-        ) %dopar% {
-          noiseimage <- generateNoiseImage(weightedparameters[obs, ], p)
-          if (is.null(cl)) setTxtProgressBar(pb, obs)
-          return(noiseimage)
-        }
-        if (!is.null(cl)) {
-          parallel::stopCluster(cl)
-        }
-        cl <- NULL
-        dim(noiseimages) <- c(img_size, img_size, n_observations)
-
-      } else {
-        noiseimages <- pid.cis
-      }
-
-      # Get p value for each pixel
-      pmap <- apply(noiseimages, 1:2, function(x) unlist(t.test(x)['p.value']))
-
-      # Create Z-map
-      zmap <- sign(ci) * abs(qnorm(pmap / 2))
+      zmap <- computeZmapTTest(ci, params, responses, p, pid.cis, img_size,
+        n_cores
+      )
     }
+
     # Pass zmap object to plotZmap for plotting. targetpath was previously not
     # forwarded, so the documented zmaptargetpath argument was silently ignored
     # and every z-map went to plotZmap()'s own default ('zmaps', relative to the
