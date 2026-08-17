@@ -437,3 +437,52 @@ test_that("batchGenerateCI() still forwards a missing targetpath", {
     )
   )
 })
+
+test_that("individual CIs are named for the participant they were computed from", {
+  # The loop indexes participants by sorted factor level; the filename used to
+  # come from order of appearance. Where those disagreed -- any data not sorted
+  # by participant, "p2" before "p10", IDs collected out of order -- every file
+  # in individual_cis/ carried someone else's ID.
+  #
+  # Contents, not filenames: both the old code and the new write the same *set*
+  # of names, so a filename assertion cannot see this. It is why the existing
+  # check in test-generateCI-paths.R passed throughout, and that one also uses
+  # rep(c("a","b","c"), each = 4), already in sorted order.
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir, img_size = 32, n_trials = 12)
+
+  # Appearance order c("b", "a") against sorted order c("a", "b"), and
+  # responses that make the two participants differ as much as they can.
+  participants <- rep(c("b", "a"), each = 6)
+  responses <- c(rep(1, 6), rep(-1, 6))
+
+  target <- file.path(dir, "cis")
+  generateCI(1:12, responses, "base", rdata, participants = participants,
+             save_individual_cis = TRUE, save_as_png = FALSE,
+             targetpath = target, n_cores = 1)
+
+  read_ci <- function(pid) {
+    m <- png::readPNG(file.path(target, "individual_cis", paste0("ci_", pid, ".png")))
+    if (length(dim(m)) == 3) m[, , 1] else m
+  }
+
+  # What each participant's CI is, computed from their trials alone.
+  truth <- lapply(c(a = "a", b = "b"), function(pid) {
+    rows <- which(participants == pid)
+    generateCI(rows, responses[rows], "base", rdata, save_as_png = FALSE,
+               scaling = "independent")$combined
+  })
+
+  # 0.01 sits between the two scales that matter here, both measured: 8-bit PNG
+  # quantisation moves a pixel by at most 1/255 = 0.0039, while the two
+  # participants' CIs differ by 0.419 at their furthest pixel. Neither
+  # assertion below can be satisfied by the wrong image.
+  expect_equal(read_ci("a"), truth$a, tolerance = 0.01)
+  expect_equal(read_ci("b"), truth$b, tolerance = 0.01)
+
+  # Not vacuous: with the participants swapped these would still both pass if
+  # the two CIs happened to be alike.
+  expect_gt(max(abs(truth$a - truth$b)), 0.05)
+})
