@@ -137,10 +137,14 @@ See `?plotZmap`.
 
 ### Where the code lives
 
-Only the functions named above are exported; everything below is internal and split by
-concern rather than by which exported function happens to call it. The usual reason to look
-is `generateCI()`, whose body reads as one call per step — validate, load, select, compute,
-present, return — with the steps themselves in these files:
+Apart from `generateCI()` itself, every function named in the table below is **internal** —
+not exported, and not callable from your own scripts. They are split by concern rather than
+by which exported function happens to call them. (The walkthrough above names only the
+exported functions it needed; for the full public API, see the function reference on the
+[documentation site](https://rdotsch.github.io/rcicr/) or `help(package = "rcicr")`.)
+
+The usual reason to look is `generateCI()`, whose body reads as one call per step — validate,
+load, select, compute, present, return — with the steps themselves in these files:
 
 | file | what is in it |
 |---|---|
