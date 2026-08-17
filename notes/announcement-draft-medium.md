@@ -65,7 +65,7 @@ This one is not a rounding difference, and it deserves its own heading rather th
 
 If you called `generateCI()` with a `participants` vector **and** `save_individual_cis = TRUE`, the per-participant images written to `individual_cis/` could be saved under the wrong participant's filename. The loop picked each participant's trials in *sorted* order but took the filename from order of *appearance*. Whenever those two orders differ, every file in that folder got somebody else's ID.
 
-Here's the part that makes this worse than it sounds, and the part I got wrong when I first wrote this section: I assumed it took unusual data to trigger. It doesn't. Sorting is lexical, so `"p10"` sorts before `"p2"` — which means a study whose participants appear in the perfectly ordinary order `p1, p2, p3, …` is affected the moment it reaches its tenth participant. Nine participants, fine. Ten, wrong filenames. Zero-padded labels (`p01`, `p02`) are safe, and genuinely numeric IDs are safe, but unpadded text labels and twenty-odd participants is simply what a reverse correlation study looks like.
+Here's the part that makes this worse than it sounds. The assistant's first draft of this section — and my own assumption when it explained the bug to me — was that it took unusual data to trigger. It doesn't. Sorting is lexical, so `"p10"` sorts before `"p2"` — which means a study whose participants appear in the perfectly ordinary order `p1, p2, p3, …` is affected the moment it reaches its tenth participant. Nine participants, fine. Ten, wrong filenames. Zero-padded labels (`p01`, `p02`) are safe, and genuinely numeric IDs are safe, but unpadded text labels and twenty-odd participants is simply what a reverse correlation study looks like.
 
 The images themselves were always computed correctly. It is purely a naming error. But a naming error on a per-participant figure is not a small thing: if you published one of those images as participant `p2`, it may be a different participant's classification image.
 
@@ -131,9 +131,9 @@ They posted a corrected version in the thread. And then, because life happens, i
 
 Coming back to it, I adopted the idea in a slightly different form that avoids materializing an intermediate copy, verified it against an independent implementation of the mathematics — the average written as an explicit triple loop, using neither `apply()` nor `rowMeans()`, and tested on a deliberately *non-square* array so that a transposition couldn't hide — and landed it with credit.
 
-Here's the part worth telling. My first benchmark said **29× faster**. It was wrong. I had precomputed the expensive input *outside* the timed section, so I was measuring only the step I'd changed and not the function anyone actually calls. Measured end to end, it's **6×** — which is exactly what @hvalev had reported in 2023.
+Here's the part worth telling. The assistant's first benchmark reported **29× faster**, and I nearly published that number. It was wrong. It had precomputed the expensive input *outside* the timed section, so it was measuring only the step it had changed and not the function anyone actually calls. Measured end to end, it's **6×** — which is exactly what @hvalev had reported in 2023.
 
-Amdahl's law is not optional, and the contributor's original number was better than mine.
+Amdahl's law is not optional, and the contributor's original number was better than the one I was about to print.
 
 ## Where AI fit, honestly
 
@@ -147,7 +147,9 @@ That second one is the honest case for doing this at all. I am not going to clai
 
 **What didn't.** The 29× benchmark above was its number, and its error. Nothing would have caught it except re-measuring — the code was correct, the speedup was real, the figure was just measuring the wrong thing. It also initially misread the state of that 2023 pull request by reading the diff and not the review conversation underneath it, and told me the contributor's fix was broken when they'd already posted a working version.
 
-Both mistakes have the same shape: **confident, plausible, specific, and wrong in a way that only checking against reality catches.** Neither was a hallucinated API or a syntax error — the failure modes people usually warn about. They were errors of *verification*, which is precisely the thing you cannot delegate.
+And having found the mislabelling bug, it then described the damage too narrowly — that it took unsorted data to trigger — until it worked through what lexical sorting actually does to `p1`…`p10`. That one is the most instructive of the three, because the mistake was in an explanation rather than in code, and an explanation has no test suite. It would have gone into this post as a reassurance, and the reassurance would have been false.
+
+All three mistakes have the same shape: **confident, plausible, specific, and wrong in a way that only checking against reality catches.** None was a hallucinated API or a syntax error — the failure modes people usually warn about. They were errors of *verification*, which is precisely the thing you cannot delegate.
 
 **So the honest summary:** it made me substantially faster at work I know how to evaluate. Every number in this post exists because something was measured, and the measurements that mattered got redone when they looked too good. The golden-master test isn't there because an AI suggested it; it's there because I wasn't willing to accept "the tests pass" as evidence that published results were safe.
 
