@@ -4,11 +4,17 @@
 
 ---
 
-Nine years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. People have used it in published work. Then, as happens, I moved on to other things.
+Nine years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. People have used it in published work.
 
-In June 2021 CRAN archived it. The stated reason was that email to the maintainer was undeliverable — my old university address had stopped working. The package didn't break; the mailbox did. But the effect was that `install.packages('rcicr')` stopped working for everyone, and the README kept cheerfully telling people to run it.
+Then I left academia. That was 2017; my last real commits are from that September.
 
-Last week I finally sat down to fix that. This post is about what I found, what I changed, and — the part that matters most for anyone with an rcicr analysis in a drawer — **what I deliberately did not change**.
+I did what I think most people in that position do: I hoped someone would take it up. In a limited sense, people did — a handful of good fixes arrived over the years, one in 2018, one in 2019, a couple in 2020, one in 2023. I'm grateful for every one. But a contributor is not a maintainer, and nobody ever took the package on. There is no mechanism in academic research software for handing something over. You publish the tool, people cite it, and then it is yours forever or it is nobody's.
+
+So it sat. In June 2021 CRAN archived it, and the stated reason wasn't a bug in the code — email to the maintainer was undeliverable. It was a university address I'd stopped having four years earlier. The package didn't break; the mailbox did. But the effect was that `install.packages('rcicr')` stopped working for everyone, and the README kept cheerfully telling people to run it.
+
+What changed this year isn't that I went back — I didn't, and I'm not going to. What changed is that the work became possible in the margins. Modernizing a nine-year-old package is weeks of unglamorous archaeology: reading your own old code, reproducing bug reports, working out why a backward-compatibility branch was never reachable. That is precisely the kind of work an AI assistant is good at, and with one I could do in evenings what would otherwise have needed a maintainer's full attention — which is the thing I no longer have to give.
+
+This post is about what I found, what I changed, and — the part that matters most for anyone with an rcicr analysis in a drawer — **what I deliberately did not change**. It also includes a correction I'd rather not be writing, which the same assistant is the reason I can write at all.
 
 ## The constraint that shaped everything
 
@@ -73,7 +79,17 @@ identical(unique(participants), sort(unique(participants)))   # TRUE means your 
 
 And if it comes back `FALSE`, the fix is a rename rather than a recomputation, because the mapping is exact — the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
 
-I want to be straight about the timeline: this sat in the code for nine years and none of the work described above found it. The test suite didn't, because the test that covered this function checked the *filenames* it produced and not which participant was inside each one — and it used IDs that were already in sorted order, where the bug is invisible. The release gate didn't, because it never exercised that path at all. It surfaced only when I went to add an unrelated feature to the same function and read the two lines next to each other. Both gaps are now closed: the regression test compares image contents against each participant's own data, and the release gate exercises the path with deliberately unsorted IDs and would fail if the pixels ever moved.
+The timeline is uncomfortably exact, and I'd rather set it out than have someone find it in the log.
+
+The feature that saves per-participant images was merged on **15 August 2017**. I merged it. My last substantive commits to the package are from **25 September 2017**, about six weeks later. So this went in essentially as I was walking out of the building, and then there was nobody there to find it. It is the clearest illustration I have of what an unmaintained package actually costs: not that it stops working, but that a small wrong thing inside it gets nine years to sit there looking fine.
+
+None of the work described above found it either. The test suite didn't, because the test covering this function asserted the *set of filenames* it produced and never which participant was inside each one — and it used IDs already in sorted order, where the bug cannot appear. The release gate didn't, because it never exercised that path at all.
+
+**It was the AI that found it.** Not by scanning for bugs — I hadn't asked it to look. It was starting on an unrelated feature in that same function, read the line that picks each participant's trials and the line that names their output file, and pointed out that the two use different orderings. Then it demonstrated it: two participants with opposite responses, presented out of order, each written image compared against that participant's own data. `ci_a.png` held b's classification image and `ci_b.png` held a's.
+
+I want to be careful about what that does and doesn't say. It is not that the machine is a better reviewer than a person. It is that nobody had read those two lines together in nine years, because there was nobody whose job it was, and reading old code carefully is exactly the labour that a maintainer stops having time for first. What the assistant supplied wasn't insight so much as attention — which turns out to be the scarce resource in unmaintained research software.
+
+Both gaps are now closed: the regression test compares image contents against each participant's own data, and the release gate exercises the path with deliberately unsorted IDs and fails if the pixels ever move.
 
 The honest lesson is the one in the section below about benchmarks. A green test suite is evidence about what you thought to check, and a test whose title says "writes one PNG per participant" while its assertions only count filenames is exactly the sort of thing that reads as covered and isn't.
 
@@ -109,7 +125,9 @@ I did this work with an AI coding assistant (Claude Code), and since that's now 
 
 **What worked well.** It was genuinely strong at the archaeology: reading nine-year-old code, reproducing bugs from issue reports, tracing why a backward-compatibility branch was unreachable. It wrote the bulk of the test suite. It was good at the kind of care this project needed — when replacing a deprecated random-number call, it checked that the replacement drew from the random stream *identically* rather than just from the same distribution, across 150 seed and probability combinations. The obvious modern replacement would have diverged and silently changed every infoVal computed from a given seed. I would not have thought to check that.
 
-It also found a genuinely subtle bug I'd never have gone looking for: R's `load()` assigns objects straight into the calling function's frame, so an object stored in a saved file can silently overwrite a *function argument* of the same name.
+It also found genuinely subtle bugs I'd never have gone looking for. One: R's `load()` assigns objects straight into the calling function's frame, so an object stored in a saved file can silently overwrite a *function argument* of the same name. The other is the mislabelling correction above — nine years old, invisible to a green test suite, surfaced because it happened to read two adjacent lines while working on something else.
+
+That second one is the honest case for doing this at all. I am not going to claim the assistant has judgement. But an unmaintained package doesn't usually fail from a lack of judgement; it fails from a lack of anyone reading it. Attention is the thing that ran out in 2017, and attention is the thing I could get back.
 
 **What didn't.** The 29× benchmark above was its number, and its error. Nothing would have caught it except re-measuring — the code was correct, the speedup was real, the figure was just measuring the wrong thing. It also initially misread the state of that 2023 pull request by reading the diff and not the review conversation underneath it, and told me the contributor's fix was broken when they'd already posted a working version.
 
