@@ -43,7 +43,10 @@ test_that("ncores = 1 and ncores = 2 produce identical stimuli and CIs", {
   expect_identical(serial$stimuli_params, parallel_env$stimuli_params)
   expect_identical(serial$p, parallel_env$p)
 
-  # ...but check the CI as well, since generateCI() has its own parallel loop.
+  # ...and check that a CI computed from either file matches. Note this does
+  # *not* exercise generateCI()'s own parallel loop: with no `participants` it
+  # takes the single-shot generateCINoise() path, which has no foreach in it.
+  # That loop is covered by test-participant-ci-equivalence.R.
   responses <- rep(c(1, -1), 10)
   ci_serial <- generateCI(1:20, responses, "base", serial_rdata, save_as_png = FALSE)
   ci_parallel <- generateCI(1:20, responses, "base", parallel_rdata, save_as_png = FALSE)
