@@ -4,7 +4,7 @@
 
 ---
 
-Nine years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. People have used it in published work.
+Twelve years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. It went up on CRAN in July 2014 and people have used it in published work since.
 
 Then I left academia. That was 2017; my last real commits are from that September.
 
@@ -12,7 +12,7 @@ I did what I think most people in that position do: I hoped someone would take i
 
 So it sat. In June 2021 CRAN archived it, and the stated reason wasn't a bug in the code — email to the maintainer was undeliverable. It was a university address I'd stopped having four years earlier. The package didn't break; the mailbox did. But the effect was that `install.packages('rcicr')` stopped working for everyone, and the README kept cheerfully telling people to run it.
 
-What changed this year isn't that I went back — I didn't, and I'm not going to. What changed is that the work became possible in the margins. Modernizing a nine-year-old package is weeks of unglamorous archaeology: reading your own old code, reproducing bug reports, working out why a backward-compatibility branch was never reachable. That is precisely the kind of work an AI assistant is good at, and with one I could do in evenings what would otherwise have needed a maintainer's full attention — which is the thing I no longer have to give.
+What changed this year isn't that I went back — I didn't, and I'm not going to. What changed is that the work became possible in the margins. Modernizing a twelve-year-old package is weeks of unglamorous archaeology: reading your own old code, reproducing bug reports, working out why a backward-compatibility branch was never reachable. That is precisely the kind of work an AI assistant is good at, and with one I could do in evenings what would otherwise have needed a maintainer's full attention — which is the thing I no longer have to give.
 
 This post is about what I found, what I changed, and — the part that matters most for anyone with an rcicr analysis in a drawer — **what I deliberately did not change**. It also includes a correction I'd rather not be writing, which the same assistant is the reason I can write at all.
 
@@ -123,7 +123,7 @@ Amdahl's law is not optional, and the contributor's original number was better t
 
 I did this work with an AI coding assistant (Claude Code), and since that's now a normal thing to do, it seems worth being specific about what it was and wasn't good for.
 
-**What worked well.** It was genuinely strong at the archaeology: reading nine-year-old code, reproducing bugs from issue reports, tracing why a backward-compatibility branch was unreachable. It wrote the bulk of the test suite. It was good at the kind of care this project needed — when replacing a deprecated random-number call, it checked that the replacement drew from the random stream *identically* rather than just from the same distribution, across 150 seed and probability combinations. The obvious modern replacement would have diverged and silently changed every infoVal computed from a given seed. I would not have thought to check that.
+**What worked well.** It was genuinely strong at the archaeology: reading twelve-year-old code, reproducing bugs from issue reports, tracing why a backward-compatibility branch was unreachable. It wrote the bulk of the test suite. It was good at the kind of care this project needed — when replacing a deprecated random-number call, it checked that the replacement drew from the random stream *identically* rather than just from the same distribution, across 150 seed and probability combinations. The obvious modern replacement would have diverged and silently changed every infoVal computed from a given seed. I would not have thought to check that.
 
 It also found genuinely subtle bugs I'd never have gone looking for. One: R's `load()` assigns objects straight into the calling function's frame, so an object stored in a saved file can silently overwrite a *function argument* of the same name. The other is the mislabelling correction above — nine years old, invisible to a green test suite, surfaced because it happened to read two adjacent lines while working on something else.
 
