@@ -124,20 +124,45 @@
 
 ## Reproducibility impact
 
-- **Individual-CI PNGs written by `generateCI(save_individual_cis = TRUE)` were labelled
-  with the wrong participant, and are now labelled correctly.** If you have such files on
-  disk from an earlier version, the images are fine but the names may not be — a figure you
-  published as participant `p2` may be someone else's classification image.
+- **Individual-CI PNGs written by `generateCI(save_individual_cis = TRUE)` carried the wrong
+  participant's name, and are now named correctly.** The per-participant loop selects each
+  participant's trials by *sorted* order and took the output filename from order of
+  *appearance*. Where those two orders differ, every file in `<targetpath>/individual_cis`
+  was given another participant's ID. The pixels were always right; only the names were
+  wrong.
 
-  **Whether your files are affected** takes two expressions on the `participants` vector you
-  passed, and no re-run:
+  **Affected:** a direct call to
+  `generateCI(participants = ..., save_individual_cis = TRUE)` where the `participants`
+  vector is not already in sorted order. That includes any data frame not sorted by
+  participant, `"p2"` appearing before `"p10"` (sorting is lexical), and numeric IDs
+  collected out of order. Such a call produced correct images under incorrect filenames, so
+  a figure published as participant `p2` may be someone else's classification image.
+
+  **Not affected — and this is the documented route, so most analyses are in this group:**
+
+  - **`batchGenerateCI()`, `batchGenerateCI2IFC()` and `generateCI2IFC()`.** None of them
+    exposes `participants` or `save_individual_cis` at all; they split the data themselves
+    and name each image from the grouping value directly, never reaching the code that was
+    wrong. Per-participant classification images computed the way the package documentation
+    has recommended since the CRAN era — `batchGenerateCI2IFC()`, and `batchGenerateCI()` in
+    the current vignette — were correctly labelled throughout.
+  - **Everything `generateCI()` returns.** The group classification image is a mean across
+    participants and so does not depend on their order; the per-participant stack, and every
+    z-map built from it, were internally consistent throughout. No returned value, and no
+    number in any `.Rdata` file, ever changed.
+  - **Any call that left `save_individual_cis` at its default `FALSE`.** No individual-CI
+    file was written, so there was nothing to mislabel.
+  - **Participants already in sorted order**, where the two orderings coincide.
+  - **Every CRAN release.** rcicr was on CRAN from July 2014 until it was archived in June
+    2021; the last release, 0.3.4.1 (July 2016), predates the `save_individual_cis` option
+    entirely. `install.packages('rcicr')` never produced a mislabelled file at any point.
+
+  **To tell whether your own output is affected**, two expressions on the vector you passed —
+  no re-run:
 
   ```r
   identical(unique(participants), sort(unique(participants)))   # TRUE = always correct
   ```
-
-  They differ when the data is not sorted by participant — including `"p2"` appearing before
-  `"p10"`, since sorting is lexical, and numeric IDs collected out of order.
 
   **Recovering existing output is a rename, not a re-run.** The mapping is exact: the file
   named `unique(participants)[i]` holds the classification image of
@@ -148,24 +173,11 @@
   new <- sort(unique(participants))   # the participants they actually hold
   ```
 
-  **Every release carries this defect** — 1.0.1 (January 2023) through 1.2.3 (August 2026).
-  It was introduced on 15 August 2017, in the commit that first made individual-CI saving
-  work at all, and the development branch has carried it continuously from that date to this
-  release. There were no releases at all between 2017 and 2023, so a copy obtained in those
-  years came from the branch and is affected too. **No CRAN release is affected**: the last
-  one, 0.3.4.1, predates the `save_individual_cis` option entirely.
-
-  **Nothing `generateCI()` returns was affected** — the group classification image is a mean
-  across participants, the per-participant stack and every z-map built from it were
-  internally consistent throughout, and analyses that never set `save_individual_cis = TRUE`
-  are untouched.
-
-  **The batch functions never wrote these files**, so per-participant analyses run the way
-  the documentation has always described them are unaffected. `batchGenerateCI()`,
-  `batchGenerateCI2IFC()` and `generateCI2IFC()` do not expose `participants` or
-  `save_individual_cis` at all: they split the data themselves and name each image from the
-  grouping value directly. Only a direct
-  `generateCI(participants = ..., save_individual_cis = TRUE)` call is affected.
+  **Every release from 1.0.1 (January 2023) through 1.2.3 (August 2026) carries the
+  defect**, as does every install from the development branch from 15 August 2017 onward —
+  the date it was introduced, in the commit that first made individual-CI saving work at
+  all. There were no releases between 2017 and 2023, so a copy obtained in those years came
+  from the branch and is affected too.
 
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
