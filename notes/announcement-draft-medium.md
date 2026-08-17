@@ -81,7 +81,7 @@ And if it comes back `FALSE`, the fix is a rename rather than a recomputation, b
 
 The timeline is uncomfortably exact, and I'd rather set it out than have someone find it in the log.
 
-The feature that saves per-participant images was merged on **15 August 2017**. I merged it. My last substantive commits to the package are from **25 September 2017**, about six weeks later. So this went in essentially as I was walking out of the building, and then there was nobody there to find it. It is the clearest illustration I have of what an unmaintained package actually costs: not that it stops working, but that a small wrong thing inside it gets nine years to sit there looking fine.
+The feature that saves per-participant images was contributed by someone else, as a pull request, and merged on **15 August 2017**. I merged it, which makes it mine — reviewing is the job, and I did not catch this. My last substantive commits to the package are from **25 September 2017**, about six weeks later. So it went in essentially as I was walking out of the building, and then there was nobody there to find it. It is the clearest illustration I have of what an unmaintained package actually costs: not that it stops working, but that a small wrong thing inside it gets nine years to sit there looking fine.
 
 None of the work described above found it either. The test suite didn't, because the test covering this function asserted the *set of filenames* it produced and never which participant was inside each one — and it used IDs already in sorted order, where the bug cannot appear. The release gate didn't, because it never exercised that path at all.
 
