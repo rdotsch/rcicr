@@ -1,34 +1,14 @@
 # CRAN comments
 
-## This submission replaces the pending 1.2.3
-
-1.2.3 is in your queue and has not been processed. **Please discard it and review this
-instead.** We found a correctness bug in 1.2.3 after submitting it, and would rather withdraw
-that tarball than have it become the reinstated version on CRAN. Apologies for the extra
-traffic; the reason is below and we would not resubmit for anything smaller.
-
-`generateCI(participants = ..., save_individual_cis = TRUE)` writes one classification image
-per participant. It selected each participant's trials in sorted order but took the output
-*filename* from the participants' order of appearance, so whenever those two orders differed
-every file was saved under another participant's identifier. The images were computed
-correctly; only the names were wrong.
-
-Sorting is lexical, so this is not an exotic case: participants labelled `p1 ... p12` in
-collection order sort as `p1, p10, p11, p12, p2, ...`, and in a twelve-participant test
-against the released 1.2.3, eleven of the twelve files carried the wrong participant's image.
-The defect dates to 2017 and is present in every GitHub release, but **it has never been on
-CRAN** — the archived version, 0.3.4.1 from 2016, predates the argument entirely.
-
-Because a researcher may have published a figure from one of these files, `NEWS.md` documents
-it under "Reproducibility impact" with the exact conditions, a two-step check that needs no
-re-run, and the mapping that recovers existing output by renaming rather than recomputing.
-
-Everything 1.2.3 answered from your review of 1.2.1 is unchanged and reproduced below.
-
 ## Response to your review of 1.2.1
 
-Thank you for the review. These were addressed in 1.2.3 and carry over unchanged into this
-submission.
+Thank you for the review, and apologies for the delay in returning it.
+
+**This is the resubmission answering that review**, and nothing has been sent to CRAN in
+between. Every point below was addressed shortly afterwards, in versions 1.2.2 and 1.2.3, but
+those were released only on GitHub and never submitted, so this is the first time the answers
+reach you. The version is 1.3.0 rather than 1.2.2 because development continued in the
+meantime; "Also new since 1.2.1" below lists what that added.
 
 1. **"Functions to" at the start of the description** — removed.
 2. **References in the description** — added, as
@@ -65,17 +45,37 @@ submission.
    the PNG device the function opens. The vignette records `par(no.readonly = TRUE)` in its
    setup chunk and restores it in a final chunk.
 
-## Also new since 1.2.3
+## Also new since 1.2.1
 
-* `plotZmap()` gains `pointsize` and `generateCI()` gains `zmappointsize`, so a decorated
-  z-map fits on an image too small for the default text size. Both default to the graphics
-  device's own `12`, so existing calls render exactly as before.
-* `plotZmap()` no longer depends on `raster`; its `...` arguments now reach
-  `graphics::image()`. `Imports` is one package shorter.
-* Several bug fixes that could only ever have produced errors, listed in `NEWS.md`.
+Development continued on GitHub while your review went unanswered. The full list is in
+`NEWS.md`; three items are worth naming here.
 
-The version is 1.3.0 rather than 1.2.4 because those two arguments are new and the z-map
-plotting path changed behaviour, not only because of the fix above.
+**A correctness fix that changes which file an output image is written to.**
+`generateCI(participants = ..., save_individual_cis = TRUE)` writes one classification image
+per participant. It selected each participant's trials in sorted order but took the output
+*filename* from the participants' order of appearance, so whenever those two orders differed
+every file was saved under another participant's identifier. The images were computed
+correctly; only the names were wrong.
+
+Sorting is lexical, so this is not an exotic case: participants labelled `p1 ... p12` in
+collection order sort as `p1, p10, p11, p12, p2, ...`, and in a twelve-participant test
+against the last GitHub release, eleven of the twelve files carried the wrong participant's
+image. The defect dates to 2017 and is in every GitHub release since, but **it has never been
+on CRAN** — the archived version, 0.3.4.1 from 2016, predates the argument entirely, so no
+CRAN user has ever received a mislabelled file. We mention it because a researcher installing
+from GitHub may have published such a figure; `NEWS.md` documents it under "Reproducibility
+impact" with the exact conditions, a check that needs no re-run, and the mapping that
+recovers existing output by renaming rather than recomputing.
+
+**Two new arguments.** `plotZmap()` gains `pointsize` and `generateCI()` gains
+`zmappointsize`, so a decorated z-map fits on an image too small for the default text size.
+Both default to the graphics device's own `12`, so existing calls render exactly as before.
+
+**One fewer dependency.** `plotZmap()` no longer uses `raster`; its `...` arguments now reach
+`graphics::image()`.
+
+The version is 1.3.0 rather than 1.2.2 because of those two new arguments and the changed
+z-map plotting path, not only because of the fix above.
 
 ## Submission type
 
