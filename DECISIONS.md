@@ -425,14 +425,15 @@ Cost nothing to verify: the gate reports `max|d| = 0` across 135 checks, because
 The `load()` guard snapshots a function's arguments and restores them after reading an
 `.Rdata` file. Once paths became required, `mget(names(formals()))` started aborting: it
 forces the promise, and a wrapper forwarding its own missing argument — `batchGenerateCI()`
-passing `targetpath = targetpath` — makes that promise a missing symbol.
+passing `targetpath = targetpath` — makes that promise a missing symbol. Its callers are now
+`computeInfoVal2IFC()` and `computeCumulativeCICorrelation()`; `generateCI()` instead loads
+into a private environment, so it has no frame to guard.
 
-The fix must not over-correct. `missing()` reports a *defaulted* argument missing too when
-the caller did not supply it, and skipping those would silently reopen the hazard the guard
-exists for: a default is the value the function goes on to use, and is exactly as
-replaceable by a field in the `.Rdata` as one passed explicitly. Dropping them removed the
-`step` guard in `computeCumulativeCICorrelation()` and the test caught it. The predicate is
-therefore *required* (no default in `formals()`) **and** absent — not absent alone.
+`missing()` reports a *defaulted* argument missing too when the caller did not supply it, and
+skipping those reopens the hazard: a default is the value the function uses, and is as
+replaceable by an `.Rdata` field as an explicit one. Dropping them removed the `step` guard
+in `computeCumulativeCICorrelation()` and the test caught it. The predicate is *required*
+(no default in `formals()`) **and** absent.
 
 ## Documentation
 
