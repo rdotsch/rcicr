@@ -135,6 +135,25 @@ pixel-for-pixel on a colleague's machine is not a different result. Every other 
 package writes comes straight from the pixel array via `png::writePNG()` and is unaffected.
 See `?plotZmap`.
 
+### Where the code lives
+
+Only the functions named above are exported; everything below is internal and split by
+concern rather than by which exported function happens to call it. The usual reason to look
+is `generateCI()`, whose body reads as one call per step — validate, load, select, compute,
+present, return — with the steps themselves in these files:
+
+| file | what is in it |
+|---|---|
+| `R/generateCI.R` | `generateCI()` itself, plus the presentation helpers `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
+| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
+| `R/ci-inputs.R` | turning the caller's arguments into a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
+| `R/ci-compute.R` | `computeParticipantCIs()` — one CI per participant, plus their average |
+| `R/zmap-compute.R` | `computeZmapQuick()` and `computeZmapTTest()` |
+| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
+
+The mask helpers live in `R/generateCI.R` rather than a file of their own because
+`plotZmap()` shares them — masking a z-map and masking a CI are the same operation.
+
 ## Anatomy of the `.Rdata` file
 
 `generateStimuli2IFC()` writes one file named
