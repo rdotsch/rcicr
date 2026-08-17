@@ -1,8 +1,34 @@
 # CRAN comments
 
+## This submission replaces the pending 1.2.3
+
+1.2.3 is in your queue and has not been processed. **Please discard it and review this
+instead.** We found a correctness bug in 1.2.3 after submitting it, and would rather withdraw
+that tarball than have it become the reinstated version on CRAN. Apologies for the extra
+traffic; the reason is below and we would not resubmit for anything smaller.
+
+`generateCI(participants = ..., save_individual_cis = TRUE)` writes one classification image
+per participant. It selected each participant's trials in sorted order but took the output
+*filename* from the participants' order of appearance, so whenever those two orders differed
+every file was saved under another participant's identifier. The images were computed
+correctly; only the names were wrong.
+
+Sorting is lexical, so this is not an exotic case: participants labelled `p1 ... p12` in
+collection order sort as `p1, p10, p11, p12, p2, ...`, and in a twelve-participant test
+against the released 1.2.3, eleven of the twelve files carried the wrong participant's image.
+The defect dates to 2017 and is present in every GitHub release, but **it has never been on
+CRAN** — the archived version, 0.3.4.1 from 2016, predates the argument entirely.
+
+Because a researcher may have published a figure from one of these files, `NEWS.md` documents
+it under "Reproducibility impact" with the exact conditions, a two-step check that needs no
+re-run, and the mapping that recovers existing output by renaming rather than recomputing.
+
+Everything 1.2.3 answered from your review of 1.2.1 is unchanged and reproduced below.
+
 ## Response to your review of 1.2.1
 
-Thank you for the review. This is 1.2.3, addressing each point.
+Thank you for the review. These were addressed in 1.2.3 and carry over unchanged into this
+submission.
 
 1. **"Functions to" at the start of the description** — removed.
 2. **References in the description** — added, as
@@ -39,6 +65,18 @@ Thank you for the review. This is 1.2.3, addressing each point.
    the PNG device the function opens. The vignette records `par(no.readonly = TRUE)` in its
    setup chunk and restores it in a final chunk.
 
+## Also new since 1.2.3
+
+* `plotZmap()` gains `pointsize` and `generateCI()` gains `zmappointsize`, so a decorated
+  z-map fits on an image too small for the default text size. Both default to the graphics
+  device's own `12`, so existing calls render exactly as before.
+* `plotZmap()` no longer depends on `raster`; its `...` arguments now reach
+  `graphics::image()`. `Imports` is one package shorter.
+* Several bug fixes that could only ever have produced errors, listed in `NEWS.md`.
+
+The version is 1.3.0 rather than 1.2.4 because those two arguments are new and the z-map
+plotting path changed behaviour, not only because of the fix above.
+
 ## Submission type
 
 Resubmission of a package archived on 2021-06-08, "as email to the maintainer was
@@ -46,24 +84,26 @@ undeliverable" — administrative, with no policy violation or code defect invol
 maintainer address `rdotsch@gmail.com` is current, monitored, and the address this is sent
 from.
 
-The archived CRAN version is 0.3.4.1. Versions 1.0.1 through 1.2.2 exist only as GitHub
+The archived CRAN version is 0.3.4.1. Versions 1.0.1 through 1.2.3 exist only as GitHub
 releases made while the package was off CRAN, so nothing is missing between them and this
 submission; `NEWS.md` carries their entries.
 
 ## Test environments
 
-* local: Ubuntu 24.04, R 4.3.3 — `R CMD check --as-cran`, with
-  `_R_CHECK_CRAN_INCOMING_=TRUE` and `_R_CHECK_CRAN_INCOMING_REMOTE_=TRUE`
+<!-- Step 2 of RELEASING.md: replace every line below with results from THIS release
+     branch before submitting. Do not carry over 1.2.3's results -- they describe a
+     different tree. -->
+
+* local: `R CMD check --as-cran` — PENDING
 * GitHub Actions: ubuntu-latest on R release and R devel, macos-latest and windows-latest
-  on R release — all green
-* win-builder, R-devel (2026-08-06 r90366 ucrt) — 1 NOTE, the incoming feasibility one below
-* win-builder, R-release (4.6.1) — 1 NOTE, the same one
-* R-hub, R-devel on Linux (r90185), Windows (r90366 ucrt) and macOS (r90190) —
-  `Status: OK` on all three, no notes
+  on R release — PENDING
+* win-builder, R-devel — PENDING
+* win-builder, R-release — PENDING
+* R-hub, R-devel on Linux, Windows and macOS — PENDING
 
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes.
+PENDING — expected: 0 errors | 0 warnings | 2 notes.
 
 **CRAN incoming feasibility** — `New submission`, `Package was archived on CRAN`, both
 expected for a reinstatement.
