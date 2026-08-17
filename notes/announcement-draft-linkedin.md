@@ -1,7 +1,8 @@
 # LinkedIn teaser — draft
 
-*Links to the Medium long-form piece. Keep it short; the caveats live in the article and
-in `NEWS.md`, which is where anyone with results in progress should be sent.*
+*Links to the long-form piece on the package site, not Medium: the post is hosted with the
+code so it stays with it. Keep this short; the caveats live in the article and in `NEWS.md`,
+which is where anyone with results in progress should be sent.*
 
 ---
 
@@ -37,7 +38,7 @@ The timing of that last one is the part I keep thinking about. The feature was a
 
 If you have an rcicr analysis in a drawer, the thing to read is `NEWS.md` — specifically the section called "Reproducibility impact."
 
-Full write-up: [link to Medium post]
+Full write-up: https://rdotsch.github.io/rcicr/articles/bringing-rcicr-back.html
 Package: https://github.com/rdotsch/rcicr
 
 #RStats #OpenScience #ReproducibleResearch #Psychology #Psychophysics

@@ -15,6 +15,21 @@ search:
     - AGENTS.html
     - CLAUDE.html
 
+# vignettes/articles/ holds writing about the package rather than instructions
+# for using it, so it gets its own menu entry instead of sitting among the
+# how-to vignettes. Those files are .Rbuildignore'd and never enter the tarball.
+articles:
+  - title: Get started
+    navbar: Get started
+    contents:
+      - getting-started
+      - reverse-correlation-walkthrough
+
+  - title: Posts
+    navbar: Posts
+    contents:
+      - articles/bringing-rcicr-back
+
 # Ordered so the top of the page is what people actually call. The section
 # titles match README.md -> "How it works"; keep them in step if either moves.
 reference:

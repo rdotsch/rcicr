@@ -1,7 +1,9 @@
-# Bringing rcicr back: modernizing a research package without changing anyone's results
-
-*A note on repairing an R package that people have published with — and on what an AI coding assistant was and wasn't good for.*
-
+---
+title: "Bringing rcicr back: modernizing a research package without changing anyone's results"
+description: >
+  Repairing an R package that people have published with, what was deliberately
+  left unchanged, a correction to individual-CI filenames, and an honest account
+  of where an AI coding assistant helped and where it was wrong.
 ---
 
 Twelve years ago I wrote [rcicr](https://github.com/rdotsch/rcicr), an R package for reverse correlation image classification — the psychophysics technique where you show people pairs of noise-masked faces, ask which one looks more *trustworthy* (or *criminal*, or *competent*), and reconstruct the mental image driving their choices from their responses alone. The first commit is dated 28 July 2014 and its message reads, in full, "V0.1 first commit". It was on CRAN three days later, and people have published with it since.
