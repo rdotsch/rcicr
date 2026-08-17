@@ -80,6 +80,37 @@ the masked-`targetci` fix is recorded. Someone who published a figure taken from
 finds different content under that name after this change — the *correct* content, but different.
 Only unsorted-order data is affected; sorted-order data is byte-identical.
 
+This entry carries more than the usual bug-fix note, because a researcher may be holding
+mislabelled figures right now and cannot tell from the package which case they are in. It must
+say three things a bare "fixed a labelling bug" would not:
+
+**Which versions produced wrong files.** Every GitHub release from v1.0.1 to v1.2.3 inclusive,
+and every install from `main` since 2017-08-15. Never any CRAN release — the last one, 0.3.4.1,
+predates the defect — so `install.packages('rcicr')` never produced a mislabelled file.
+
+**How to tell whether your own output is affected**, without re-running: compare
+`unique(participants)` against `sort(unique(participants))` on the vector you passed. Identical
+means every file was already correct. That is the whole test, and it is two expressions.
+
+**That the damage is recoverable by renaming, not re-running.** The mapping is deterministic:
+the file named `unique(participants)[i]` holds the CI of `sort(unique(participants))[i]`. This is
+not asserted — it is what the reproduction measured, where `unique` was `c("b","a")`, `sort(unique)`
+was `c("a","b")`, and `ci_b.png` held a's CI while `ci_a.png` held b's. So the entry gives the
+recovery directly:
+
+```r
+old <- unique(participants)         # the names the files were given
+new <- sort(unique(participants))   # the participants they actually hold
+```
+
+Group-level results, the returned `ci`, `pid_cis` and every z-map are unaffected, and the entry
+must say so plainly — otherwise a reader assumes their whole analysis is in question when only
+the individual-CI filenames ever were.
+
+Wording follows the house rules: no version number in a `##` heading (it breaks `R CMD check`'s
+news parsing), and largest-impact first within each section — this outranks the entries already
+under "Reproducibility impact", since it is the one that can invalidate a published figure.
+
 ## The step most likely to fail
 
 **The release gate will stay green, and that is not evidence.** `tools/compare-harness.R:246`
