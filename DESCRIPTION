@@ -1,7 +1,7 @@
 Package: rcicr
 Type: Package
 Title: Reverse-Correlation Image-Classification Toolbox
-Version: 1.3.0
+Version: 1.3.0.9000
 URL: https://rdotsch.github.io/rcicr/, https://github.com/rdotsch/rcicr
 BugReports: https://github.com/rdotsch/rcicr/issues
 Authors@R:
