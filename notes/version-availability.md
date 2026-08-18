@@ -103,7 +103,9 @@ depends entirely on when you asked.
 
 | you installed | `DESCRIPTION` said | affected |
 |---|---|---|
-| 2016-06-23 → 2017-08-15 | 0.4.0 | no |
+| 2016-06-23 → 2016-09-18 | **install fails** — repository created, no package code yet | — |
+| 2016-09-18 → 2016-10-26 | **install fails** — code imported from R-Forge, but under `pkg/`, so there is no `DESCRIPTION` at the root for `install_github()` to find | — |
+| 2016-10-26 → 2017-08-15 | 0.4.0 | no |
 | **2017-08-15 → 2021-09-23** | **0.4.0** | **yes** |
 | 2021-09-23 → 2022-09-02 | 0.4.1 | yes |
 | 2022-09-02 → 2023-01-13 | 1.0.0 | yes |
@@ -131,12 +133,24 @@ it.
 Two steps, neither needing a re-run. `NEWS.md` under "Reproducibility impact" has the full
 version.
 
-1. **Search your scripts for `save_individual_cis`.** If it does not appear, you never wrote
-   these files. If your per-participant images came from `batchGenerateCI()` or
-   `batchGenerateCI2IFC()`, likewise.
-2. **If it does appear**, check whether the `participants` vector was in lexical order:
+1. **Look for an `individual_cis/` directory in your output.** This is the definitive check,
+   because that directory is created by nothing else in the package. If it is not there, the
+   affected call never ran.
+
+   Prefer this over searching the script. `save_individual_cis` is the **sixth** formal of
+   `generateCI()`, so a call can set it positionally —
+   `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` — and write those files without the
+   argument name appearing anywhere. A `do.call()` with an assembled argument list hides it the
+   same way. Grepping for the name and finding nothing does *not* clear an analysis; finding no
+   `individual_cis/` directory does.
+
+2. **If the directory is there**, check whether the `participants` vector was in lexical order:
    `identical(unique(participants), sort(unique(participants)))`. `TRUE` means the names were
    correct.
+
+If the output is long gone and only the script survives, search it for `individual` rather than
+the full argument name, and read any `generateCI()` call with six or more positional arguments
+by hand.
 
 Recovery is a rename, not a recomputation: the file named `unique(participants)[i]` holds the
 image of `sort(unique(participants))[i]`.
