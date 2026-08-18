@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rcicr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.3.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Maintaining the repository</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/main/MAINTENANCE.md" class="external-link"><code>MAINTENANCE.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/v1.3.0/MAINTENANCE.md" class="external-link"><code>MAINTENANCE.md</code></a></small>
     </div>
 
 <div id="maintaining-the-repository" class="section level1">
@@ -57,7 +57,7 @@
 <td>stock R-hub v2, <code>workflow_dispatch</code> only.</td>
 </tr><tr><td><code>lint.yaml</code></td>
 <td>
-<code>lintr::lint_package()</code>, which must come back clean — <code>.lintr</code> holds the config and an empty <code>exclusions:</code>. A required check (below); <code>lintr</code> is pinned there, and <code>tools/regenerate-lintr-baseline.R</code> rebuilds <code>exclusions:</code> if ever needed.</td>
+<code><a href="https://lintr.r-lib.org/reference/lint.html" class="external-link">lintr::lint_package()</a></code>, which must come back clean — <code>.lintr</code> holds the config and an empty <code>exclusions:</code>. A required check (below); <code>lintr</code> is pinned there, and <code>tools/regenerate-lintr-baseline.R</code> rebuilds <code>exclusions:</code> if ever needed.</td>
 </tr></tbody></table><p><strong>The required status checks on <code>main</code></strong> are <code>compare</code>, <code>ubuntu-latest (release)</code>, <code>ubuntu-latest (devel)</code>, <code>macos-latest (release)</code>, <code>windows-latest (release)</code> and <code>lint</code> — query <code>gh api repos/rdotsch/rcicr/rules/branches/main</code> for the live list rather than trust a count here, since it drifts by one every time a check is added or removed. They are enforced by a <strong>ruleset</strong>, not classic branch protection, so <code>gh api repos/rdotsch/rcicr/branches/main</code> reports no required contexts and looks unconfigured. <code>lint</code> was added last, once the maintainer added its check <em>name</em> to the ruleset by hand via GitHub → Settings → Rules → Rulesets: adding a name to the ruleset is a repo-settings write agents here cannot make, so a newly added workflow’s check reports on PRs but does not block one until the maintainer does this — a UI edit rather than a hand-built API payload, since a malformed <code>PUT</code> risks dropping unrelated ruleset fields.</p>
 <p>Two consequences worth knowing before editing a workflow. <strong>Required checks are matched by name</strong>, so rows can be added to a matrix freely but never renamed — a renamed check reads as pending forever and blocks every PR. And <strong>the gate must never become a <code>paths:</code> filter</strong>: a skipped required check never reports at all, which GitHub also reads as pending forever, making every docs-only PR unmergeable. Instead the job always runs and exits early on an allowlist of inert paths, which is in the workflow; anything unrecognised runs the gate.</p>
 <p><code>.pre-commit-config.yaml</code> drives pre-commit.ci with minimal language-agnostic hooks only. <code>lintr</code> runs as <code>lint.yaml</code> rather than a pre-commit hook — <code>object_usage_linter</code> needs the package <em>installed</em>, not just parsed, which a pre-commit.ci hook would carry on every commit. <strong><code>styler</code> is a tool, not a hook</strong> — as a hook it needs an R toolchain, and <code>tidyverse_style()</code> rewrites single quotes to double, reversing what <code>.lintr</code> records by disabling <code>quotes_linter</code>. Scope it to <code>I(c("spaces", "indention"))</code>, in its own commit; #255 tracks the rest.</p>

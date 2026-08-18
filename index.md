@@ -38,6 +38,24 @@ version that computed it, and any release that changes numeric output
 says so in [`NEWS.md`](https://rdotsch.github.io/rcicr/NEWS.md) under
 “Reproducibility impact”.
 
+> **If you saved per-participant classification images before 1.3.0,
+> check them.**
+> `generateCI(participants = ..., save_individual_cis = TRUE)` wrote
+> each image under the wrong participant’s filename whenever the
+> participant IDs were not in lexical order — which includes the
+> ordinary case of `p1 ... p10` in collection order. The images were
+> correct; only the names were wrong, and correcting them is a rename
+> rather than a re-run. See
+> [`NEWS.md`](https://rdotsch.github.io/rcicr/NEWS.md) under
+> “Reproducibility impact” for the check, and [which version you
+> had](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
+> if you need to work out what a stored analysis actually ran.
+> [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md),
+> [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+> and
+> [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
+> were never affected.
+
 > **`install.packages('rcicr')` does not currently work.** The package
 > was archived on CRAN on 2021-06-08 because email to the maintainer had
 > become undeliverable — an old university address that stopped working.

@@ -18,7 +18,7 @@ them.
 | `test-coverage.yaml` | Codecov; needs a `CODECOV_TOKEN`. `codecov.yml` sets lenient thresholds because coverage is deliberately partial. |
 | `pkgdown.yaml` | builds the site on every PR, deploys on push to `main`. |
 | `rhub.yaml` | stock R-hub v2, `workflow_dispatch` only. |
-| `lint.yaml` | `lintr::lint_package()`, which must come back clean — `.lintr` holds the config and an empty `exclusions:`. A required check (below); `lintr` is pinned there, and `tools/regenerate-lintr-baseline.R` rebuilds `exclusions:` if ever needed. |
+| `lint.yaml` | [`lintr::lint_package()`](https://lintr.r-lib.org/reference/lint.html), which must come back clean — `.lintr` holds the config and an empty `exclusions:`. A required check (below); `lintr` is pinned there, and `tools/regenerate-lintr-baseline.R` rebuilds `exclusions:` if ever needed. |
 
 **The required status checks on `main`** are `compare`,
 `ubuntu-latest (release)`, `ubuntu-latest (devel)`,

@@ -25162,6 +25162,6 @@ generateNoisePattern(256)
 #> [1] "sinusoid"
 #> 
 #> $generator_version
-#> [1] ‘1.2.3.9000’
+#> [1] ‘1.3.0’
 #> 
 ```
