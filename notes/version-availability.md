@@ -198,6 +198,23 @@ extracted. Individual files are named `ci_<participant>.png`, or
 `antici_<participant>.png` for an antiCI, so the naming survives even if the folder was
 renamed or its contents moved.
 
+**Telling one folder of PNGs from another.** Every other writer in the package puts its images
+*flat* into the path you gave it — `individual_cis/` is the only subdirectory any of them
+creates, which is what makes its presence such a clean signal. The filenames differ too:
+
+| what wrote it | where | filename |
+|---|---|---|
+| `generateCI(save_individual_cis = TRUE)` | `<targetpath>/individual_cis/` | `ci_<participant>.png` — bare participant id |
+| `generateCI(save_as_png = TRUE)`, `generateCI2IFC()` | `<targetpath>/` | `ci_<filename>.png`, defaulting to the base image name |
+| `batchGenerateCI()`, `batchGenerateCI2IFC()` | `<targetpath>/` | `ci_<baseimage>_<by>_<unit>.png` |
+| `autoscale(save_as_pngs = TRUE)` | `<targetpath>/` | `<name>_autoscaled.png` |
+| `plotZmap()`, `generateCI(zmap = TRUE)` | `<zmaptargetpath>/` | `<filename>.png` |
+| `generateStimuli2IFC()` | `<stimulus_path>/` | `<label>_<base>_<seed>_<NNNNN>_ori.png` and `_inv.png` |
+
+An `antiCI` swaps the `ci_` prefix for `antici_` throughout. So a bare `ci_p3.png` came from the
+affected call, while `ci_face_participant_p3.png` came from a batch function and is fine — the
+batch name always carries the base image and the grouping column, because it is built from them.
+
 **You still have the script but not the output.** Read every `generateCI()` call that passes
 participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on
 its own: it is the sixth formal, so `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)`
