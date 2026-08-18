@@ -90,29 +90,25 @@ submission; `NEWS.md` carries their entries.
 
 ## Test environments
 
-<!-- Step 2 of RELEASING.md: win-builder and the local line are still outstanding and
-     must be filled in from THIS release branch before submitting. -->
-
-* GitHub Actions: ubuntu-latest on R release and R devel, macos-latest and windows-latest
-  on R release — all green
+* win-builder, R-release 4.6.1 (2026-06-24 ucrt) — 1 NOTE, the incoming feasibility one below
+* win-builder, R-devel (2026-08-15 r90413 ucrt) — 1 NOTE, the same one
 * R-hub, R-devel on Linux (2026-06-21 r90185), macOS (2026-06-24 r90190) and Windows
   (2026-08-15 r90413 ucrt) — `Status: OK` on all three, no notes
-* local: `R CMD check --as-cran` — PENDING
-* win-builder, R-devel — PENDING
-* win-builder, R-release — PENDING
+* GitHub Actions: ubuntu-latest on R release and R devel, macos-latest and windows-latest
+  on R release — all green
 
 ## R CMD check results
 
-PENDING — expected: 0 errors | 0 warnings | 2 notes.
+0 errors | 0 warnings | 1 note, on both win-builder runs.
 
-**CRAN incoming feasibility** — `New submission`, `Package was archived on CRAN`, both
-expected for a reinstatement.
-win-builder flags four spellings in `DESCRIPTION` — `Brinkman`, `Dotsch` and `Todorov` are
-the author surnames from the references you asked us to add, and `psychophysical` is the
-standard adjective for the field the method comes from.
+R-hub reports `Status: OK` with no notes on all three platforms. It does not run the
+incoming feasibility check, so that is agreement with win-builder rather than a discrepancy.
 
-**Future file timestamps** — our build machine cannot reach the time service the check
-uses. Local only; it does not reproduce on win-builder.
+**CRAN incoming feasibility** — `New submission` and `Package was archived on CRAN`, both
+expected for a reinstatement, alongside the CRAN db override recording the 2021 archival.
+The same NOTE lists four possibly misspelled words in `DESCRIPTION`: `Brinkman`, `Dotsch`
+and `Todorov` are the author surnames from the references you asked us to add, and
+`psychophysical` is the standard adjective for the field the method comes from.
 
 ## Downstream dependencies
 

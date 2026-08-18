@@ -1,4 +1,4 @@
-# rcicr 1.3.0 (2026-08-17)
+# rcicr 1.3.0 (2026-08-18)
 
 ## Behaviour changes
 
