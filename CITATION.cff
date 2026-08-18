@@ -8,7 +8,7 @@ message: 'To cite package "rcicr" in publications use:'
 type: software
 license: GPL-2.0-only
 title: 'rcicr: Reverse-Correlation Image-Classification Toolbox'
-version: 1.3.0
+version: 1.3.0.9000
 abstract: Generate stimuli and analyze data of reverse correlation image classification
   experiments (psychophysical tasks aimed at visualizing cognitive mental representations
   of faces). For the method see Dotsch and Todorov (2012) <https://doi.org/10.1177/1948550611430272>;
@@ -25,7 +25,7 @@ preferred-citation:
     given-names: Ron
     email: rdotsch@gmail.com
   year: '2026'
-  notes: R package version 1.3.0
+  notes: R package version 1.3.0.9000
   url: https://github.com/rdotsch/rcicr
 repository-code: https://github.com/rdotsch/rcicr
 url: https://rdotsch.github.io/rcicr/
