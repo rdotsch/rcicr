@@ -166,27 +166,60 @@ it.
 
 ## How to check your own analysis
 
-Two steps, neither needing a re-run. `NEWS.md` under "Reproducibility impact" has the full
-version.
+The affected call needs **both** things: a `participants` vector *and* `save_individual_cis =
+TRUE`. So the question to answer is:
 
-1. **Look for an `individual_cis/` directory in your output.** This is the definitive check,
-   because that directory is created by nothing else in the package. If it is not there, the
-   affected call never ran.
+> **Did a single `generateCI()` call produce one classification image per participant?**
 
-   Prefer this over searching the script. `save_individual_cis` is the **sixth** formal of
-   `generateCI()`, so a call can set it positionally —
-   `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` — and write those files without the
-   argument name appearing anywhere. A `do.call()` with an assembled argument list hides it the
-   same way. Grepping for the name and finding nothing does *not* clear an analysis; finding no
-   `individual_cis/` directory does.
+If the answer is no, nothing here touches you, and there are several ways to reach it that do
+not depend on any file surviving.
 
-2. **If the directory is there**, check whether the `participants` vector was in lexical order:
-   `identical(unique(participants), sort(unique(participants)))`. `TRUE` means the names were
-   correct.
+**You did not make per-participant images at all.** A group-level classification image is
+unaffected — it is a mean across participants and does not depend on their order.
 
-If the output is long gone and only the script survives, search it for `individual` rather than
-the full argument name, and read any `generateCI()` call with six or more positional arguments
-by hand.
+**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()`
+cannot reach the defect: they call `generateCI()` once per group with `participants = NA`, so
+the loop never runs, and they name each image from the group value they are iterating over.
+This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()`
+does not expose either argument.
+
+Checked across the whole affected range, not only the latest release: `batchGenerateCI()`
+passes `participants = NA` explicitly in every version from 2017-08-15 to 1.2.3, and neither
+batch function mentions `save_individual_cis` in any of them. Measured too — run against the
+released 1.2.3 with participants `p1 … p12` in collection order, where the direct call gets 11
+of 12 filenames wrong, both batch functions got 0 of 12 wrong and created no `individual_cis`
+directory at all.
+
+**You still have the output.** The images live in a directory called `individual_cis`, and
+nothing else in the package writes there — the only such write is in `computeParticipantCIs()`,
+reachable only from `generateCI()`. That has held in every version: exactly one file contains
+the write, `R/generateCI.R` from 2017 through 1.2.3 and `R/ci-compute.R` after the loop was
+extracted. Individual files are named `ci_<participant>.png`, or
+`antici_<participant>.png` for an antiCI, so the naming survives even if the folder was
+renamed or its contents moved.
+
+**You still have the script but not the output.** Read every `generateCI()` call that passes
+participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on
+its own: it is the sixth formal, so `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)`
+sets it positionally, and `do.call()` with an assembled list hides it too. Search for
+`individual`, then read by hand any call passing six or more arguments positionally.
+
+**You still have the data but neither.** Recompute with 1.3.0 and compare. This is the only
+fully conclusive answer, and it hands you corrected output as a side effect: the responses and
+the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given
+them.
+
+**You have only the published figure.** Then it cannot be verified directly, and the ordering
+question below is the best available evidence.
+
+### If it was the affected call: was the ordering safe?
+
+```r
+identical(unique(participants), sort(unique(participants)))   # TRUE = the names were correct
+```
+
+"Sorted" means *lexically* sorted for text labels, per the table earlier: sorting a data frame
+by a `"p1"`-style column does not make it safe once you reach ten participants.
 
 Recovery is a rename, not a recomputation: the file named `unique(participants)[i]` holds the
 image of `sort(unique(participants))[i]`.
