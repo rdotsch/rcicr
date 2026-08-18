@@ -2,7 +2,8 @@
 
 Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed
 in 1.3.0 (issue #261). The short answer is that **the version number alone does not tell you** —
-for anything installed from GitHub before 2026, the date matters more than the version.
+for anything installed from GitHub before 2026, the date and the *branch* matter more than the
+version.
 
 ## What the bug was
 
@@ -61,9 +62,9 @@ Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`
 | 0.3.2 | 2015-07-20 | CRAN | no |
 | 0.3.2.1 | 2016-02-05 | CRAN | no |
 | **0.3.4.1** | **2016-07-13** | **CRAN — last release, archived 2021-06-08** | **no** |
-| 0.4.0 | branch only, from 2016-10-26 | GitHub branch | **only from 2017-08-15** (see below) |
-| 0.4.1 | branch only, from 2021-09-23 | GitHub branch | yes |
-| 1.0.0 | branch only, from 2022-09-02 | GitHub branch | yes |
+| 0.4.0 | `development` branch only, from 2016-10-26 | GitHub, `ref = 'development'` | **only from 2017-08-15** (see below) |
+| 0.4.1 | `development` from 2021-09-23; default branch from 2021-12-28 | GitHub | yes |
+| 1.0.0 | default branch, from 2022-09-02 | GitHub | yes |
 | 1.0.1 | commit 2023-01-13, tagged 2026-07-28 | GitHub tag | yes |
 | 1.1.0 | 2026-07-27 | GitHub release | yes |
 | 1.2.0 | 2026-07-28 | GitHub release | yes |
@@ -72,10 +73,10 @@ Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`
 | 1.2.3 | 2026-08-08 | GitHub release | yes |
 | **1.3.0** | **2026-08-18** | **GitHub release + CRAN submission** | **fixed** |
 
-**`0.4.0` is the trap.** That version string sat on the development branch from 2016-10-26 to
+**`0.4.0` is the trap.** That version string sat on the `development` branch from 2016-10-26 to
 2021-09-23 — five years — and the bug entered partway through, on 2017-08-15. Someone who
-reports "I used rcicr 0.4.0" cannot be classified from the version alone; only the install date
-separates clean from affected.
+reports "I used rcicr 0.4.0" cannot be classified from the version alone; the install date
+separates clean from affected, and the branch decides whether they could have had it at all.
 
 ## What "the latest version" gave you, by date
 
@@ -98,20 +99,49 @@ there. The last CRAN release predates the `save_individual_cis` option by thirte
 
 ### From the GitHub default branch — `install_github('rdotsch/rcicr')`
 
-This is the one that bites: it installs whatever is at the tip of the branch, so what you got
-depends entirely on when you asked.
+**Until 2021-12-28 this did not work at all**, and that is the single most important row in
+this note. The default branch was `master`, which still carried the R-Forge layout: the
+package sat under `pkg/` with no `DESCRIPTION` at the repository root, so `install_github()`
+had nothing to install. `master` also stopped receiving code after 2016-10-21 and was frozen
+at a README edit on 2017-01-31 — **it never contained the bug**.
 
-| you installed | `DESCRIPTION` said | affected |
+All development happened on the `development` branch, which is where the bug lived from
+2017-08-15. On 2021-12-28 that branch became the default (`69e3933`, "Removed old pkg master,
+development is the new master"), and only from then does a plain `install_github()` return
+affected code.
+
+| you installed | result | affected |
 |---|---|---|
 | 2016-06-23 → 2016-09-18 | **install fails** — repository created, no package code yet | — |
-| 2016-09-18 → 2016-10-26 | **install fails** — code imported from R-Forge, but under `pkg/`, so there is no `DESCRIPTION` at the root for `install_github()` to find | — |
+| 2016-09-18 → 2021-12-28 | **install fails** — default branch is `master`; package under `pkg/`, no root `DESCRIPTION` | — |
+| 2021-12-28 → 2022-09-02 | 0.4.1 | **yes** |
+| 2022-09-02 → 2023-01-13 | 1.0.0 | **yes** |
+| 2023-01-13 → 2026-07-26 | 1.0.1 | **yes** |
+| 2026-07-26 → 2026-08-17 | 1.x.y or 1.x.y.9000 | **yes** |
+| 2026-08-17 → now | 1.2.3.9000, then 1.3.0 | **fixed** |
+
+### From the development branch — `install_github('rdotsch/rcicr', ref = 'development')`
+
+Before December 2021 this was the only way to get a working install from GitHub, and it is
+what the README of the time told people to use — with a warning attached:
+
+> **Using the dev version (AT YOUR OWN RISK!)** … We do not recommend that you use the
+> development version for analyses meant for publication. Please wait until we make a new
+> version available on CRAN for that.
+
+So anyone who took the bug from GitHub before December 2021 had to ask for this branch
+deliberately, having been told not to publish from it. That warning stood from 2017-01-09 —
+seven months before the bug landed — until it was removed on 2022-09-02. It stopped being
+followable advice in June 2021, when CRAN archived the package and there was no longer a CRAN
+version to wait for.
+
+| you installed | you got | affected |
+|---|---|---|
+| before 2016-10-26 | **install fails** — no root `DESCRIPTION` yet | — |
 | 2016-10-26 → 2017-08-15 | 0.4.0 | no |
 | **2017-08-15 → 2021-09-23** | **0.4.0** | **yes** |
-| 2021-09-23 → 2022-09-02 | 0.4.1 | yes |
-| 2022-09-02 → 2023-01-13 | 1.0.0 | yes |
-| 2023-01-13 → 2026-07-26 | 1.0.1 | yes |
-| 2026-07-26 → 2026-08-17 | 1.x.y or 1.x.y.9000 | yes |
-| 2026-08-17 → now | 1.2.3.9000, then 1.3.0 | **fixed** |
+| 2021-09-23 → 2021-12-28 | 0.4.1 | **yes** |
+| after 2021-12-28 | the branch became the default; see the table above | **yes** |
 
 ### From the latest GitHub release — `install_github('rdotsch/rcicr@*release')`
 
