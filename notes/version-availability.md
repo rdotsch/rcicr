@@ -61,7 +61,8 @@ Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`
 | 0.3.0 | 2015-01-23 | CRAN | no |
 | 0.3.2 | 2015-07-20 | CRAN | no |
 | 0.3.2.1 | 2016-02-05 | CRAN | no |
-| **0.3.4.1** | **2016-07-13** | **CRAN — last release, archived 2021-06-08** | **no** |
+| **0.3.4.1** | **2016-07-13** | **CRAN — last release there, archived 2021-06-08** | **no** |
+| 0.3.4.2 | 2016-09-22 | GitHub `master` only, under `pkg/` — never on CRAN | no |
 | 0.4.0 | `development` branch only, from 2016-10-26 | GitHub, `ref = 'development'` | **only from 2017-08-15** (see below) |
 | 0.4.1 | `development` from 2021-09-23; default branch from 2021-12-28 | GitHub | yes |
 | 1.0.0 | default branch, from 2022-09-02 | GitHub | yes |
@@ -92,7 +93,7 @@ separates clean from affected, and the branch decides whether they could have ha
 | 2015-07-20 → 2016-02-05 | 0.3.2 | no |
 | 2016-02-05 → 2016-07-13 | 0.3.2.1 | no |
 | 2016-07-13 → 2021-06-08 | 0.3.4.1 | no |
-| 2021-06-08 → now | **nothing** — archived, the install fails | — |
+| 2021-06-08 → now | **nothing** — archived, so `install.packages('rcicr')` fails. The tarball stays downloadable from [CRAN's Archive](https://cran.r-project.org/src/contrib/Archive/rcicr/), and 0.3.4.1 from there is clean | no |
 
 **No CRAN user has ever received a mislabelled file**, at any point in the package's seven years
 there. The last CRAN release predates the `save_individual_cis` option by thirteen months.
@@ -113,7 +114,7 @@ affected code.
 | you installed | result | affected |
 |---|---|---|
 | 2016-06-23 → 2016-09-18 | **install fails** — repository created, no package code yet | — |
-| 2016-09-18 → 2021-12-28 | **install fails** — default branch is `master`; package under `pkg/`, no root `DESCRIPTION` | — |
+| 2016-09-18 → 2021-12-28 | **install fails** — default branch is `master`; package under `pkg/`, no root `DESCRIPTION`. `install_github('rdotsch/rcicr', subdir = 'pkg')` did work, giving 0.3.4.2 | no |
 | 2021-12-28 → 2022-09-02 | 0.4.1 | **yes** |
 | 2022-09-02 → 2023-01-13 | 1.0.0 | **yes** |
 | 2023-01-13 → 2026-07-26 | 1.0.1 | **yes** |
@@ -131,9 +132,14 @@ what the README of the time told people to use — with a warning attached:
 
 So anyone who took the bug from GitHub before December 2021 had to ask for this branch
 deliberately, having been told not to publish from it. That warning stood from 2017-01-09 —
-seven months before the bug landed — until it was removed on 2022-09-02. It stopped being
-followable advice in June 2021, when CRAN archived the package and there was no longer a CRAN
-version to wait for.
+seven months before the bug landed — until it was removed on 2022-09-02.
+
+Half of it expired in June 2021: CRAN archived the package, so "wait until we make a new version
+available on CRAN" pointed at a release that was never coming. Unaffected code remained
+obtainable, though — the archived 0.3.4.1 tarball is still downloadable from
+[CRAN's Archive](https://cran.r-project.org/src/contrib/Archive/rcicr/), and
+`install_github('rdotsch/rcicr', subdir = 'pkg')` returned the clean 0.3.4.2 on `master`. What
+was unavailable after June 2021 was a *maintained* clean version, not a clean version.
 
 | you installed | you got | affected |
 |---|---|---|
