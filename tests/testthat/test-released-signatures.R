@@ -10,18 +10,19 @@
 # Two baselines, because arguments have been appended across several releases
 # and they catch different things:
 #
-#   1.2.3  the latest release, and the one doing the work. Its argument list
-#          contains v1.0.1's as a prefix -- measured, for all 17 exported
-#          functions -- so it pins everything the older baseline does *and* the
-#          arguments added in 1.1.0-1.2.3. Checking only v1.0.1 would let a new
-#          formal be inserted after its arguments but before the later ones,
-#          passing while breaking every script written against 1.1.0 or newer.
+#   1.3.0  the latest release, and the one doing the work. Its argument list
+#          contains v1.0.1's as a prefix, and 1.2.3's too -- measured, for every
+#          function both fixtures name -- so it pins everything the older
+#          baseline does *and* the arguments added in 1.1.0-1.3.0. Checking only
+#          v1.0.1 would let a new formal be inserted after its arguments but
+#          before the later ones, passing while breaking every script written
+#          against 1.1.0 or newer.
 #   1.0.1  a floor, and never regenerated. It is the CRAN-archived release most
 #          stored scripts were written against, and the fixture nobody is
 #          tempted to refresh when a check goes red.
 #
-# Refresh the 1.2.3 fixture at release time, renaming it for the new version;
-# leave the 1.0.1 one alone. 1.2.2's breaking change removed argument
+# Refresh the latest-release fixture at release time, renaming it for the new
+# version and deleting the one it replaces; leave the 1.0.1 one alone. 1.2.2's breaking change removed argument
 # *defaults*, which does not move a positional binding and so does not appear
 # here -- names are what a positional call depends on.
 #
@@ -37,7 +38,7 @@
 # reordered signature reaches a user.
 
 test_that("every exported function still starts with its released arguments", {
-  baselines <- c("1.0.1", "1.2.3")
+  baselines <- c("1.0.1", "1.3.0")
   exports <- sort(getNamespaceExports("rcicr"))
   compared <- 0
 
