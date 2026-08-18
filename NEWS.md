@@ -208,6 +208,12 @@
   all. There were no releases between 2017 and 2023, so a copy obtained in those years came
   from the branch and is affected too.
 
+  If you need to work out which version a stored analysis actually used, the version number
+  alone will not tell you: `0.4.0` sat on the development branch for five years, with the
+  defect entering partway through. A note listing every release, its date, whether it came
+  from CRAN or GitHub, and what "the latest version" gave you in each window is at
+  <https://github.com/rdotsch/rcicr/blob/main/notes/version-availability.md>.
+
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
   the old result — it carried no information — but code that checked for `NA` on the returned
