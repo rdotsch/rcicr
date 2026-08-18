@@ -228,7 +228,7 @@
   alone will not tell you: `0.4.0` sat on the development branch for five years, with the
   defect entering partway through. A note listing every release, its date, whether it came
   from CRAN or GitHub, and what "the latest version" gave you in each window is at
-  <https://github.com/rdotsch/rcicr/blob/main/notes/version-availability.md>.
+  <https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md>.
 
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
