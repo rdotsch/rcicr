@@ -486,3 +486,47 @@ test_that("individual CIs are named for the participant they were computed from"
   # the two CIs happened to be alike.
   expect_gt(max(abs(truth$a - truth$b)), 0.05)
 })
+
+test_that("the batch functions label each CI with the participant it was computed from", {
+  # generateCI(participants=, save_individual_cis=TRUE) mislabelled its output
+  # (the test above). batchGenerateCI() and batchGenerateCI2IFC() wrap
+  # generateCI(), so "they are unaffected" is a claim about the wrapper, not an
+  # obvious fact -- and NEWS.md and the CRAN submission both make it. It holds
+  # because each wrapper calls generateCI() once per group with participants =
+  # NA, so the mislabelling loop never runs, and takes the filename from the
+  # group value it is already iterating over. This pins that.
+  skip_if_not_installed("withr")
+
+  dir <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir, img_size = 32, n_trials = 12)
+
+  # Appearance order p1, p2, p10 against lexical order p1, p10, p2 -- the same
+  # disagreement that breaks the direct call.
+  participants <- rep(c("p1", "p2", "p10"), each = 4)
+  responses <- c(rep(1, 4), rep(-1, 4), rep(c(1, -1), 2))
+  data <- data.frame(stim = 1:12, resp = responses, pid = participants,
+                     stringsAsFactors = FALSE)
+
+  truth <- lapply(c(p1 = "p1", p2 = "p2", p10 = "p10"), function(p) {
+    rows <- which(participants == p)
+    generateCI(rows, responses[rows], "base", rdata, save_as_png = FALSE)$ci
+  })
+
+  # Not vacuous: the three must actually differ, or any labelling would pass.
+  expect_gt(max(abs(truth$p1 - truth$p2)), 0.01)
+  expect_gt(max(abs(truth$p1 - truth$p10)), 0.01)
+
+  for (fn in list(batchGenerateCI, batchGenerateCI2IFC)) {
+    cis <- suppressWarnings(fn(data = data, by = "pid", stimuli = "stim",
+                               responses = "resp", baseimage = "base",
+                               rdata = rdata, save_as_png = FALSE))
+    for (nm in names(cis)) {
+      named <- sub("^.*_pid_", "", nm)
+      dists <- vapply(truth, function(t) max(abs(cis[[nm]]$ci - t)), numeric(1))
+      expect_identical(
+        names(which.min(dists)), named,
+        info = paste0(nm, " holds ", names(which.min(dists)), "'s CI")
+      )
+    }
+  }
+})

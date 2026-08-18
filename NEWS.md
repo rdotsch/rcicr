@@ -1,4 +1,4 @@
-# rcicr (development version)
+# rcicr 1.3.0 (2026-08-18)
 
 ## Behaviour changes
 
@@ -176,22 +176,29 @@
   **If you have published from individual-CI images, check your analysis scripts.** Two
   steps, neither of which requires re-running anything.
 
-  *Step 1 — did you use the affected call at all?* Search your scripts for
-  `save_individual_cis`. If it does not appear, you never wrote these files and nothing here
-  concerns you. If your per-participant images came from `batchGenerateCI()` or
+  *Step 1 — did you use the affected call at all?* Look for an `individual_cis/` directory
+  in your output. Nothing else in the package creates it, so if it is not there the affected
+  call never ran. If your per-participant images came from `batchGenerateCI()` or
   `batchGenerateCI2IFC()`, the same applies: those cannot reach the defect.
 
-  *Step 2 — if it does appear, was your `participants` vector in sorted order?* Note "sorted"
-  means lexically sorted for text labels, per the table above — sorting your data frame by a
-  `"p1"`-style column does not make it safe once you reach ten participants. Where you still
-  have the vector, one expression settles it:
+  Check the output rather than the script. `save_individual_cis` is the sixth formal of
+  `generateCI()`, so a call can set it positionally —
+  `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` — and write those files without
+  the argument name appearing anywhere; `do.call()` hides it the same way. Searching your
+  scripts and finding nothing does not clear an analysis. Finding no `individual_cis/` does.
+
+  *Step 2 — if the directory is there, was your `participants` vector in sorted order?*
+  Note "sorted" means lexically sorted for text labels, per the table above — sorting your
+  data frame by a `"p1"`-style column does not make it safe once you reach ten participants.
+  Where you still have the vector, one expression settles it:
 
   ```r
   identical(unique(participants), sort(unique(participants)))   # TRUE = names were correct
   ```
 
-  Reading the script is the better first step, because most people no longer have the R
-  session — and step 1 alone clears the majority of analyses.
+  If the output is long gone and only the script survives, search it for `individual` rather
+  than the full argument name, and read by hand any `generateCI()` call passing six or more
+  arguments positionally.
 
   **Recovering existing output is a rename, not a re-run.** The mapping is exact: the file
   named `unique(participants)[i]` holds the classification image of
@@ -207,6 +214,21 @@
   the date it was introduced, in the commit that first made individual-CI saving work at
   all. There were no releases between 2017 and 2023, so a copy obtained in those years came
   from the branch and is affected too.
+
+  **Getting it from GitHub took a deliberate step, until December 2021.** The default branch
+  was `master`, which carried an older repository layout with no `DESCRIPTION` at its root, so
+  `install_github('rdotsch/rcicr')` did not install anything at all — it failed. The affected
+  code was on the `development` branch, reached only by asking for it:
+  `install_github('rdotsch/rcicr', ref = 'development')`, which the README of the time
+  labelled "AT YOUR OWN RISK" and specifically advised against for analyses meant for
+  publication. `development` became the default branch on 2021-12-28, and from then a plain
+  install returns affected code.
+
+  If you need to work out which version a stored analysis actually used, the version number
+  alone will not tell you: `0.4.0` sat on the development branch for five years, with the
+  defect entering partway through. A note listing every release, its date, whether it came
+  from CRAN or GitHub, and what "the latest version" gave you in each window is at
+  <https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md>.
 
 - **`computeCumulativeCICorrelation()` with a masked `targetci`** now returns numeric
   correlations where it previously returned all-`NA`. No existing analysis could have used
