@@ -523,8 +523,10 @@ test_that("the batch functions label each CI with the participant it was compute
     for (nm in names(cis)) {
       named <- sub("^.*_pid_", "", nm)
       dists <- vapply(truth, function(t) max(abs(cis[[nm]]$ci - t)), numeric(1))
-      expect_identical(names(which.min(dists)), named,
-        info = paste0(nm, " holds ", names(which.min(dists)), "'s CI"))
+      expect_identical(
+        names(which.min(dists)), named,
+        info = paste0(nm, " holds ", names(which.min(dists)), "'s CI")
+      )
     }
   }
 })
