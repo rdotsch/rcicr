@@ -215,6 +215,15 @@
   all. There were no releases between 2017 and 2023, so a copy obtained in those years came
   from the branch and is affected too.
 
+  **Getting it from GitHub took a deliberate step, until December 2021.** The default branch
+  was `master`, which carried an older repository layout with no `DESCRIPTION` at its root, so
+  `install_github('rdotsch/rcicr')` did not install anything at all — it failed. The affected
+  code was on the `development` branch, reached only by asking for it:
+  `install_github('rdotsch/rcicr', ref = 'development')`, which the README of the time
+  labelled "AT YOUR OWN RISK" and specifically advised against for analyses meant for
+  publication. `development` became the default branch on 2021-12-28, and from then a plain
+  install returns affected code.
+
   If you need to work out which version a stored analysis actually used, the version number
   alone will not tell you: `0.4.0` sat on the development branch for five years, with the
   defect entering partway through. A note listing every release, its date, whether it came
