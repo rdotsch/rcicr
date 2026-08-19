@@ -9,9 +9,11 @@
 # therefore analysing a permuted pairing.
 #
 # This script measures the consequence, because the advisory makes a claim
-# about it that is easy to get wrong in either direction -- "it only adds
-# noise" and "it could have produced spurious findings" are both wrong as
-# stated. Four designs, at the alpha = 0.05 level:
+# about it and the two summaries it invites -- "it only adds noise" and "it
+# could have produced spurious findings" -- are each half right: the aggregate
+# false positive rate is untouched while individual verdicts flip both ways,
+# and in some designs the shuffle raises apparent support rather than only
+# destroying it. Four designs, at the alpha = 0.05 level:
 #
 #   A  covariate unrelated to the order participants were labelled in
 #      (the ordinary individual-differences design)
@@ -174,29 +176,45 @@ run_trend <- function(n, trend, scheme, nsim = NSIM) {
 }
 gridD <- expand.grid(n = c(12, 20, 30, 50), trend = c(0.3, 0.6, 1.0),
                      scheme = c("blocked", "alternating"), stringsAsFactors = FALSE)
-print(do.call(rbind, Map(function(n, t, s) run_trend(n, t, s),
-                         gridD$n, gridD$trend, gridD$scheme)),
-      row.names = FALSE, digits = 3)
+resD <- do.call(rbind, Map(function(n, t, s) run_trend(n, t, s),
+                           gridD$n, gridD$trend, gridD$scheme))
+print(resD, row.names = FALSE, digits = 3)
+
+# Every figure below is computed from this run, so it stays true when nsim
+# is overridden rather than quoting the seeded 20,000-iteration defaults.
+nullrows <- nullcells
+dc <- range(nullrows$decisions_changed)
+alt <- resD[resD$assignment == "alternating", ]
+amp <- alt[alt$amplified, ]
+worst <- alt[which.max(alt$mislabelled_predicted - alt$correct_predicted), ]
+ord <- resA[resA$rho == 0.5 & resA$n == 50, ]
 
 cat("\n=== Summary ===\n")
-cat("1. No true association -> the false positive RATE is unchanged. Rejection\n")
-cat("   stays at alpha in A, B and C, at every n; permuting one side of a pair\n")
-cat("   independent of the other leaves it independent, so this is structural.\n")
-cat("   Individual verdicts still flip: decisions_changed is .075 to .099 in\n")
-cat("   the null cells, about half of them a rejection the correct labels would\n")
-cat("   not have given. An unchanged rate is not a clean bill for one dataset.\n")
-cat("2. A true association, ordinary design -> it is destroyed. Detection\n")
-cat("   collapses to alpha; the runs that fail to reject -- the other ~95% at\n")
-cat("   rho = 0.5, N = 50 -- are the false negatives.\n")
+cat(sprintf(paste0(
+  "1. No true association -> the false positive RATE is unchanged. Rejection\n",
+  "   stays at alpha in A, B and C, at every n; permuting one side of a pair\n",
+  "   independent of the other leaves it independent, so this is structural.\n",
+  "   Individual verdicts still flip: decisions_changed runs %.3f to %.3f in\n",
+  "   the null cells, about half of them a rejection the correct labels would\n",
+  "   not have given. An unchanged rate is not a clean bill for one dataset.\n"),
+  dc[1], dc[2]))
+cat(sprintf(paste0(
+  "2. A true association, ordinary design -> it is destroyed. Detection\n",
+  "   collapses to alpha (%.3f at rho = 0.5, N = 50, against %.3f correctly\n",
+  "   labelled); the %.0f%% of runs that fail to reject are the false negatives.\n"),
+  ord$detected_affected, ord$detected_correct, 100 * (1 - ord$detected_affected)))
 cat("3. A covariate tracking labelling order -> the residual can be either\n")
 cat("   sign: an effect can survive attenuated, or come back reversed.\n")
-cat("4. D shows the direction depends on the design, and cuts both ways. With\n")
-cat("   contiguous condition blocks the correct pairing already maximises the\n")
-cat("   trend contrast, so the permutation can only reduce it. With alternating\n")
-cat("   assignment the correct pairing balances the trend across conditions and\n")
-cat("   the permutation unbalances it, RAISING hypothesis-consistent rejections\n")
-cat("   above the correctly labelled analysis in 8 of 12 cells -- .010 to .042\n")
-cat("   at n = 12, trend = 1.0. So the shuffle can hand back apparent support.\n")
+cat(sprintf(paste0(
+  "4. D shows the direction depends on the design, and cuts both ways. With\n",
+  "   contiguous condition blocks the correct pairing already maximises the\n",
+  "   trend contrast, so the permutation can only reduce it. With alternating\n",
+  "   assignment the correct pairing balances the trend across conditions and\n",
+  "   the permutation unbalances it, RAISING hypothesis-consistent rejections\n",
+  "   above the correctly labelled analysis in %d of %d cells -- %.3f to %.3f\n",
+  "   at n = %d, trend = %.1f. So the shuffle can hand back apparent support.\n"),
+  nrow(amp), nrow(alt), worst$correct_predicted, worst$mislabelled_predicted,
+  worst$n, worst$trend))
 cat("   The sign it pushes is set by the ID and assignment schemes, and nothing\n")
 cat("   in lexical sorting refers to a hypothesis -- but how often that sign\n")
 cat("   agrees with a prediction is NOT measured here: every cell fixes trend\n")

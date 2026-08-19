@@ -247,10 +247,12 @@ image of `sort(unique(participants))[i]`.
 
 ## What it did to a second-stage analysis
 
-The advisory tells readers that the mislabelling costs effects rather than inventing them.
-That is a claim about a *permutation*, which is easy to get wrong in either direction — "it
-only adds noise" and "it could have produced spurious findings" are both wrong as stated — so
-it is measured rather than argued. `tools/simulate-mislabelling-impact.R` runs 20,000
+The advisory tells readers that the mislabelling mostly costs effects rather than inventing
+them. That is a claim about a *permutation*, and the two summaries it invites — "it only adds
+noise" and "it could have produced spurious findings" — are each half right in ways that matter,
+so it is measured rather than argued. What comes out is that the aggregate false positive rate
+is untouched while individual verdicts flip both ways, and that in some designs the shuffle
+raises apparent support rather than only destroying it. `tools/simulate-mislabelling-impact.R` runs 20,000
 iterations per cell at α = 0.05, seeded; the numbers below are its output.
 
 The design simulated is the one that matters: raters judge each individual CI, and those
@@ -341,7 +343,7 @@ trend evenly across conditions, leaving 1.00 of contrast, and the permutation ra
 | 12 | 1.0 | alternating | 0.010 | 0.042 | **raised** |
 | 50 | 0.3 | alternating | 0.025 | 0.028 | **raised** |
 
-**So the mislabelling can hand back apparent support**, in 8 of the 12 alternating cells, and by
+**So the mislabelling can hand back apparent support**, in 9 of the 12 alternating cells, and by
 a factor of four at N = 12, trend = 1.0. An earlier draft of this note said it never could; that
 was an artifact of testing only the blocked scheme, and it was wrong.
 

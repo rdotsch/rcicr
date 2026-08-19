@@ -93,7 +93,7 @@ significant in the wrong direction against 0.1% in the right one.
 support**, so this is not a case of noise only. If conditions were assigned in alternating
 order, the correct pairing spreads that trend evenly across them and the permutation unbalances
 it: hypothesis-consistent significant results rise *above* what the correctly labelled analysis
-gives, in 8 of the 12 cells tested and by a factor of four at N = 12. Contiguous condition
+gives, in 9 of the 12 cells tested and by a factor of four at N = 12. Contiguous condition
 blocks behave the opposite way, the trend already being maximally aligned before the shuffle,
 which is why both are simulated.
 
