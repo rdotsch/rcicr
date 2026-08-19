@@ -52,13 +52,27 @@ related back to the source participant's condition, score or group. That join wa
 a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it
 was reported as.
 
-The usual consequence is that a real association is weakened or lost, the pairing carrying it
-having been scrambled. It cannot be relied on, though: the relabelling is one fixed permutation
-— appearance order mapped onto sorted order — rather than random noise, so wherever participant
-IDs line up with something else, it can also leave an association looking intact, reverse it,
-or produce one that was never there. IDs assigned in collection order while conditions ran in
-blocks will do it, as will an ID that tracks testing date or cohort. No direction can be
-assumed, which is why both outcomes need the same treatment:
+On average it costs an effect rather than inventing one. Pairing each image with another
+participant's data destroys the association that was there, and in the ordinary case — where
+the order participants happened to be labelled in has nothing to do with the variable being
+related to their images — the expected result is attenuation toward zero, roughly in proportion
+to how much of the pairing was scrambled. The likeliest casualty is a real finding that did not
+appear, in a study that was then filed away rather than published.
+
+That is an expectation across analyses, not a property of any one of them. The relabelling is a
+single fixed permutation — appearance order mapped onto sorted order — so a given study gets one
+particular rearrangement rather than an average over many, and its result can land either side
+of the true one. Where the labelling does track something the departure can be large: IDs
+assigned in collection order while conditions ran in blocks, or an ID encoding testing date or
+cohort, can leave an association looking intact, reverse it, or produce one that was never
+there.
+
+What the permutation cannot do is favour the hypothesis under test. It falls out of sorting
+participant identifiers lexically, which knows nothing about the direction anyone predicted, so
+an affected analysis is not tilted toward the result its authors expected — and where there was
+no association to begin with, a shuffled pairing is no likelier to yield a significant one than
+the original. This is not a mechanism that would have filled the literature with false
+positives. It is also no reason to leave an affected analysis standing:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to
