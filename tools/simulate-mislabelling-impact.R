@@ -133,7 +133,18 @@ if (ids_mode) {
     stop("need at least two distinct participant identifiers, got ",
          length(unique(ids)), call. = FALSE)
   }
-  rho <- if (length(args) >= 3 && !is.na(args[3])) as.numeric(args[3]) else 0.5
+  # Same treatment as nsim, and for the same reason: the advisory hands this
+  # argument to readers, so a bad value must be refused by name rather than
+  # becoming NaN inside sqrt(1 - rho^2) and dying in cor.test() after the
+  # pairing results have already been printed.
+  rho <- 0.5
+  if (length(args) >= 3 && !is.na(args[3])) {
+    rho <- suppressWarnings(as.numeric(args[3]))
+    if (is.na(rho) || !is.finite(rho) || rho < -1 || rho > 1) {
+      stop("rho must be a correlation between -1 and 1; got ",
+           sQuote(args[3]), call. = FALSE)
+    }
+  }
 
   # Type decides the sort, so it cannot be guessed. R sorts a numeric
   # participants vector numerically, leaving 1:12 unaffected, while the
