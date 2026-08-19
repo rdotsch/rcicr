@@ -106,8 +106,22 @@ ids <- unique(participants)
 mean(sort(ids) == ids)   # share of files that kept their own participant
 ```
 
-That is the left-hand column of the table above, so it places your own analysis on it directly.
-`1` means the filenames were correct.
+`1` means the filenames were correct. Otherwise that number is the left-hand column of the table
+above, which gets you close — but only close. It fixes the average attenuation and not the whole
+distribution, so two orderings that keep the same share can still differ, by around 0.03 in
+detection rate in the cases measured, according to whether the displaced files swap in pairs or
+run in longer cycles. The rows are worked examples rather than a lookup.
+
+For the exact figure, the script will run your own ordering:
+
+```sh
+Rscript tools/simulate-mislabelling-impact.R --ids p1,p2,p10,p3 0.5
+```
+
+listing the identifiers in the order you passed them to `generateCI()` (or giving a file with
+one per line), and an effect size to assume. It reports what a correctly labelled analysis of
+that size would have detected, what yours would have, and how often the two reach different
+verdicts.
 
 **The exception is a covariate that tracks labelling order** — IDs assigned in collection order
 while conditions ran in blocks, or an ID encoding testing date or cohort. There the permutation

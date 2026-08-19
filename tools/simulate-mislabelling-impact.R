@@ -29,8 +29,19 @@
 # Usage: Rscript tools/simulate-mislabelling-impact.R [nsim]
 # Cost is nsim x cells x two tests per iteration; pass a smaller nsim to
 # iterate, and expect the wall clock to scale from there.
+#
+# To measure one specific analysis rather than read a row off scenario E:
+#   Rscript tools/simulate-mislabelling-impact.R --ids p1,p2,p10,p3 [rho] [nsim]
+#   Rscript tools/simulate-mislabelling-impact.R --ids ids.txt [rho] [nsim]
+# The identifiers go in the order they were passed to generateCI(). This runs
+# the caller's own permutation, which E's rows cannot substitute for: the share
+# of correctly paired files fixes the average attenuation but not the whole
+# distribution, and two orderings sharing that share can differ by around 0.03
+# in detection depending on their cycle structure.
 
-nsim_arg <- commandArgs(trailingOnly = TRUE)[1]
+args <- commandArgs(trailingOnly = TRUE)
+ids_mode <- length(args) >= 2 && args[1] == "--ids"
+nsim_arg <- if (ids_mode) args[4] else args[1]
 NSIM <- if (is.na(nsim_arg)) 20000L else as.integer(nsim_arg)
 ALPHA <- 0.05
 set.seed(20260819)
@@ -44,6 +55,38 @@ mislabel_perm <- function(ids) {
 }
 
 cat("nsim =", NSIM, " alpha =", ALPHA, "\n\n")
+
+# Reader-facing mode: measure the permutation one real analysis actually got,
+# rather than approximating it from the share of correctly paired files.
+if (ids_mode) {
+  raw <- args[2]
+  ids <- if (file.exists(raw)) trimws(readLines(raw)) else strsplit(raw, ",")[[1]]
+  ids <- trimws(ids)
+  ids <- ids[nzchar(ids)]
+  rho <- if (length(args) >= 3 && !is.na(args[3])) as.numeric(args[3]) else 0.5
+  n <- length(unique(ids))
+  perm <- mislabel_perm(ids)
+  kept <- mean(perm == seq_len(n))
+  cat(sprintf("%d participants, %.3f of files correctly paired\n", n, kept))
+  if (kept == 1) {
+    cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")
+  } else {
+    hit_c <- hit_a <- logical(NSIM)
+    for (i in seq_len(NSIM)) {
+      x <- rnorm(n)
+      y <- rho * x + sqrt(1 - rho^2) * rnorm(n)
+      hit_c[i] <- cor.test(x, y)$p.value < ALPHA
+      hit_a[i] <- cor.test(x, y[perm])$p.value < ALPHA
+    }
+    cat(sprintf(paste0(
+      "At rho = %.2f, a correctly labelled analysis of this size detects the\n",
+      "association %.3f of the time; with this ordering's mislabelling, %.3f.\n",
+      "Verdicts differ on %.3f of datasets.\n"),
+      rho, mean(hit_c), mean(hit_a), mean(hit_c != hit_a)))
+  }
+  quit(save = "no")
+}
+
 
 # Not monotone in n: the count turns on where the identifiers change width,
 # which is why 99-101 keep eleven and 120 is back to one. Readers are given
@@ -230,7 +273,10 @@ cat("  for comparison, the p1..pN scheme used above keeps",
 # is overridden rather than quoting the seeded 20,000-iteration defaults.
 nullrows <- nullcells
 dc <- range(nullrows$decisions_changed)
-share_to_sig <- nullrows$flip_to_sig / nullrows$decisions_changed
+# A cell with no discordant decisions -- reachable at small nsim, which the
+# header encourages -- would give 0/0 and print NA% for the whole range.
+observed <- nullrows[nullrows$decisions_changed > 0, ]
+share_to_sig <- observed$flip_to_sig / observed$decisions_changed
 alt <- resD[resD$assignment == "alternating", ]
 amp <- alt[alt$amplified, ]
 worst <- alt[which.max(alt$mislabelled_predicted - alt$correct_predicted), ]
@@ -242,10 +288,15 @@ cat(sprintf(paste0(
   "   stays at alpha in A, B and C, at every n; permuting one side of a pair\n",
   "   independent of the other leaves it independent, so this is structural.\n",
   "   Individual verdicts still flip: decisions_changed runs %.3f to %.3f in\n",
-  "   the null cells, of which %.0f%% to %.0f%% are rejections the correct labels\n",
-  "   would not have given. An unchanged rate is not a clean bill for one\n",
-  "   dataset.\n"),
-  dc[1], dc[2], 100 * min(share_to_sig), 100 * max(share_to_sig)))
+  "   the null cells%s.\n",
+  "   An unchanged rate is not a clean bill for one dataset.\n"),
+  dc[1], dc[2],
+  if (length(share_to_sig) == 0) {
+    ", none of which changed any decision at this nsim"
+  } else {
+    sprintf(", of which %.0f%% to %.0f%% are rejections\n   the correct labels would not have given",
+            100 * min(share_to_sig), 100 * max(share_to_sig))
+  }))
 mild <- resE[which.max(resE$share_correctly_paired), ]
 cat(sprintf(paste0(
   "2. A true association -> weakened in proportion to how scrambled the\n",

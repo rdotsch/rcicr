@@ -320,7 +320,13 @@ correct labels detect 97% of the time:
 | `p1 … p50` in collection order | 0.02 | 0.047 |
 
 Detection tracks the share still correctly paired almost one-for-one until the pairing is nearly
-gone. Zero-padded identifiers entered with a couple of participants out of sequence are
+gone. That share is not the whole story, though: it fixes the average attenuation while the
+permutation's cycle structure moves the variance, so two orderings keeping the same share can
+differ in detection. Measured at N = 50, ρ = 0.5, disjoint transpositions against a single long
+cycle of the same length: 0.817 vs 0.826 at 0.80 kept, 0.563 vs 0.557 at 0.60, 0.127 vs 0.102 at
+0.20, and 0.076 vs 0.049 with nothing kept. A few points, growing at the severe end — enough that
+the table is a set of worked examples rather than a lookup, which is why the script takes
+`--ids` and runs a caller's actual ordering. Zero-padded identifiers entered with a couple of participants out of sequence are
 therefore affected but barely dented; the `p1 … pN` scheme is the case where the association
 disappears. That is the file-drawer case, and it is the common labelling scheme — but it is the
 severe end of the range, not the whole of it.
