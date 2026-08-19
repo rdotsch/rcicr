@@ -45,13 +45,19 @@ image for `sort(unique(participants))[i]`, so this recovers the correct filename
 recomputing anything (two steps, so the rename doesn't overwrite a file it hasn't renamed yet):
 
 ```r
+targetpath <- "."  # set to whatever targetpath you originally passed to generateCI()
+
 old <- unique(participants)         # names the files currently carry
 new <- sort(unique(participants))   # participants they actually contain
 
-file.rename(file.path("individual_cis", paste0("ci_", old, ".png")),
-            file.path("individual_cis", paste0("ci_", old, ".tmp")))
-file.rename(file.path("individual_cis", paste0("ci_", old, ".tmp")),
-            file.path("individual_cis", paste0("ci_", new, ".png")))
+dir <- file.path(targetpath, "individual_cis")
+step1 <- file.rename(file.path(dir, paste0("ci_", old, ".png")),
+                      file.path(dir, paste0("ci_", old, ".tmp")))
+if (!all(step1)) stop("Rename failed for: ", paste(old[!step1], collapse = ", "))
+
+step2 <- file.rename(file.path(dir, paste0("ci_", old, ".tmp")),
+                      file.path(dir, paste0("ci_", new, ".png")))
+if (!all(step2)) stop("Rename failed for: ", paste(old[!step2], collapse = ", "))
 ```
 
 (This assumes `sort()` orders your IDs the same way the original run did — always true on the
