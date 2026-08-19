@@ -67,4 +67,4 @@ responsibilities and no time for something that felt part of a previous life. Re
 decided to see if AI would be able to maintain the package, and this week it found this bug.
 I'm glad it did, and I consider it the right and scientific thing to do to fix it and announce
 it publicly. I don't have the time to do more than that, so if you're still active in this
-field and would like to maintain this package, I'd gladly hand over the reins. 
+field and would like to maintain this package, I'd gladly hand over the reins.
