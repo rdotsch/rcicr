@@ -2,16 +2,16 @@
 title: "Individual-CI filename advisory (rcicr 0.4.0–1.2.3)"
 ---
 
+This page is an advisory about a bug in rcicr that could save an individual classification
+image under another participant's filename. It sets out which versions carried it, how to tell
+whether your own stored results are affected, what it does to an analysis, and how to repair
+affected output.
+
 **The bug is in versions 0.4.0 through 1.2.3 — 0.4.0 only if you installed it on or after
 2017-08-15, see "Which versions were affected" below — all of them GitHub-only, and is fixed in
 [1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). It never reached CRAN: the
 last CRAN release, 0.3.4.1, predates the option involved by thirteen months, so nothing
-installed with `install.packages('rcicr')` was ever affected.** It is published so that
-anyone who finds it later can work out whether their own stored results are affected.
-
-This page is the canonical version of this advisory and is kept up to date. Announcements
-sent by email are frozen at the moment they were sent and link here for the recovery
-procedure; where one disagrees with this page, this page is right.
+installed with `install.packages('rcicr')` was ever affected.**
 
 ## This is the bug
 
