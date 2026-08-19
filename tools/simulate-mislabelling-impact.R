@@ -13,7 +13,7 @@
 # could have produced spurious findings" -- are each half right: the aggregate
 # false positive rate is untouched while individual verdicts flip both ways,
 # and in some designs the shuffle raises apparent support rather than only
-# destroying it. Four designs, at the alpha = 0.05 level:
+# destroying it. Five designs, at the alpha = 0.05 level:
 #
 #   A  covariate unrelated to the order participants were labelled in
 #      (the ordinary individual-differences design)
@@ -23,6 +23,8 @@
 #      condition blocked by collection order -- the case for asking whether
 #      the permutation can produce a hypothesis-consistent result rather
 #      than only destroy one
+#   E  how the damage scales with how far the identifiers departed from
+#      sorted order -- A to D fix that at close to the worst case
 #
 # Usage: Rscript tools/simulate-mislabelling-impact.R [nsim]
 # Cost is nsim x cells x two tests per iteration; pass a smaller nsim to
@@ -180,6 +182,45 @@ resD <- do.call(rbind, Map(function(n, t, s) run_trend(n, t, s),
                            gridD$n, gridD$trend, gridD$scheme))
 print(resD, row.names = FALSE, digits = 3)
 
+
+# E: how much damage depends on how far out of order the identifiers were.
+# A and C hard-code "p1 ... pN" in collection order, which past ten
+# participants is close to the worst case -- exactly one file keeps its own
+# participant. An affected study can be far milder: zero-padded identifiers
+# entered with a couple of participants out of sequence swap only those, and
+# attenuate an association rather than destroying it. E sweeps that severity
+# using the real mechanism -- build an appearance order, let mislabel_perm()
+# derive the permutation from it -- rather than by constructing permutations
+# directly.
+cat("\n=== E: severity as a function of how out-of-order the IDs were ===\n")
+run_severity <- function(n, rho, swaps, nsim = NSIM) {
+  ids <- sprintf("p%02d", seq_len(n))          # zero-padded: sorts as collected
+  appearance <- ids
+  if (swaps > 0) {                             # displace `swaps` adjacent pairs
+    at <- seq(1, by = 2, length.out = swaps)
+    appearance[c(rbind(at, at + 1))] <- appearance[c(rbind(at + 1, at))]
+  }
+  perm <- mislabel_perm(appearance)
+  kept <- mean(perm == seq_len(n))
+  hit_c <- hit_a <- logical(nsim)
+  for (i in seq_len(nsim)) {
+    x <- rnorm(n)
+    y <- rho * x + sqrt(1 - rho^2) * rnorm(n)
+    hit_c[i] <- cor.test(x, y)$p.value < ALPHA
+    hit_a[i] <- cor.test(x, y[perm])$p.value < ALPHA
+  }
+  data.frame(n = n, rho = rho, pairs_swapped = swaps,
+             share_correctly_paired = kept,
+             detected_correct = mean(hit_c), detected_affected = mean(hit_a))
+}
+gridE <- expand.grid(n = 50, rho = 0.5, swaps = c(1, 2, 5, 10, 25))
+resE <- do.call(rbind, Map(function(n, r, s) run_severity(n, r, s),
+                           gridE$n, gridE$rho, gridE$swaps))
+print(resE, row.names = FALSE, digits = 3)
+cat("  for comparison, the p1..pN scheme used above keeps",
+    sprintf("%.2f", mean(mislabel_perm(paste0("p", 1:50)) == 1:50)),
+    "of 50 correctly paired\n")
+
 # Every figure below is computed from this run, so it stays true when nsim
 # is overridden rather than quoting the seeded 20,000-iteration defaults.
 nullrows <- nullcells
@@ -198,11 +239,16 @@ cat(sprintf(paste0(
   "   the null cells, about half of them a rejection the correct labels would\n",
   "   not have given. An unchanged rate is not a clean bill for one dataset.\n"),
   dc[1], dc[2]))
+mild <- resE[which.max(resE$share_correctly_paired), ]
 cat(sprintf(paste0(
-  "2. A true association, ordinary design -> it is destroyed. Detection\n",
-  "   collapses to alpha (%.3f at rho = 0.5, N = 50, against %.3f correctly\n",
-  "   labelled); the %.0f%% of runs that fail to reject are the false negatives.\n"),
-  ord$detected_affected, ord$detected_correct, 100 * (1 - ord$detected_affected)))
+  "2. A true association -> weakened in proportion to how scrambled the\n",
+  "   ordering was. With p1..pN in collection order detection collapses to\n",
+  "   alpha (%.3f at rho = 0.5, N = 50, against %.3f correctly labelled) and\n",
+  "   the %.0f%% of runs that fail to reject are false negatives -- but that\n",
+  "   scheme is close to the worst case. E: with %.0f%% of pairs still correct,\n",
+  "   detection is %.3f. Severity is the reader's own ordering, not a constant.\n"),
+  ord$detected_affected, ord$detected_correct, 100 * (1 - ord$detected_affected),
+  100 * mild$share_correctly_paired, mild$detected_affected))
 cat("3. A covariate tracking labelling order -> the residual can be either\n")
 cat("   sign: an effect can survive attenuated, or come back reversed.\n")
 cat(sprintf(paste0(

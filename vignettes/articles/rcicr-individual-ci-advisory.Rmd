@@ -73,14 +73,27 @@ particular study, and a result that only became significant on mislabelled files
 that case.
 
 **Where there was a real association and the labelling order has nothing to do with the variable
-joined to the images — the ordinary case — it is destroyed rather than weakened.** Almost
-nothing survives the permutation: with IDs `p1 … pN`, exactly one file still carries its own
-participant at N = 12, 20, 30 and 50. A correlation of 0.5 that a 50-participant study detects
-97% of the time is detected 5% of the time once mislabelled, and that surviving 5% splits evenly
-between positive and negative, which is what chance looks like. The other 95% are false
-negatives — a real association, sitting in the data, that the analysis can no longer see. That
-is why the likeliest casualty is a real finding that did not appear, in a study filed away
-rather than published.
+joined to the images, it is weakened in proportion to how badly the ordering was scrambled.**
+That last part is what decides whether your own result is dented or gone, and it follows from
+how far your participant vector departed from sorted order. At 50 participants with a real
+correlation of 0.5, which a correctly labelled study detects 97% of the time:
+
+| how the identifiers were ordered | share still correctly paired | detected once mislabelled |
+|---|---|---|
+| one pair out of sequence | 0.96 | 0.949 |
+| two pairs out of sequence | 0.92 | 0.924 |
+| five pairs | 0.80 | 0.818 |
+| ten pairs | 0.60 | 0.560 |
+| every pair transposed | 0.00 | 0.081 |
+| `p1 … p50` in collection order | 0.02 | 0.047 |
+
+So a couple of participants entered out of sequence costs a few percentage points of power,
+while the common `p1 … pN` scheme past the tenth participant is close to the worst case
+available: exactly one file still carries its own participant, detection falls from 97% to 5%,
+and the surviving 5% splits evenly between positive and negative, which is what chance looks
+like. In that case the other 95% are false negatives — a real association, sitting in the data,
+that the analysis can no longer see — which is why the likeliest casualty of this bug is a real
+finding that did not appear, in a study filed away rather than published.
 
 **The exception is a covariate that tracks labelling order** — IDs assigned in collection order
 while conditions ran in blocks, or an ID encoding testing date or cohort. There the permutation

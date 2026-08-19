@@ -297,8 +297,29 @@ N = 50 — are the false negatives:
 | 50 | 0.5 | **0.970** | **0.047** | −0.001 |
 
 Significant results in the affected column split evenly by sign (≈ 0.024 each way), which is
-what the permutation null looks like. This is the file-drawer case, and it is the ordinary
-case.
+what the permutation null looks like.
+
+**How much damage depends on how far out of order the identifiers were, and A and C fix that at
+close to the worst case.** `p1 … pN` in collection order leaves exactly one file correctly
+paired past the tenth participant, so "destroyed" describes that scheme rather than every
+affected study. Scenario E sweeps the severity using the real mechanism — build an appearance
+order, let `mislabel_perm()` derive the permutation from it — at N = 50 with ρ = 0.5, which
+correct labels detect 97% of the time:
+
+| identifiers | share correctly paired | detected once mislabelled |
+|---|---|---|
+| one pair out of sequence | 0.96 | 0.949 |
+| two pairs | 0.92 | 0.924 |
+| five pairs | 0.80 | 0.818 |
+| ten pairs | 0.60 | 0.560 |
+| every pair transposed | 0.00 | 0.081 |
+| `p1 … p50` in collection order | 0.02 | 0.047 |
+
+Detection tracks the share still correctly paired almost one-for-one until the pairing is nearly
+gone. Zero-padded identifiers entered with a couple of participants out of sequence are
+therefore affected but barely dented; the `p1 … pN` scheme is the case where the association
+disappears. That is the file-drawer case, and it is the common labelling scheme — but it is the
+severe end of the range, not the whole of it.
 
 **The exception is a covariate that tracks labelling order**, where the permutation is no
 longer exchangeable with the design and the residual can come out either sign. With condition
