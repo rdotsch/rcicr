@@ -215,9 +215,14 @@ creates, which is what makes its presence such a clean signal. The filenames dif
 | `plotZmap()`, `generateCI(zmap = TRUE)` | `<zmaptargetpath>/` | `<filename>.png` |
 | `generateStimuli2IFC()` | `<stimulus_path>/` | `<label>_<base>_<seed>_<NNNNN>_ori.png` and `_inv.png` |
 
-An `antiCI` swaps the `ci_` prefix for `antici_` throughout. So a bare `ci_p3.png` came from the
-affected call, while `ci_face_participant_p3.png` came from a batch function and is fine — the
-batch name always carries the base image and the grouping column, because it is built from them.
+An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names are the
+conclusive ones: `ci_face_participant_p3.png` came from a batch function and is fine, because a
+batch name always carries the base image and the grouping column, being built from them. A bare
+`ci_p3.png` is only a clue in the other direction — it is what the affected call writes, but
+`generateCI(save_as_png = TRUE, filename = "p3")` writes the same name for a group CI, one
+directory up, so confirm it against the script or the data before treating a loose file as an
+individual CI. Applying the recovery permutation to a set that is really something else would
+scramble output that was correct.
 
 **You still have the script but not the output.** Read every `generateCI()` call that passes
 participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on
@@ -286,9 +291,10 @@ mislabelled files is a false positive handed over by the bug, even though the ra
 studies is untouched.
 
 **With a true association and an ordinary design — a covariate unrelated to the order
-participants happened to be labelled in — the association is destroyed**, not merely weakened.
-Detection collapses to α; the runs that then fail to reject — 95% of them at ρ = 0.5,
-N = 50 — are the false negatives:
+participants happened to be labelled in — the association is weakened in proportion to how
+scrambled the ordering was, and under the `p1 … pN` scheme that is close to total.** These cells
+all use that scheme; scenario E below varies the severity. Detection collapses to α; the runs
+that then fail to reject — 95% of them at ρ = 0.5, N = 50 — are the false negatives:
 
 | N | ρ | detected, correct labels | detected, mislabelled | mean *r* recovered |
 |---|---|---|---|---|
@@ -307,9 +313,11 @@ every affected study. It is not monotone in N either — the count turns on wher
 change width, so 99, 100 and 101 participants leave *eleven* files correctly paired (at N = 100,
 `p1` and `p80`–`p89`) while 120 is back to one. The advisory therefore gives readers
 `mean(sort(unique(participants)) == unique(participants))` to compute their own share rather
-than reading it off any of these. Scenario E sweeps the severity using the real mechanism — build an appearance
-order, let `mislabel_perm()` derive the permutation from it — at N = 50 with ρ = 0.5, which
-correct labels detect 97% of the time:
+than reading it off any of these.
+
+Scenario E sweeps the severity using the real mechanism — build an appearance order, let
+`mislabel_perm()` derive the permutation from it — at N = 50 with ρ = 0.5, which correct labels
+detect 97% of the time:
 
 | identifiers | share correctly paired | detected once mislabelled |
 |---|---|---|

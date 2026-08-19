@@ -245,7 +245,7 @@ gridB <- expand.grid(n = c(12, 20, 30, 50), d = c(0, 0.8))
 resB <- do.call(rbind, Map(function(n, d) run_blocked(n, d), gridB$n, gridB$d))
 print(resB, row.names = FALSE, digits = 3)
 
-# The null cells are the evidence for "cannot create an association", so they
+# The null cells are the evidence for the unchanged false positive rate, so they
 # get their own table. Correct and mislabelled analyses see the same outcome
 # vector within an iteration, so the paired difference is the statistic: its
 # error is much smaller than either rate's, and it does not confound the
