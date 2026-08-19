@@ -81,11 +81,20 @@ collected again.
 
 ## How you can quickly check whether this affects you
 
-**Look for an `individual_cis/` directory in your output.** Nothing else in the package creates
-one, so if it is not there, the affected call never ran. This is also how to tell which route
-your analysis took: the batch functions above pass `participants = NA` and never set
+**Look for an `individual_cis/` directory in your output.** Nothing else in the package writes
+one, so finding it means the affected call ran. It is also how to tell which route your
+analysis took: the batch functions above pass `participants = NA` and never set
 `save_individual_cis`, so they cannot produce that directory, and only a direct `generateCI()`
 call can.
+
+Not finding it clears the analysis only if the output still sits as the run left it. A
+directory that was renamed, folded into an archive, or had its PNGs moved elsewhere will not
+answer to that name any more. The files themselves stay recognisable: an individual CI is
+`ci_<participant>.png`, a bare participant identifier, which no other writer in the package
+produces — `plotZmap()` and the batch functions all write flat into the path they were given,
+under composite names.
+[`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
+has the table that tells one folder of PNGs from another.
 
 Do not rely on searching your scripts for `save_individual_cis` instead. It is the sixth
 argument of `generateCI()`, so a positional call such as
