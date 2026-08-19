@@ -37,6 +37,36 @@ tutorials recommend for per-participant CIs, are not affected by the bug. If tha
 analysis used, this doesn't apply to you. The group classification image that `generateCI()`
 returns is also unaffected; only individual filenames from the direct call could be wrong.
 
+## What this does to an analysis
+
+The mislabelling breaks the link between a classification image and the participant it came
+from. What that costs depends on what the images were then used for.
+
+If they were only looked at, or averaged into a group image, nothing downstream changed: the
+group CI is a mean over participants and does not depend on their order.
+
+It matters where a participant-level variable was joined to the images — the common
+second-stage design, in which naive raters judge each individual CI and those judgments are
+related back to the source participant's condition, score or group. That join was made against
+a shuffled set of labels, so a real association is attenuated: the pairing carrying it has been
+scrambled. The bug does not push a result toward the hypothesis under test, so it is not a
+mechanism for manufacturing a positive finding — but neither outcome is a reason to leave an
+affected analysis alone:
+
+- **A null result from an affected analysis may be an artifact of the shuffle.** If the
+  association was really there, this is what removed it. Of the two, this is the outcome the
+  bug actually produces, and the one least likely to have been published — so an affected
+  analysis that "didn't work" is worth re-running before it is written off.
+- **A significant result from an affected analysis is not evidence for the hypothesis it was
+  read as supporting**, because it was computed on a pairing that was wrong. It was not biased
+  toward that hypothesis; it was reached in spite of the shuffle, and it needs re-running too.
+
+Separately, a figure showing individual CIs labelled by participant, condition or group is
+wrong as printed, whatever the accompanying statistics did.
+
+Re-running costs only the analysis. The images themselves are correct and the filenames are
+repaired by renaming (below), so nothing needs regenerating and no data need recollecting.
+
 ## How you can quickly check whether this affects you
 
 If your output has an `individual_cis/` directory from a direct `generateCI()` call, run
