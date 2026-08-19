@@ -58,28 +58,43 @@ run_cor <- function(n, rho, xfun, nsim = NSIM) {
   for (i in seq_len(nsim)) {
     x <- xfun(n)
     y <- rho * x + sqrt(1 - rho^2) * rnorm(n)
-    tc <- suppressWarnings(cor.test(x, y))
-    ta <- suppressWarnings(cor.test(x, y[perm]))
+    tc <- cor.test(x, y)
+    ta <- cor.test(x, y[perm])
     hit_c[i] <- tc$p.value < ALPHA
     hit_a[i] <- ta$p.value < ALPHA
     opp[i] <- ta$p.value < ALPHA && ta$estimate < 0
     r_a[i] <- ta$estimate
   }
+  # Both analyses see the same y within an iteration, so the paired difference
+  # is the statistic that carries the claim -- its error is far smaller than
+  # either rate's, and it is not confounded with the test's own size at small
+  # n (Welch is conservative at n = 12, in the correct column too).
+  discordant <- sum(hit_c != hit_a)
   data.frame(n = n, rho = rho,
              detected_correct = mean(hit_c), detected_affected = mean(hit_a),
+             diff = mean(hit_a) - mean(hit_c),
+             diff_se = sqrt(discordant) / nsim,
              mean_r_affected = mean(r_a), sig_opposite = mean(opp))
 }
 
 grid <- expand.grid(n = c(12, 20, 30, 50), rho = c(0, 0.3, 0.5))
 
 cat("=== A: covariate unrelated to labelling order ===\n")
-print(do.call(rbind, Map(function(n, r) run_cor(n, r, function(k) rnorm(k)),
-                         grid$n, grid$rho)),
-      row.names = FALSE, digits = 3)
+resA <- do.call(rbind, Map(function(n, r) run_cor(n, r, function(k) rnorm(k)),
+                           grid$n, grid$rho))
+print(resA, row.names = FALSE, digits = 3)
 
 cat("\n=== C: covariate is collection order itself (testing date, cohort) ===\n")
-print(do.call(rbind, Map(function(n, r) run_cor(n, r, function(k) as.numeric(scale(seq_len(k)))),
-                         grid$n, grid$rho)),
+resC <- do.call(rbind, Map(function(n, r) run_cor(n, r, function(k) as.numeric(scale(seq_len(k)))),
+                           grid$n, grid$rho))
+print(resC, row.names = FALSE, digits = 3)
+
+cat("\n=== Null cells, paired: is the mislabelled rate the same as the correct one? ===\n")
+nullcells <- rbind(cbind(design = "A", resA[resA$rho == 0, ]),
+                   cbind(design = "C", resC[resC$rho == 0, ]))
+nullcells$SEs_from_zero <- abs(nullcells$diff) / nullcells$diff_se
+print(nullcells[, c("design", "n", "detected_correct", "detected_affected",
+                    "diff", "diff_se", "SEs_from_zero")],
       row.names = FALSE, digits = 3)
 
 cat("\n=== B: condition assigned in blocks by collection order ===\n")
@@ -144,7 +159,8 @@ cat("   stays at alpha in A, B and C, at every n. Permuting one side of a pair\n
 cat("   that is independent of the other leaves it independent, so this is\n")
 cat("   structural rather than a property of these particular draws.\n")
 cat("2. A true association, ordinary design -> it is destroyed. Detection\n")
-cat("   collapses to alpha, and every one of those is a false negative.\n")
+cat("   collapses to alpha; the runs that fail to reject -- the other ~95% at\n")
+cat("   rho = 0.5, N = 50 -- are the false negatives.\n")
 cat("3. A covariate tracking labelling order -> the residual can be either\n")
 cat("   sign: an effect can survive attenuated, or come back reversed.\n")
 cat("4. Even in D, where the permutation has real structure to move around, it\n")

@@ -68,10 +68,11 @@ leaves it independent — so this is not a mechanism for false positives.
 joined to the images — the ordinary case — it is destroyed rather than weakened.** Almost
 nothing survives the permutation: with IDs `p1 … pN`, exactly one file still carries its own
 participant at N = 12, 20, 30 and 50. A correlation of 0.5 that a 50-participant study detects
-97% of the time is detected 5% of the time once mislabelled, and the significant remainder
-splits evenly between positive and negative. Every one of those is a false negative, which is
-why the likeliest casualty is a real finding that did not appear, in a study filed away rather
-than published.
+97% of the time is detected 5% of the time once mislabelled, and that surviving 5% splits evenly
+between positive and negative, which is what chance looks like. The other 95% are false
+negatives — a real association, sitting in the data, that the analysis can no longer see. That
+is why the likeliest casualty is a real finding that did not appear, in a study filed away
+rather than published.
 
 **The exception is a covariate that tracks labelling order** — IDs assigned in collection order
 while conditions ran in blocks, or an ID encoding testing date or cohort. There the permutation
@@ -120,12 +121,14 @@ call can.
 
 Not finding it clears the analysis only if the output still sits as the run left it. A
 directory that was renamed, folded into an archive, or had its PNGs moved elsewhere will not
-answer to that name any more. The files themselves stay recognisable: an individual CI is
-`ci_<participant>.png`, a bare participant identifier, which no other writer in the package
-produces — `plotZmap()` and the batch functions all write flat into the path they were given,
-under composite names.
+answer to that name any more. The filenames are then a clue rather than a verdict: an
+individual CI is `ci_<participant>.png`, but `generateCI(save_as_png = TRUE, filename = ...)`
+takes whatever filename it is given, so a group CI saved as `filename = "p3"` is also
+`ci_p3.png`. Confirm a loose file against the script that wrote it, or against the data, before
+treating it as an individual CI — running the recovery below over a set that is really
+something else would scramble output that was correct.
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
-has the table that tells one folder of PNGs from another.
+has the table of what in the package writes which filename where.
 
 Do not rely on searching your scripts for `save_individual_cis` instead. It is the sixth
 argument of `generateCI()`, so a positional call such as
