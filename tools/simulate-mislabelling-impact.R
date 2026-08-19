@@ -365,7 +365,12 @@ nullcells <- rbind(
   data.frame(design = "C", test = "cor.test", resC[resC$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed", "flip_to_sig")]),
   data.frame(design = "B", test = "Welch t", resB[resB$d == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed", "flip_to_sig")])
 )
-nullcells$SEs_from_zero <- abs(nullcells$diff) / nullcells$diff_se
+# With no discordant decisions there is no paired SE to divide by, so the
+# ratio is undefined rather than zero. That happens only at an nsim far too
+# small to estimate anything, but the header invites those runs, and a table
+# offered as evidence should not answer with NaN.
+nullcells$SEs_from_zero <- ifelse(nullcells$diff_se > 0,
+                                  abs(nullcells$diff) / nullcells$diff_se, NA)
 print(nullcells, row.names = FALSE, digits = 3)
 
 # D asks whether the permutation can hand back a hypothesis-consistent result
