@@ -76,7 +76,12 @@ if (ids_mode) {
   # A path that does not exist must be an error, never data: silently treating
   # "ids.txt" as a single identifier yields one participant, which reports
   # "correctly paired" and hands an affected analysis a false all-clear.
-  looks_like_path <- grepl("[/\\\\]", raw) || grepl("\\.(txt|csv|tsv|dat)$", raw)
+  # A comma settles it: no filename this mode accepts contains one, while an
+  # identifier list may well end in something filename-shaped ("subject.dat")
+  # or contain a slash, so the path heuristic must not see the raw argument
+  # before the list form has been ruled out.
+  looks_like_path <- !grepl(",", raw) &&
+    (grepl("[/\\\\]", raw) || grepl("\\.(txt|csv|tsv|dat)$", raw))
   if (looks_like_path && !file.exists(raw)) {
     stop("no such file: ", raw, call. = FALSE)
   }
@@ -175,6 +180,13 @@ if (ids_mode) {
   }
   if (kept == 1) {
     cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")
+  } else if (n < 3) {
+    # cor.test() needs three finite pairs. The pairing share above is still
+    # exact and is the part that describes the mislabelling; only the detection
+    # rates need a sample to estimate.
+    cat("Two participants: the share above is exact, but detection rates need at\n")
+    cat("  least three, so they are not estimated here. Both files carry the\n")
+    cat("  other participant's image; the recovery in the advisory still applies.\n")
   } else {
     hit_c <- hit_a <- logical(NSIM)
     for (i in seq_len(NSIM)) {
