@@ -15,6 +15,19 @@ search:
     - AGENTS.html
     - CLAUDE.html
 
+# Explicit so the individual-CI advisory (a pkgdown-only article, not a real
+# vignette -- see vignettes/articles/ in .Rbuildignore) gets its own group
+# instead of being interleaved with the getting-started tutorials in
+# pkgdown's default alphabetical article index.
+articles:
+  - title: Get started
+    contents:
+      - getting-started
+      - reverse-correlation-walkthrough
+  - title: Advisories
+    contents:
+      - articles/rcicr-individual-ci-advisory
+
 # Ordered so the top of the page is what people actually call. The section
 # titles match README.md -> "How it works"; keep them in step if either moves.
 reference:
