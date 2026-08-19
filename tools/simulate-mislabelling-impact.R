@@ -36,6 +36,16 @@
 # All-numeric identifiers need a fifth argument, numeric or character, saying
 # how the participants vector stored them -- the sort, and so the answer,
 # differs between the two.
+#
+# This mode cannot represent a FACTOR participants vector with a custom level
+# order. The bug ordered participants by factor(participants), which keeps a
+# factor's own levels, so factor(c("p2","p1"), levels = c("p2","p1")) was
+# correctly labelled while these identifiers passed as text look swapped.
+# Reconstructing from strings loses the levels and there is nowhere to put
+# them, so that case has to be checked in R against the original object, where
+# sort() follows the levels for you:
+#   appearance <- unique(participants)
+#   mean(appearance == sort(unique(participants)))
 # The identifiers go in the order they were passed to generateCI(). This runs
 # the caller's own permutation, which E's rows cannot substitute for: the share
 # of correctly paired files fixes the average attenuation but not the whole
@@ -119,6 +129,9 @@ if (ids_mode) {
   perm <- mislabel_perm(ids)
   kept <- mean(perm == seq_len(n))
   cat(sprintf("%d participants, %.3f of files correctly paired\n", n, kept))
+  cat("  (assumes participants was a plain vector; a factor with a custom level\n")
+  cat("   order sorts by its levels, which this mode cannot represent -- check\n")
+  cat("   that case in R against the original object)\n")
   if (kept == 1) {
     cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")
   } else {

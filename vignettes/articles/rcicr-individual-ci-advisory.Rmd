@@ -135,7 +135,9 @@ Rscript tools/simulate-mislabelling-impact.R --ids p1,p2,p10,p3 0.5
 listing the identifiers in the order you passed them to `generateCI()` (or giving a file with
 one per line), and an effect size to assume. Identifiers that are all digits need a further
 argument, `numeric` or `character`, saying how your `participants` vector held them — R sorts
-`c(1, 2, …)` numerically and `c("1", "2", …)` lexically, and only the second is affected. It reports what a correctly labelled analysis of
+`c(1, 2, …)` numerically and `c("1", "2", …)` lexically, and only the second is affected. A
+factor with a custom level order cannot be expressed this way at all; check that case in R
+against the original object, where `sort()` follows the levels for you. It reports what a correctly labelled analysis of
 that size would have detected, what yours would have, and how often the two reach different
 verdicts.
 
@@ -216,9 +218,23 @@ If the directory is there, the ordering of your participant IDs decides it. Run
 identical(unique(participants), sort(unique(participants)))
 ```
 
-using the participant vector in the order you originally passed it. `TRUE` means the files
-were named correctly. If it's `FALSE`, the images are still correct; only the filenames are
-swapped, and the mapping to fix them is exact (no need to recompute anything, see below).
+using the participant vector in the order you originally passed it. `FALSE` means the images are
+still correct but the filenames are swapped, and the mapping to fix them is exact — no need to
+recompute anything, see below.
+
+`TRUE` means the files were named correctly, provided two things hold, because both change what
+`sort()` returns and so what the comparison means:
+
+- **Use the original `participants` object, not a character copy of it.** The bug ordered
+  participants by `factor(participants)`, whose levels a factor carries with it. `sort()` follows
+  those same levels, so the check is right for a factor with custom level order — but
+  `as.character()` first, and both the level order and the answer are gone.
+- **Run it under the collation the original analysis ran under.** Sorting is locale-dependent
+  for identifiers mixing case, accents or punctuation, so a `TRUE` obtained under a different
+  `LC_COLLATE` can clear output that really was mislabelled. Compare
+  `Sys.getlocale("LC_COLLATE")` against the original session if you know it, and if you cannot,
+  run the check on the machine that produced the files. Plain lowercase-ASCII identifiers such
+  as `p1`/`p12`, and numeric ones, sort the same way everywhere and are not exposed to this.
 
 ## How to fix it
 
@@ -251,11 +267,9 @@ step2 <- file.rename(file.path(dir, paste0("ci_", old, ".tmp")),
 if (!all(step2)) stop("Rename failed for: ", paste(old[!step2], collapse = ", "))
 ```
 
-(This assumes `sort()` orders your IDs the same way the original run did — always true on the
-same machine/session, and true for numeric or lowercase-ASCII IDs like `p1`/`p12` regardless.
-It can differ under a different locale if your IDs mix case, accents, or punctuation; check
-`Sys.getlocale("LC_COLLATE")` against the original run if you're unsure, or recover on the
-machine that produced the files.)
+(This assumes `sort()` orders your IDs the way the original run did, which is the same
+condition the check above depends on: the original `participants` object rather than a
+character copy, under the original collation.)
 
 (use the `antici_` prefix instead of `ci_` if you generated anti-CIs).
 
