@@ -52,27 +52,37 @@ related back to the source participant's condition, score or group. That join wa
 a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it
 was reported as.
 
-On average it costs an effect rather than inventing one. Pairing each image with another
-participant's data destroys the association that was there, and in the ordinary case — where
-the order participants happened to be labelled in has nothing to do with the variable being
-related to their images — the expected result is attenuation toward zero, roughly in proportion
-to how much of the pairing was scrambled. The likeliest casualty is a real finding that did not
-appear, in a study that was then filed away rather than published.
+On average it costs an effect rather than inventing one. That is a claim about a permutation and
+easy to get wrong in either direction, so it is measured rather than argued:
+[`tools/simulate-mislabelling-impact.R`](https://github.com/rdotsch/rcicr/blob/main/tools/simulate-mislabelling-impact.R)
+runs 20,000 iterations per cell at α = 0.05, and
+[`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md#what-it-did-to-a-second-stage-analysis)
+writes the results up. Three findings.
 
-That is an expectation across analyses, not a property of any one of them. The relabelling is a
-single fixed permutation — appearance order mapped onto sorted order — so a given study gets one
-particular rearrangement rather than an average over many, and its result can land either side
-of the true one. Where the labelling does track something the departure can be large: IDs
-assigned in collection order while conditions ran in blocks, or an ID encoding testing date or
-cohort, can leave an association looking intact, reverse it, or produce one that was never
-there.
+**Where there was no association to begin with, the mislabelling cannot produce one.** Rejection
+stays at the nominal 5% in every design tested and at every sample size. That one is structural
+rather than a lucky set of draws — permuting one side of a pair that is independent of the other
+leaves it independent — so this is not a mechanism for false positives.
 
-What the permutation cannot do is favour the hypothesis under test. It falls out of sorting
-participant identifiers lexically, which knows nothing about the direction anyone predicted, so
-an affected analysis is not tilted toward the result its authors expected — and where there was
-no association to begin with, a shuffled pairing is no likelier to yield a significant one than
-the original. This is not a mechanism that would have filled the literature with false
-positives. It is also no reason to leave an affected analysis standing:
+**Where there was a real association and the labelling order has nothing to do with the variable
+joined to the images — the ordinary case — it is destroyed rather than weakened.** Almost
+nothing survives the permutation: with IDs `p1 … pN`, exactly one file still carries its own
+participant at N = 12, 20, 30 and 50. A correlation of 0.5 that a 50-participant study detects
+97% of the time is detected 5% of the time once mislabelled, and the significant remainder
+splits evenly between positive and negative. Every one of those is a false negative, which is
+why the likeliest casualty is a real finding that did not appear, in a study filed away rather
+than published.
+
+**The exception is a covariate that tracks labelling order** — IDs assigned in collection order
+while conditions ran in blocks, or an ID encoding testing date or cohort. There the permutation
+is no longer arbitrary with respect to the design, and the residual can come out either sign: a
+d = 0.8 condition difference survives attenuated and correctly signed at N = 50 (detected 79% of
+the time, 26% once mislabelled), and comes back **reversed** at N = 20, where 14% of runs are
+significant in the wrong direction against 0.1% in the right one.
+
+Nothing in any of this favours the hypothesis under test — lexical sorting of participant
+identifiers knows nothing about the direction anyone predicted. But no single affected analysis
+can be cleared on the strength of an average:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to

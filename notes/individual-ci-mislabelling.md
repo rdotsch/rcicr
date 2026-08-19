@@ -240,3 +240,65 @@ by a `"p1"`-style column does not make it safe once you reach ten participants.
 
 Recovery is a rename, not a recomputation: the file named `unique(participants)[i]` holds the
 image of `sort(unique(participants))[i]`.
+
+## What it did to a second-stage analysis
+
+The advisory tells readers that the mislabelling costs effects rather than inventing them.
+That is a claim about a *permutation*, which is easy to get wrong in either direction — "it
+only adds noise" and "it could have produced spurious findings" are both wrong as stated — so
+it is measured rather than argued. `tools/simulate-mislabelling-impact.R` runs 20,000
+iterations per cell at α = 0.05, seeded, in about a minute; the numbers below are its output.
+
+The design simulated is the one that matters: raters judge each individual CI, and those
+judgments are related back to something about the participant the filename names. The bug
+permutes that join.
+
+**Almost nothing survives the permutation.** With IDs `p1 … pN` in collection order, the
+number of files still carrying their own participant is 1 at N = 12, 20, 30 and 50 (and all
+N at N ≤ 9, where lexical order still matches collection order). Zero-padded `p01 … p12`
+is unaffected, as the version table above says.
+
+**With no true association, the mislabelling cannot create one.** Rejection stays at α in
+every design and at every N — 0.046 to 0.052 against a nominal 0.05. This one is structural
+rather than a lucky set of draws: permuting one side of a pair that is independent of the
+other leaves it independent, so the null distribution is unchanged by construction. **The bug
+is not a mechanism for false positives.**
+
+**With a true association and an ordinary design — a covariate unrelated to the order
+participants happened to be labelled in — the association is destroyed**, not merely weakened.
+Detection collapses to α, and every one of those is a false negative:
+
+| N | ρ | detected, correct labels | detected, mislabelled | mean *r* recovered |
+|---|---|---|---|---|
+| 12 | 0.3 | 0.160 | 0.047 | 0.001 |
+| 50 | 0.3 | 0.572 | 0.049 | −0.001 |
+| 12 | 0.5 | 0.399 | 0.047 | −0.000 |
+| 50 | 0.5 | **0.970** | **0.047** | −0.001 |
+
+Significant results in the affected column split evenly by sign (≈ 0.024 each way), which is
+what the permutation null looks like. This is the file-drawer case, and it is the ordinary
+case.
+
+**The exception is a covariate that tracks labelling order**, where the permutation is no
+longer exchangeable with the design and the residual can come out either sign. With condition
+assigned in blocks by collection order and d = 0.8:
+
+| N | share of participants moved across conditions | detected, correct | detected, mislabelled | of those, in the predicted direction | opposite |
+|---|---|---|---|---|---|
+| 12 | 0.50 | 0.222 | 0.032 | 0.016 | 0.017 |
+| 20 | 0.80 | 0.387 | 0.143 | 0.001 | **0.142** |
+| 30 | 0.47 | 0.559 | 0.037 | 0.025 | 0.012 |
+| 50 | 0.24 | 0.794 | 0.262 | 0.262 | 0.000 |
+
+At N = 20, where four fifths of participants are swapped across the condition boundary, the
+effect comes back **reversed**: 14.2% of runs are significant in the wrong direction against
+0.1% in the right one. At N = 50, where only a quarter cross, it survives attenuated and
+correctly signed. A covariate that *is* collection order (testing date, cohort, session
+number) behaves the same way — at N = 50, ρ = 0.5 a mean *r* of 0.22 is still recovered, while
+at N = 20 the mean *r* is −0.11.
+
+So the summary the advisory gives is the right one, with the scope it carries: on average an
+effect is lost rather than invented, an unpublished null is the likeliest casualty, nothing
+tilts the result toward the hypothesis under test — and no single affected analysis can be
+cleared on that basis, because a design whose IDs encode something can distort or reverse an
+effect instead of erasing it.
