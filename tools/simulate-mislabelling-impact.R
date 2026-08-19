@@ -103,7 +103,17 @@ if (ids_mode) {
   # says when it found any, since stray spaces from an editor would otherwise
   # split one participant into two and raise a false alarm instead.
   from_file <- file.exists(raw)
-  ids <- if (from_file) readLines(raw) else trimws(strsplit(raw, ",")[[1]])
+  # strsplit() drops a terminal empty field, so "p1,p2," would arrive as two
+  # identifiers and slip past the empty-field check below. Restore it, so a
+  # trailing comma is refused like any other blank rather than silently
+  # changing the participant count. A leading or interior one already survives.
+  ids <- if (from_file) {
+    readLines(raw)
+  } else {
+    fields <- strsplit(raw, ",", fixed = TRUE)[[1]]
+    if (grepl(",$", raw)) fields <- c(fields, "")
+    trimws(fields)
+  }
   # An empty line is ambiguous and both silent readings are wrong. Dropping it
   # changes the permutation if the original vector really held an empty
   # identifier; keeping it invents a participant on any file whose last line is
