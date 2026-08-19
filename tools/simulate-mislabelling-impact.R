@@ -139,9 +139,19 @@ print(nullcells, row.names = FALSE, digits = 3)
 # season -- with no true condition effect, where the permutation has something
 # to move around.
 cat("\n=== D: real trend over collection order, no true condition effect ===\n")
-run_trend <- function(n, trend, nsim = NSIM) {
+# Assignment scheme matters, and picking only one of them rigs the answer.
+# Contiguous blocks put every early observation in one condition and every
+# late one in the other, so the CORRECT pairing already maximises the trend
+# contrast and any permutation can only reduce it -- "mislabelled never
+# exceeds correct" would then be true by construction rather than measured.
+# Alternating assignment is the opposite case: the correct pairing spreads
+# the trend evenly across conditions, leaving almost no contrast for the
+# permutation to destroy and plenty of room to create one. At n = 12 the
+# expected contrast in position units goes 6.00 -> 0.00 blocked, and
+# 1.00 -> 2.33 alternating.
+run_trend <- function(n, trend, scheme, nsim = NSIM) {
   perm <- mislabel_perm(paste0("p", seq_len(n)))
-  cond <- rep(c(0, 1), each = n / 2)
+  cond <- if (scheme == "blocked") rep(c(0, 1), each = n / 2) else rep(c(0, 1), times = n / 2)
   ord <- as.numeric(scale(seq_len(n)))
   cp <- co <- ap <- ao <- logical(nsim)
   for (i in seq_len(nsim)) {
@@ -156,12 +166,15 @@ run_trend <- function(n, trend, nsim = NSIM) {
     ap[i] <- ta$p.value < ALPHA && ea > 0
     ao[i] <- ta$p.value < ALPHA && ea < 0
   }
-  data.frame(n = n, trend = trend,
+  data.frame(n = n, trend = trend, assignment = scheme,
              correct_predicted = mean(cp), correct_opposite = mean(co),
-             mislabelled_predicted = mean(ap), mislabelled_opposite = mean(ao))
+             mislabelled_predicted = mean(ap), mislabelled_opposite = mean(ao),
+             amplified = mean(ap) > mean(cp))
 }
-gridD <- expand.grid(n = c(12, 20, 30, 50), trend = c(0.3, 0.6, 1.0))
-print(do.call(rbind, Map(function(n, t) run_trend(n, t), gridD$n, gridD$trend)),
+gridD <- expand.grid(n = c(12, 20, 30, 50), trend = c(0.3, 0.6, 1.0),
+                     scheme = c("blocked", "alternating"), stringsAsFactors = FALSE)
+print(do.call(rbind, Map(function(n, t, s) run_trend(n, t, s),
+                         gridD$n, gridD$trend, gridD$scheme)),
       row.names = FALSE, digits = 3)
 
 cat("\n=== Summary ===\n")
@@ -174,9 +187,14 @@ cat("   collapses to alpha; the runs that fail to reject -- the other ~95% at\n"
 cat("   rho = 0.5, N = 50 -- are the false negatives.\n")
 cat("3. A covariate tracking labelling order -> the residual can be either\n")
 cat("   sign: an effect can survive attenuated, or come back reversed.\n")
-cat("4. Even in D, where the permutation has real structure to move around, it\n")
-cat("   never raises hypothesis-consistent rejections above what the correctly\n")
-cat("   labelled analysis gives -- it lowers them, and diverts some into the\n")
-cat("   opposite direction. It has no systematic pull toward a prediction. A\n")
-cat("   single affected study can still land on a significant result in the\n")
-cat("   predicted direction, which is why re-running is required either way.\n")
+cat("4. D shows the direction depends on the design, and cuts both ways. With\n")
+cat("   contiguous condition blocks the correct pairing already maximises the\n")
+cat("   trend contrast, so the permutation can only reduce it. With alternating\n")
+cat("   assignment the correct pairing balances the trend across conditions and\n")
+cat("   the permutation unbalances it, RAISING hypothesis-consistent rejections\n")
+cat("   above the correctly labelled analysis in 8 of 12 cells -- .010 to .042\n")
+cat("   at n = 12, trend = 1.0. So the shuffle can hand back apparent support.\n")
+cat("   What it cannot do is know which direction anyone predicted: the sign it\n")
+cat("   pushes is set by the ID and assignment schemes, so agreeing with a given\n")
+cat("   hypothesis is a coin flip, not a bias. Either way an affected analysis\n")
+cat("   has to be re-run before it means anything.\n")

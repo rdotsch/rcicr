@@ -315,21 +315,35 @@ drift, practice, season — with no true condition effect, where the permutation
 move around. Scenario D runs it: condition blocked by collection order, `y` a real trend over
 that order, so the trend is confounded with condition before the bug is involved at all.
 
-| N | trend | significant in predicted direction, correct labels | mislabelled | mislabelled, opposite direction |
-|---|---|---|---|---|
-| 20 | 0.3 | 0.177 | 0.006 | 0.059 |
-| 50 | 0.3 | 0.416 | 0.158 | 0.001 |
-| 20 | 1.0 | 0.907 | 0.000 | 0.128 |
-| 50 | 1.0 | 1.000 | 0.793 | 0.000 |
+**The assignment scheme decides the answer, so both are run.** Contiguous condition blocks put
+every early observation in one condition and every late one in the other, which already
+maximises the trend contrast under *correct* labels — at N = 12 the expected contrast in
+position units is 6.00, and the permutation takes it to 0.00. Any permutation can only reduce
+that, so testing blocks alone would make "the shuffle never helps" true by construction rather
+than measured. Alternating assignment is the opposite case: the correct pairing spreads the
+trend evenly across conditions, leaving 1.00 of contrast, and the permutation raises it to 2.33.
 
-In every cell the mislabelled analysis returns *fewer* hypothesis-consistent significant results
-than the correctly labelled one, never more, and diverts part of the remainder into the opposite
-direction. The permutation has no systematic pull toward a prediction — it follows from sorting
-identifiers lexically, which knows nothing about one. What it plainly can do is leave a single
-study sitting on a significant result in the predicted direction (0.158 in the N = 50, trend =
-0.3 cell), which is not evidence for anything, having been computed on the wrong pairing. That
-is why the advisory asks for a re-run whichever way the affected analysis came out, rather than
-offering the average as an all-clear.
+| N | trend | assignment | predicted direction, correct labels | mislabelled | |
+|---|---|---|---|---|---|
+| 20 | 0.3 | blocked | 0.177 | 0.006 | destroyed |
+| 50 | 1.0 | blocked | 1.000 | 0.793 | reduced |
+| 20 | 1.0 | blocked | 0.907 | 0.000 | destroyed, 0.128 lands opposite |
+| 12 | 0.3 | alternating | 0.026 | 0.039 | **raised** |
+| 12 | 0.6 | alternating | 0.020 | 0.047 | **raised** |
+| 12 | 1.0 | alternating | 0.010 | 0.042 | **raised** |
+| 50 | 0.3 | alternating | 0.025 | 0.028 | **raised** |
+
+**So the mislabelling can hand back apparent support**, in 8 of the 12 alternating cells, and by
+a factor of four at N = 12, trend = 1.0. An earlier draft of this note said it never could; that
+was an artifact of testing only the blocked scheme, and it was wrong.
+
+What the permutation cannot do is know which direction anyone predicted. The sign it pushes is
+fixed by the ID scheme and the assignment scheme together — nothing in lexical sorting refers to
+a hypothesis — so whether that sign agrees with a given prediction is a coin flip rather than a
+bias. Across a literature it therefore has nothing to inflate in any particular direction. For
+one study it can produce a hypothesis-consistent significant result that is not evidence for
+anything, having been computed on the wrong pairing, which is why the advisory asks for a re-run
+whichever way an affected analysis came out rather than offering an average as an all-clear.
 
 So the summary the advisory gives is the right one, with the scope it carries: on average an
 effect is lost rather than invented, an unpublished null is the likeliest casualty, nothing

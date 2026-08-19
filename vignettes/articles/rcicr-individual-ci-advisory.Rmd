@@ -81,16 +81,21 @@ d = 0.8 condition difference survives attenuated and correctly signed at N = 50 
 the time, 26% once mislabelled), and comes back **reversed** at N = 20, where 14% of runs are
 significant in the wrong direction against 0.1% in the right one.
 
-None of this gives the permutation a systematic pull toward the hypothesis under test — it
-follows from sorting participant identifiers lexically, which knows nothing about the direction
-anyone predicted. Tested directly, in the design most likely to reward it (a real trend over
-collection order, condition blocked by that same order), the mislabelled analysis returns
-*fewer* hypothesis-consistent significant results than the correctly labelled one in every cell,
-never more, and diverts part of the remainder into the opposite direction.
+**Where a nuisance trend runs along collection order, the shuffle can also hand back apparent
+support**, so this is not a case of noise only. If conditions were assigned in alternating
+order, the correct pairing spreads that trend evenly across them and the permutation unbalances
+it: hypothesis-consistent significant results rise *above* what the correctly labelled analysis
+gives, in 8 of the 12 cells tested and by a factor of four at N = 12. Contiguous condition
+blocks behave the opposite way, the trend already being maximally aligned before the shuffle,
+which is why both are simulated.
 
-It can still leave a particular study sitting on a significant result in the predicted
-direction. That result is not evidence for anything — it was computed on the wrong pairing — and
-no single affected analysis can be cleared on the strength of an average:
+What the permutation cannot do is know which direction anyone predicted. The sign it pushes is
+fixed by the identifier scheme and the assignment scheme together, and nothing in lexical
+sorting refers to a hypothesis, so whether that sign agrees with a given prediction is a coin
+flip rather than a bias — it has nothing to inflate in any particular direction across a
+literature. For one study it plainly can, and that result is not evidence for anything, having
+been computed on the wrong pairing. No single affected analysis can be cleared on the strength
+of an average:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to
