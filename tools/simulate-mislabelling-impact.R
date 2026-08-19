@@ -33,6 +33,9 @@
 # To measure one specific analysis rather than read a row off scenario E:
 #   Rscript tools/simulate-mislabelling-impact.R --ids p1,p2,p10,p3 [rho] [nsim]
 #   Rscript tools/simulate-mislabelling-impact.R --ids ids.txt [rho] [nsim]
+# All-numeric identifiers need a fifth argument, numeric or character, saying
+# how the participants vector stored them -- the sort, and so the answer,
+# differs between the two.
 # The identifiers go in the order they were passed to generateCI(). This runs
 # the caller's own permutation, which E's rows cannot substitute for: the share
 # of correctly paired files fixes the average attenuation but not the whole
@@ -76,20 +79,41 @@ if (ids_mode) {
   }
   rho <- if (length(args) >= 3 && !is.na(args[3])) as.numeric(args[3]) else 0.5
 
-  # Type matters as much as order. R sorts a numeric participants vector
-  # numerically, so 1:12 is not affected at all, while the character vector
-  # "1" ... "12" sorts lexically and is. Everything arriving here is a string,
-  # so an all-numeric list is read as numeric -- what generateCI() would have
-  # seen from participants = c(1, 2, ...) -- and the other reading is reported
-  # alongside rather than silently chosen.
-  numeric_ids <- !any(is.na(suppressWarnings(as.numeric(ids))))
-  if (numeric_ids) {
-    as_char <- mean(mislabel_perm(ids) == seq_along(unique(ids)))
-    ids <- as.numeric(ids)
-    cat("identifiers read as numbers, matching participants = c(1, 2, ...);\n")
-    cat(sprintf("  had they been the character strings \"1\", \"2\", ..., %.3f\n",
-                as_char))
-    cat("  of files would have been correctly paired instead.\n")
+  # Type decides the sort, so it cannot be guessed. R sorts a numeric
+  # participants vector numerically, leaving 1:12 unaffected, while the
+  # character vector "1" ... "12" sorts lexically and is affected. Everything
+  # arriving on a command line is a string, so an all-numeric list is ambiguous
+  # and the caller has to say which they had: guessing "numeric" would tell a
+  # character-ID reader their filenames were fine, and as.numeric() would also
+  # collapse "01" and "1" into one participant after uniqueness was checked.
+  numeric_looking <- !any(is.na(suppressWarnings(as.numeric(ids))))
+  if (numeric_looking) {
+    type <- if (length(args) >= 5) args[5] else NA_character_
+    if (is.na(type) || !type %in% c("numeric", "character")) {
+      stop("these identifiers are all numbers, and the answer depends on how ",
+           "they were stored.\n",
+           "  participants = c(1, 2, ...)       -> sorted numerically, ",
+           "usually unaffected\n",
+           "  participants = c(\"1\", \"2\", ...) -> sorted lexically, ",
+           "affected from the tenth on\n",
+           "  Re-run with a fifth argument, numeric or character, e.g.\n",
+           "    --ids ", args[2], " ", if (is.na(args[3])) "0.5" else args[3],
+           " ", if (is.na(args[4])) "20000" else args[4], " character",
+           call. = FALSE)
+    }
+    if (type == "numeric") {
+      converted <- as.numeric(ids)
+      if (length(unique(converted)) != length(unique(ids))) {
+        stop("reading these as numbers merges identifiers that differ as text ",
+             "(\"01\" and \"1\", say); they must have been character",
+             call. = FALSE)
+      }
+      ids <- converted
+      cat("identifiers read as numbers, matching participants = c(1, 2, ...)\n")
+    } else {
+      cat("identifiers read as character strings, matching ",
+          "participants = c(\"1\", \"2\", ...)\n", sep = "")
+    }
   }
   n <- length(unique(ids))
   perm <- mislabel_perm(ids)

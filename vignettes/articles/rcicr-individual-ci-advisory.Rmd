@@ -52,8 +52,11 @@ related back to the source participant's condition, score or group. That join wa
 a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it
 was reported as.
 
-On average it costs an effect rather than inventing one. That is a claim about a permutation and
-easy to get wrong in either direction, so it is measured rather than argued:
+In the design this most often lands in — where the variable joined to the images has nothing to
+do with the order participants were labelled in — it costs an effect rather than inventing one.
+Not every design: where something varies along collection order, the shuffle can hand back
+apparent support instead, and the two cases are separated below. What follows is measured rather
+than argued, because a claim about a permutation is easy to get wrong in either direction:
 [`tools/simulate-mislabelling-impact.R`](https://github.com/rdotsch/rcicr/blob/main/tools/simulate-mislabelling-impact.R)
 runs 20,000 iterations per cell at α = 0.05, and
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md#what-it-did-to-a-second-stage-analysis)
@@ -89,11 +92,22 @@ correlation of 0.5, which a correctly labelled study detects 97% of the time:
 
 So a couple of participants entered out of sequence costs a few percentage points of power,
 while the common `p1 … pN` scheme lands near the bottom of that table: at 12, 20, 30 and 50
-participants exactly one file still carries its own participant, detection falls from 97% to 5%,
-and the surviving 5% splits evenly between positive and negative, which is what chance looks
-like. In that case the other 95% are false negatives — a real association, sitting in the data,
-that the analysis can no longer see — which is why the likeliest casualty of this bug is a real
-finding that did not appear, in a study filed away rather than published.
+participants exactly one file still carries its own participant, and detection drops to about 5%
+whatever the sample size — the surviving 5% splitting evenly between positive and negative,
+which is what chance looks like. How much that costs depends on the power you started with. For
+a true correlation of 0.5:
+
+| N | detected, correct labels | detected, mislabelled |
+|---|---|---|
+| 12 | 0.399 | 0.047 |
+| 20 | 0.643 | 0.046 |
+| 30 | 0.832 | 0.049 |
+| 50 | 0.970 | 0.047 |
+
+The runs that then fail to reject are false negatives — a real association, sitting in the data,
+that the analysis can no longer see. At N = 50 that is 95% of them. This is why the likeliest
+casualty of the bug is a real finding that did not appear, in a study filed away rather than
+published.
 
 Don't read your own case off those sample sizes, though: how much survives is not a smooth
 function of N, because it turns on where the identifiers change width. At 99, 100 or 101
@@ -119,7 +133,9 @@ Rscript tools/simulate-mislabelling-impact.R --ids p1,p2,p10,p3 0.5
 ```
 
 listing the identifiers in the order you passed them to `generateCI()` (or giving a file with
-one per line), and an effect size to assume. It reports what a correctly labelled analysis of
+one per line), and an effect size to assume. Identifiers that are all digits need a further
+argument, `numeric` or `character`, saying how your `participants` vector held them — R sorts
+`c(1, 2, …)` numerically and `c("1", "2", …)` lexically, and only the second is affected. It reports what a correctly labelled analysis of
 that size would have detected, what yours would have, and how often the two reach different
 verdicts.
 
