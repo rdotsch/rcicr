@@ -55,7 +55,18 @@
 args <- commandArgs(trailingOnly = TRUE)
 ids_mode <- length(args) >= 2 && args[1] == "--ids"
 nsim_arg <- if (ids_mode) args[4] else args[1]
-NSIM <- if (is.na(nsim_arg)) 20000L else as.integer(nsim_arg)
+# The header invites overriding this, so a bad value has to fail here saying
+# what was wrong, not later inside logical(NSIM) or as a table of NaN.
+NSIM <- 20000L
+if (!is.na(nsim_arg)) {
+  n_num <- suppressWarnings(as.numeric(nsim_arg))
+  if (is.na(n_num) || !is.finite(n_num) || n_num < 1 ||
+        n_num != trunc(n_num) || n_num > .Machine$integer.max) {
+    stop("nsim must be a whole number of iterations, at least 1 and at most ",
+         .Machine$integer.max, "; got ", sQuote(nsim_arg), call. = FALSE)
+  }
+  NSIM <- as.integer(n_num)
+}
 ALPHA <- 0.05
 set.seed(20260819)
 
