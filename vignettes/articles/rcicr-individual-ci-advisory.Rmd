@@ -69,7 +69,19 @@ repaired by renaming (below), so nothing needs regenerating and no data need rec
 
 ## How you can quickly check whether this affects you
 
-If your output has an `individual_cis/` directory from a direct `generateCI()` call, run
+**Look for an `individual_cis/` directory in your output.** Nothing else in the package creates
+one, so if it is not there, the affected call never ran. This is also how to tell which route
+your analysis took: the batch functions above pass `participants = NA` and never set
+`save_individual_cis`, so they cannot produce that directory, and only a direct `generateCI()`
+call can.
+
+Do not rely on searching your scripts for `save_individual_cis` instead. It is the sixth
+argument of `generateCI()`, so a positional call such as
+`generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it without the name appearing
+anywhere, and `do.call()` hides it the same way. Grepping and finding nothing does **not**
+clear an analysis.
+
+If the directory is there, the ordering of your participant IDs decides it. Run
 
 ```r
 identical(unique(participants), sort(unique(participants)))
