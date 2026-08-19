@@ -262,7 +262,8 @@ number of files still carrying their own participant is 1 at N = 12, 20, 30 and 
 N at N ≤ 9, where lexical order still matches collection order). Zero-padded `p01 … p12`
 is unaffected, as the version table above says.
 
-**With no true association, the mislabelling cannot create one.** Rejection stays at α in
+**With no true association, the mislabelling does not raise the false positive rate.**
+Rejection stays at α in
 every design and at every N — 0.046 to 0.053 against a nominal 0.05. Those individual rates
 should not be read too closely: at nsim = 20,000 the Monte Carlo SE at 0.05 is 0.0015, and each
 test brings its own size (the Welch *t* in scenario B is mildly conservative at N = 12, 0.0471
@@ -272,7 +273,14 @@ analyses seeing the same outcome vector within an iteration; the script prints i
 twelve null cells across the three designs, and it runs from −0.005 to +0.003, each within 2.1
 paired SEs of zero. The result is structural rather than a lucky set of draws: permuting one
 side of a pair that is independent of the other leaves it independent, so the null distribution
-is unchanged by construction. **The bug is not a mechanism for false positives.**
+is unchanged by construction. **The bug does not raise the false positive rate.**
+
+It does change individual verdicts, which is a different question and the one a researcher is
+actually asking. The `decisions_changed` column counts datasets where the two analyses disagree
+about significance: 0.075 to 0.099 across the null cells, roughly half of them a rejection the
+correctly labelled data would not have produced. A result that became significant only on
+mislabelled files is a false positive handed over by the bug, even though the rate across many
+studies is untouched.
 
 **With a true association and an ordinary design — a covariate unrelated to the order
 participants happened to be labelled in — the association is destroyed**, not merely weakened.
@@ -337,16 +345,21 @@ trend evenly across conditions, leaving 1.00 of contrast, and the permutation ra
 a factor of four at N = 12, trend = 1.0. An earlier draft of this note said it never could; that
 was an artifact of testing only the blocked scheme, and it was wrong.
 
-What the permutation cannot do is know which direction anyone predicted. The sign it pushes is
-fixed by the ID scheme and the assignment scheme together — nothing in lexical sorting refers to
-a hypothesis — so whether that sign agrees with a given prediction is a coin flip rather than a
-bias. Across a literature it therefore has nothing to inflate in any particular direction. For
-one study it can produce a hypothesis-consistent significant result that is not evidence for
-anything, having been computed on the wrong pairing, which is why the advisory asks for a re-run
-whichever way an affected analysis came out rather than offering an average as an all-clear.
+The sign the permutation pushes is fixed by the ID scheme and the assignment scheme together,
+and nothing in lexical sorting refers to a hypothesis. How often that sign agrees with what a
+study predicted is **not** answered here: every cell fixes the trend and the "predicted"
+direction as positive rather than sampling them, so these runs cannot support a claim about
+directional inflation across a literature. Naming conventions, condition coding and the usual
+direction of practice or seasonal trends may well be related to one another in real research;
+showing that they are not would take a different study from this one.
+
+What this does establish is the consequence for a single analysis: it can be significant in the
+predicted direction and still be no evidence for anything, having been computed on the wrong
+pairing. That is why the advisory asks for a re-run whichever way an affected analysis came out,
+rather than offering an average as an all-clear.
 
 So the summary the advisory gives is the right one, with the scope it carries: on average an
-effect is lost rather than invented, an unpublished null is the likeliest casualty, nothing
-systematically tilts the result toward the hypothesis under test — and no single affected
-analysis can be cleared on that basis, because a design whose IDs encode something can distort
-or reverse an effect instead of erasing it.
+effect is lost rather than invented, an unpublished null is the likeliest casualty, the false
+positive *rate* is untouched — and no single affected analysis can be cleared on any of that,
+because the verdict on an individual dataset can flip either way, and a design whose IDs encode
+something can distort, reverse or amplify an effect instead of erasing it.

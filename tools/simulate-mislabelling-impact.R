@@ -74,6 +74,7 @@ run_cor <- function(n, rho, xfun, nsim = NSIM) {
              detected_correct = mean(hit_c), detected_affected = mean(hit_a),
              diff = mean(hit_a) - mean(hit_c),
              diff_se = sqrt(discordant) / nsim,
+             decisions_changed = discordant / nsim,
              mean_r_affected = mean(r_a), sig_opposite = mean(opp))
 }
 
@@ -110,7 +111,7 @@ run_blocked <- function(n, d, nsim = NSIM) {
   data.frame(n = n, d = d, detected_correct = mean(hit_c),
              detected_affected = mean(hit_a),
              diff = mean(hit_a) - mean(hit_c), diff_se = sqrt(discordant) / nsim,
-             sig_predicted = mean(sig_p),
+             decisions_changed = discordant / nsim, sig_predicted = mean(sig_p),
              sig_opposite = mean(sig_o), crossed_condition = mean(cond[perm] != cond))
 }
 gridB <- expand.grid(n = c(12, 20, 30, 50), d = c(0, 0.8))
@@ -125,9 +126,9 @@ print(resB, row.names = FALSE, digits = 3)
 # Welch is mildly conservative at n = 12, visible in B's *correct* column.
 cat("\n=== Null cells, paired: is the mislabelled rate the same as the correct one? ===\n")
 nullcells <- rbind(
-  data.frame(design = "A", test = "cor.test", resA[resA$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se")]),
-  data.frame(design = "C", test = "cor.test", resC[resC$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se")]),
-  data.frame(design = "B", test = "Welch t", resB[resB$d == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se")])
+  data.frame(design = "A", test = "cor.test", resA[resA$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed")]),
+  data.frame(design = "C", test = "cor.test", resC[resC$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed")]),
+  data.frame(design = "B", test = "Welch t", resB[resB$d == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed")])
 )
 nullcells$SEs_from_zero <- abs(nullcells$diff) / nullcells$diff_se
 print(nullcells, row.names = FALSE, digits = 3)
@@ -178,10 +179,12 @@ print(do.call(rbind, Map(function(n, t, s) run_trend(n, t, s),
       row.names = FALSE, digits = 3)
 
 cat("\n=== Summary ===\n")
-cat("1. No true association -> the mislabelling cannot create one. Rejection\n")
-cat("   stays at alpha in A, B and C, at every n. Permuting one side of a pair\n")
-cat("   that is independent of the other leaves it independent, so this is\n")
-cat("   structural rather than a property of these particular draws.\n")
+cat("1. No true association -> the false positive RATE is unchanged. Rejection\n")
+cat("   stays at alpha in A, B and C, at every n; permuting one side of a pair\n")
+cat("   independent of the other leaves it independent, so this is structural.\n")
+cat("   Individual verdicts still flip: decisions_changed is .075 to .099 in\n")
+cat("   the null cells, about half of them a rejection the correct labels would\n")
+cat("   not have given. An unchanged rate is not a clean bill for one dataset.\n")
 cat("2. A true association, ordinary design -> it is destroyed. Detection\n")
 cat("   collapses to alpha; the runs that fail to reject -- the other ~95% at\n")
 cat("   rho = 0.5, N = 50 -- are the false negatives.\n")
@@ -194,7 +197,8 @@ cat("   assignment the correct pairing balances the trend across conditions and\
 cat("   the permutation unbalances it, RAISING hypothesis-consistent rejections\n")
 cat("   above the correctly labelled analysis in 8 of 12 cells -- .010 to .042\n")
 cat("   at n = 12, trend = 1.0. So the shuffle can hand back apparent support.\n")
-cat("   What it cannot do is know which direction anyone predicted: the sign it\n")
-cat("   pushes is set by the ID and assignment schemes, so agreeing with a given\n")
-cat("   hypothesis is a coin flip, not a bias. Either way an affected analysis\n")
-cat("   has to be re-run before it means anything.\n")
+cat("   The sign it pushes is set by the ID and assignment schemes, and nothing\n")
+cat("   in lexical sorting refers to a hypothesis -- but how often that sign\n")
+cat("   agrees with a prediction is NOT measured here: every cell fixes trend\n")
+cat("   and predicted direction as positive rather than sampling them. Either\n")
+cat("   way an affected analysis has to be re-run before it means anything.\n")

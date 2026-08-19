@@ -59,10 +59,18 @@ runs 20,000 iterations per cell at α = 0.05, and
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md#what-it-did-to-a-second-stage-analysis)
 writes the results up. Three findings.
 
-**Where there was no association to begin with, the mislabelling cannot produce one.** Rejection
-stays at the nominal 5% in every design tested and at every sample size. That one is structural
-rather than a lucky set of draws — permuting one side of a pair that is independent of the other
-leaves it independent — so this is not a mechanism for false positives.
+**Where there was no association to begin with, the mislabelling does not raise the false
+positive rate.** Rejection stays at the nominal 5% in every design tested and at every sample
+size, which is structural rather than a lucky set of draws: permuting one side of a pair that is
+independent of the other leaves it independent.
+
+That is a statement about the rate, and it is not the same as saying your own result is safe.
+The two analyses disagree about significance far more often than the matching rates suggest —
+in the null cells they reach a *different* verdict on roughly 9% of datasets, about half of
+those being a rejection the correctly labelled data would not have given. The bug does not
+manufacture false positives across a literature; it can certainly have handed one to a
+particular study, and a result that only became significant on mislabelled files is exactly
+that case.
 
 **Where there was a real association and the labelling order has nothing to do with the variable
 joined to the images — the ordinary case — it is destroyed rather than weakened.** Almost
@@ -89,13 +97,17 @@ gives, in 8 of the 12 cells tested and by a factor of four at N = 12. Contiguous
 blocks behave the opposite way, the trend already being maximally aligned before the shuffle,
 which is why both are simulated.
 
-What the permutation cannot do is know which direction anyone predicted. The sign it pushes is
-fixed by the identifier scheme and the assignment scheme together, and nothing in lexical
-sorting refers to a hypothesis, so whether that sign agrees with a given prediction is a coin
-flip rather than a bias — it has nothing to inflate in any particular direction across a
-literature. For one study it plainly can, and that result is not evidence for anything, having
-been computed on the wrong pairing. No single affected analysis can be cleared on the strength
-of an average:
+The sign the permutation pushes is fixed by the identifier scheme and the assignment scheme
+together, and nothing in lexical sorting refers to a hypothesis. Whether that sign agrees with
+what a given study predicted is therefore not something these simulations can answer: each one
+fixes the trend and the "predicted" direction as positive rather than sampling them, so nothing
+here supports a claim about how often the two coincide across a literature. Naming conventions,
+condition coding and the direction of the usual nuisance trends could well be related to each
+other in practice, and that would have to be studied rather than assumed.
+
+What is clear is the consequence for one analysis: an affected result can be significant in the
+predicted direction and is still not evidence for anything, having been computed on the wrong
+pairing. No single affected analysis can be cleared on the strength of an average:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to
