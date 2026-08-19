@@ -238,7 +238,11 @@ recompute anything, see below.
   `LC_COLLATE` can clear output that really was mislabelled. Compare
   `Sys.getlocale("LC_COLLATE")` against the original session if you know it, and if you cannot,
   run the check on the machine that produced the files. Plain lowercase-ASCII identifiers such
-  as `p1`/`p12`, and numeric ones, sort the same way everywhere and are not exposed to this.
+  as `p1`/`p12` are not realistically exposed, and numeric identifiers are not exposed at all,
+  numeric sorting being locale-independent. Note that "lowercase ASCII" is not itself a
+  guarantee: some locales collate letter pairs as single units — Czech orders `ch` after `h`,
+  and traditional Danish puts `aa` at the end of the alphabet — so identifiers containing such
+  sequences can reorder even though every character is plain.
 
 ## How to fix it
 

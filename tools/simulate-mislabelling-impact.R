@@ -198,14 +198,28 @@ if (ids_mode) {
   }
   # This mode re-derives the ordering with sort(), so it inherits the running
   # session's collation rather than the one the affected analysis ran under.
-  # Only identifiers outside plain lowercase ASCII can order differently, so
-  # the warning fires for those rather than on every run.
-  if (is.character(ids) && any(grepl("[^0-9a-z]", ids))) {
-    cat("  WARNING: these identifiers contain characters whose sort order is\n")
-    cat("   locale-dependent (upper case, accents or punctuation), and this run\n")
-    cat(sprintf("   used LC_COLLATE=%s. If the original analysis ran under a\n",
-                Sys.getlocale("LC_COLLATE")))
-    cat("   different collation, the permutation below is not the one it got.\n")
+  # A character-class test for that was wrong: lowercase ASCII is not safe
+  # either, since some locales collate digraphs as units -- Czech orders "ch"
+  # after "h", so c("ch", "d") sorts one way there and the other way in C, and
+  # traditional Danish puts "aa" at the end of the alphabet. So report the
+  # collation for every character run, and escalate only on evidence: compare
+  # this locale's ordering against C ordering, which method = "radix" gives
+  # regardless of LC_COLLATE.
+  if (is.character(ids)) {
+    lc <- Sys.getlocale("LC_COLLATE")
+    differs <- !identical(sort(unique(ids)),
+                          sort(unique(ids), method = "radix"))
+    if (differs) {
+      cat("  WARNING: these identifiers order differently under C collation than\n")
+      cat(sprintf("   under this run's LC_COLLATE=%s, so which one the original\n", lc))
+      cat("   analysis used decides the answer. Re-run under that locale.\n")
+    } else {
+      cat(sprintf("  (ordering derived under LC_COLLATE=%s%s.\n", lc,
+                  if (lc %in% c("C", "POSIX")) "" else ", and identical under C"))
+      cat("   Some locales collate letter pairs as units -- Czech \"ch\", Danish\n")
+      cat("   \"aa\" -- so if your identifiers contain those and the original ran\n")
+      cat("   under a different one, re-run there to be sure.)\n")
+    }
   }
   if (kept == 1) {
     cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")

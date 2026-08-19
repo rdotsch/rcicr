@@ -212,7 +212,10 @@
   `participants` object rather than a character copy, since a factor carries its own level
   order and `sort()` follows it; and run it under the collation the original analysis ran
   under, since identifiers mixing case, accents or punctuation sort differently by locale.
-  Plain `p1`/`p12` and numeric identifiers are not exposed to either.
+  Numeric identifiers are not exposed to the second, numeric sorting being
+  locale-independent, and `p1`/`p12` are not realistically exposed — though lowercase ASCII is
+  no guarantee in general, since some locales collate letter pairs as units (Czech `ch`,
+  Danish `aa`).
 
   If the output is long gone and only the script survives, search it for `individual` rather
   than the full argument name, and read by hand any `generateCI()` call passing six or more
