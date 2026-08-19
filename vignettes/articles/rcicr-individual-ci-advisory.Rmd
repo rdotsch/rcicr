@@ -54,6 +54,12 @@ file.rename(file.path("individual_cis", paste0("ci_", old, ".tmp")),
             file.path("individual_cis", paste0("ci_", new, ".png")))
 ```
 
+(This assumes `sort()` orders your IDs the same way the original run did — always true on the
+same machine/session, and true for numeric or lowercase-ASCII IDs like `p1`/`p12` regardless.
+It can differ under a different locale if your IDs mix case, accents, or punctuation; check
+`Sys.getlocale("LC_COLLATE")` against the original run if you're unsure, or recover on the
+machine that produced the files.)
+
 (use the `antici_` prefix instead of `ci_` if you generated anti-CIs).
 
 If you plan to keep using the package, get the fixed version from
