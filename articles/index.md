@@ -9,5 +9,5 @@
 
 ### Advisories
 
-- [Individual-CI filename advisory (rcicr
-  1.3.0)](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.md):
+- [Individual-CI filename advisory (affects rcicr
+  0.4.0–1.2.3)](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.md):

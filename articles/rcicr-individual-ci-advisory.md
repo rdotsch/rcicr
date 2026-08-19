@@ -1,4 +1,13 @@
-# Individual-CI filename advisory (rcicr 1.3.0)
+# Individual-CI filename advisory (affects rcicr 0.4.0–1.2.3)
+
+**This is an advisory, not a bug report. The bug is in versions 0.4.0
+through 1.2.3, all of them GitHub-only, and is fixed in
+[1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). It never
+reached CRAN: the last CRAN release, 0.3.4.1, predates the option
+involved by thirteen months, so nothing installed with
+`install.packages('rcicr')` was ever affected.** It is published so that
+anyone who finds it later can work out whether their own stored results
+are affected.
 
 ## This is the bug
 
@@ -11,8 +20,8 @@ only the file names were wrong.
 
 ## Which versions were affected
 
-It affects versions 0.4.1 through 1.2.3 outright (GitHub only; it never
-reached CRAN). **Version 0.4.0 is a special case**: it lived only on the
+It affects versions 0.4.1 through 1.2.3 outright, all of them
+GitHub-only. **Version 0.4.0 is a special case**: it lived only on the
 `development` branch, from 2016-10-26 to 2021-09-23, and the bug entered
 partway through that window, on 2017-08-15 — so whether a 0.4.0 install
 is affected depends on exactly when you got it, not the version string
