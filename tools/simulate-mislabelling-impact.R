@@ -89,13 +89,6 @@ resC <- do.call(rbind, Map(function(n, r) run_cor(n, r, function(k) as.numeric(s
                            grid$n, grid$rho))
 print(resC, row.names = FALSE, digits = 3)
 
-cat("\n=== Null cells, paired: is the mislabelled rate the same as the correct one? ===\n")
-nullcells <- rbind(cbind(design = "A", resA[resA$rho == 0, ]),
-                   cbind(design = "C", resC[resC$rho == 0, ]))
-nullcells$SEs_from_zero <- abs(nullcells$diff) / nullcells$diff_se
-print(nullcells[, c("design", "n", "detected_correct", "detected_affected",
-                    "diff", "diff_se", "SEs_from_zero")],
-      row.names = FALSE, digits = 3)
 
 cat("\n=== B: condition assigned in blocks by collection order ===\n")
 run_blocked <- function(n, d, nsim = NSIM) {
@@ -113,13 +106,31 @@ run_blocked <- function(n, d, nsim = NSIM) {
     sig_p[i] <- ta$p.value < ALPHA && est > 0
     sig_o[i] <- ta$p.value < ALPHA && est < 0
   }
+  discordant <- sum(hit_c != hit_a)
   data.frame(n = n, d = d, detected_correct = mean(hit_c),
-             detected_affected = mean(hit_a), sig_predicted = mean(sig_p),
+             detected_affected = mean(hit_a),
+             diff = mean(hit_a) - mean(hit_c), diff_se = sqrt(discordant) / nsim,
+             sig_predicted = mean(sig_p),
              sig_opposite = mean(sig_o), crossed_condition = mean(cond[perm] != cond))
 }
 gridB <- expand.grid(n = c(12, 20, 30, 50), d = c(0, 0.8))
-print(do.call(rbind, Map(function(n, d) run_blocked(n, d), gridB$n, gridB$d)),
-      row.names = FALSE, digits = 3)
+resB <- do.call(rbind, Map(function(n, d) run_blocked(n, d), gridB$n, gridB$d))
+print(resB, row.names = FALSE, digits = 3)
+
+# The null cells are the evidence for "cannot create an association", so they
+# get their own table. Correct and mislabelled analyses see the same outcome
+# vector within an iteration, so the paired difference is the statistic: its
+# error is much smaller than either rate's, and it does not confound the
+# permutation with the test's own size. That distinction matters here --
+# Welch is mildly conservative at n = 12, visible in B's *correct* column.
+cat("\n=== Null cells, paired: is the mislabelled rate the same as the correct one? ===\n")
+nullcells <- rbind(
+  data.frame(design = "A", test = "cor.test", resA[resA$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se")]),
+  data.frame(design = "C", test = "cor.test", resC[resC$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se")]),
+  data.frame(design = "B", test = "Welch t", resB[resB$d == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se")])
+)
+nullcells$SEs_from_zero <- abs(nullcells$diff) / nullcells$diff_se
+print(nullcells, row.names = FALSE, digits = 3)
 
 # D asks whether the permutation can hand back a hypothesis-consistent result
 # rather than only destroy one. Scenario B at d = 0 already answers it for an

@@ -264,14 +264,15 @@ is unaffected, as the version table above says.
 
 **With no true association, the mislabelling cannot create one.** Rejection stays at α in
 every design and at every N — 0.046 to 0.053 against a nominal 0.05. Those individual rates
-should not be read too closely: at nsim = 20,000 the Monte Carlo SE at 0.05 is 0.0015, and a
-Welch test at N = 12 is mildly conservative in the correctly labelled column too. The statistic
-that carries the claim is the **paired** difference, both analyses seeing the same outcome
-vector within an iteration; the script prints it, and across the eight null cells it runs from
-−0.005 to +0.003, each within 2.1 paired SEs of zero. The result is structural rather than a
-lucky set of draws: permuting one side of a pair that is independent of the other leaves it
-independent, so the null distribution is unchanged by construction. **The bug is not a
-mechanism for false positives.**
+should not be read too closely: at nsim = 20,000 the Monte Carlo SE at 0.05 is 0.0015, and each
+test brings its own size (the Welch *t* in scenario B is mildly conservative at N = 12, 0.0471
+in the correctly labelled column, where scenarios A and C use `cor.test()` and sit nearer
+0.050). The statistic that carries the claim is therefore the **paired** difference, both
+analyses seeing the same outcome vector within an iteration; the script prints it for all
+twelve null cells across the three designs, and it runs from −0.005 to +0.003, each within 2.1
+paired SEs of zero. The result is structural rather than a lucky set of draws: permuting one
+side of a pair that is independent of the other leaves it independent, so the null distribution
+is unchanged by construction. **The bug is not a mechanism for false positives.**
 
 **With a true association and an ordinary design — a covariate unrelated to the order
 participants happened to be labelled in — the association is destroyed**, not merely weakened.
