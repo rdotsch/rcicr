@@ -301,8 +301,12 @@ what the permutation null looks like.
 
 **How much damage depends on how far out of order the identifiers were, and A and C fix that at
 close to the worst case.** `p1 … pN` in collection order leaves exactly one file correctly
-paired past the tenth participant, so "destroyed" describes that scheme rather than every
-affected study. Scenario E sweeps the severity using the real mechanism — build an appearance
+paired at N = 12, 20, 30 and 50, so "destroyed" describes that scheme at those sizes rather than
+every affected study. It is not monotone in N either — the count turns on where the identifiers
+change width, so 99, 100 and 101 participants leave *eleven* files correctly paired (at N = 100,
+`p1` and `p80`–`p89`) while 120 is back to one. The advisory therefore gives readers
+`mean(sort(unique(participants)) == unique(participants))` to compute their own share rather
+than reading it off any of these. Scenario E sweeps the severity using the real mechanism — build an appearance
 order, let `mislabel_perm()` derive the permutation from it — at N = 50 with ρ = 0.5, which
 correct labels detect 97% of the time:
 

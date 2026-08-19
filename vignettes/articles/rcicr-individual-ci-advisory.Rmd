@@ -88,12 +88,26 @@ correlation of 0.5, which a correctly labelled study detects 97% of the time:
 | `p1 … p50` in collection order | 0.02 | 0.047 |
 
 So a couple of participants entered out of sequence costs a few percentage points of power,
-while the common `p1 … pN` scheme past the tenth participant is close to the worst case
-available: exactly one file still carries its own participant, detection falls from 97% to 5%,
+while the common `p1 … pN` scheme lands near the bottom of that table: at 12, 20, 30 and 50
+participants exactly one file still carries its own participant, detection falls from 97% to 5%,
 and the surviving 5% splits evenly between positive and negative, which is what chance looks
 like. In that case the other 95% are false negatives — a real association, sitting in the data,
 that the analysis can no longer see — which is why the likeliest casualty of this bug is a real
 finding that did not appear, in a study filed away rather than published.
+
+Don't read your own case off those sample sizes, though: how much survives is not a smooth
+function of N, because it turns on where the identifiers change width. At 99, 100 or 101
+participants eleven files keep their own participant rather than one — at N = 100 they are `p1`
+and `p80` through `p89` — while at 120 it is back to one. Compute yours instead, from the
+participant vector in the order you originally passed it:
+
+```r
+ids <- unique(participants)
+mean(sort(ids) == ids)   # share of files that kept their own participant
+```
+
+That is the left-hand column of the table above, so it places your own analysis on it directly.
+`1` means the filenames were correct.
 
 **The exception is a covariate that tracks labelling order** — IDs assigned in collection order
 while conditions ran in blocks, or an ID encoding testing date or cohort. There the permutation

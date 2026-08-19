@@ -45,8 +45,11 @@ mislabel_perm <- function(ids) {
 
 cat("nsim =", NSIM, " alpha =", ALPHA, "\n\n")
 
+# Not monotone in n: the count turns on where the identifiers change width,
+# which is why 99-101 keep eleven and 120 is back to one. Readers are given
+# mean(sort(unique(participants)) == unique(participants)) rather than a rule.
 cat("=== How much of the pairing survives ===\n")
-for (n in c(9, 12, 20, 30, 50, 100)) {
+for (n in c(9, 12, 20, 30, 50, 99, 100, 120)) {
   p <- mislabel_perm(paste0("p", seq_len(n)))
   cat(sprintf("  p1..p%-3d  %3d of %3d files keep their own participant (%5.1f%%)\n",
               n, sum(p == seq_len(n)), n, 100 * mean(p == seq_len(n))))
