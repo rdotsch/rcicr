@@ -80,9 +80,21 @@ if (ids_mode) {
   if (looks_like_path && !file.exists(raw)) {
     stop("no such file: ", raw, call. = FALSE)
   }
-  ids <- if (file.exists(raw)) readLines(raw) else strsplit(raw, ",")[[1]]
-  ids <- trimws(ids)
+  # Whitespace is only noise in the comma-separated form, where "p1, p2" is
+  # the natural way to type it. In a file it may be data: c("p1 ", "p1") are
+  # two participants to factor(), and trimming would merge them and could
+  # report the rest as correctly paired. So file input keeps the bytes and
+  # says when it found any, since stray spaces from an editor would otherwise
+  # split one participant into two and raise a false alarm instead.
+  from_file <- file.exists(raw)
+  ids <- if (from_file) readLines(raw) else trimws(strsplit(raw, ",")[[1]])
   ids <- ids[nzchar(ids)]
+  if (from_file && any(ids != trimws(ids))) {
+    cat("NOTE: some identifiers in this file carry leading or trailing space,\n")
+    cat("  kept as given because factor() would have treated them as distinct.\n")
+    cat("  If they are an artefact of how the file was written rather than of\n")
+    cat("  the original participants vector, strip them and re-run.\n")
+  }
   if (length(unique(ids)) < 2) {
     stop("need at least two distinct participant identifiers, got ",
          length(unique(ids)), call. = FALSE)

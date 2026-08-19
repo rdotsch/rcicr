@@ -252,8 +252,8 @@ image of `sort(unique(participants))[i]`.
 
 ## What it did to a second-stage analysis
 
-The advisory tells readers that in the design this most often lands in, the mislabelling costs
-an effect rather than inventing one. That is a claim about a *permutation*, and the two
+The advisory tells readers that where the variable joined to the images is unrelated to
+labelling order, the mislabelling costs an effect rather than inventing one. That is a claim about a *permutation*, and the two
 summaries it invites — "it only adds
 noise" and "it could have produced spurious findings" — are each half right in ways that matter,
 so it is measured rather than argued. What comes out is that the aggregate false positive rate

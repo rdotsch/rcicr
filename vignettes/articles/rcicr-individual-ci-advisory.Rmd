@@ -52,8 +52,8 @@ related back to the source participant's condition, score or group. That join wa
 a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it
 was reported as.
 
-In the design this most often lands in — where the variable joined to the images has nothing to
-do with the order participants were labelled in — it costs an effect rather than inventing one.
+Where the variable joined to the images has nothing to do with the order participants were
+labelled in, it costs an effect rather than inventing one.
 Not every design: where something varies along collection order, the shuffle can hand back
 apparent support instead, and the two cases are separated below. What follows is measured rather
 than argued, because a claim about a permutation is easy to get wrong in either direction:
