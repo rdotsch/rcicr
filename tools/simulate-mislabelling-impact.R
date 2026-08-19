@@ -222,7 +222,20 @@ if (ids_mode) {
     }
   }
   if (kept == 1) {
-    cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")
+    # An all-clear is the one verdict that stops a reader looking further, so
+    # it must not be stated more firmly than the reconstruction supports. Only
+    # numeric identifiers are free of both caveats printed above: nothing about
+    # their order depends on collation, and a factor's levels are character.
+    if (is.character(ids)) {
+      cat("On this reconstruction the ordering was already sorted, so the filenames\n")
+      cat("  were correct -- conditional on the two points above. It assumes the\n")
+      cat("  original run sorted these identifiers the same way this session does,\n")
+      cat("  and that participants was not a factor with its own level order.\n")
+      cat("  Confirm both against the original analysis before treating this as an\n")
+      cat("  all-clear; the in-R check on the original object settles both at once.\n")
+    } else {
+      cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")
+    }
   } else if (n < 3) {
     # cor.test() needs three finite pairs. The pairing share above is still
     # exact and is the part that describes the mislabelling; only the detection
