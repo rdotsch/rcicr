@@ -88,6 +88,20 @@ if (ids_mode) {
   # split one participant into two and raise a false alarm instead.
   from_file <- file.exists(raw)
   ids <- if (from_file) readLines(raw) else trimws(strsplit(raw, ",")[[1]])
+  # An empty line is ambiguous and both silent readings are wrong. Dropping it
+  # changes the permutation if the original vector really held an empty
+  # identifier; keeping it invents a participant on any file whose last line is
+  # blank, which is most of them -- writeLines() and most editors leave one. So
+  # neither: say what was found and let the caller resolve it.
+  if (from_file && any(!nzchar(ids))) {
+    stop("blank line(s) in ", raw, ": lines ",
+         paste(which(!nzchar(ids)), collapse = ", "), ".\n",
+         "  If they are formatting -- a trailing newline, say -- remove them ",
+         "and re-run.\n",
+         "  If the participants vector really held an empty identifier, this ",
+         "mode cannot\n  represent it; check that case in R against the ",
+         "original object.", call. = FALSE)
+  }
   ids <- ids[nzchar(ids)]
   if (from_file && any(ids != trimws(ids))) {
     cat("NOTE: some identifiers in this file carry leading or trailing space,\n")
