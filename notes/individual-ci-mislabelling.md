@@ -98,6 +98,42 @@ separates clean from affected, and the branch decides whether they could have ha
 **No CRAN user has ever received a mislabelled file**, at any point in the package's seven years
 there. The last CRAN release predates the `save_individual_cis` option by thirteen months.
 
+That date gap is not the whole argument, and on its own it would leave the real question open:
+whether some *other* route in 0.3.4.1 wrote per-participant files. It had one, and it is safe by
+construction rather than by accident. Checked against the tarball CRAN still serves
+(`rcicr_0.3.4.1.tar.gz`, `Date/Publication: 2016-07-13`), not against this repository's imported
+copy of it:
+
+- **The option is absent from the sources, not merely from the signature.**
+  `save_individual_cis`, `individual_cis` and `participants` appear nowhere in `R/`.
+  `generateCI()` in full is
+  `generateCI(stimuli, responses, baseimage, rdata, saveasjpeg, filename, targetpath, antiCI,
+  scaling, constant)`.
+
+- **Per-participant CIs were reached through `batchGenerateCI(data, by = <participant column>,
+  ...)` and `batchGenerateCI2IFC()`** — and those carry one ordering, where the bug needs two:
+
+  ```r
+  for (unit in unique(data[, by])) {
+    unitdata <- data[data[, by] == unit, ]
+    filename <- paste0(baseimage, '_', by, '_', unitdata[1, by])
+    cis[[filename]] <- generateCI(unitdata[, stimuli], ...)
+  }
+  ```
+
+  The rows are selected by `data[, by] == unit`, and the name is read back out of the subset that
+  selection produced (`unitdata[1, by]`). Name and data descend from the same value, so they
+  cannot disagree — whatever order `unique()` returns, the name follows the data.
+
+- **Every other write is name-keyed or unrelated.** `autoscale()` loops
+  `for (ciname in names(cis))` and writes `cis[[ciname]]`; `generateCI()` writes a single file
+  under the caller's `filename`; the two remaining `writeJPEG()` calls are stimulus generation,
+  keyed by trial number. No positional index into a participant vector exists anywhere in the
+  shipped code.
+
+The 1.x defect needs the two-step "one CI per participant, then average across them" machinery to
+exist before it can occur. 0.3.4.x has no second ordering for a loop counter to disagree with.
+
 ### From the GitHub default branch — `install_github('rdotsch/rcicr')`
 
 **Until 2021-12-28 this did not work at all**, and that is the single most important row in
