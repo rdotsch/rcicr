@@ -17,7 +17,7 @@ install.packages('remotes')
 remotes::install_github('rdotsch/rcicr@*release')
 
 # A specific release, by tag -- to reproduce an analysis run under that version
-remotes::install_github('rdotsch/rcicr@v1.2.3')
+remotes::install_github('rdotsch/rcicr@v1.3.0')
 
 # The development version at the tip of main -- unreleased, may change under you
 remotes::install_github('rdotsch/rcicr')
