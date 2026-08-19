@@ -105,9 +105,10 @@ a true correlation of 0.5:
 | 50 | 0.970 | 0.047 |
 
 The runs that then fail to reject are false negatives — a real association, sitting in the data,
-that the analysis can no longer see. At N = 50 that is 95% of them. This is why the likeliest
-casualty of the bug is a real finding that did not appear, in a study filed away rather than
-published.
+that the analysis can no longer see. At N = 50 that is 95% of them. This is the file-drawer
+case: what the bug costs here is a real finding that did not appear, in a study filed away
+rather than published. How often analyses fell in this design rather than the order-linked ones
+below is not something these simulations can say.
 
 Don't read your own case off those sample sizes, though: how much survives is not a smooth
 function of N, because it turns on where the identifiers change width. At 99, 100 or 101

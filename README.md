@@ -34,8 +34,10 @@ impact".
 > `generateCI(participants = ..., save_individual_cis = TRUE)` wrote each image under the
 > wrong participant's filename whenever the participant IDs were not in lexical order — which
 > includes the ordinary case of `p1 ... p10` in collection order. The images were correct; only
-> the names were wrong, and correcting them is a rename rather than a re-run. See
-> [`NEWS.md`](NEWS.md) under "Reproducibility impact" for the check, and
+> the names were wrong, and correcting them is a rename rather than a re-run. The
+> [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
+> is the full version — how to tell whether you are affected, what it did to an analysis, and
+> the recovery — with a shorter form in [`NEWS.md`](NEWS.md) under "Reproducibility impact", and
 > [which version you had](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) if you need to work out what a stored
 > analysis actually ran. `batchGenerateCI()`, `batchGenerateCI2IFC()` and `generateCI2IFC()`
 > were never affected.
