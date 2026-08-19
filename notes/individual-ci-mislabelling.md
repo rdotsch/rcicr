@@ -339,9 +339,11 @@ correctly signed. A covariate that *is* collection order (testing date, cohort, 
 number) behaves the same way — at N = 50, ρ = 0.5 a mean *r* of 0.22 is still recovered, while
 at N = 20 the mean *r* is −0.11.
 
-**Can it ever hand back a result that supports the hypothesis?** Scenario B at d = 0 answers
-that for an outcome which is exchangeable noise: nothing can be created, so nothing can point
-anywhere. The harder case is an outcome carrying real structure tied to collection order —
+**Can it ever hand back a result that supports the hypothesis?** Scenario B at d = 0 settles
+the *rate* for an outcome which is exchangeable noise — permuting it leaves the null
+distribution alone, so nothing is inflated on average, though as the `decisions_changed` figures
+above show, individual datasets still flip in both directions. The harder case is an outcome
+carrying real structure tied to collection order —
 drift, practice, season — with no true condition effect, where the permutation has something to
 move around. Scenario D runs it: condition blocked by collection order, `y` a real trend over
 that order, so the trend is confounded with condition before the bug is involved at all.

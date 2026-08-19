@@ -75,6 +75,7 @@ run_cor <- function(n, rho, xfun, nsim = NSIM) {
   # n (Welch is conservative at n = 12, in the correct column too).
   discordant <- sum(hit_c != hit_a)
   data.frame(n = n, rho = rho,
+             flip_to_sig = sum(!hit_c & hit_a) / nsim,
              detected_correct = mean(hit_c), detected_affected = mean(hit_a),
              diff = mean(hit_a) - mean(hit_c),
              diff_se = sqrt(discordant) / nsim,
@@ -112,7 +113,8 @@ run_blocked <- function(n, d, nsim = NSIM) {
     sig_o[i] <- ta$p.value < ALPHA && est < 0
   }
   discordant <- sum(hit_c != hit_a)
-  data.frame(n = n, d = d, detected_correct = mean(hit_c),
+  data.frame(n = n, d = d, flip_to_sig = sum(!hit_c & hit_a) / nsim,
+             detected_correct = mean(hit_c),
              detected_affected = mean(hit_a),
              diff = mean(hit_a) - mean(hit_c), diff_se = sqrt(discordant) / nsim,
              decisions_changed = discordant / nsim, sig_predicted = mean(sig_p),
@@ -130,19 +132,19 @@ print(resB, row.names = FALSE, digits = 3)
 # Welch is mildly conservative at n = 12, visible in B's *correct* column.
 cat("\n=== Null cells, paired: is the mislabelled rate the same as the correct one? ===\n")
 nullcells <- rbind(
-  data.frame(design = "A", test = "cor.test", resA[resA$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed")]),
-  data.frame(design = "C", test = "cor.test", resC[resC$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed")]),
-  data.frame(design = "B", test = "Welch t", resB[resB$d == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed")])
+  data.frame(design = "A", test = "cor.test", resA[resA$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed", "flip_to_sig")]),
+  data.frame(design = "C", test = "cor.test", resC[resC$rho == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed", "flip_to_sig")]),
+  data.frame(design = "B", test = "Welch t", resB[resB$d == 0, c("n", "detected_correct", "detected_affected", "diff", "diff_se", "decisions_changed", "flip_to_sig")])
 )
 nullcells$SEs_from_zero <- abs(nullcells$diff) / nullcells$diff_se
 print(nullcells, row.names = FALSE, digits = 3)
 
 # D asks whether the permutation can hand back a hypothesis-consistent result
 # rather than only destroy one. Scenario B at d = 0 already answers it for an
-# exchangeable outcome, where nothing can be created; the harder case is an
-# outcome carrying real structure tied to collection order -- drift, practice,
-# season -- with no true condition effect, where the permutation has something
-# to move around.
+# exchangeable outcome, where the rate is unchanged although individual
+# verdicts still flip both ways. The harder case is an outcome carrying real
+# structure tied to collection order -- drift, practice, season -- with no true
+# condition effect, where the permutation has something to move around.
 cat("\n=== D: real trend over collection order, no true condition effect ===\n")
 # Assignment scheme matters, and picking only one of them rigs the answer.
 # Contiguous blocks put every early observation in one condition and every
@@ -225,6 +227,7 @@ cat("  for comparison, the p1..pN scheme used above keeps",
 # is overridden rather than quoting the seeded 20,000-iteration defaults.
 nullrows <- nullcells
 dc <- range(nullrows$decisions_changed)
+share_to_sig <- nullrows$flip_to_sig / nullrows$decisions_changed
 alt <- resD[resD$assignment == "alternating", ]
 amp <- alt[alt$amplified, ]
 worst <- alt[which.max(alt$mislabelled_predicted - alt$correct_predicted), ]
@@ -236,9 +239,10 @@ cat(sprintf(paste0(
   "   stays at alpha in A, B and C, at every n; permuting one side of a pair\n",
   "   independent of the other leaves it independent, so this is structural.\n",
   "   Individual verdicts still flip: decisions_changed runs %.3f to %.3f in\n",
-  "   the null cells, about half of them a rejection the correct labels would\n",
-  "   not have given. An unchanged rate is not a clean bill for one dataset.\n"),
-  dc[1], dc[2]))
+  "   the null cells, of which %.0f%% to %.0f%% are rejections the correct labels\n",
+  "   would not have given. An unchanged rate is not a clean bill for one\n",
+  "   dataset.\n"),
+  dc[1], dc[2], 100 * min(share_to_sig), 100 * max(share_to_sig)))
 mild <- resE[which.max(resE$share_correctly_paired), ]
 cat(sprintf(paste0(
   "2. A true association -> weakened in proportion to how scrambled the\n",
