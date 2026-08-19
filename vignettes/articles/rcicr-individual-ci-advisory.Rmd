@@ -2,13 +2,16 @@
 title: "Individual-CI filename advisory (rcicr 0.4.0–1.2.3)"
 ---
 
-**This is an advisory, not a bug report. The bug is in versions 0.4.0 through 1.2.3 —
-0.4.0 only if you installed it on or after 2017-08-15, see "Which versions were affected"
-below — all of them GitHub-only, and is fixed in
+**The bug is in versions 0.4.0 through 1.2.3 — 0.4.0 only if you installed it on or after
+2017-08-15, see "Which versions were affected" below — all of them GitHub-only, and is fixed in
 [1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). It never reached CRAN: the
 last CRAN release, 0.3.4.1, predates the option involved by thirteen months, so nothing
 installed with `install.packages('rcicr')` was ever affected.** It is published so that
 anyone who finds it later can work out whether their own stored results are affected.
+
+This page is the canonical version of this advisory and is kept up to date. Announcements
+sent by email are frozen at the moment they were sent and link here for the recovery
+procedure; where one disagrees with this page, this page is right.
 
 ## This is the bug
 
@@ -53,7 +56,11 @@ image for `sort(unique(participants))[i]`, so this recovers the correct filename
 recomputing anything (two steps, so the rename doesn't overwrite a file it hasn't renamed yet):
 
 ```r
-targetpath <- "."  # set to whatever targetpath you originally passed to generateCI()
+# The targetpath you originally passed to generateCI(). If you never passed one, it
+# was "./cis" by default in every affected release up to 1.2.1, so the files are in
+# "cis/individual_cis/" relative to where you ran the analysis, not in the working
+# directory itself. Getting this wrong is caught by the stop() calls below.
+targetpath <- "./cis"
 
 old <- unique(participants)         # names the files currently carry
 new <- sort(unique(participants))   # participants they actually contain
