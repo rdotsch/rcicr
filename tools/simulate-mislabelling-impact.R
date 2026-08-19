@@ -93,16 +93,20 @@ if (ids_mode) {
   # identifier; keeping it invents a participant on any file whose last line is
   # blank, which is most of them -- writeLines() and most editors leave one. So
   # neither: say what was found and let the caller resolve it.
-  if (from_file && any(!nzchar(ids))) {
-    stop("blank line(s) in ", raw, ": lines ",
-         paste(which(!nzchar(ids)), collapse = ", "), ".\n",
-         "  If they are formatting -- a trailing newline, say -- remove them ",
-         "and re-run.\n",
+  if (any(!nzchar(ids))) {
+    where <- paste(which(!nzchar(ids)), collapse = ", ")
+    stop(if (from_file) paste0("blank line(s) in ", raw, ": lines ", where)
+         else paste0("empty field(s) in the identifier list: position ", where),
+         ".\n",
+         if (from_file) {
+           "  If they are formatting -- a trailing newline, say -- remove them and re-run.\n"
+         } else {
+           "  If that is a stray comma, remove it and re-run.\n"
+         },
          "  If the participants vector really held an empty identifier, this ",
          "mode cannot\n  represent it; check that case in R against the ",
          "original object.", call. = FALSE)
   }
-  ids <- ids[nzchar(ids)]
   if (from_file && any(ids != trimws(ids))) {
     cat("NOTE: some identifiers in this file carry leading or trailing space,\n")
     cat("  kept as given because factor() would have treated them as distinct.\n")
