@@ -60,10 +60,37 @@ cat("nsim =", NSIM, " alpha =", ALPHA, "\n\n")
 # rather than approximating it from the share of correctly paired files.
 if (ids_mode) {
   raw <- args[2]
-  ids <- if (file.exists(raw)) trimws(readLines(raw)) else strsplit(raw, ",")[[1]]
+  # A path that does not exist must be an error, never data: silently treating
+  # "ids.txt" as a single identifier yields one participant, which reports
+  # "correctly paired" and hands an affected analysis a false all-clear.
+  looks_like_path <- grepl("[/\\\\]", raw) || grepl("\\.(txt|csv|tsv|dat)$", raw)
+  if (looks_like_path && !file.exists(raw)) {
+    stop("no such file: ", raw, call. = FALSE)
+  }
+  ids <- if (file.exists(raw)) readLines(raw) else strsplit(raw, ",")[[1]]
   ids <- trimws(ids)
   ids <- ids[nzchar(ids)]
+  if (length(unique(ids)) < 2) {
+    stop("need at least two distinct participant identifiers, got ",
+         length(unique(ids)), call. = FALSE)
+  }
   rho <- if (length(args) >= 3 && !is.na(args[3])) as.numeric(args[3]) else 0.5
+
+  # Type matters as much as order. R sorts a numeric participants vector
+  # numerically, so 1:12 is not affected at all, while the character vector
+  # "1" ... "12" sorts lexically and is. Everything arriving here is a string,
+  # so an all-numeric list is read as numeric -- what generateCI() would have
+  # seen from participants = c(1, 2, ...) -- and the other reading is reported
+  # alongside rather than silently chosen.
+  numeric_ids <- !any(is.na(suppressWarnings(as.numeric(ids))))
+  if (numeric_ids) {
+    as_char <- mean(mislabel_perm(ids) == seq_along(unique(ids)))
+    ids <- as.numeric(ids)
+    cat("identifiers read as numbers, matching participants = c(1, 2, ...);\n")
+    cat(sprintf("  had they been the character strings \"1\", \"2\", ..., %.3f\n",
+                as_char))
+    cat("  of files would have been correctly paired instead.\n")
+  }
   n <- length(unique(ids))
   perm <- mislabel_perm(ids)
   kept <- mean(perm == seq_len(n))
