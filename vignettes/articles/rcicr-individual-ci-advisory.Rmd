@@ -80,9 +80,16 @@ d = 0.8 condition difference survives attenuated and correctly signed at N = 50 
 the time, 26% once mislabelled), and comes back **reversed** at N = 20, where 14% of runs are
 significant in the wrong direction against 0.1% in the right one.
 
-Nothing in any of this favours the hypothesis under test — lexical sorting of participant
-identifiers knows nothing about the direction anyone predicted. But no single affected analysis
-can be cleared on the strength of an average:
+None of this gives the permutation a systematic pull toward the hypothesis under test — it
+follows from sorting participant identifiers lexically, which knows nothing about the direction
+anyone predicted. Tested directly, in the design most likely to reward it (a real trend over
+collection order, condition blocked by that same order), the mislabelled analysis returns
+*fewer* hypothesis-consistent significant results than the correctly labelled one in every cell,
+never more, and diverts part of the remainder into the opposite direction.
+
+It can still leave a particular study sitting on a significant result in the predicted
+direction. That result is not evidence for anything — it was computed on the wrong pairing — and
+no single affected analysis can be cleared on the strength of an average:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to

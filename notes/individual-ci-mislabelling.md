@@ -247,7 +247,7 @@ The advisory tells readers that the mislabelling costs effects rather than inven
 That is a claim about a *permutation*, which is easy to get wrong in either direction — "it
 only adds noise" and "it could have produced spurious findings" are both wrong as stated — so
 it is measured rather than argued. `tools/simulate-mislabelling-impact.R` runs 20,000
-iterations per cell at α = 0.05, seeded, in about a minute; the numbers below are its output.
+iterations per cell at α = 0.05, seeded; the numbers below are its output.
 
 The design simulated is the one that matters: raters judge each individual CI, and those
 judgments are related back to something about the participant the filename names. The bug
@@ -297,8 +297,31 @@ correctly signed. A covariate that *is* collection order (testing date, cohort, 
 number) behaves the same way — at N = 50, ρ = 0.5 a mean *r* of 0.22 is still recovered, while
 at N = 20 the mean *r* is −0.11.
 
+**Can it ever hand back a result that supports the hypothesis?** Scenario B at d = 0 answers
+that for an outcome which is exchangeable noise: nothing can be created, so nothing can point
+anywhere. The harder case is an outcome carrying real structure tied to collection order —
+drift, practice, season — with no true condition effect, where the permutation has something to
+move around. Scenario D runs it: condition blocked by collection order, `y` a real trend over
+that order, so the trend is confounded with condition before the bug is involved at all.
+
+| N | trend | significant in predicted direction, correct labels | mislabelled | mislabelled, opposite direction |
+|---|---|---|---|---|
+| 20 | 0.3 | 0.177 | 0.006 | 0.059 |
+| 50 | 0.3 | 0.416 | 0.158 | 0.001 |
+| 20 | 1.0 | 0.907 | 0.000 | 0.128 |
+| 50 | 1.0 | 1.000 | 0.793 | 0.000 |
+
+In every cell the mislabelled analysis returns *fewer* hypothesis-consistent significant results
+than the correctly labelled one, never more, and diverts part of the remainder into the opposite
+direction. The permutation has no systematic pull toward a prediction — it follows from sorting
+identifiers lexically, which knows nothing about one. What it plainly can do is leave a single
+study sitting on a significant result in the predicted direction (0.158 in the N = 50, trend =
+0.3 cell), which is not evidence for anything, having been computed on the wrong pairing. That
+is why the advisory asks for a re-run whichever way the affected analysis came out, rather than
+offering the average as an all-clear.
+
 So the summary the advisory gives is the right one, with the scope it carries: on average an
 effect is lost rather than invented, an unpublished null is the likeliest casualty, nothing
-tilts the result toward the hypothesis under test — and no single affected analysis can be
-cleared on that basis, because a design whose IDs encode something can distort or reverse an
-effect instead of erasing it.
+systematically tilts the result toward the hypothesis under test — and no single affected
+analysis can be cleared on that basis, because a design whose IDs encode something can distort
+or reverse an effect instead of erasing it.

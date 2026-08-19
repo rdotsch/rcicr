@@ -11,15 +11,20 @@
 # This script measures the consequence, because the advisory makes a claim
 # about it that is easy to get wrong in either direction -- "it only adds
 # noise" and "it could have produced spurious findings" are both wrong as
-# stated. Three designs, at the alpha = 0.05 level:
+# stated. Four designs, at the alpha = 0.05 level:
 #
 #   A  covariate unrelated to the order participants were labelled in
 #      (the ordinary individual-differences design)
 #   B  condition assigned in blocks by collection order
 #   C  covariate that is collection order itself -- testing date, cohort
+#   D  a real trend over collection order with no true condition effect,
+#      condition blocked by collection order -- the case for asking whether
+#      the permutation can produce a hypothesis-consistent result rather
+#      than only destroy one
 #
 # Usage: Rscript tools/simulate-mislabelling-impact.R [nsim]
-# Runs in well under a minute at the default nsim.
+# Cost is nsim x cells x two tests per iteration; pass a smaller nsim to
+# iterate, and expect the wall clock to scale from there.
 
 nsim_arg <- commandArgs(trailingOnly = TRUE)[1]
 NSIM <- if (is.na(nsim_arg)) 20000L else as.integer(nsim_arg)
@@ -101,12 +106,50 @@ gridB <- expand.grid(n = c(12, 20, 30, 50), d = c(0, 0.8))
 print(do.call(rbind, Map(function(n, d) run_blocked(n, d), gridB$n, gridB$d)),
       row.names = FALSE, digits = 3)
 
+# D asks whether the permutation can hand back a hypothesis-consistent result
+# rather than only destroy one. Scenario B at d = 0 already answers it for an
+# exchangeable outcome, where nothing can be created; the harder case is an
+# outcome carrying real structure tied to collection order -- drift, practice,
+# season -- with no true condition effect, where the permutation has something
+# to move around.
+cat("\n=== D: real trend over collection order, no true condition effect ===\n")
+run_trend <- function(n, trend, nsim = NSIM) {
+  perm <- mislabel_perm(paste0("p", seq_len(n)))
+  cond <- rep(c(0, 1), each = n / 2)
+  ord <- as.numeric(scale(seq_len(n)))
+  cp <- co <- ap <- ao <- logical(nsim)
+  for (i in seq_len(nsim)) {
+    y <- trend * ord + rnorm(n)
+    tc <- t.test(y[cond == 1], y[cond == 0])
+    ya <- y[perm]
+    ta <- t.test(ya[cond == 1], ya[cond == 0])
+    ec <- tc$estimate[1] - tc$estimate[2]
+    ea <- ta$estimate[1] - ta$estimate[2]
+    cp[i] <- tc$p.value < ALPHA && ec > 0
+    co[i] <- tc$p.value < ALPHA && ec < 0
+    ap[i] <- ta$p.value < ALPHA && ea > 0
+    ao[i] <- ta$p.value < ALPHA && ea < 0
+  }
+  data.frame(n = n, trend = trend,
+             correct_predicted = mean(cp), correct_opposite = mean(co),
+             mislabelled_predicted = mean(ap), mislabelled_opposite = mean(ao))
+}
+gridD <- expand.grid(n = c(12, 20, 30, 50), trend = c(0.3, 0.6, 1.0))
+print(do.call(rbind, Map(function(n, t) run_trend(n, t), gridD$n, gridD$trend)),
+      row.names = FALSE, digits = 3)
+
 cat("\n=== Summary ===\n")
 cat("1. No true association -> the mislabelling cannot create one. Rejection\n")
-cat("   stays at alpha in all three designs, at every n. Permuting one side of\n")
-cat("   a pair that is independent of the other leaves it independent, so this\n")
-cat("   is structural rather than a property of these particular draws.\n")
+cat("   stays at alpha in A, B and C, at every n. Permuting one side of a pair\n")
+cat("   that is independent of the other leaves it independent, so this is\n")
+cat("   structural rather than a property of these particular draws.\n")
 cat("2. A true association, ordinary design -> it is destroyed. Detection\n")
 cat("   collapses to alpha, and every one of those is a false negative.\n")
 cat("3. A covariate tracking labelling order -> the residual can be either\n")
 cat("   sign: an effect can survive attenuated, or come back reversed.\n")
+cat("4. Even in D, where the permutation has real structure to move around, it\n")
+cat("   never raises hypothesis-consistent rejections above what the correctly\n")
+cat("   labelled analysis gives -- it lowers them, and diverts some into the\n")
+cat("   opposite direction. It has no systematic pull toward a prediction. A\n")
+cat("   single affected study can still land on a significant result in the\n")
+cat("   predicted direction, which is why re-running is required either way.\n")
