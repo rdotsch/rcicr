@@ -11,7 +11,13 @@ computed correctly; only the file names were wrong.
 
 ## Which versions were affected
 
-It affects versions 0.4.0 through 1.2.3 (GitHub only; it never reached CRAN), whenever
+It affects versions 0.4.1 through 1.2.3 outright (GitHub only; it never reached CRAN).
+**Version 0.4.0 is a special case**: it lived only on the `development` branch, from
+2016-10-26 to 2021-09-23, and the bug entered partway through that window, on 2017-08-15 — so
+whether a 0.4.0 install is affected depends on exactly when you got it, not the version string
+alone (see
+[`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
+for the install-date table). Any of these versions is only actually affected whenever
 participant IDs weren't already in sorted order (e.g. "p10" sorting before "p2", the ordinary
 case from the tenth participant on).
 
