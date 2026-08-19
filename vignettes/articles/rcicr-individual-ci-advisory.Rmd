@@ -126,7 +126,10 @@ distribution, so two orderings that keep the same share can still differ, by aro
 detection rate in the cases measured, according to whether the displaced files swap in pairs or
 run in longer cycles. The rows are worked examples rather than a lookup.
 
-For the exact figure, the script will run your own ordering:
+To put your own ordering through it instead of reading off a row — the permutation will be
+exactly yours, though the detection rates it reports assume a Pearson correlation on normally
+distributed data, so treat them as indicative if your second stage was a condition comparison or
+a regression:
 
 ```sh
 Rscript tools/simulate-mislabelling-impact.R --ids p1,p2,p10,p3 0.5

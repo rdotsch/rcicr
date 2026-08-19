@@ -132,6 +132,17 @@ if (ids_mode) {
   cat("  (assumes participants was a plain vector; a factor with a custom level\n")
   cat("   order sorts by its levels, which this mode cannot represent -- check\n")
   cat("   that case in R against the original object)\n")
+  # This mode re-derives the ordering with sort(), so it inherits the running
+  # session's collation rather than the one the affected analysis ran under.
+  # Only identifiers outside plain lowercase ASCII can order differently, so
+  # the warning fires for those rather than on every run.
+  if (any(grepl("[^0-9a-z]", as.character(ids)))) {
+    cat("  WARNING: these identifiers contain characters whose sort order is\n")
+    cat("   locale-dependent (upper case, accents or punctuation), and this run\n")
+    cat(sprintf("   used LC_COLLATE=%s. If the original analysis ran under a\n",
+                Sys.getlocale("LC_COLLATE")))
+    cat("   different collation, the permutation below is not the one it got.\n")
+  }
   if (kept == 1) {
     cat("Nothing to do: this ordering was already sorted, so the filenames were correct.\n")
   } else {

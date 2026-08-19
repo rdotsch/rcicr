@@ -247,8 +247,9 @@ image of `sort(unique(participants))[i]`.
 
 ## What it did to a second-stage analysis
 
-The advisory tells readers that the mislabelling mostly costs effects rather than inventing
-them. That is a claim about a *permutation*, and the two summaries it invites — "it only adds
+The advisory tells readers that in the design this most often lands in, the mislabelling costs
+an effect rather than inventing one. That is a claim about a *permutation*, and the two
+summaries it invites — "it only adds
 noise" and "it could have produced spurious findings" — are each half right in ways that matter,
 so it is measured rather than argued. What comes out is that the aggregate false positive rate
 is untouched while individual verdicts flip both ways, and that in some designs the shuffle
@@ -393,8 +394,23 @@ predicted direction and still be no evidence for anything, having been computed 
 pairing. That is why the advisory asks for a re-run whichever way an affected analysis came out,
 rather than offering an average as an all-clear.
 
-So the summary the advisory gives is the right one, with the scope it carries: on average an
-effect is lost rather than invented, an unpublished null is the likeliest casualty, the false
-positive *rate* is untouched — and no single affected analysis can be cleared on any of that,
-because the verdict on an individual dataset can flip either way, and a design whose IDs encode
-something can distort, reverse or amplify an effect instead of erasing it.
+What the four designs establish, kept separate rather than averaged — nothing here samples how
+common each is, so there is no basis for weighting them into a single expectation:
+
+- **Covariate unrelated to labelling order (A).** The association is lost, in proportion to how
+  scrambled the ordering was. Under the `p1 … pN` scheme this is close to total, and the runs
+  that then fail to reject are false negatives. This is the file-drawer case.
+- **The same, with no true association (A, B and C at the null).** The false positive *rate* is
+  unchanged, by exchangeability. Individual verdicts still flip in both directions, on 7.5% to
+  9.9% of datasets.
+- **Condition or covariate tracking labelling order (B, C).** The residual takes either sign:
+  attenuated and correctly signed, or reversed.
+- **A nuisance trend along collection order (D).** Contiguous blocks lose the effect; alternating
+  assignment *raises* hypothesis-consistent rejections above the correctly labelled analysis, in
+  9 of 12 cells.
+
+Two things hold across all of them. The permutation carries no reference to any hypothesis, so
+nothing in the mechanism aims it at a prediction — though how often it nonetheless agrees with
+one is not measured here. And no individual affected analysis can be cleared by any of it: the
+verdict on a single dataset can flip either way, so it has to be re-run against corrected
+filenames whichever way it came out.
