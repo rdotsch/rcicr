@@ -18,6 +18,7 @@
 ^CITATION\.cff$
 ^CONTRIBUTING\.md$
 ^tools$
+^analyses$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
