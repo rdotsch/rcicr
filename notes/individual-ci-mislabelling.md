@@ -273,10 +273,20 @@ common each design is:
 - **Condition or covariate tracking labelling order.** The residual takes either sign:
   attenuated and correctly signed, or reversed.
 - **A nuisance trend along collection order.** Contiguous blocks lose the effect; alternating
-  assignment *raises* hypothesis-consistent rejections above the correctly labelled analysis.
+  assignment *can raise* hypothesis-consistent rejections above the correctly labelled analysis,
+  in 9 of the 12 cells simulated. The three exceptions are all at N = 20, where that scheme's
+  permutation happens to cut the contrast rather than add to it — a reminder that the direction
+  belongs to the particular ordering, not to the design.
 
 Two things hold across all of them. The permutation carries no reference to any hypothesis, so
 nothing in the mechanism aims it at a prediction — though how often it nonetheless agrees with
-one is not measured there. And no individual affected analysis can be cleared by any of it: the
-verdict on a single dataset can flip either way, so it has to be re-run against corrected
-filenames whichever way it came out.
+one is not measured there. And none of these averages clears an individual analysis: the verdict
+on a single dataset can flip either way, so short of the check below it has to be re-run against
+corrected filenames whichever way it came out.
+
+One thing does clear an analysis without a re-run, and it is not an average but a property of
+the ordering: if the permutation only exchanged participants sharing a value on the variable
+joined to the images, the join is unchanged and so is every number computed from it. The
+advisory gives readers `identical(predictor, predictor[misfiled])` for that. It settles a case
+in one direction only — `FALSE` leaves the question open rather than answering it — but where it
+comes back `TRUE` there is nothing to re-run.
