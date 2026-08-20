@@ -482,12 +482,40 @@ ordering_impact <- function(participants, true_correlation = 0.5,
   misfiled <- misfiled_as(participants)
   n_participants <- length(unique(participants))
   share_correctly_paired <- mean(misfiled == seq_len(n_participants))
+
+  # The permutation is derived with sort(), which for character identifiers
+  # uses this session's collation and not necessarily the one the original
+  # analysis ran under. That makes every result here -- including an
+  # all-clear -- conditional, so the condition travels in the return value
+  # rather than in prose somebody can drop. Comparing against C order, which
+  # method = "radix" gives regardless of LC_COLLATE, is evidence where the two
+  # disagree; agreement is not proof, since a third locale may collate letter
+  # pairs as units (Czech "ch" after "h", Danish "aa" last).
+  distinct_ids <- unique(participants)
+  collation_matters <- is.character(participants)
+  differs_from_c_order <- collation_matters &&
+    !identical(sort(distinct_ids), sort(distinct_ids, method = "radix"))
+  conditions <- if (!collation_matters) {
+    character(0)
+  } else {
+    c(sprintf("ordering derived under LC_COLLATE=%s%s",
+              Sys.getlocale("LC_COLLATE"),
+              if (differs_from_c_order) {
+                "; differs from C order, so the original locale decides"
+              } else {
+                "; identical under C order"
+              }),
+      "assumes participants is the original object, not a character copy")
+  }
+
   if (share_correctly_paired == 1) {
-    return(list(share_correctly_paired = 1, affected = FALSE))
+    return(list(share_correctly_paired = 1, affected = FALSE,
+                conditional_on = conditions))
   }
   if (n_participants < 3) {
     return(list(share_correctly_paired = share_correctly_paired,
-                affected = TRUE, note = "too few participants to estimate rates"))
+                affected = TRUE, conditional_on = conditions,
+                note = "too few participants to estimate rates"))
   }
 
   detected_correct <- detected_mislabelled <- logical(iterations)
@@ -501,6 +529,7 @@ ordering_impact <- function(participants, true_correlation = 0.5,
   }
   list(share_correctly_paired = share_correctly_paired,
        affected = TRUE,
+       conditional_on = conditions,
        detected_correct = mean(detected_correct),
        detected_mislabelled = mean(detected_mislabelled),
        decisions_changed = mean(detected_correct != detected_mislabelled))
@@ -518,11 +547,20 @@ the filenames are. The advisory gives readers
 worth ruling in first because it can settle the question outright — though the
 ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
 
-Two cautions on the estimate, neither of which touches
-`share_correctly_paired`, which is exact. The detection rates assume a Pearson
-correlation on normally distributed data, so treat them as indicative if the
-second stage was a condition comparison or a regression. And `sort()` uses the
-session's collation, which for character identifiers may not be the collation
-the original analysis ran under — lowercase ASCII is no guarantee, since some
-locales collate letter pairs as units (Czech `ch` after `h`, Danish `aa` at the
-end of the alphabet). Run it under the original locale where that matters.
+The detection rates assume a Pearson correlation on normally distributed data,
+so treat them as indicative if the second stage was a condition comparison or a
+regression. `share_correctly_paired` is exact — but exact for the permutation
+*this session* derives, which for character identifiers depends on its
+collation. That is why the result carries `conditional_on` rather than leaving
+the caveat in prose: an all-clear from the wrong locale is still an all-clear
+to whoever reads the return value.
+
+```{r checker-conditions}
+str(ordering_impact(c("d", "ch"), iterations = 500))
+```
+
+Lowercase ASCII is no guarantee here, since some locales collate letter pairs
+as units — Czech orders `ch` after `h`, traditional Danish puts `aa` at the end
+of the alphabet — so `c("d", "ch")` is sorted under Czech collation and swapped
+under C. Run the check under the original locale wherever the identifiers are
+anything more than digits and simple prefixes.
