@@ -267,7 +267,9 @@ common each design is:
   scrambled the ordering was; under the `p1 … pN` scheme that is close to total. The runs that
   then fail to reject are false negatives. This is the file-drawer case.
 - **The same, with no true association.** The false positive *rate* is unchanged, by
-  exchangeability. Individual verdicts still flip in both directions, on roughly 9% of datasets.
+  exchangeability — which the iid null cells satisfy, and an outcome whose distribution drifts
+  over collection order would not. Individual verdicts still flip in both directions, on roughly
+  9% of datasets.
 - **Condition or covariate tracking labelling order.** The residual takes either sign:
   attenuated and correctly signed, or reversed.
 - **A nuisance trend along collection order.** Contiguous blocks lose the effect; alternating

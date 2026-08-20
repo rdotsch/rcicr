@@ -133,15 +133,19 @@ simulate_correlational_design <- function(n_participants, true_correlation,
   # Both analyses see the same outcome vector each iteration, so the paired
   # difference is the statistic that carries the claim: its error is far
   # smaller than either rate's, and it does not confound the permutation with
-  # the test's own size at small N.
+  # the test's own size at small N. Its SE comes from the per-iteration signed
+  # differences rather than from sqrt(discordant)/iterations, which is the
+  # McNemar SE *under equal rates* and overstates the error wherever the two
+  # rates genuinely differ.
   decisions_changed <- sum(detected_correct != detected_mislabelled)
+  signed_difference <- detected_mislabelled - detected_correct
   data.frame(
     N = n_participants,
     true_correlation = true_correlation,
     detected_correct = mean(detected_correct),
     detected_mislabelled = mean(detected_mislabelled),
     difference = mean(detected_mislabelled) - mean(detected_correct),
-    difference_se = sqrt(decisions_changed) / iterations,
+    difference_se = sd(signed_difference) / sqrt(iterations),
     decisions_changed = decisions_changed / iterations,
     became_significant = sum(!detected_correct & detected_mislabelled) / iterations,
     mean_correlation_recovered = mean(correlation_recovered),
@@ -174,13 +178,13 @@ knitr::kable(scenario_a, digits = 3)
 | 30 | 0.0 | 0.052 | 0.049 | -0.003 | 0.002 | 0.095 | 0.046 | -0.001 | 0.025 |
 | 50 | 0.0 | 0.049 | 0.047 | -0.002 | 0.002 | 0.090 | 0.044 | 0.001 | 0.023 |
 | 12 | 0.3 | 0.160 | 0.047 | -0.112 | 0.003 | 0.192 | 0.040 | 0.001 | 0.024 |
-| 20 | 0.3 | 0.258 | 0.047 | -0.211 | 0.004 | 0.282 | 0.035 | 0.000 | 0.025 |
+| 20 | 0.3 | 0.258 | 0.047 | -0.211 | 0.003 | 0.282 | 0.035 | 0.000 | 0.025 |
 | 30 | 0.3 | 0.369 | 0.047 | -0.323 | 0.004 | 0.382 | 0.029 | -0.001 | 0.024 |
-| 50 | 0.3 | 0.572 | 0.049 | -0.523 | 0.005 | 0.563 | 0.020 | -0.001 | 0.025 |
-| 12 | 0.5 | 0.399 | 0.047 | -0.352 | 0.005 | 0.414 | 0.031 | 0.000 | 0.024 |
-| 20 | 0.5 | 0.643 | 0.046 | -0.597 | 0.006 | 0.632 | 0.017 | 0.000 | 0.023 |
-| 30 | 0.5 | 0.832 | 0.049 | -0.783 | 0.006 | 0.799 | 0.008 | -0.001 | 0.025 |
-| 50 | 0.5 | 0.970 | 0.047 | -0.923 | 0.007 | 0.925 | 0.001 | -0.001 | 0.023 |
+| 50 | 0.3 | 0.572 | 0.049 | -0.523 | 0.004 | 0.563 | 0.020 | -0.001 | 0.025 |
+| 12 | 0.5 | 0.399 | 0.047 | -0.352 | 0.004 | 0.414 | 0.031 | 0.000 | 0.024 |
+| 20 | 0.5 | 0.643 | 0.046 | -0.597 | 0.004 | 0.632 | 0.017 | 0.000 | 0.023 |
+| 30 | 0.5 | 0.832 | 0.049 | -0.783 | 0.003 | 0.799 | 0.008 | -0.001 | 0.025 |
+| 50 | 0.5 | 0.970 | 0.047 | -0.923 | 0.002 | 0.925 | 0.001 | -0.001 | 0.023 |
 
 ### C: a covariate that *is* collection order
 
@@ -204,13 +208,13 @@ knitr::kable(scenario_c, digits = 3)
 | 30 | 0.0 | 0.049 | 0.052 | 0.003 | 0.002 | 0.098 | 0.051 | 0.000 | 0.027 |
 | 50 | 0.0 | 0.049 | 0.051 | 0.003 | 0.002 | 0.085 | 0.044 | 0.000 | 0.024 |
 | 12 | 0.3 | 0.157 | 0.040 | -0.117 | 0.003 | 0.193 | 0.038 | 0.025 | 0.017 |
-| 20 | 0.3 | 0.259 | 0.048 | -0.211 | 0.004 | 0.285 | 0.037 | -0.069 | 0.039 |
+| 20 | 0.3 | 0.259 | 0.048 | -0.211 | 0.003 | 0.285 | 0.037 | -0.069 | 0.039 |
 | 30 | 0.3 | 0.370 | 0.042 | -0.328 | 0.004 | 0.387 | 0.029 | 0.016 | 0.016 |
-| 50 | 0.3 | 0.587 | 0.146 | -0.441 | 0.005 | 0.498 | 0.028 | 0.136 | 0.001 |
-| 12 | 0.5 | 0.406 | 0.026 | -0.380 | 0.005 | 0.427 | 0.023 | 0.037 | 0.008 |
-| 20 | 0.5 | 0.662 | 0.048 | -0.613 | 0.006 | 0.648 | 0.017 | -0.114 | 0.046 |
-| 30 | 0.5 | 0.853 | 0.025 | -0.827 | 0.006 | 0.841 | 0.007 | 0.020 | 0.008 |
-| 50 | 0.5 | 0.976 | 0.336 | -0.640 | 0.006 | 0.644 | 0.002 | 0.224 | 0.000 |
+| 50 | 0.3 | 0.587 | 0.146 | -0.441 | 0.004 | 0.498 | 0.028 | 0.136 | 0.001 |
+| 12 | 0.5 | 0.406 | 0.026 | -0.380 | 0.004 | 0.427 | 0.023 | 0.037 | 0.008 |
+| 20 | 0.5 | 0.662 | 0.048 | -0.613 | 0.004 | 0.648 | 0.017 | -0.114 | 0.046 |
+| 30 | 0.5 | 0.853 | 0.025 | -0.827 | 0.003 | 0.841 | 0.007 | 0.020 | 0.008 |
+| 50 | 0.5 | 0.976 | 0.336 | -0.640 | 0.003 | 0.644 | 0.002 | 0.224 | 0.000 |
 
 ### B: condition assigned in blocks by collection order
 
@@ -240,13 +244,14 @@ simulate_blocked_design <- function(n_participants, effect_size,
   }
 
   decisions_changed <- sum(detected_correct != detected_mislabelled)
+  signed_difference <- detected_mislabelled - detected_correct
   data.frame(
     N = n_participants,
     effect_size = effect_size,
     detected_correct = mean(detected_correct),
     detected_mislabelled = mean(detected_mislabelled),
     difference = mean(detected_mislabelled) - mean(detected_correct),
-    difference_se = sqrt(decisions_changed) / iterations,
+    difference_se = sd(signed_difference) / sqrt(iterations),
     decisions_changed = decisions_changed / iterations,
     became_significant = sum(!detected_correct & detected_mislabelled) / iterations,
     significant_predicted = mean(significant_predicted),
@@ -269,10 +274,10 @@ knitr::kable(scenario_b, digits = 3)
 | 20 | 0.0 | 0.049 | 0.047 | -0.002 | 0.002 | 0.075 | 0.037 | 0.023 | 0.024 | 0.800 |
 | 30 | 0.0 | 0.049 | 0.050 | 0.001 | 0.002 | 0.094 | 0.048 | 0.025 | 0.025 | 0.467 |
 | 50 | 0.0 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.025 | 0.025 | 0.240 |
-| 12 | 0.8 | 0.222 | 0.032 | -0.189 | 0.004 | 0.252 | 0.031 | 0.016 | 0.017 | 0.500 |
+| 12 | 0.8 | 0.222 | 0.032 | -0.189 | 0.003 | 0.252 | 0.031 | 0.016 | 0.017 | 0.500 |
 | 20 | 0.8 | 0.386 | 0.143 | -0.243 | 0.004 | 0.331 | 0.044 | 0.001 | 0.142 | 0.800 |
-| 30 | 0.8 | 0.559 | 0.036 | -0.523 | 0.005 | 0.564 | 0.021 | 0.025 | 0.012 | 0.467 |
-| 50 | 0.8 | 0.794 | 0.262 | -0.532 | 0.005 | 0.566 | 0.017 | 0.262 | 0.000 | 0.240 |
+| 30 | 0.8 | 0.559 | 0.036 | -0.523 | 0.004 | 0.564 | 0.021 | 0.025 | 0.012 | 0.467 |
+| 50 | 0.8 | 0.794 | 0.262 | -0.532 | 0.004 | 0.566 | 0.017 | 0.262 | 0.000 | 0.240 |
 
 ## Finding 1: the false positive rate is unchanged
 
@@ -301,7 +306,7 @@ knitr::kable(null_cells, digits = 3, row.names = FALSE)
 | design | test | N | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | SEs_from_zero |
 |:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|
 | A | cor.test | 12 | 0.050 | 0.050 | 0.000 | 0.002 | 0.094 | 0.047 | 0.207 |
-| A | cor.test | 20 | 0.051 | 0.048 | -0.003 | 0.002 | 0.094 | 0.045 | 1.572 |
+| A | cor.test | 20 | 0.051 | 0.048 | -0.003 | 0.002 | 0.094 | 0.045 | 1.573 |
 | A | cor.test | 30 | 0.052 | 0.049 | -0.003 | 0.002 | 0.095 | 0.046 | 1.217 |
 | A | cor.test | 50 | 0.049 | 0.047 | -0.002 | 0.002 | 0.090 | 0.044 | 1.106 |
 | C | cor.test | 12 | 0.051 | 0.048 | -0.002 | 0.002 | 0.098 | 0.048 | 1.038 |
@@ -321,9 +326,16 @@ the **paired** difference, both analyses seeing the same outcome vector
 within an iteration. It runs from -0.005 to +0.003, each within 2.1
 paired SEs of zero.
 
-That result is structural rather than a lucky set of draws: permuting
-one side of a pair that is independent of the other leaves it
-independent, so the null distribution is unchanged by construction.
+That result is structural rather than a lucky set of draws, *for an
+outcome that is exchangeable across participants*: permuting one side of
+a pair that is independent of the other leaves it independent, so the
+null distribution is unchanged by construction. The null cells here are
+iid Gaussian and satisfy that. Independence alone is not enough — if the
+outcome’s distribution shifts along collection order, say because its
+variance grows as data collection went on, then the permutation moves
+high-leverage observations against the covariate and a Pearson or Welch
+test’s rejection rate can shift even with no true association. Nothing
+in these runs speaks to that case.
 
 **An unchanged rate is not a clean bill for one dataset.** The two
 analyses reach a different verdict on 7.5% to 9.8% of null datasets, of

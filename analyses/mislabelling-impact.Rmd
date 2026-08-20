@@ -110,15 +110,19 @@ simulate_correlational_design <- function(n_participants, true_correlation,
   # Both analyses see the same outcome vector each iteration, so the paired
   # difference is the statistic that carries the claim: its error is far
   # smaller than either rate's, and it does not confound the permutation with
-  # the test's own size at small N.
+  # the test's own size at small N. Its SE comes from the per-iteration signed
+  # differences rather than from sqrt(discordant)/iterations, which is the
+  # McNemar SE *under equal rates* and overstates the error wherever the two
+  # rates genuinely differ.
   decisions_changed <- sum(detected_correct != detected_mislabelled)
+  signed_difference <- detected_mislabelled - detected_correct
   data.frame(
     N = n_participants,
     true_correlation = true_correlation,
     detected_correct = mean(detected_correct),
     detected_mislabelled = mean(detected_mislabelled),
     difference = mean(detected_mislabelled) - mean(detected_correct),
-    difference_se = sqrt(decisions_changed) / iterations,
+    difference_se = sd(signed_difference) / sqrt(iterations),
     decisions_changed = decisions_changed / iterations,
     became_significant = sum(!detected_correct & detected_mislabelled) / iterations,
     mean_correlation_recovered = mean(correlation_recovered),
@@ -186,13 +190,14 @@ simulate_blocked_design <- function(n_participants, effect_size,
   }
 
   decisions_changed <- sum(detected_correct != detected_mislabelled)
+  signed_difference <- detected_mislabelled - detected_correct
   data.frame(
     N = n_participants,
     effect_size = effect_size,
     detected_correct = mean(detected_correct),
     detected_mislabelled = mean(detected_mislabelled),
     difference = mean(detected_mislabelled) - mean(detected_correct),
-    difference_se = sqrt(decisions_changed) / iterations,
+    difference_se = sd(signed_difference) / sqrt(iterations),
     decisions_changed = decisions_changed / iterations,
     became_significant = sum(!detected_correct & detected_mislabelled) / iterations,
     significant_predicted = mean(significant_predicted),
@@ -244,9 +249,15 @@ outcome vector within an iteration. It runs from
 `r sprintf("%.1f", max(null_cells$SEs_from_zero, na.rm = TRUE))` paired SEs of
 zero.
 
-That result is structural rather than a lucky set of draws: permuting one side
-of a pair that is independent of the other leaves it independent, so the null
-distribution is unchanged by construction.
+That result is structural rather than a lucky set of draws, *for an outcome that
+is exchangeable across participants*: permuting one side of a pair that is
+independent of the other leaves it independent, so the null distribution is
+unchanged by construction. The null cells here are iid Gaussian and satisfy
+that. Independence alone is not enough — if the outcome's distribution shifts
+along collection order, say because its variance grows as data collection went
+on, then the permutation moves high-leverage observations against the covariate
+and a Pearson or Welch test's rejection rate can shift even with no true
+association. Nothing in these runs speaks to that case.
 
 **An unchanged rate is not a clean bill for one dataset.** The two analyses
 reach a different verdict on

@@ -86,9 +86,11 @@ Two things follow for interpretation, and neither depends on which design you we
 Separately, a figure showing individual CIs labelled by participant, condition or group is wrong
 as printed, whatever the accompanying statistics did.
 
-The bug does not raise the false positive rate — permuting one side of a pair that is
-independent of the other leaves it independent — but that is a statement about rates across many
-studies, not about yours. Two analyses of the same null data reach a different verdict about 9%
+The bug does not raise the false positive rate where the measure behaves the same way across
+participants — permuting one side of a pair that is independent of the other leaves it
+independent. (If it does not behave the same way, because something like its variance drifted
+over the course of collection, the shuffle can move the rate as well.) Either way that is a
+statement about rates across many studies, not about yours. Two analyses of the same null data reach a different verdict about 9%
 of the time, roughly half of those being a rejection the correct labels would not have given. A
 result that became significant only on mislabelled files is a false positive the bug handed you.
 
