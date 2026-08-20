@@ -73,7 +73,26 @@ mean(sort(ids) == ids)   # share of files that kept their own participant
 association is gone — and under the common `p1 … pN` scheme past the tenth participant it is
 close to the worst available, typically one file in the whole set still holding its own image.
 
-Two things follow for interpretation, and neither depends on which design you were in:
+Mislabelled files do not always mean a changed analysis, and there is a sharper check than the
+one above for that. If the shuffle only exchanged participants who share a value on whatever you
+related the images to, the join is unaffected and the result stands exactly as computed:
+
+```r
+ids <- unique(participants)
+misfiled <- match(sort(ids), ids)   # which participant each file actually holds
+
+identical(predictor, predictor[misfiled])   # TRUE = this analysis is untouched
+```
+
+with `predictor` the participant-level variable, in the same order you passed `participants`. A
+two-group comparison where the swaps happened to stay inside each group is the clear case: the
+filenames are wrong, and every number in the analysis is right. This is worth checking before
+anything else, because it can settle the question outright. It is not the common case — the
+ordinary `p1 … pN` scheme with conditions in blocks does *not* survive it — but it costs one
+line to rule in.
+
+Where that comes back `FALSE`, two things follow, and neither depends on which design you were
+in:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to
@@ -83,8 +102,9 @@ Two things follow for interpretation, and neither depends on which design you we
   read as supporting**, because the pairing it was computed on was wrong. It needs re-running
   against corrected filenames before it means anything.
 
-Separately, a figure showing individual CIs labelled by participant, condition or group is wrong
-as printed, whatever the accompanying statistics did.
+A published figure needs the same distinction. One showing individual CIs labelled by
+participant is wrong as printed. One labelled only by condition or group is wrong only if the
+shuffle moved images across those groups, which is what the check above tells you.
 
 The bug does not raise the false positive rate where the measure behaves the same way across
 participants — permuting one side of a pair that is independent of the other leaves it

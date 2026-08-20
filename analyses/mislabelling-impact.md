@@ -583,6 +583,17 @@ original run.
 ``` r
 ordering_impact <- function(participants, true_correlation = 0.5,
                             iterations = 2000) {
+  # Validated before anything is allocated: iterations = 0 would return NaN for
+  # every advertised rate, and a non-numeric one would fail inside logical()
+  # with an implementation-level error rather than a usable message.
+  if (length(iterations) != 1 || !is.finite(iterations) || iterations < 1 ||
+        iterations != trunc(iterations)) {
+    stop("iterations must be a whole number of at least 1", call. = FALSE)
+  }
+  if (length(true_correlation) != 1 || !is.finite(true_correlation) ||
+        abs(true_correlation) > 1) {
+    stop("true_correlation must be a correlation between -1 and 1", call. = FALSE)
+  }
   misfiled <- misfiled_as(participants)
   n_participants <- length(unique(participants))
   share_correctly_paired <- mean(misfiled == seq_len(n_participants))
@@ -617,7 +628,18 @@ List of 5
  $ detected_correct      : num 0.403
  $ detected_mislabelled  : num 0.043
  $ decisions_changed     : num 0.417
+
+try(ordering_impact(paste0("p", 1:12), iterations = 0))
+Error : iterations must be a whole number of at least 1
 ```
+
+A permutation that only exchanges participants sharing a value on the
+second-stage predictor leaves that analysis exactly as computed, however
+wrong the filenames are. The advisory gives readers
+`identical(predictor, predictor[misfiled_as(participants)])` for that,
+and it is worth ruling in first because it can settle the question
+outright — though the ordinary `p1 … pN` scheme with conditions in
+blocks does not survive it.
 
 Two cautions on the estimate, neither of which touches
 `share_correctly_paired`, which is exact. The detection rates assume a
