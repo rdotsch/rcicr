@@ -491,13 +491,19 @@ ordering_impact <- function(participants, true_correlation = 0.5,
   # method = "radix" gives regardless of LC_COLLATE, is evidence where the two
   # disagree; agreement is not proof, since a third locale may collate letter
   # pairs as units (Czech "ch" after "h", Danish "aa" last).
+  # Every type carries a condition, because for every type sort() answers a
+  # question about the object it was given rather than about the original run.
+  # A factor is the sharpest case: its levels *are* the loop order, so
+  # factor(c("a","b"), levels = c("b","a")) is fully swapped while a rebuilt
+  # factor(c("a","b")) reports a clean all-clear.
   distinct_ids <- unique(participants)
-  collation_matters <- is.character(participants)
-  differs_from_c_order <- collation_matters &&
-    !identical(sort(distinct_ids), sort(distinct_ids, method = "radix"))
-  conditions <- if (!collation_matters) {
-    character(0)
-  } else {
+  conditions <- if (is.factor(participants)) {
+    c(sprintf("ordering follows this factor's levels: %s",
+              paste(levels(participants), collapse = ", ")),
+      "assumes those are the levels the original participants vector carried")
+  } else if (is.character(participants)) {
+    differs_from_c_order <- !identical(sort(distinct_ids),
+                                       sort(distinct_ids, method = "radix"))
     c(sprintf("ordering derived under LC_COLLATE=%s%s",
               Sys.getlocale("LC_COLLATE"),
               if (differs_from_c_order) {
@@ -506,6 +512,8 @@ ordering_impact <- function(participants, true_correlation = 0.5,
                 "; identical under C order"
               }),
       "assumes participants is the original object, not a character copy")
+  } else {
+    "assumes participants was numeric originally, not the same digits as text"
   }
 
   if (share_correctly_paired == 1) {
@@ -562,6 +570,10 @@ to whoever reads the return value.
 
 ```{r checker-conditions}
 str(ordering_impact(c("d", "ch"), iterations = 500))
+
+# a factor's levels are the loop order, so a rebuilt one answers a different
+# question from the original -- the condition says which levels were used
+str(ordering_impact(factor(c("a", "b"), levels = c("b", "a")), iterations = 500))
 ```
 
 Lowercase ASCII is no guarantee here, since some locales collate letter pairs
