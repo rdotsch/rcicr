@@ -61,21 +61,25 @@ along collection order — IDs assigned as participants arrived while conditions
 ID encoding testing date or cohort — the shuffle can instead weaken an effect, reverse its sign,
 or hand back *more* apparent support than the correct analysis would.
 
-How much is at stake in your own case follows from how far your participant vector departed from
-sorted order:
+How badly your own filenames were scrambled follows from how far your participant vector
+departed from sorted order:
 
 ```r
 ids <- unique(participants)
 mean(sort(ids) == ids)   # share of files that kept their own participant
 ```
 
-`1` means the filenames were correct. Otherwise, the lower that share, the more of the
-association is gone — and under the common `p1 … pN` scheme past the tenth participant it is
-close to the worst available, typically one file in the whole set still holding its own image.
+Under the common `p1 … pN` scheme past the tenth participant this is close to the worst
+available, typically one file in the whole set still holding its own image. It measures the
+filenames, not the damage: in the design where the joined variable is unrelated to labelling
+order, a lower share does mean more of the association is gone, but where something tracks
+collection order the same share can reverse an effect or inflate it instead. (A share of `1`
+means the filenames were correct — subject to the two conditions in "How you can quickly check"
+below, which decide what `sort()` returns and so what this number means.)
 
-Mislabelled files do not always mean a changed analysis, and there is a sharper check than the
-one above for that. If the shuffle only exchanged participants who share a value on whatever you
-related the images to, the join is unaffected and the result stands exactly as computed:
+Mislabelled files do not always mean a changed analysis, and there is a sharper check for that.
+If the shuffle only exchanged participants who share a value on whatever you related the images
+to, the join is unaffected and the result stands exactly as computed:
 
 ```r
 ids <- unique(participants)
@@ -100,9 +104,10 @@ then, two things follow, and neither depends on which design you were in:
   association was really there, this is what removed it. It is also the outcome least likely to
   have been published, so an affected analysis that "didn't work" is worth re-running before it
   is written off.
-- **A significant result from an affected analysis is not evidence for the hypothesis it was
-  read as supporting**, because the pairing it was computed on was wrong. It needs re-running
-  against corrected filenames before it means anything.
+- **A significant result from an affected analysis cannot be relied on until it is re-run**,
+  because the pairing it was computed on was not the one it was reported as. That is not the
+  same as saying it is wrong: the corrected run may reproduce it exactly. It just is not
+  established until it does.
 
 A published figure needs the same distinction. One showing individual CIs labelled by
 participant is wrong as printed. One labelled only by condition or group is wrong only if the
