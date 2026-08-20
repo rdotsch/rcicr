@@ -86,13 +86,15 @@ identical(predictor, predictor[misfiled])   # TRUE = this analysis is untouched
 
 with `predictor` the participant-level variable, in the same order you passed `participants`. A
 two-group comparison where the swaps happened to stay inside each group is the clear case: the
-filenames are wrong, and every number in the analysis is right. This is worth checking before
-anything else, because it can settle the question outright. It is not the common case — the
-ordinary `p1 … pN` scheme with conditions in blocks does *not* survive it — but it costs one
-line to rule in.
+filenames are wrong, and every number in the analysis is right. It is worth a line to rule in,
+though it is not the common case — the ordinary `p1 … pN` scheme with conditions in blocks does
+*not* survive it.
 
-Where that comes back `FALSE`, two things follow, and neither depends on which design you were
-in:
+That check clears an analysis; it does not condemn one. `FALSE` means the join changed and the
+result may have changed with it, not that it did — two swapped participants whose images
+happened to score alike would leave the analysis exactly as it was. What settles a `FALSE` is
+the thing you would want regardless: repair the filenames as below, re-run, and compare. Until
+then, two things follow, and neither depends on which design you were in:
 
 - **A null result from an affected analysis may be an artifact of the shuffle.** If the
   association was really there, this is what removed it. It is also the outcome least likely to

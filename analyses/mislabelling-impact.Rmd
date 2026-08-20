@@ -547,6 +547,11 @@ the filenames are. The advisory gives readers
 worth ruling in first because it can settle the question outright — though the
 ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
 
+The implication runs one way only. `TRUE` proves the analysis is untouched;
+`FALSE` does not prove it changed, since two swapped participants whose images
+scored alike would also leave it as it was. What settles a `FALSE` is repairing
+the filenames and re-running, which the advisory asks for anyway.
+
 The detection rates assume a Pearson correlation on normally distributed data,
 so treat them as indicative if the second stage was a condition comparison or a
 regression. `share_correctly_paired` is exact — but exact for the permutation
