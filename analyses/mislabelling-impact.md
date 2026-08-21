@@ -91,7 +91,7 @@ knitr::kable(survival)
 | p01..p12 (zero-padded) |           12 |             12 |      1.000 |
 
 This is not monotone in N because the count turns on where the
-identifiers change width. At 99, 100 and 101 participants eleven files
+identifiers change width (e.g. the number “3” has width “1”, while the number “103” has width “3”). At 99, 100 and 101 participants eleven files
 keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while
 at 120 it is back to one.
 
