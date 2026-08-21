@@ -213,8 +213,8 @@
   order and `sort()` follows it; and run it under the collation the original analysis ran
   under, since identifiers mixing case, accents or punctuation sort differently by locale.
   Numeric identifiers are not exposed to the second, numeric sorting being
-  locale-independent, and `p1`/`p12` are not realistically exposed — though lowercase ASCII is
-  no guarantee in general, since some locales collate letter pairs as units (Czech `ch`,
+  locale-independent, and `p1`/`p12` are not realistically exposed either. Lowercase ASCII is
+  no guarantee in general, though, since some locales collate letter pairs as units (Czech `ch`,
   Danish `aa`).
 
   If the output is long gone and only the script survives, search it for `individual` rather

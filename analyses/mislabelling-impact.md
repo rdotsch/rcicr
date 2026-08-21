@@ -56,13 +56,13 @@ misfiled_as <- function(participant_ids) {
 
 `sort()` is doing real work here and is correct for every input type: it
 follows a factor’s own levels, sorts numbers numerically, and sorts
-character strings by the session’s collation — the same three behaviours
+character strings by the session’s collation, the same three behaviours
 `factor()` gave the original run.
 
 ## How much of the pairing survives
 
-With identifiers `p1 … pN` in collection order — the ordinary labelling
-scheme — almost nothing does, once there are ten or more participants.
+With identifiers `p1 … pN` in collection order (the ordinary labelling
+scheme), almost nothing does, once there are ten or more participants.
 
 ``` r
 survival <- data.frame(
@@ -95,10 +95,10 @@ knitr::kable(survival)
 
 This is **not monotone in N**, and the reason is worth knowing: the
 count turns on where the identifiers change width. At 99, 100 and 101
-participants eleven files keep their own image — at N = 100 they are
-`p1` and `p80`–`p89` — while at 120 it is back to one. Nobody should
-read their own case off this table; the function at the end of this
-document computes it for a given vector.
+participants eleven files keep their own image (at N = 100 they are `p1`
+and `p80`–`p89`), while at 120 it is back to one. Nobody should read
+their own case off this table; the function at the end of this document
+computes it for a given vector.
 
 ## The designs
 
@@ -158,9 +158,9 @@ simulate_correlational_design <- function(n_participants, true_correlation,
 
 The ordinary individual-differences design: raters judge each
 classification image, and those judgments are related back to something
-about the participant — their condition, their score on another measure,
-their group — that has nothing to do with the order participants
-happened to be numbered in.
+about the participant (their condition, their score on another measure,
+their group) that has nothing to do with the order participants happened
+to be numbered in.
 
 ``` r
 grid <- expand.grid(N = c(12, 20, 30, 50), true_correlation = c(0, 0.3, 0.5))
@@ -188,8 +188,8 @@ knitr::kable(scenario_a, digits = 3)
 
 ### B: a covariate that *is* collection order
 
-Testing date, cohort, session number — anything that advances as data
-are collected, which is exactly what the identifiers do too.
+Testing date, cohort and session number all advance as data are
+collected, which is exactly what the identifiers do too.
 
 ``` r
 scenario_b <- do.call(rbind, Map(
@@ -319,7 +319,7 @@ knitr::kable(null_cells, digits = 3, row.names = FALSE)
 | C | Welch t | 50 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.050 |
 
 Do not read the individual rates too closely: the Monte Carlo SE at 0.05
-is 0.0015 at this many iterations, and each test brings its own size —
+is 0.0015 at this many iterations, and each test brings its own size:
 the Welch *t* in design C is mildly conservative at N = 12, in the
 correctly labelled column too. The statistic that carries the claim is
 the **paired** difference, both analyses seeing the same outcome vector
@@ -330,7 +330,7 @@ That result is structural rather than a lucky set of draws, *for an
 outcome that is exchangeable across participants*: permuting one side of
 a pair that is independent of the other leaves it independent, so the
 null distribution is unchanged by construction. The null cells here are
-iid Gaussian and satisfy that. Independence alone is not enough — if the
+iid Gaussian and satisfy that. Independence alone is not enough: if the
 outcome’s distribution shifts along collection order, say because its
 variance grows as data collection went on, then the permutation moves
 high-leverage observations against the covariate and a Pearson or Welch
@@ -352,7 +352,7 @@ loss is close to total: at N = 50 a true correlation of 0.5 goes from
 negatives.
 
 How much is lost depends on how far the ordering departed from sorted,
-which scenario E sweeps using the real mechanism — build an appearance
+which scenario E sweeps using the real mechanism: build an appearance
 order, let `misfiled_as()` derive the permutation from it.
 
 ``` r
@@ -567,7 +567,7 @@ of 12 alternating cells.
 do is know which direction anyone predicted: the sign it pushes is fixed
 by the identifier scheme and the assignment scheme together, and nothing
 in sorting refers to a hypothesis. How often that sign nevertheless
-agrees with a given prediction is *not* answered here — every cell fixes
+agrees with a given prediction is *not* answered here: every cell fixes
 the trend and the “predicted” direction as positive rather than sampling
 them, so these runs cannot support a claim about directional inflation
 across a literature.
@@ -676,8 +676,8 @@ second-stage predictor leaves that analysis exactly as computed, however
 wrong the filenames are. The advisory gives readers
 `identical(predictor, predictor[misfiled_as(participants)])` for that,
 and it is worth ruling in first because it can settle the question
-outright — though the ordinary `p1 … pN` scheme with conditions in
-blocks does not survive it.
+outright, though the ordinary `p1 … pN` scheme with conditions in blocks
+does not survive it.
 
 The implication runs one way only. `TRUE` proves the analysis is
 untouched; `FALSE` does not prove it changed, since two swapped
@@ -687,8 +687,8 @@ the advisory asks for anyway.
 
 The detection rates assume a Pearson correlation on normally distributed
 data, so treat them as indicative if the second stage was a condition
-comparison or a regression. `share_correctly_paired` is exact — but
-exact for the permutation *this session* derives, which for character
+comparison or a regression. `share_correctly_paired` is exact, but exact
+for the permutation *this session* derives, which for character
 identifiers depends on its collation. That is why the result carries
 `conditional_on` rather than leaving the caveat in prose: an all-clear
 from the wrong locale is still an all-clear to whoever reads the return
@@ -713,8 +713,8 @@ List of 4
 ```
 
 Lowercase ASCII is no guarantee here, since some locales collate letter
-pairs as units — Czech orders `ch` after `h`, traditional Danish puts
-`aa` at the end of the alphabet — so `c("d", "ch")` is sorted under
-Czech collation and swapped under C. Run the check under the original
-locale wherever the identifiers are anything more than digits and simple
-prefixes.
+pairs as units. Czech, for instance, orders `ch` after `h`, and
+traditional Danish puts `aa` at the end of the alphabet, so
+`c("d", "ch")` is sorted under Czech collation and swapped under C. Run
+the check under the original locale wherever the identifiers are
+anything more than digits and simple prefixes.

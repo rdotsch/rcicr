@@ -47,8 +47,8 @@ If they were averaged into a group image, or looked at without reference to whos
 nothing downstream changed: the group CI is a mean over participants and does not depend on
 their order.
 
-It matters where a participant-level variable was joined to the images — the common
-second-stage design, in which naive raters judge each individual CI and those judgments are
+It matters where a participant-level variable was joined to the images. In the common
+second-stage design, naive raters judge each individual CI and those judgments are
 related back to the source participant's condition, score or group. That join was made against
 a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it
 was reported as.
@@ -75,7 +75,7 @@ available, typically one file in the whole set still holding its own image. It m
 filenames, not the damage: in the design where the joined variable is unrelated to labelling
 order, a lower share does mean more of the association is gone, but where something tracks
 collection order the same share can reverse an effect or inflate it instead. (A share of `1`
-means the filenames were correct — subject to the two conditions in "How you can quickly check"
+means the filenames were correct, subject to the two conditions in "How you can quickly check"
 below, which decide what `sort()` returns and so what this number means.)
 
 Mislabelled files do not always mean a changed analysis, and there is a sharper check for that.
@@ -114,7 +114,7 @@ participant is wrong as printed. One labelled only by condition or group is wron
 shuffle moved images across those groups, which is what the check above tells you.
 
 The bug does not raise the false positive rate where the measure behaves the same way across
-participants — permuting one side of a pair that is independent of the other leaves it
+participants: permuting one side of a pair that is independent of the other leaves it
 independent. (If it does not behave the same way, because something like its variance drifted
 over the course of collection, the shuffle can move the rate as well.) Either way that is a
 statement about rates across many studies, not about yours. Two analyses of the same null data reach a different verdict about 9%
@@ -124,14 +124,14 @@ result that became significant only on mislabelled files is a false positive the
 Re-running usually costs only the analysis: the images are correct and the filenames are
 repaired by renaming (below), so nothing needs regenerating. The exception is a design in which
 the wrong filenames determined what happened during data collection, rather than only how the
-results were filed afterwards — a participant shown "their own" CI picked out by filename, or
+results were filed afterwards: a participant shown "their own" CI picked out by filename, or
 blocks of stimuli assembled by condition from those labels. Renaming cannot reconstruct a
 response that was collected against the wrong image, and those observations have to be collected
 again.
 
 All of the above is measured rather than argued.
 [`analyses/mislabelling-impact.md`](https://github.com/rdotsch/rcicr/blob/main/analyses/mislabelling-impact.md)
-has the simulations behind every number here — five designs at 20,000 iterations per cell,
+has the simulations behind every number here: five designs at 20,000 iterations per cell,
 including the cases that behave differently from the headline, what the severity of your own
 ordering is worth, and what these runs can and cannot say. It also carries a function that
 estimates the cost for one specific participant vector.
@@ -150,7 +150,7 @@ answer to that name any more. The filenames alone do not then settle it: an
 individual CI is `ci_<participant>.png`, but `generateCI(save_as_png = TRUE, filename = ...)`
 takes whatever filename it is given, so a group CI saved as `filename = "p3"` is also
 `ci_p3.png`. Confirm a loose file against the script that wrote it, or against the data, before
-treating it as an individual CI — running the recovery below over a set that is really
+treating it as an individual CI: running the recovery below over a set that is really
 something else would scramble output that was correct.
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
 has the table of what in the package writes which filename where.
@@ -168,20 +168,20 @@ identical(unique(participants), sort(unique(participants)))
 ```
 
 using the participant vector in the order you originally passed it. `FALSE` means the images are
-still correct but the filenames are swapped, and the mapping to fix them is exact — no need to
-recompute anything, see below.
+still correct but the filenames are swapped, and the mapping to fix them is exact, with no need
+to recompute anything (see below).
 
 `TRUE` means the files were named correctly, provided two things hold, because both change what
 `sort()` returns and so what the comparison means:
 
 - **Use the original `participants` object, not a character copy of it.** The bug ordered
   participants by `factor(participants)`, whose levels a factor carries with it. `sort()` follows
-  those same levels, so the check is right for a factor with custom level order — but
-  `as.character()` first, and both the level order and the answer are gone.
+  those same levels, so the check is right for a factor with custom level order. Convert to
+  character first, though, and both the level order and the answer are gone.
 - **Run it under the collation the original analysis ran under.** Sorting text is
   locale-dependent, so a `TRUE` obtained elsewhere can clear output that really was mislabelled.
   Numeric identifiers are exempt and `p1`/`p12` is not realistically exposed, but plain
-  lowercase letters are no guarantee in general — some locales collate letter pairs as single
+  lowercase letters are no guarantee in general: some locales collate letter pairs as single
   units. If your identifiers are anything more than digits and simple prefixes, run the check on
   the machine that produced the files, or compare `Sys.getlocale("LC_COLLATE")` against the
   original session.
