@@ -54,7 +54,7 @@ survival$share_kept <- round(survival$kept_own_image / survival$participants, 3)
 knitr::kable(survival)
 ```
 
-This is not monotone in N because the count turns on where the identifiers change width. At 99, 100 and 101 participants eleven files keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while at 120 it is back to one. 
+This is not monotone in N because the count turns on where the identifiers change width. At 99, 100 and 101 participants eleven files keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while at 120 it is back to one.
 
 ## The designs
 
