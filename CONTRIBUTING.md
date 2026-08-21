@@ -91,12 +91,12 @@ attaching a real face photo.
   read the three that could change their results.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it genuinely belongs in
   the built package, or `R CMD check` raises a "non-standard file/directory found at top
-  level" NOTE. Note the file holds `^`-anchored *regexes*, not globs.
-- Run `git diff --stat main...HEAD` before opening the PR. `R CMD check` leaves a full copy
-  of the package behind, and it has been committed by accident before.
-- PRs are merged to `main` with **squash merges**, so put anything a future reader needs —
-  measurements, rejected alternatives, reproducibility impact — in the PR description or
-  `NEWS.md`, not only in individual branch commits.
+  level" NOTE. It holds `^`-anchored *regexes*, not globs.
+- Run `git diff --stat main...HEAD` before opening the PR: `R CMD check` leaves a full copy
+  of the package behind, and that has happened by accident.
+- PRs are merged to `main` with **squash merges**, so put anything a future reader needs
+  (measurements, rejected alternatives, reproducibility impact) in the PR description or
+  `NEWS.md`, not only in individual branch commits, written with the same prose rules below.
 - **Write for the state the change ends in, not the route you took to it.** Commit messages,
   PR comments and code comments describe what the change is and why it is right. How many
   attempts it took, and what each one got wrong, is invisible in the squashed history and in
