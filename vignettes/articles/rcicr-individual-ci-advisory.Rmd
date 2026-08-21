@@ -95,8 +95,11 @@ old <- unique(participants)         # names the files currently carry
 new <- sort(unique(participants))   # participants they actually contain
 
 dir <- file.path(targetpath, "individual_cis")
-step1 <- file.rename(file.path(dir, paste0("ci_", old, ".png")),
-                      file.path(dir, paste0("ci_", old, ".tmp")))
+originals <- file.path(dir, paste0("ci_", old, ".png"))
+missing <- !file.exists(originals)
+if (any(missing)) stop("Missing file(s), nothing renamed: ", paste(old[missing], collapse = ", "))
+
+step1 <- file.rename(originals, file.path(dir, paste0("ci_", old, ".tmp")))
 if (!all(step1)) stop("Rename failed for: ", paste(old[!step1], collapse = ", "))
 
 step2 <- file.rename(file.path(dir, paste0("ci_", old, ".tmp")),
