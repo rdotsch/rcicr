@@ -58,7 +58,7 @@
 <p><strong>An <code>--as-cran</code> run needs a complete check environment, or it reports failures the package does not have.</strong> Install <code>texlive</code> and <code>tidy</code>, and set both incoming variables:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="va">_R_CHECK_CRAN_INCOMING_</span><span class="op">=</span>TRUE <span class="va">_R_CHECK_CRAN_INCOMING_REMOTE_</span><span class="op">=</span>TRUE <span class="dt">\</span></span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="ex">R</span> CMD check <span class="at">--as-cran</span> rcicr_X.Y.Z.tar.gz</span></code></pre></div>
-<p>Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely the sandbox; installing it was the only change needed to reach 2. <strong>Do not reach for <code>--no-manual</code> to make the manual checks go away</strong>: it skips them rather than passing them, and a note here once recorded that as the problem being <em>resolved</em>. A clean run shows <code>checking PDF version of manual ... OK</code> and <code>checking HTML version of manual ... OK</code> — if you do not see those lines, you have not checked the manual.</p>
+<p>Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely the sandbox; installing it was the only change needed to reach 2. <strong>Do not reach for <code>--no-manual</code> to make the manual checks go away</strong>: it skips them rather than passing them. A clean run shows <code>checking PDF version of manual ... OK</code> and <code>checking HTML version of manual ... OK</code> — if you do not see those lines, you have not checked the manual.</p>
 </div>
 <div class="section level2">
 <h2 id="reporting-a-bug">Reporting a bug<a class="anchor" aria-label="anchor" href="#reporting-a-bug"></a></h2>
@@ -75,9 +75,9 @@
 <li>
 <strong><code>NEWS.md</code> entries go largest-impact first</strong> within each section: changes to numeric output or return values, then behaviour changes, then bug fixes that only ever produced errors, then message-only fixes. Someone who stops reading after three bullets should have read the three that could change their results.</li>
 <li>
-<strong>Any new top-level file must be added to <code>.Rbuildignore</code></strong> unless it genuinely belongs in the built package, or <code>R CMD check</code> raises a “non-standard file/directory found at top level” NOTE. Note the file holds <code>^</code>-anchored <em>regexes</em>, not globs.</li>
-<li>Run <code>git diff --stat main...HEAD</code> before opening the PR. <code>R CMD check</code> leaves a full copy of the package behind, and it has been committed by accident before.</li>
-<li>PRs are merged to <code>main</code> with <strong>squash merges</strong>, so put anything a future reader needs — measurements, rejected alternatives, reproducibility impact — in the PR description or <code>NEWS.md</code>, not only in individual branch commits.</li>
+<strong>Any new top-level file must be added to <code>.Rbuildignore</code></strong> unless it genuinely belongs in the built package, or <code>R CMD check</code> raises a “non-standard file/directory found at top level” NOTE. It holds <code>^</code>-anchored <em>regexes</em>, not globs.</li>
+<li>Run <code>git diff --stat main...HEAD</code> before opening the PR: <code>R CMD check</code> leaves a full copy of the package behind, which has happened by accident.</li>
+<li>PRs are merged to <code>main</code> with <strong>squash merges</strong>, so put anything a future reader needs (measurements, rejected alternatives, reproducibility impact) in the PR description or <code>NEWS.md</code>, not only in individual branch commits, written with the same prose rules below.</li>
 <li>
 <strong>Write for the state the change ends in, not the route you took to it.</strong> Commit messages, PR comments and code comments describe what the change is and why it is right. How many attempts it took, and what each one got wrong, is invisible in the squashed history and in the merged code — nobody arrives at the file that way. Keep a rejected alternative only when someone would otherwise retry it, and give it a line, not a chronology.</li>
 </ul><div class="section level3">
@@ -166,6 +166,7 @@
 <td>
 <code>@import matlab</code> masks <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files — a live trap, issue #182.</td>
 </tr></tbody></table><p>Line length is not enforced; 35 lines in <code>R/</code> already exceed 100 characters. Wrap new code at something reasonable rather than reflowing what is there.</p>
+<p><strong>Markdown prose isn’t line-wrapped: write one line per paragraph and let the reader’s editor word-wrap it, and skip em dashes</strong> for a period, comma, colon or parenthesis instead.</p>
 <p><strong>Comments: as few as will do, and only where the code cannot speak for itself.</strong> Write one when the reason would otherwise have to be re-derived — a rejected alternative, a constraint, a measured number, a trap. Never narrate what the next line does, restate the error message below it, or re-tell an issue’s history. The long comments already in <code>R/</code> are the first kind and earn their length; the test is whether a reader would otherwise get it wrong, not whether the code looks bare. Where the explanation is about the package rather than about the line, it belongs in <a href="DECISIONS.html"><code>DECISIONS.md</code></a>.</p>
 <p><strong>If the package is ever run through <code>styler</code>, it goes in as a commit of its own</strong> — never as a side effect of other work, so <code>git blame</code> survives it. Why the pre-commit hooks stay minimal and language-agnostic is above.</p>
 <p>Three rules that are about this package rather than about R:</p>

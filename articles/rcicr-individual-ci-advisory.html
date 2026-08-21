@@ -64,19 +64,22 @@
 
     
     
-<p><strong>This is an advisory, not a bug report. The bug is in versions
-0.4.0 through 1.2.3 — 0.4.0 only if you installed it on or after
-2017-08-15, see “Which versions were affected” below — all of them
+<p>This page is an advisory about a bug in rcicr that could save an
+individual classification image under another participant’s filename. It
+sets out which versions carried it, how to tell whether your own stored
+results are affected, what it does to an analysis, and how to repair
+affected output.</p>
+<p><strong>The bug is in versions 0.4.0 through 1.2.3, all of them
 GitHub-only, and is fixed in <a href="https://github.com/rdotsch/rcicr/releases/tag/v1.3.0" class="external-link">1.3.0</a>.
-It never reached CRAN: the last CRAN release, 0.3.4.1, predates the
-option involved by thirteen months, so nothing installed with
-<code>install.packages('rcicr')</code> was ever affected.</strong> It is
-published so that anyone who finds it later can work out whether their
-own stored results are affected.</p>
+(0.4.0 is affected only if you installed it on or after 2017-08-15; see
+“Which versions were affected” below.) It never reached CRAN: the last
+CRAN release, 0.3.4.1, predates the option involved by thirteen months,
+so nothing installed with <code>install.packages('rcicr')</code> was
+ever affected.</strong></p>
 <div class="section level2">
 <h2 id="this-is-the-bug">This is the bug<a class="anchor" aria-label="anchor" href="#this-is-the-bug"></a>
 </h2>
-<p>The bug is very specific to one function, which is
+<p>The bug is specific to one function, which is
 <code><a href="../reference/generateCI.html">generateCI()</a></code>. When called with
 <code>participants = ...</code> and
 <code>save_individual_cis = TRUE</code>, it could save each
@@ -91,7 +94,7 @@ names were wrong.</p>
 GitHub-only. <strong>Version 0.4.0 is a special case</strong>: it lived
 only on the <code>development</code> branch, from 2016-10-26 to
 2021-09-23, and the bug entered partway through that window, on
-2017-08-15 — so whether a 0.4.0 install is affected depends on exactly
+2017-08-15, so whether a 0.4.0 install is affected depends on exactly
 when you got it, not the version string alone (see <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
 for the install-date table). Any of these versions is only actually
 affected whenever participant IDs weren’t already in sorted order
@@ -106,17 +109,148 @@ apply to you. The group classification image that
 filenames from the direct call could be wrong.</p>
 </div>
 <div class="section level2">
+<h2 id="what-this-does-to-an-analysis">What this does to an analysis<a class="anchor" aria-label="anchor" href="#what-this-does-to-an-analysis"></a>
+</h2>
+<p>The mislabelling breaks the link between a classification image and
+the participant it came from. Whether this impacts your analysis depends
+on what the images were then used for.</p>
+<p>If they were averaged into a group image, or looked at without
+reference to whose they were, nothing downstream changed: the group CI
+is a mean over participants and does not depend on their order.</p>
+<p>It matters where a participant-level variable was joined to the
+images. In the common second-stage design, naive raters judge each
+individual CI and those judgments are related back to the source
+participant’s condition, score or group. That join was made against a
+shuffled set of labels, so whatever the analysis found, it was not
+computed on the pairing it was reported as.</p>
+<p>The damage then depends on the design. Where the variable joined to
+the images has nothing to do with the order participants were labelled
+in, the shuffle destroys the association rather than inventing one: at
+50 participants a true correlation of 0.5 goes from being detected 97%
+of the time to 5%, and the runs that then find nothing are looking at a
+real association they can no longer see. That is the file-drawer case.
+But where something varies along collection order (IDs assigned as
+participants arrived while conditions ran in blocks, an ID encoding
+testing date or cohort), the shuffle can instead weaken an effect,
+reverse its sign, or hand back <em>more</em> apparent support than the
+correct analysis would.</p>
+<p>How badly your own filenames were scrambled follows from how far your
+participant vector departed from sorted order:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="va">ids</span><span class="op">)</span> <span class="op">==</span> <span class="va">ids</span><span class="op">)</span>   <span class="co"># share of files that kept their own participant</span></span></code></pre></div>
+<p>Under the common <code>p1 … pN</code> scheme past the tenth
+participant typically one file in the whole set still holds its own
+image.</p>
+<p>Mislabelled files do not always mean a changed analysis, and there is
+a more specific check for that. If the shuffle only exchanged
+participants who share a value on whatever you related the images to,
+the join is unaffected and the result stands exactly as computed:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span></span>
+<span><span class="va">misfiled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="va">ids</span><span class="op">)</span>, <span class="va">ids</span><span class="op">)</span>   <span class="co"># which participant each file actually holds</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">predictor</span>, <span class="va">predictor</span><span class="op">[</span><span class="va">misfiled</span><span class="op">]</span><span class="op">)</span>   <span class="co"># TRUE = this analysis is untouched</span></span></code></pre></div>
+<p>with <code>predictor</code> the participant-level variable, in the
+same order you passed <code>participants</code>. A two-group comparison
+where the swaps happened to stay inside each group is the clear case:
+the filenames are wrong, and every number in the analysis is right. It
+is worth a line to rule in, even though the ordinary
+<code>p1 … pN</code> scheme with conditions in blocks does <em>not</em>
+survive it.</p>
+<p>A <code>TRUE</code> clears an analysis outright. A <code>FALSE</code>
+means the join changed: whether the result changed with it is a separate
+question. In that case repair the filenames as below, re-run, and
+compare. Until then, two things follow, independent of your design:</p>
+<ul>
+<li>
+<strong>A null result from an affected analysis may be an artifact
+of the shuffle.</strong> If the association was really in the data, this
+is what removed it. It is also the outcome least likely to have been
+published, so an affected analysis that “didn’t work” is worth
+re-running before it is written off.</li>
+<li>
+<strong>A significant result from an affected analysis cannot be
+relied on until it is re-run</strong>, because the pairing it was
+computed on was not the one it was reported as. The corrected run may
+reproduce it exactly; until it does, treat it as unestablished rather
+than wrong.</li>
+</ul>
+<p>A published figure needs the same distinction. One showing individual
+CIs labelled by participant is wrong as printed. One labelled only by
+condition or group is wrong only if the shuffle moved images across
+those groups, which is what the check above tells you.</p>
+<p>Re-running the analysis is usually possible: the images are correct
+and the filenames are repaired by renaming (below), so nothing needs
+regenerating. The exception is a design in which the wrong filenames
+determined what happened during data collection, rather than only how
+the results were filed afterwards: a participant shown “their own” CI
+picked out by filename, or blocks of stimuli assembled by condition from
+those labels. Renaming cannot reconstruct a response that was collected
+against the wrong image, and those observations have to be collected
+again.</p>
+<p>All of the above is supported by the simulations reported in <a href="https://github.com/rdotsch/rcicr/blob/main/analyses/mislabelling-impact.md" class="external-link"><code>analyses/mislabelling-impact.md</code></a>.</p>
+</div>
+<div class="section level2">
 <h2 id="how-you-can-quickly-check-whether-this-affects-you">How you can quickly check whether this affects you<a class="anchor" aria-label="anchor" href="#how-you-can-quickly-check-whether-this-affects-you"></a>
 </h2>
-<p>If your output has an <code>individual_cis/</code> directory from a
-direct <code><a href="../reference/generateCI.html">generateCI()</a></code> call, run</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p><strong>Look for an <code>individual_cis/</code> directory in your
+output.</strong> Nothing else in the package writes one, so finding it
+means the affected call ran. It is also how to tell which route your
+analysis took: the batch functions above pass
+<code>participants = NA</code> and never set
+<code>save_individual_cis</code>, so they cannot produce that directory,
+and only a direct <code><a href="../reference/generateCI.html">generateCI()</a></code> call can.</p>
+<p>Not finding it clears the analysis only if the output still sits as
+the run left it. A directory that was renamed, folded into an archive,
+or had its PNGs moved elsewhere will not answer to that name any more.
+The filenames alone do not then settle it: an individual CI is
+<code>ci_&lt;participant&gt;.png</code>, but
+<code>generateCI(save_as_png = TRUE, filename = ...)</code> takes
+whatever filename it is given, so a group CI saved as
+<code>filename = "p3"</code> is also <code>ci_p3.png</code>. Confirm a
+loose file against the script that wrote it, or against the data, before
+treating it as an individual CI: running the recovery below over a set
+that is really something else would scramble output that was correct. <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
+has the table of what in the package writes which filename where.</p>
+<p>Do not rely on searching your scripts for
+<code>save_individual_cis</code> instead. It is the sixth argument of
+<code><a href="../reference/generateCI.html">generateCI()</a></code>, so a positional call such as
+<code>generateCI(stim, resp, "face", rdata, pids, TRUE, ...)</code> sets
+it without the name appearing anywhere, and <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> hides
+it the same way. Grepping and finding nothing does <strong>not</strong>
+clear an analysis.</p>
+<p>If the directory is there, the ordering of your participant IDs
+decides it. Run</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>using the participant vector in the order you originally passed it.
-<code>TRUE</code> means the files were named correctly. If it’s
-<code>FALSE</code>, the images are still correct; only the filenames are
-swapped, and the mapping to fix them is exact (no need to recompute
-anything, see below).</p>
+<code>FALSE</code> means the images are still correct but the filenames
+are swapped, and the mapping to fix them is exact, with no need to
+recompute anything (see below).</p>
+<p><code>TRUE</code> means the files were named correctly, provided two
+things hold, because both change what <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> returns and so
+what the comparison means:</p>
+<ul>
+<li>
+<strong>Use the original <code>participants</code> object, not a
+character copy of it.</strong> The bug ordered participants by
+<code>factor(participants)</code>, whose levels a factor carries with
+it. <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> follows those same levels, so the check is right
+for a factor with custom level order. Do not convert to character, it
+may order differently.</li>
+<li>
+<strong>Run it under the collation the original analysis ran
+under.</strong> Sorting text is locale-dependent, so a <code>TRUE</code>
+obtained elsewhere can clear output that really was mislabelled. Numeric
+identifiers are exempt and <code>p1</code>/<code>p12</code> is not
+realistically exposed, but plain lowercase letters are no guarantee in
+general: some locales collate letter pairs as single units. If your
+identifiers are anything more than digits and simple prefixes, run the
+check on the machine that produced the files, or compare
+<code>Sys.getlocale("LC_COLLATE")</code> against the original
+session.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="how-to-fix-it">How to fix it<a class="anchor" aria-label="anchor" href="#how-to-fix-it"></a>
@@ -126,27 +260,37 @@ anything, see below).</p>
 image for <code>sort(unique(participants))[i]</code>, so this recovers
 the correct filenames without recomputing anything (two steps, so the
 rename doesn’t overwrite a file it hasn’t renamed yet):</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">targetpath</span> <span class="op">&lt;-</span> <span class="st">"."</span>  <span class="co"># set to whatever targetpath you originally passed to generateCI()</span></span>
+<p>Work on a copy, and satisfy yourself first that
+<code>targetpath</code> below points at the output of the run these
+<code>participants</code> came from. The <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> calls catch
+a filename that is missing; they cannot catch a directory that is simply
+the wrong one. A different run holding the same participant identifiers
+would rename cleanly, permuting a set that had been correct.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># The targetpath you originally passed to generateCI(). If you never passed one, it</span></span>
+<span><span class="co"># was "./cis" by default in every affected release up to 1.2.1, so the files are in</span></span>
+<span><span class="co"># "cis/individual_cis/" relative to where you ran the analysis, not in the working</span></span>
+<span><span class="co"># directory itself.</span></span>
+<span><span class="va">targetpath</span> <span class="op">&lt;-</span> <span class="st">"./cis"</span></span>
 <span></span>
 <span><span class="va">old</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span>         <span class="co"># names the files currently carry</span></span>
 <span><span class="va">new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span><span class="op">)</span>   <span class="co"># participants they actually contain</span></span>
 <span></span>
 <span><span class="va">dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">targetpath</span>, <span class="st">"individual_cis"</span><span class="op">)</span></span>
-<span><span class="va">step1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.rename</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">old</span>, <span class="st">".png"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                      <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">old</span>, <span class="st">".tmp"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">originals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">old</span>, <span class="st">".png"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">missing</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">originals</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">missing</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Missing file(s), nothing renamed: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">old</span><span class="op">[</span><span class="va">missing</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">step1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.rename</a></span><span class="op">(</span><span class="va">originals</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">old</span>, <span class="st">".tmp"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">step1</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Rename failed for: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">old</span><span class="op">[</span><span class="op">!</span><span class="va">step1</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">step2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.rename</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">old</span>, <span class="st">".tmp"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>                      <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">new</span>, <span class="st">".png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">step2</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Rename failed for: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">old</span><span class="op">[</span><span class="op">!</span><span class="va">step2</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>(This assumes <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> orders your IDs the same way the
-original run did — always true on the same machine/session, and true for
-numeric or lowercase-ASCII IDs like <code>p1</code>/<code>p12</code>
-regardless. It can differ under a different locale if your IDs mix case,
-accents, or punctuation; check <code>Sys.getlocale("LC_COLLATE")</code>
-against the original run if you’re unsure, or recover on the machine
-that produced the files.)</p>
+<p>(This assumes <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> orders your IDs the way the
+original run did, which is the same condition the check above depends
+on: the original <code>participants</code> object rather than a
+character copy, under the original collation.)</p>
 <p>(use the <code>antici_</code> prefix instead of <code>ci_</code> if
 you generated anti-CIs).</p>
 <p>If you plan to keep using the package, get the fixed version from <a href="https://github.com/rdotsch/rcicr" class="external-link">GitHub</a>
@@ -167,7 +311,7 @@ be able to maintain the package, and this week it found this bug. I’m
 glad it did, and I consider it the right and scientific thing to do to
 fix it and announce it publicly. I don’t have the time to do more than
 that, so if you’re still active in this field and would like to maintain
-this package, I’d gladly hand over the reins.</p>
+this package, contact me and I’d gladly hand over the reins.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

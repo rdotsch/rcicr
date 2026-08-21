@@ -256,15 +256,21 @@
 
   **If you have published from individual-CI images, check your analysis
   scripts.** Two steps, neither of which requires re-running anything.
+  The [individual-CI filename
+  advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
+  carries the fuller version of this, including what the mislabelling
+  does to a second-stage analysis and how much of an effect survives it;
+  where the two differ, that page is kept current and this section is
+  not.
 
   *Step 1 — did you use the affected call at all?* Look for an
   `individual_cis/` directory in your output. Nothing else in the
-  package creates it, so if it is not there the affected call never ran.
-  If your per-participant images came from
+  package creates it, so finding it means the affected call ran. If your
+  per-participant images came from
   [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
   or
   [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md),
-  the same applies: those cannot reach the defect.
+  those cannot reach the defect.
 
   Check the output rather than the script. `save_individual_cis` is the
   sixth formal of
@@ -274,7 +280,15 @@
   those files without the argument name appearing anywhere;
   [`do.call()`](https://rdrr.io/r/base/do.call.html) hides it the same
   way. Searching your scripts and finding nothing does not clear an
-  analysis. Finding no `individual_cis/` does.
+  analysis.
+
+  Not finding the directory clears it only if the output still sits
+  where the run left it. Renamed, archived or moved, it will not answer
+  to that name, and the individual files are then recognisable but not
+  conclusive: `ci_<participant>.png` is what the affected call writes,
+  and also what
+  `generateCI(save_as_png = TRUE, filename = "<participant>")` writes
+  for a group CI one directory up.
 
   *Step 2 — if the directory is there, was your `participants` vector in
   sorted order?* Note “sorted” means lexically sorted for text labels,
@@ -286,6 +300,18 @@
 
   identical(unique(participants), sort(unique(participants)))   # TRUE = names were correct
   ```
+
+  Two conditions on that `TRUE`, both of which change what
+  [`sort()`](https://rdrr.io/r/base/sort.html) returns: use the original
+  `participants` object rather than a character copy, since a factor
+  carries its own level order and
+  [`sort()`](https://rdrr.io/r/base/sort.html) follows it; and run it
+  under the collation the original analysis ran under, since identifiers
+  mixing case, accents or punctuation sort differently by locale.
+  Numeric identifiers are not exposed to the second, numeric sorting
+  being locale-independent, and `p1`/`p12` are not realistically exposed
+  either. Lowercase ASCII is no guarantee in general, though, since some
+  locales collate letter pairs as units (Czech `ch`, Danish `aa`).
 
   If the output is long gone and only the script survives, search it for
   `individual` rather than the full argument name, and read by hand any

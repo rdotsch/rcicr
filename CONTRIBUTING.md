@@ -78,8 +78,7 @@ _R_CHECK_CRAN_INCOMING_=TRUE _R_CHECK_CRAN_INCOMING_REMOTE_=TRUE \
 Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs
 that were entirely the sandbox; installing it was the only change needed
 to reach 2. **Do not reach for `--no-manual` to make the manual checks
-go away**: it skips them rather than passing them, and a note here once
-recorded that as the problem being *resolved*. A clean run shows
+go away**: it skips them rather than passing them. A clean run shows
 `checking PDF version of manual ... OK` and
 `checking HTML version of manual ... OK` — if you do not see those
 lines, you have not checked the manual.
@@ -112,15 +111,15 @@ preferable to attaching a real face photo.
   the three that could change their results.
 - **Any new top-level file must be added to `.Rbuildignore`** unless it
   genuinely belongs in the built package, or `R CMD check` raises a
-  “non-standard file/directory found at top level” NOTE. Note the file
-  holds `^`-anchored *regexes*, not globs.
-- Run `git diff --stat main...HEAD` before opening the PR. `R CMD check`
-  leaves a full copy of the package behind, and it has been committed by
-  accident before.
+  “non-standard file/directory found at top level” NOTE. It holds
+  `^`-anchored *regexes*, not globs.
+- Run `git diff --stat main...HEAD` before opening the PR: `R CMD check`
+  leaves a full copy of the package behind, which has happened by
+  accident.
 - PRs are merged to `main` with **squash merges**, so put anything a
-  future reader needs — measurements, rejected alternatives,
-  reproducibility impact — in the PR description or `NEWS.md`, not only
-  in individual branch commits.
+  future reader needs (measurements, rejected alternatives,
+  reproducibility impact) in the PR description or `NEWS.md`, not only
+  in individual branch commits, written with the same prose rules below.
 - **Write for the state the change ends in, not the route you took to
   it.** Commit messages, PR comments and code comments describe what the
   change is and why it is right. How many attempts it took, and what
@@ -253,6 +252,10 @@ change because nothing outside the package can call them:
 Line length is not enforced; 35 lines in `R/` already exceed 100
 characters. Wrap new code at something reasonable rather than reflowing
 what is there.
+
+**Markdown prose isn’t line-wrapped: write one line per paragraph and
+let the reader’s editor word-wrap it, and skip em dashes** for a period,
+comma, colon or parenthesis instead.
 
 **Comments: as few as will do, and only where the code cannot speak for
 itself.** Write one when the reason would otherwise have to be
