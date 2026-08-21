@@ -93,7 +93,7 @@ attaching a real face photo.
   the built package, or `R CMD check` raises a "non-standard file/directory found at top
   level" NOTE. It holds `^`-anchored *regexes*, not globs.
 - Run `git diff --stat main...HEAD` before opening the PR: `R CMD check` leaves a full copy
-  of the package behind, and that has happened by accident.
+  of the package behind, which has happened by accident.
 - PRs are merged to `main` with **squash merges**, so put anything a future reader needs
   (measurements, rejected alternatives, reproducibility impact) in the PR description or
   `NEWS.md`, not only in individual branch commits, written with the same prose rules below.
