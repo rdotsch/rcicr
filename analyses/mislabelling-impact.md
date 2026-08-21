@@ -670,7 +670,7 @@ A permutation that only exchanges participants sharing a value on the
 second-stage predictor leaves that analysis exactly as computed, however
 wrong the filenames are. The advisory gives readers
 `identical(predictor, predictor[misfiled_as(participants)])` for that,
-and it is worth ruling in first because it can settle the question
+and it is worth ruling it out first because it can settle the question
 outright, though the ordinary `p1 … pN` scheme with conditions in blocks
 does not survive it.
 
