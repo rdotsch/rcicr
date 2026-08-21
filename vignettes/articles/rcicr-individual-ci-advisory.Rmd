@@ -33,7 +33,7 @@ ids <- unique(participants)
 mean(sort(ids) == ids)   # share of files that kept their own participant
 ```
 
-Under the common `p1 … pN` scheme past the tenth participant typically one file in the whole set still holds its own image. 
+Under the common `p1 … pN` scheme past the tenth participant typically one file in the whole set still holds its own image.
 
 Mislabelled files do not always mean a changed analysis, and there is a more specific check for that. If the shuffle only exchanged participants who share a value on whatever you related the images to, the join is unaffected and the result stands exactly as computed:
 
