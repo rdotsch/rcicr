@@ -75,7 +75,7 @@ using the participant vector in the order you originally passed it. `FALSE` mean
 
 `TRUE` means the files were named correctly, provided two things hold, because both change what `sort()` returns and so what the comparison means:
 
-- **Use the original `participants` object, not a character copy of it.** The bug ordered participants by `factor(participants)`, whose levels a factor carries with it. `sort()` follows those same levels, so the check is right for a factor with custom level order. Convert to character first, though, and both the level order and the answer are gone.
+- **Use the original `participants` object, not a character copy of it.** The bug ordered participants by `factor(participants)`, whose levels a factor carries with it. `sort()` follows those same levels, so the check is right for a factor with custom level order. Do not convert to character, it may order differently.
 - **Run it under the collation the original analysis ran under.** Sorting text is locale-dependent, so a `TRUE` obtained elsewhere can clear output that really was mislabelled. Numeric identifiers are exempt and `p1`/`p12` is not realistically exposed, but plain lowercase letters are no guarantee in general: some locales collate letter pairs as single units. If your identifiers are anything more than digits and simple prefixes, run the check on the machine that produced the files, or compare `Sys.getlocale("LC_COLLATE")` against the original session.
 
 ## How to fix it
@@ -114,4 +114,4 @@ More detail: [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/
 
 ## Personal note
 
-I wrote rcicr in 2014, then left academia in 2017 and stopped maintaining it. I had other responsibilities and no time for something that felt part of a previous life. Recently I decided to see if AI would be able to maintain the package, and this week it found this bug. I'm glad it did, and I consider it the right and scientific thing to do to fix it and announce it publicly. I don't have the time to do more than that, so if you're still active in this field and would like to maintain this package, I'd gladly hand over the reins.
+I wrote rcicr in 2014, then left academia in 2017 and stopped maintaining it. I had other responsibilities and no time for something that felt part of a previous life. Recently I decided to see if AI would be able to maintain the package, and this week it found this bug. I'm glad it did, and I consider it the right and scientific thing to do to fix it and announce it publicly. I don't have the time to do more than that, so if you're still active in this field and would like to maintain this package, contact me and I'd gladly hand over the reins.
