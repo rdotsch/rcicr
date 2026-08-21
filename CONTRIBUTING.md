@@ -62,8 +62,8 @@ _R_CHECK_CRAN_INCOMING_=TRUE _R_CHECK_CRAN_INCOMING_REMOTE_=TRUE \
 
 Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely the
 sandbox; installing it was the only change needed to reach 2. **Do not reach for
-`--no-manual` to make the manual checks go away**: it skips them rather than passing them,
-and a note here once recorded that as the problem being *resolved*. A clean run shows
+`--no-manual` to make the manual checks go away**: it skips them rather than passing them.
+A clean run shows
 `checking PDF version of manual ... OK` and `checking HTML version of manual ... OK` — if
 you do not see those lines, you have not checked the manual.
 
@@ -202,6 +202,8 @@ outside the package can call them:
 
 Line length is not enforced; 35 lines in `R/` already exceed 100 characters. Wrap new code
 at something reasonable rather than reflowing what is there.
+
+**Markdown prose isn't line-wrapped: write one line per paragraph and let the reader's editor word-wrap it, and skip em dashes** for a period, comma, colon or parenthesis instead.
 
 **Comments: as few as will do, and only where the code cannot speak for itself.** Write one
 when the reason would otherwise have to be re-derived — a rejected alternative, a constraint,
