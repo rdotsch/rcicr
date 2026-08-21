@@ -325,7 +325,7 @@ That result is structural rather than a lucky set of draws, *for an
 outcome that is exchangeable across participants*: permuting one side of
 a pair that is independent of the other leaves it independent, so the
 null distribution is unchanged by construction. The null cells here are
-iid Gaussian and satisfy that. Independence alone is not enough: if the
+iid Gaussian (Independent, Identically Distributed)and satisfy that. Independence alone is not enough: if the
 outcome’s distribution shifts along collection order, say because its
 variance grows as data collection went on, then the permutation moves
 high-leverage observations against the covariate and a Pearson or Welch
