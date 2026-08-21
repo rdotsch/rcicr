@@ -6,10 +6,10 @@ What the individual-CI mislabelling did to a second-stage analysis
 - [The designs](#the-designs)
   - [A: a covariate unrelated to labelling
     order](#a-a-covariate-unrelated-to-labelling-order)
-  - [C: a covariate that *is* collection
-    order](#c-a-covariate-that-is-collection-order)
-  - [B: condition assigned in blocks by collection
-    order](#b-condition-assigned-in-blocks-by-collection-order)
+  - [B: a covariate that *is* collection
+    order](#b-a-covariate-that-is-collection-order)
+  - [C: condition assigned in blocks by collection
+    order](#c-condition-assigned-in-blocks-by-collection-order)
 - [Finding 1: the false positive rate is
   unchanged](#finding-1-the-false-positive-rate-is-unchanged)
 - [Finding 2: a real association is weakened in proportion to the
@@ -186,19 +186,19 @@ knitr::kable(scenario_a, digits = 3)
 | 30 | 0.5 | 0.832 | 0.049 | -0.783 | 0.003 | 0.799 | 0.008 | -0.001 | 0.025 |
 | 50 | 0.5 | 0.970 | 0.047 | -0.923 | 0.002 | 0.925 | 0.001 | -0.001 | 0.023 |
 
-### C: a covariate that *is* collection order
+### B: a covariate that *is* collection order
 
 Testing date, cohort, session number — anything that advances as data
 are collected, which is exactly what the identifiers do too.
 
 ``` r
-scenario_c <- do.call(rbind, Map(
+scenario_b <- do.call(rbind, Map(
   function(n, rho) simulate_correlational_design(
     n, rho, function(k) as.numeric(scale(seq_len(k)))
   ),
   grid$N, grid$true_correlation
 ))
-knitr::kable(scenario_c, digits = 3)
+knitr::kable(scenario_b, digits = 3)
 ```
 
 | N | true_correlation | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | mean_correlation_recovered | significant_opposite |
@@ -216,7 +216,7 @@ knitr::kable(scenario_c, digits = 3)
 | 30 | 0.5 | 0.853 | 0.025 | -0.827 | 0.003 | 0.841 | 0.007 | 0.020 | 0.008 |
 | 50 | 0.5 | 0.976 | 0.336 | -0.640 | 0.003 | 0.644 | 0.002 | 0.224 | 0.000 |
 
-### B: condition assigned in blocks by collection order
+### C: condition assigned in blocks by collection order
 
 ``` r
 simulate_blocked_design <- function(n_participants, effect_size,
@@ -261,11 +261,11 @@ simulate_blocked_design <- function(n_participants, effect_size,
 }
 
 blocked_grid <- expand.grid(N = c(12, 20, 30, 50), effect_size = c(0, 0.8))
-scenario_b <- do.call(rbind, Map(
+scenario_c <- do.call(rbind, Map(
   function(n, d) simulate_blocked_design(n, d),
   blocked_grid$N, blocked_grid$effect_size
 ))
-knitr::kable(scenario_b, digits = 3)
+knitr::kable(scenario_c, digits = 3)
 ```
 
 | N | effect_size | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | significant_predicted | significant_opposite | crossed_condition |
@@ -291,10 +291,10 @@ shared_columns <- c("N", "detected_correct", "detected_mislabelled",
 null_cells <- rbind(
   data.frame(design = "A", test = "cor.test",
              scenario_a[scenario_a$true_correlation == 0, shared_columns]),
-  data.frame(design = "C", test = "cor.test",
-             scenario_c[scenario_c$true_correlation == 0, shared_columns]),
-  data.frame(design = "B", test = "Welch t",
-             scenario_b[scenario_b$effect_size == 0, shared_columns])
+  data.frame(design = "B", test = "cor.test",
+             scenario_b[scenario_b$true_correlation == 0, shared_columns]),
+  data.frame(design = "C", test = "Welch t",
+             scenario_c[scenario_c$effect_size == 0, shared_columns])
 )
 null_cells$SEs_from_zero <- ifelse(
   null_cells$difference_se > 0,
@@ -309,18 +309,18 @@ knitr::kable(null_cells, digits = 3, row.names = FALSE)
 | A | cor.test | 20 | 0.051 | 0.048 | -0.003 | 0.002 | 0.094 | 0.045 | 1.573 |
 | A | cor.test | 30 | 0.052 | 0.049 | -0.003 | 0.002 | 0.095 | 0.046 | 1.217 |
 | A | cor.test | 50 | 0.049 | 0.047 | -0.002 | 0.002 | 0.090 | 0.044 | 1.106 |
-| C | cor.test | 12 | 0.051 | 0.048 | -0.002 | 0.002 | 0.098 | 0.048 | 1.038 |
-| C | cor.test | 20 | 0.053 | 0.048 | -0.005 | 0.002 | 0.095 | 0.045 | 2.083 |
-| C | cor.test | 30 | 0.049 | 0.052 | 0.003 | 0.002 | 0.098 | 0.051 | 1.487 |
-| C | cor.test | 50 | 0.049 | 0.051 | 0.003 | 0.002 | 0.085 | 0.044 | 1.261 |
-| B | Welch t | 12 | 0.047 | 0.046 | -0.001 | 0.002 | 0.092 | 0.045 | 0.629 |
-| B | Welch t | 20 | 0.049 | 0.047 | -0.002 | 0.002 | 0.075 | 0.037 | 1.032 |
-| B | Welch t | 30 | 0.049 | 0.050 | 0.001 | 0.002 | 0.094 | 0.048 | 0.484 |
-| B | Welch t | 50 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.050 |
+| B | cor.test | 12 | 0.051 | 0.048 | -0.002 | 0.002 | 0.098 | 0.048 | 1.038 |
+| B | cor.test | 20 | 0.053 | 0.048 | -0.005 | 0.002 | 0.095 | 0.045 | 2.083 |
+| B | cor.test | 30 | 0.049 | 0.052 | 0.003 | 0.002 | 0.098 | 0.051 | 1.487 |
+| B | cor.test | 50 | 0.049 | 0.051 | 0.003 | 0.002 | 0.085 | 0.044 | 1.261 |
+| C | Welch t | 12 | 0.047 | 0.046 | -0.001 | 0.002 | 0.092 | 0.045 | 0.629 |
+| C | Welch t | 20 | 0.049 | 0.047 | -0.002 | 0.002 | 0.075 | 0.037 | 1.032 |
+| C | Welch t | 30 | 0.049 | 0.050 | 0.001 | 0.002 | 0.094 | 0.048 | 0.484 |
+| C | Welch t | 50 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.050 |
 
 Do not read the individual rates too closely: the Monte Carlo SE at 0.05
 is 0.0015 at this many iterations, and each test brings its own size —
-the Welch *t* in design B is mildly conservative at N = 12, in the
+the Welch *t* in design C is mildly conservative at N = 12, in the
 correctly labelled column too. The statistic that carries the claim is
 the **paired** difference, both analyses seeing the same outcome vector
 within an iteration. It runs from -0.005 to +0.003, each within 2.1
@@ -337,11 +337,12 @@ high-leverage observations against the covariate and a Pearson or Welch
 test’s rejection rate can shift even with no true association. Nothing
 in these runs speaks to that case.
 
-**An unchanged rate is not a clean bill for one dataset.** The two
-analyses reach a different verdict on 7.5% to 9.8% of null datasets, of
-which 48% to 52% are rejections the correct labels would not have given.
-A result that became significant only on mislabelled files is a false
-positive the bug handed over, however untouched the aggregate rate is.
+**A dataset can still get a different verdict even when the aggregate
+rate is unchanged.** The two analyses reach a different verdict on 7.5%
+to 9.8% of null datasets, of which 48% to 52% are rejections the correct
+labels would not have given. A result that became significant only on
+mislabelled files is a false positive the bug handed over, however
+untouched the aggregate rate is.
 
 ## Finding 2: a real association is weakened in proportion to the scrambling
 
@@ -404,11 +405,10 @@ until the pairing is nearly gone. Two participants entered out of
 sequence cost a couple of points of power; the `p1 … pN` scheme at 50
 participants keeps 0.02 of the pairing and is the bottom of that range.
 
-The share is not the whole story, though. It fixes the average
-attenuation while the permutation’s *cycle structure* moves the
-variance, so two orderings keeping the same share can differ in
-detection. Comparing disjoint transpositions against a single long cycle
-displacing the same number of participants:
+The share fixes only the average attenuation. The permutation’s *cycle
+structure* separately moves the variance, so two orderings keeping the
+same share can differ in detection. Comparing disjoint transpositions
+against a single long cycle displacing the same number of participants:
 
 ``` r
 detection_for <- function(misfiled, n_participants = 50, true_correlation = 0.5,

@@ -7,10 +7,11 @@ image under another participant's filename. It sets out which versions carried i
 whether your own stored results are affected, what it does to an analysis, and how to repair
 affected output.
 
-**The bug is in versions 0.4.0 through 1.2.3 — 0.4.0 only if you installed it on or after
-2017-08-15, see "Which versions were affected" below — all of them GitHub-only, and is fixed in
-[1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). It never reached CRAN: the
-last CRAN release, 0.3.4.1, predates the option involved by thirteen months, so nothing
+**The bug is in versions 0.4.0 through 1.2.3, all of them GitHub-only, and is fixed in
+[1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). (0.4.0 is affected only if you
+installed it on or after 2017-08-15; see "Which versions were affected" below.) It never
+reached CRAN: the last CRAN release, 0.3.4.1, predates the option involved by thirteen months,
+so nothing
 installed with `install.packages('rcicr')` was ever affected.**
 
 ## This is the bug
@@ -52,13 +53,13 @@ related back to the source participant's condition, score or group. That join wa
 a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it
 was reported as.
 
-The damage then depends on the design, and it is not only noise. Where the variable joined to the
+The damage then depends on the design. Where the variable joined to the
 images has nothing to do with the order participants were labelled in, the shuffle destroys the
 association rather than inventing one: at 50 participants a true correlation of 0.5 goes from
 being detected 97% of the time to 5%, and the runs that then find nothing are looking at a real
 association they can no longer see. That is the file-drawer case. But where something varies
-along collection order — IDs assigned as participants arrived while conditions ran in blocks, an
-ID encoding testing date or cohort — the shuffle can instead weaken an effect, reverse its sign,
+along collection order (IDs assigned as participants arrived while conditions ran in blocks, an
+ID encoding testing date or cohort), the shuffle can instead weaken an effect, reverse its sign,
 or hand back *more* apparent support than the correct analysis would.
 
 How badly your own filenames were scrambled follows from how far your participant vector
@@ -91,11 +92,11 @@ identical(predictor, predictor[misfiled])   # TRUE = this analysis is untouched
 with `predictor` the participant-level variable, in the same order you passed `participants`. A
 two-group comparison where the swaps happened to stay inside each group is the clear case: the
 filenames are wrong, and every number in the analysis is right. It is worth a line to rule in,
-though it is not the common case — the ordinary `p1 … pN` scheme with conditions in blocks does
+even though the ordinary `p1 … pN` scheme with conditions in blocks does
 *not* survive it.
 
-That check clears an analysis; it does not condemn one. `FALSE` means the join changed and the
-result may have changed with it, not that it did — two swapped participants whose images
+A `TRUE` clears an analysis outright. A `FALSE` only means the join changed: whether the
+result changed with it is a separate question, since two swapped participants whose images
 happened to score alike would leave the analysis exactly as it was. What settles a `FALSE` is
 the thing you would want regardless: repair the filenames as below, re-run, and compare. Until
 then, two things follow, and neither depends on which design you were in:
@@ -105,9 +106,8 @@ then, two things follow, and neither depends on which design you were in:
   have been published, so an affected analysis that "didn't work" is worth re-running before it
   is written off.
 - **A significant result from an affected analysis cannot be relied on until it is re-run**,
-  because the pairing it was computed on was not the one it was reported as. That is not the
-  same as saying it is wrong: the corrected run may reproduce it exactly. It just is not
-  established until it does.
+  because the pairing it was computed on was not the one it was reported as. The corrected run
+  may reproduce it exactly; until it does, treat it as unestablished rather than wrong.
 
 A published figure needs the same distinction. One showing individual CIs labelled by
 participant is wrong as printed. One labelled only by condition or group is wrong only if the
@@ -146,7 +146,7 @@ call can.
 
 Not finding it clears the analysis only if the output still sits as the run left it. A
 directory that was renamed, folded into an archive, or had its PNGs moved elsewhere will not
-answer to that name any more. The filenames are then a clue rather than a verdict: an
+answer to that name any more. The filenames alone do not then settle it: an
 individual CI is `ci_<participant>.png`, but `generateCI(save_as_png = TRUE, filename = ...)`
 takes whatever filename it is given, so a group CI saved as `filename = "p3"` is also
 `ci_p3.png`. Confirm a loose file against the script that wrote it, or against the data, before

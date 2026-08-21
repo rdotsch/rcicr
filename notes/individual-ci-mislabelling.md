@@ -196,7 +196,7 @@ reachable only from `generateCI()`. That has held in every version: exactly one 
 the write, `R/generateCI.R` from 2017 through 1.2.3 and `R/ci-compute.R` after the loop was
 extracted. Individual files are named `ci_<participant>.png`, or
 `antici_<participant>.png` for an antiCI, so the naming outlives a renamed folder or moved
-contents — as a clue, not a verdict. `filename` is a free-form argument, so a group CI written
+contents. `filename` is a free-form argument, though, so a group CI written
 by `generateCI(save_as_png = TRUE, filename = "p3")` lands at `<targetpath>/ci_p3.png` and is
 indistinguishable by name alone (`R/generateCI.R:207`, `saveToImage()` at 392-406). Once the
 directory structure is gone, confirm a loose file from the script or the data before treating
@@ -284,9 +284,8 @@ one is not measured there. And none of these averages clears an individual analy
 on a single dataset can flip either way, so short of the check below it has to be re-run against
 corrected filenames whichever way it came out.
 
-One thing does clear an analysis without a re-run, and it is not an average but a property of
-the ordering: if the permutation only exchanged participants sharing a value on the variable
-joined to the images, the join is unchanged and so is every number computed from it. The
-advisory gives readers `identical(predictor, predictor[misfiled])` for that. It settles a case
-in one direction only — `FALSE` leaves the question open rather than answering it — but where it
-comes back `TRUE` there is nothing to re-run.
+One thing does clear an analysis without a re-run: a property of the specific ordering, not
+something the averages above capture. If the permutation only exchanged participants sharing a
+value on the variable joined to the images, the join is unchanged and so is every number
+computed from it. The advisory gives readers `identical(predictor, predictor[misfiled])` for
+that. A `FALSE` leaves the question open; a `TRUE` means there is nothing to re-run.
