@@ -4,8 +4,8 @@ This file provides guidance to AI coding agents when working with code in this r
 It is the single source of truth for them; put conventions here.
 
 **Do not delete `CLAUDE.md`** — it is a stub that `@`-imports this file, and Claude Code
-loads only `CLAUDE.md`. **Keep this file under 2800 words** — counted in words, not lines,
-because a line budget is defeated by longer lines and this file has been the worst offender.
+loads only `CLAUDE.md`. **Keep this file under 2800 words** (see "Which file a thing goes
+in" below for why words, not lines).
 
 ## What this is
 
@@ -97,9 +97,8 @@ would this still matter if the package were maintained somewhere else entirely?
   then deleted on that same branch so the squash leaves `main` one commit and no plan file.
   Full procedure in `CONTRIBUTING.md` → "Plan first, in the same pull request"; read it there.
   Prose, `man/`, `NEWS.md` wording and comment-only edits are exempt.
-- **Use `subagent_type: "fork"` (not a generic subagent) for a PR's implementation work
-  alongside others in flight.** A fork inherits full context for free; other types start cold
-  and need the PR and prior decisions handed over.
+- **Use `subagent_type: "fork"` for a PR's implementation work alongside others in flight.**
+  It inherits full context for free; other types start cold.
 - **Merge pull requests to `main` with squash merges** (`gh pr merge <n> --squash`). One
   commit per PR keeps history readable and makes `git revert` of a whole change
   straightforward, which matters here because a PR is usually one self-contained fix plus its
@@ -177,6 +176,7 @@ of the `.RData` file live in `README.md` — sections "How it works" and "Anatom
 ### Notes on conventions in this codebase
 
 - **Comment sparingly.** Only where the reason would otherwise have to be re-derived, never to narrate the next line. This is the convention most often broken here — full rule in `CONTRIBUTING.md` → "Code conventions".
+- **No em dashes in prose docs.** Use a period, comma, colon or parenthesis instead: it is the clearest tell of agent-drafted text.
 - Functions use `save_as_png=TRUE` / `save_rdata=TRUE`-style side-effecting defaults — most analysis functions write PNGs to disk in addition to returning data structures. **The destination is always a required argument** (`stimulus_path`, `targetpath`, `zmaptargetpath`): none has a default, because a default path writes to the user's filespace uninvited and CRAN policy forbids it. Never reintroduce one — not even `tempdir()`; [`DECISIONS.md`](DECISIONS.md#write-paths-are-required-arguments-not-defaults-of-tempdir) records why.
 - Scaling of CI pixel intensities (`none`, `constant`, `matched`, `independent`) is a key user-facing decision, documented at length in `generateCI.R`'s roxygen header — read it before changing scaling logic.
 - `computeInfoVal2IFC()`'s `ref_lookup` tibble looks like a cache and is not one: **it has been empty since 2018**, its rows having been measured under the pre-erratum infoVal formula. Every lookup misses and the reference distribution is always regenerated. Do not describe it as a working cache; the matching machinery is kept only so the table can be repopulated cheaply.
