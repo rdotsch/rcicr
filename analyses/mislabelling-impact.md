@@ -21,14 +21,20 @@ What the individual-CI mislabelling did to a second-stage analysis
   support](#finding-4-the-shuffle-can-also-raise-apparent-support)
 - [Checking one specific analysis](#checking-one-specific-analysis)
 
-The bug fixed in rcicr 1.3.0 permuted output filenames: the file named
-`unique(participants)[i]` held the classification image of
-`sort(unique(participants))[i]`. The
+The bug fixed in rcicr 1.3.0 shuffled output filenames, which means the
+filenames are no longer correctly associated with their classification
+image: the file named `unique(participants)[i]` held the classification
+image of `sort(unique(participants))[i]`. That shuffle is a
+*permutation* of the filenames, and the rest of this document calls it
+that. The
 [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
-tells researchers what to do about it. This document is the evidence
-behind the claims it makes, and exists because those claims are easy to
-get wrong in either direction: “it only adds noise” and “it could have
-produced spurious findings” are each half right in ways that matter.
+tells researchers what to do about it, and settles in three questions
+whether you are affected at all. The document you are currently reading
+provides the evidence behind the claims the advisory makes, and exists
+to prevent you from interpreting those claims incorrectly, which is an
+easy mistake to make in either direction: “it only adds noise” and “it
+could have produced spurious findings” are each half right, and acting
+on either one alone gets the answer wrong.
 
 ``` r
 n_simulations <- 20000
@@ -51,15 +57,16 @@ misfiled_as <- function(participant_ids) {
 }
 ```
 
-`sort()` is correct for every input type: it follows a factor’s own
+`sort()` is correct for every input type. It follows a factor’s own
 levels, sorts numbers numerically, and sorts character strings by the
-session’s collation, the same three behaviours `factor()` gave the
-original run.
+session’s collation. Those are the same three behaviours `factor()` gave
+the original run.
 
 ## How much of the pairing survives
 
-With identifiers `p1 … pN` in collection order (the ordinary labelling
-scheme), almost nothing does, once there are ten or more participants.
+A common labelling scheme is to use identifiers `p1 … pN` in collection
+order. In that case almost nothing survives, as soon as there are ten or
+more participants.
 
 ``` r
 survival <- data.frame(
@@ -90,8 +97,9 @@ knitr::kable(survival)
 | p1..p120               |          120 |              1 |      0.008 |
 | p01..p12 (zero-padded) |           12 |             12 |      1.000 |
 
-This is not monotone in N because the count turns on where the
-identifiers change width. At 99, 100 and 101 participants eleven files
+The count does not simply fall as N grows, because it turns on where the
+identifiers change width (e.g. the number “3” has width 1, while the
+number “103” has width 3). At 99, 100 and 101 participants eleven files
 keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while
 at 120 it is back to one.
 
@@ -314,23 +322,21 @@ knitr::kable(null_cells, digits = 3, row.names = FALSE)
 | C | Welch t | 50 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.050 |
 
 Do not read the individual rates too closely: the Monte Carlo SE at 0.05
-is 0.0015 at this many iterations, and each test brings its own size:
-the Welch *t* in design C is mildly conservative at N = 12, in the
-correctly labelled column too. The statistic that carries the claim is
-the **paired** difference, both analyses seeing the same outcome vector
-within an iteration. It runs from -0.005 to +0.003, each within 2.1
-paired SEs of zero.
+is 0.0015 at this many iterations, and each test has its own
+false-positive rate even under correct labels, the Welch *t* in design C
+being mildly conservative at N = 12. The statistic that carries the
+claim is the **paired** difference, both analyses seeing the same
+simulated data within an iteration. It runs from -0.005 to +0.003, each
+within 2.1 paired SEs of zero.
 
-That result is structural rather than a lucky set of draws, *for an
-outcome that is exchangeable across participants*: permuting one side of
-a pair that is independent of the other leaves it independent, so the
-null distribution is unchanged by construction. The null cells here are
-iid Gaussian and satisfy that. Independence alone is not enough: if the
-outcome’s distribution shifts along collection order, say because its
-variance grows as data collection went on, then the permutation moves
-high-leverage observations against the covariate and a Pearson or Welch
-test’s rejection rate can shift even with no true association. Nothing
-in these runs speaks to that case.
+That result is structural rather than a lucky set of draws: shuffling
+one side of a pair that is independent of the other leaves it
+independent, so the shuffle cannot change how often a test rejects when
+there is nothing there. This holds for any outcome that is
+*exchangeable* across participants, which the iid Gaussian (independent,
+identically distributed) null cells here are. An outcome whose
+distribution drifts along collection order would not be, and nothing in
+these runs speaks to that case.
 
 **A dataset can still get a different verdict even when the aggregate
 rate is unchanged.** The two analyses reach a different verdict on 7.5%
@@ -400,10 +406,13 @@ until the pairing is nearly gone. Two participants entered out of
 sequence cost a couple of points of power; the `p1 … pN` scheme at 50
 participants keeps 0.02 of the pairing and is the bottom of that range.
 
-The share fixes only the average attenuation. The permutation’s *cycle
-structure* separately moves the variance, so two orderings keeping the
-same share can differ in detection. Comparing disjoint transpositions
-against a single long cycle displacing the same number of participants:
+The share fixes only the average attenuation. How the shuffle is
+arranged matters separately, so two orderings keeping the same share can
+differ in detection. The table below displaces the same number of
+participants two ways: `detected_transpositions`, straight swaps in
+pairs, where A holds B’s image and B holds A’s; and
+`detected_one_long_cycle`, a single chain in which each participant’s
+image moves to the next and the last wraps back to the first:
 
 ``` r
 detection_for <- function(misfiled, n_participants = 50, true_correlation = 0.5,
@@ -453,16 +462,22 @@ knitr::kable(cycle_structure, digits = 3, row.names = FALSE)
 | 40 | 0.2 | 0.125 | 0.097 |
 | 50 | 0.0 | 0.079 | 0.049 |
 
-The gap reaches 0.030 at the severe end. So these rows are worked
-examples rather than a lookup table.
+The gap reaches 0.030 at the severe end. So read these rows as
+illustrations of how much the structure of the shuffle matters, not as a
+table to look your own study up in.
 
 ## Finding 3: where something tracks collection order, the residual takes either sign
 
 In designs B and C the permutation is no longer arbitrary with respect
-to the design. A `d = 0.8` condition difference survives attenuated and
-correctly signed at N = 50, where a quarter of participants cross the
-condition boundary, and comes back **reversed** at N = 20, where four
-fifths do.
+to the design, because the condition a participant was in tracks the
+order they were labelled in. What the shuffle does to a `d = 0.8`
+condition difference then depends on how many participants it moves
+across the boundary between the two conditions. At N = 50 it moves a
+quarter of them, and the difference survives attenuated and correctly
+signed: smaller than it should be, but still positive where the true
+difference is positive. At N = 20 it moves four fifths of them, and the
+difference comes back **reversed**: the sign flips, so the condition
+that was really higher tests as the lower one.
 
 ## Finding 4: the shuffle can also raise apparent support
 
@@ -470,8 +485,8 @@ Design D asks whether the permutation can hand back a
 hypothesis-consistent result rather than only destroy one. The
 assignment scheme decides the answer, so both are run: contiguous blocks
 already maximise the trend contrast under correct labels, so any
-permutation can only reduce it, and testing that alone would make “the
-shuffle never helps” true by construction.
+permutation can only reduce it, and testing that alone would settle “the
+shuffle never helps” before the first simulation ran.
 
 ``` r
 simulate_trend_design <- function(n_participants, trend, assignment,
@@ -564,8 +579,8 @@ by the identifier scheme and the assignment scheme together, and nothing
 in sorting refers to a hypothesis. How often that sign nevertheless
 agrees with a given prediction is *not* answered here: every cell fixes
 the trend and the “predicted” direction as positive rather than sampling
-them, so these runs cannot support a claim about directional inflation
-across a literature.
+them, so these runs cannot support a claim that the bug pushed results
+in the predicted direction across the literature.
 
 ## Checking one specific analysis
 
@@ -669,10 +684,9 @@ Error : iterations must be a whole number of at least 1
 A permutation that only exchanges participants sharing a value on the
 second-stage predictor leaves that analysis exactly as computed, however
 wrong the filenames are. The advisory gives readers
-`identical(predictor, predictor[misfiled_as(participants)])` for that,
-and it is worth ruling in first because it can settle the question
-outright, though the ordinary `p1 … pN` scheme with conditions in blocks
-does not survive it.
+`identical(predictor, predictor[misfiled_as(participants)])` for that.
+Run it first: a `TRUE` settles the question outright, though the
+ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
 
 The implication runs one way only. `TRUE` proves the analysis is
 untouched; `FALSE` does not prove it changed, since two swapped

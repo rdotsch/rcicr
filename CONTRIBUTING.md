@@ -205,6 +205,8 @@ at something reasonable rather than reflowing what is there.
 
 **Markdown prose isn't line-wrapped: write one line per paragraph and let the reader's editor word-wrap it, and skip em dashes** for a period, comma, colon or parenthesis instead.
 
+**Show why something matters, never assert that it does.** "It is worth …", "it matters because", "in ways that matter", or anything similar: cut it and state the consequence. Not "worth running first" but "a `TRUE` ends the matter".
+
 **Comments: as few as will do, and only where the code cannot speak for itself.** Write one
 when the reason would otherwise have to be re-derived — a rejected alternative, a constraint,
 a measured number, a trap. Never narrate what the next line does, restate the error message
