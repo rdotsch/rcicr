@@ -96,7 +96,7 @@ knitr::kable(survival)
 | p1..p120               |          120 |              1 |      0.008 |
 | p01..p12 (zero-padded) |           12 |             12 |      1.000 |
 
-This is not monotone in N because the count turns on where the
+The count does not simply fall as N grows, because it turns on where the
 identifiers change width (e.g. the number “3” has width 1, while the
 number “103” has width 3). At 99, 100 and 101 participants eleven files
 keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while
@@ -325,7 +325,7 @@ is 0.0015 at this many iterations, and each test has its own
 false-positive rate even under correct labels, the Welch *t* in design C
 being mildly conservative at N = 12. The statistic that carries the
 claim is the **paired** difference, both analyses seeing the same
-outcome vector within an iteration. It runs from -0.005 to +0.003, each
+simulated data within an iteration. It runs from -0.005 to +0.003, each
 within 2.1 paired SEs of zero.
 
 That result is structural rather than a lucky set of draws: shuffling
@@ -404,10 +404,13 @@ until the pairing is nearly gone. Two participants entered out of
 sequence cost a couple of points of power; the `p1 … pN` scheme at 50
 participants keeps 0.02 of the pairing and is the bottom of that range.
 
-The share fixes only the average attenuation. The permutation’s *cycle
-structure* separately moves the variance, so two orderings keeping the
-same share can differ in detection. Comparing disjoint transpositions
-against a single long cycle displacing the same number of participants:
+The share fixes only the average attenuation. How the shuffle is
+arranged matters separately, so two orderings keeping the same share can
+differ in detection. The table below displaces the same number of
+participants two ways: `detected_transpositions`, straight swaps in
+pairs, where A holds B’s image and B holds A’s; and
+`detected_one_long_cycle`, a single chain in which each participant’s
+image moves to the next and the last wraps back to the first:
 
 ``` r
 detection_for <- function(misfiled, n_participants = 50, true_correlation = 0.5,
@@ -480,8 +483,8 @@ Design D asks whether the permutation can hand back a
 hypothesis-consistent result rather than only destroy one. The
 assignment scheme decides the answer, so both are run: contiguous blocks
 already maximise the trend contrast under correct labels, so any
-permutation can only reduce it, and testing that alone would make “the
-shuffle never helps” true by construction.
+permutation can only reduce it, and testing that alone would settle “the
+shuffle never helps” before the first simulation ran.
 
 ``` r
 simulate_trend_design <- function(n_participants, trend, assignment,
@@ -574,8 +577,8 @@ by the identifier scheme and the assignment scheme together, and nothing
 in sorting refers to a hypothesis. How often that sign nevertheless
 agrees with a given prediction is *not* answered here: every cell fixes
 the trend and the “predicted” direction as positive rather than sampling
-them, so these runs cannot support a claim about directional inflation
-across a literature.
+them, so these runs cannot support a claim that the bug pushed results
+in the predicted direction across the literature.
 
 ## Checking one specific analysis
 
