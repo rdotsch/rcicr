@@ -32,8 +32,8 @@ tells researchers what to do about it. The document you are currently
 reading provides the evidence behind the claims the advisory makes, and
 exists to prevent you from interpreting those claims incorrectly, which
 is an easy mistake to make in either direction: “it only adds noise” and
-“it could have produced spurious findings” are each half right in ways
-that matter.
+“it could have produced spurious findings” are each half right, and
+acting on either one alone gets the answer wrong.
 
 ``` r
 n_simulations <- 20000
@@ -683,10 +683,9 @@ Error : iterations must be a whole number of at least 1
 A permutation that only exchanges participants sharing a value on the
 second-stage predictor leaves that analysis exactly as computed, however
 wrong the filenames are. The advisory gives readers
-`identical(predictor, predictor[misfiled_as(participants)])` for that,
-and it is worth running that check first, because a `TRUE` settles the
-question outright, though the ordinary `p1 … pN` scheme with conditions
-in blocks does not survive it.
+`identical(predictor, predictor[misfiled_as(participants)])` for that.
+Run it first: a `TRUE` settles the question outright, though the
+ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
 
 The implication runs one way only. `TRUE` proves the analysis is
 untouched; `FALSE` does not prove it changed, since two swapped

@@ -44,7 +44,7 @@ misfiled <- match(sort(ids), ids)   # which participant each file actually holds
 identical(predictor, predictor[misfiled])   # TRUE = this analysis is untouched
 ```
 
-with `predictor` the participant-level variable, in the same order you passed `participants`. A two-group comparison where the swaps happened to stay inside each group is the clear case: the filenames are wrong, and every number in the analysis is right. It is one line to run, and worth running before anything else, because a `TRUE` ends the matter, even though the ordinary `p1 … pN` scheme with conditions in blocks does *not* survive it.
+with `predictor` the participant-level variable, in the same order you passed `participants`. A two-group comparison where the swaps happened to stay inside each group is the clear case: the filenames are wrong, and every number in the analysis is right. It is one line, and a `TRUE` ends the matter, so run it before anything else, even though the ordinary `p1 … pN` scheme with conditions in blocks does *not* survive it.
 
 A `TRUE` clears an analysis outright. A `FALSE` means the join changed: whether the result changed with it is a separate question. In that case repair the filenames as below, re-run, and compare. Until then, two things follow, independent of your design:
 
