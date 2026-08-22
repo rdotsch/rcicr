@@ -73,8 +73,9 @@ expression with no intervening change, which is taken as sufficient.
 
 The one substantive finding the earlier write-ups missed.
 
-**`generateCI2IFC()` and `batchGenerateCI2IFC()` could not run at all between 2016-10-28 and
-2021-12-28.** `generateCI2IFC()` called `generateCI()` positionally:
+**`cd04b28` broke every caller of `generateCI()` on 2016-10-28.** The 2IFC pair stayed broken
+until 2021-12-28; `batchGenerateCI()` was caught and repaired eleven days later. Each called
+`generateCI()` positionally:
 
 ```r
 generateCI(stimuli, responses, baseimage, rdata, saveaspng, filename, targetpath, ...)
@@ -84,8 +85,28 @@ That was correct until `cd04b28` (2016-10-28) inserted `participants = NA` into 
 fifth slot without updating the call. From then on `participants` received `saveaspng`. Since
 `all(is.na(TRUE))` is `FALSE`, every call entered the per-participant branch with one "level",
 reaching `txtProgressBar(min = 1, max = 1)` and stopping with `must have 'max' > 'min'`.
-Confirmed at 0.4.0 for both functions, with `saveaspng` `TRUE` and `FALSE`; it fails either way.
-Fixed by `90fee07` (2021-12-28).
+Confirmed at 0.4.0 for both 2IFC functions, with `saveaspng` `TRUE` and `FALSE`; it fails either
+way. Fixed by `90fee07` (2021-12-28).
+
+**`batchGenerateCI()` had the identical call, and so the identical failure, for eleven days.**
+At `8e44cfb^` it called `generateCI()` positionally in exactly the same shape. Reproducing R's
+argument matching against that commit's real formals binds `participants` to `saveaspng` —
+`TRUE` — giving `all(is.na(participants))` `FALSE`, `npids` 1, and `must have 'max' > 'min'`
+from `txtProgressBar(min = 1, max = 1)`. `8e44cfb` ("Bugfixes to make batchGenerateCI work
+again", 2016-11-08) repaired it by switching to named arguments with an explicit
+`participants = NA` — the line that later write-ups cite as the reason `batchGenerateCI()` is
+safe. That line is the *fix* for this defect, not an original design choice.
+
+So no per-participant route ran at all between 2016-10-28 and 2016-11-08, and the advisory says
+so rather than claiming `batchGenerateCI()` as an available alternative across the whole window.
+Everything measured at 0.4.0 sits after `8e44cfb`, which is why `batchGenerateCI()` scored 0 of
+12 there rather than failing.
+
+**`cd04b28` is also the commit that implemented [issue #27](https://github.com/rdotsch/rcicr/issues/27)**,
+the request for equally-weighted group CIs — the change that added `participants` in the first
+place. Two days earlier, [issue #33](https://github.com/rdotsch/rcicr/issues/33) had been opened
+asking to "check whether the functions that call `generateCI` still work". That check was never
+run; all three callers broke on 2016-10-28, and #33 stayed open until 2026.
 
 **This window is not the same as "0.4.0", at either end.** 0.4.0 ran to 2021-09-23 and 0.4.1
 took over from there, but the misalignment lasted until 2021-12-28 — so 0.4.1 installs taken
