@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE, collapse = TRUE, comment = "")
 options(width = 100)
 ```
 
-The bug fixed in rcicr 1.3.0 permuted output filenames: the file named `unique(participants)[i]` held the classification image of `sort(unique(participants))[i]`. The [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) tells researchers what to do about it. This document is the evidence behind the claims it makes, and exists because those claims are easy to get wrong in either direction: "it only adds noise" and "it could have produced spurious findings" are each half right in ways that matter.
+The bug fixed in rcicr 1.3.0 shuffled output filenames, which means the filenames are no longer correctly associated with their classification image: the file named `unique(participants)[i]` held the classification image of `sort(unique(participants))[i]`. That shuffle is a *permutation* of the filenames, and the rest of this document calls it that. The [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) tells researchers what to do about it. The document you are currently reading provides the evidence behind the claims the advisory makes, and exists to prevent you from interpreting those claims incorrectly, which is an easy mistake to make in either direction: "it only adds noise" and "it could have produced spurious findings" are each half right in ways that matter.
 
 ```{r constants}
 n_simulations <- 20000
@@ -31,11 +31,11 @@ misfiled_as <- function(participant_ids) {
 }
 ```
 
-`sort()` is correct for every input type: it follows a factor's own levels, sorts numbers numerically, and sorts character strings by the session's collation, the same three behaviours `factor()` gave the original run.
+`sort()` is correct for every input type. It follows a factor's own levels, sorts numbers numerically, and sorts character strings by the session's collation — the same three behaviours `factor()` gave the original run.
 
 ## How much of the pairing survives
 
-With identifiers `p1 … pN` in collection order (the ordinary labelling scheme), almost nothing does, once there are ten or more participants.
+A common labelling scheme is to use identifiers `p1 … pN` in collection order. In that case almost nothing survives, as soon as there are ten or more participants.
 
 ```{r survival}
 survival <- data.frame(
@@ -54,7 +54,7 @@ survival$share_kept <- round(survival$kept_own_image / survival$participants, 3)
 knitr::kable(survival)
 ```
 
-This is not monotone in N because the count turns on where the identifiers change width. At 99, 100 and 101 participants eleven files keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while at 120 it is back to one.
+This is not monotone in N because the count turns on where the identifiers change width (e.g. the number "3" has width 1, while the number "103" has width 3). At 99, 100 and 101 participants eleven files keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while at 120 it is back to one.
 
 ## The designs
 
@@ -212,7 +212,7 @@ knitr::kable(null_cells, digits = 3, row.names = FALSE)
 
 Do not read the individual rates too closely: the Monte Carlo SE at 0.05 is `r sprintf("%.4f", sqrt(0.05 * 0.95 / n_simulations))` at this many iterations, and each test brings its own size: the Welch *t* in design C is mildly conservative at N = 12, in the correctly labelled column too. The statistic that carries the claim is the **paired** difference, both analyses seeing the same outcome vector within an iteration. It runs from `r sprintf("%+.3f", min(null_cells$difference))` to `r sprintf("%+.3f", max(null_cells$difference))`, each within `r sprintf("%.1f", max(null_cells$SEs_from_zero, na.rm = TRUE))` paired SEs of zero.
 
-That result is structural rather than a lucky set of draws, *for an outcome that is exchangeable across participants*: permuting one side of a pair that is independent of the other leaves it independent, so the null distribution is unchanged by construction. The null cells here are iid Gaussian and satisfy that. Independence alone is not enough: if the outcome's distribution shifts along collection order, say because its variance grows as data collection went on, then the permutation moves high-leverage observations against the covariate and a Pearson or Welch test's rejection rate can shift even with no true association. Nothing in these runs speaks to that case.
+That result is structural rather than a lucky set of draws, *for an outcome that is exchangeable across participants*: permuting one side of a pair that is independent of the other leaves it independent, so the null distribution is unchanged by construction. The null cells here are iid Gaussian (independent, identically distributed) and satisfy that. Independence alone is not enough: if the outcome's distribution shifts along collection order, say because its variance grows as data collection went on, then the permutation moves high-leverage observations against the covariate and a Pearson or Welch test's rejection rate can shift even with no true association. Nothing in these runs speaks to that case.
 
 **A dataset can still get a different verdict even when the aggregate rate is unchanged.** The two analyses reach a different verdict on `r sprintf("%.1f%%", 100 * min(null_cells$decisions_changed))` to `r sprintf("%.1f%%", 100 * max(null_cells$decisions_changed))` of null datasets, of which `r sprintf("%.0f%%", 100 * min(null_cells$became_significant / null_cells$decisions_changed, na.rm = TRUE))` to `r sprintf("%.0f%%", 100 * max(null_cells$became_significant / null_cells$decisions_changed, na.rm = TRUE))` are rejections the correct labels would not have given. A result that became significant only on mislabelled files is a false positive the bug handed over, however untouched the aggregate rate is.
 
@@ -304,11 +304,11 @@ cycle_structure <- do.call(rbind, lapply(c(10, 20, 40, 50), function(displaced) 
 knitr::kable(cycle_structure, digits = 3, row.names = FALSE)
 ```
 
-The gap reaches `r sprintf("%.3f", max(abs(cycle_structure$detected_one_long_cycle - cycle_structure$detected_transpositions)))` at the severe end. So these rows are worked examples rather than a lookup table.
+The gap reaches `r sprintf("%.3f", max(abs(cycle_structure$detected_one_long_cycle - cycle_structure$detected_transpositions)))` at the severe end. So read these rows as illustrations of how much the structure of the shuffle matters, not as a table to look your own study up in.
 
 ## Finding 3: where something tracks collection order, the residual takes either sign
 
-In designs B and C the permutation is no longer arbitrary with respect to the design. A `d = 0.8` condition difference survives attenuated and correctly signed at N = 50, where a quarter of participants cross the condition boundary, and comes back **reversed** at N = 20, where four fifths do.
+In designs B and C the permutation is no longer arbitrary with respect to the design, because the condition a participant was in tracks the order they were labelled in. What the shuffle does to a `d = 0.8` condition difference then depends on how many participants it moves across the boundary between the two conditions. At N = 50 it moves a quarter of them, and the difference survives attenuated and correctly signed — smaller than it should be, but still positive where the true difference is positive. At N = 20 it moves four fifths of them, and the difference comes back **reversed**: the sign flips, so the condition that was really higher tests as the lower one.
 
 ## Finding 4: the shuffle can also raise apparent support
 
@@ -457,7 +457,7 @@ str(ordering_impact(paste0("p", 1:12), iterations = 2000))
 try(ordering_impact(paste0("p", 1:12), iterations = 0))
 ```
 
-A permutation that only exchanges participants sharing a value on the second-stage predictor leaves that analysis exactly as computed, however wrong the filenames are. The advisory gives readers `identical(predictor, predictor[misfiled_as(participants)])` for that, and it is worth ruling in first because it can settle the question outright, though the ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
+A permutation that only exchanges participants sharing a value on the second-stage predictor leaves that analysis exactly as computed, however wrong the filenames are. The advisory gives readers `identical(predictor, predictor[misfiled_as(participants)])` for that, and it is worth running that check first, because a `TRUE` settles the question outright, though the ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
 
 The implication runs one way only. `TRUE` proves the analysis is untouched; `FALSE` does not prove it changed, since two swapped participants whose images scored alike would also leave it as it was. What settles a `FALSE` is repairing the filenames and re-running, which the advisory asks for anyway.
 

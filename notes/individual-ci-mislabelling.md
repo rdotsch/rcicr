@@ -112,14 +112,14 @@ Half of it expired in June 2021: CRAN archived the package, so "wait until we ma
 
 ### From the latest GitHub release — `install_github('rdotsch/rcicr@*release')`
 
-| you installed | you got |
-|---|---|
-| before 2026-07-27 | **nothing** — no releases existed to resolve against |
-| 2026-07-27 → 2026-07-28 | 1.1.0 |
-| 2026-07-28 → 2026-08-07 | 1.2.0, then 1.2.1 the same day |
-| 2026-08-07 → 2026-08-08 | 1.2.2 |
-| 2026-08-08 → 2026-08-18 | 1.2.3 |
-| 2026-08-18 → now | **1.3.0** |
+| you installed | you got | affected |
+|---|---|---|
+| before 2026-07-27 | **nothing** — no releases existed to resolve against | — |
+| 2026-07-27 → 2026-07-28 | 1.1.0 | **yes** |
+| 2026-07-28 → 2026-08-07 | 1.2.0, then 1.2.1 the same day | **yes** |
+| 2026-08-07 → 2026-08-08 | 1.2.2 | **yes** |
+| 2026-08-08 → 2026-08-18 | 1.2.3 | **yes** |
+| 2026-08-18 → now | **1.3.0** | no |
 
 Every GitHub release before 1.3.0 carries the bug. `v1.0.1` has a tag but no GitHub *release*, and it was tagged retroactively in 2026 against a 2023 commit, so `@*release` never resolved to it.
 
@@ -129,7 +129,7 @@ The affected call needs **both** things: a `participants` vector *and* `save_ind
 
 > **Did a single `generateCI()` call produce one classification image per participant?**
 
-If the answer is no, nothing here touches you, and there are several ways to reach it that do not depend on any file surviving.
+If the answer is no, nothing here touches you. There are several ways to answer that question, and most of them work even if the output files themselves are long gone — each of the headings below is one such way, starting from whatever you still have.
 
 **You did not make per-participant images at all.** A group-level classification image is unaffected: it is a mean across participants and does not depend on their order.
 
@@ -154,7 +154,7 @@ An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names
 
 **You still have the script but not the output.** Read every `generateCI()` call that passes participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on its own: it is the sixth formal, so `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it positionally, and `do.call()` with an assembled list hides it too. Search for `individual`, then read by hand any call passing six or more arguments positionally.
 
-**You still have the data but neither.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it hands you corrected output as a side effect: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
+**You still have the raw data, but neither the output images nor the script.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it hands you corrected output as a side effect: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
 
 **You have only the published figure.** Then it cannot be verified directly, and the ordering question below is the best available evidence.
 

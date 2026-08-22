@@ -21,14 +21,19 @@ What the individual-CI mislabelling did to a second-stage analysis
   support](#finding-4-the-shuffle-can-also-raise-apparent-support)
 - [Checking one specific analysis](#checking-one-specific-analysis)
 
-The bug fixed in rcicr 1.3.0 permuted output filenames: the file named
-`unique(participants)[i]` held the classification image of
-`sort(unique(participants))[i]`. The
+The bug fixed in rcicr 1.3.0 shuffled output filenames, which means the
+filenames are no longer correctly associated with their classification
+image: the file named `unique(participants)[i]` held the classification
+image of `sort(unique(participants))[i]`. That shuffle is a
+*permutation* of the filenames, and the rest of this document calls it
+that. The
 [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
-tells researchers what to do about it. This document is the evidence
-behind the claims it makes, and exists because those claims are easy to
-get wrong in either direction: “it only adds noise” and “it could have
-produced spurious findings” are each half right in ways that matter.
+tells researchers what to do about it. The document you are currently
+reading provides the evidence behind the claims the advisory makes, and
+exists to prevent you from interpreting those claims incorrectly, which
+is an easy mistake to make in either direction: “it only adds noise” and
+“it could have produced spurious findings” are each half right in ways
+that matter.
 
 ``` r
 n_simulations <- 20000
@@ -51,15 +56,16 @@ misfiled_as <- function(participant_ids) {
 }
 ```
 
-`sort()` is correct for every input type: it follows a factor’s own
+`sort()` is correct for every input type. It follows a factor’s own
 levels, sorts numbers numerically, and sorts character strings by the
-session’s collation, the same three behaviours `factor()` gave the
+session’s collation — the same three behaviours `factor()` gave the
 original run.
 
 ## How much of the pairing survives
 
-With identifiers `p1 … pN` in collection order (the ordinary labelling
-scheme), almost nothing does, once there are ten or more participants.
+A common labelling scheme is to use identifiers `p1 … pN` in collection
+order. In that case almost nothing survives, as soon as there are ten or
+more participants.
 
 ``` r
 survival <- data.frame(
@@ -91,7 +97,8 @@ knitr::kable(survival)
 | p01..p12 (zero-padded) |           12 |             12 |      1.000 |
 
 This is not monotone in N because the count turns on where the
-identifiers change width. At 99, 100 and 101 participants eleven files
+identifiers change width (e.g. the number “3” has width 1, while the
+number “103” has width 3). At 99, 100 and 101 participants eleven files
 keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while
 at 120 it is back to one.
 
@@ -325,12 +332,13 @@ That result is structural rather than a lucky set of draws, *for an
 outcome that is exchangeable across participants*: permuting one side of
 a pair that is independent of the other leaves it independent, so the
 null distribution is unchanged by construction. The null cells here are
-iid Gaussian and satisfy that. Independence alone is not enough: if the
-outcome’s distribution shifts along collection order, say because its
-variance grows as data collection went on, then the permutation moves
-high-leverage observations against the covariate and a Pearson or Welch
-test’s rejection rate can shift even with no true association. Nothing
-in these runs speaks to that case.
+iid Gaussian (independent, identically distributed) and satisfy that.
+Independence alone is not enough: if the outcome’s distribution shifts
+along collection order, say because its variance grows as data
+collection went on, then the permutation moves high-leverage
+observations against the covariate and a Pearson or Welch test’s
+rejection rate can shift even with no true association. Nothing in these
+runs speaks to that case.
 
 **A dataset can still get a different verdict even when the aggregate
 rate is unchanged.** The two analyses reach a different verdict on 7.5%
@@ -453,16 +461,22 @@ knitr::kable(cycle_structure, digits = 3, row.names = FALSE)
 | 40 | 0.2 | 0.125 | 0.097 |
 | 50 | 0.0 | 0.079 | 0.049 |
 
-The gap reaches 0.030 at the severe end. So these rows are worked
-examples rather than a lookup table.
+The gap reaches 0.030 at the severe end. So read these rows as
+illustrations of how much the structure of the shuffle matters, not as a
+table to look your own study up in.
 
 ## Finding 3: where something tracks collection order, the residual takes either sign
 
 In designs B and C the permutation is no longer arbitrary with respect
-to the design. A `d = 0.8` condition difference survives attenuated and
-correctly signed at N = 50, where a quarter of participants cross the
-condition boundary, and comes back **reversed** at N = 20, where four
-fifths do.
+to the design, because the condition a participant was in tracks the
+order they were labelled in. What the shuffle does to a `d = 0.8`
+condition difference then depends on how many participants it moves
+across the boundary between the two conditions. At N = 50 it moves a
+quarter of them, and the difference survives attenuated and correctly
+signed — smaller than it should be, but still positive where the true
+difference is positive. At N = 20 it moves four fifths of them, and the
+difference comes back **reversed**: the sign flips, so the condition
+that was really higher tests as the lower one.
 
 ## Finding 4: the shuffle can also raise apparent support
 
@@ -670,9 +684,9 @@ A permutation that only exchanges participants sharing a value on the
 second-stage predictor leaves that analysis exactly as computed, however
 wrong the filenames are. The advisory gives readers
 `identical(predictor, predictor[misfiled_as(participants)])` for that,
-and it is worth ruling in first because it can settle the question
-outright, though the ordinary `p1 … pN` scheme with conditions in blocks
-does not survive it.
+and it is worth running that check first, because a `TRUE` settles the
+question outright, though the ordinary `p1 … pN` scheme with conditions
+in blocks does not survive it.
 
 The implication runs one way only. `TRUE` proves the analysis is
 untouched; `FALSE` does not prove it changed, since two swapped
