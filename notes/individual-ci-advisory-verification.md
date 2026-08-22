@@ -133,9 +133,11 @@ pushed straight to `development`; the work was tracked by issue #79 rather than 
 predates the current squash-merge convention.
 
 This does not weaken the advisory — a function that stops cannot emit a mislabelled file, so
-"not affected" holds. It changes what to tell anyone on a pre-2021-12-28 `development` install:
-`batchGenerateCI()` is the only per-participant route that both ran and named its output
-correctly there, and the advisory now says so.
+"not affected" holds. It changes what to tell anyone on a `development` install predating
+2021-12-28, and the answer has three windows rather than one: through 2016-10-27 all three
+routes ran, from 2016-10-28 to 2016-11-07 none of them did, and from 2016-11-08 to 2021-12-27
+`batchGenerateCI()` is the only one that both ran and named its output correctly. The advisory
+says so.
 
 **Which branch this was broken on.** The breakage lived on `development`, not on the default
 branch, and the default branch never served it:
