@@ -321,20 +321,20 @@ knitr::kable(null_cells, digits = 3, row.names = FALSE)
 | C | Welch t | 50 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.050 |
 
 Do not read the individual rates too closely: the Monte Carlo SE at 0.05
-is 0.0015 at this many iterations, and each test brings its own size:
-the Welch *t* in design C is mildly conservative at N = 12, in the
-correctly labelled column too. The statistic that carries the claim is
-the **paired** difference, both analyses seeing the same outcome vector
-within an iteration. It runs from -0.005 to +0.003, each within 2.1
-paired SEs of zero.
+is 0.0015 at this many iterations, and each test has its own
+false-positive rate even under correct labels, the Welch *t* in design C
+being mildly conservative at N = 12. The statistic that carries the
+claim is the **paired** difference, both analyses seeing the same
+outcome vector within an iteration. It runs from -0.005 to +0.003, each
+within 2.1 paired SEs of zero.
 
-That result is structural rather than a lucky set of draws, *for an
-outcome that is exchangeable across participants*: permuting one side of
-a pair that is independent of the other leaves it independent, so the
-null distribution is unchanged by construction. The null cells here are
-iid Gaussian (independent, identically distributed) and satisfy that. An
-outcome whose distribution drifts along collection order would not, and
-nothing in these runs speaks to that case.
+That result is structural rather than a lucky set of draws: shuffling
+one side of a pair that is independent of the other leaves it
+independent, so the 5% could not have come out otherwise. This holds for
+any outcome that is *exchangeable* across participants, which the iid
+Gaussian (independent, identically distributed) null cells here are. An
+outcome whose distribution drifts along collection order would not be,
+and nothing in these runs speaks to that case.
 
 **A dataset can still get a different verdict even when the aggregate
 rate is unchanged.** The two analyses reach a different verdict on 7.5%
