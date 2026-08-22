@@ -58,8 +58,8 @@ misfiled_as <- function(participant_ids) {
 
 `sort()` is correct for every input type. It follows a factor’s own
 levels, sorts numbers numerically, and sorts character strings by the
-session’s collation — the same three behaviours `factor()` gave the
-original run.
+session’s collation. Those are the same three behaviours `factor()` gave
+the original run.
 
 ## How much of the pairing survives
 
@@ -473,7 +473,7 @@ order they were labelled in. What the shuffle does to a `d = 0.8`
 condition difference then depends on how many participants it moves
 across the boundary between the two conditions. At N = 50 it moves a
 quarter of them, and the difference survives attenuated and correctly
-signed — smaller than it should be, but still positive where the true
+signed: smaller than it should be, but still positive where the true
 difference is positive. At N = 20 it moves four fifths of them, and the
 difference comes back **reversed**: the sign flips, so the condition
 that was really higher tests as the lower one.
