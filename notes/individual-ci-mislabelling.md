@@ -133,17 +133,17 @@ If the answer is no, nothing here touches you. There are several ways to answer 
 
 **You did not make per-participant images at all.** A group-level classification image is unaffected: it is a mean across participants and does not depend on their order.
 
-**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()` cannot reach the defect: they call `generateCI()` once per group with `participants = NA`, so the loop never runs, and they name each image from the group value they are iterating over. This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()` does not expose either argument.
+**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()` cannot produce the bug: they call `generateCI()` once per group with `participants = NA`, so the code that does the mislabelling never runs, and they name each image from the group value they are iterating over. This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()` does not expose either argument.
 
 Checked across the whole affected range, not only the latest release: `batchGenerateCI()` passes `participants = NA` explicitly in every version from 2017-08-15 to 1.2.3, and neither batch function mentions `save_individual_cis` in any of them. Measured too: run against the released 1.2.3 with participants `p1 … p12` in collection order, where the direct call gets 11 of 12 filenames wrong, both batch functions got 0 of 12 wrong and created no `individual_cis` directory at all.
 
-**You still have the output.** The images live in a directory called `individual_cis`, and nothing else in the package writes there: the only such write is in `computeParticipantCIs()`, reachable only from `generateCI()`. That has held in every version: exactly one file contains the write, `R/generateCI.R` from 2017 through 1.2.3 and `R/ci-compute.R` after the loop was extracted. Individual files are named `ci_<participant>.png`, or `antici_<participant>.png` for an antiCI, so the naming outlives a renamed folder or moved contents. `filename` is a free-form argument, though, so a group CI written by `generateCI(save_as_png = TRUE, filename = "p3")` lands at `<targetpath>/ci_p3.png` and is indistinguishable by name alone (`R/generateCI.R:207`, `saveToImage()` at 392-406). Once the directory structure is gone, confirm a loose file from the script or the data before treating it as an individual CI.
+**You still have the output.** The images live in a folder called `individual_cis`, and nothing else in the package writes there: the only such write is in `computeParticipantCIs()`, reachable only from `generateCI()`. That has held in every version: exactly one file contains the write, `R/generateCI.R` from 2017 through 1.2.3 and `R/ci-compute.R` after the loop was extracted. Individual files are named `ci_<participant>.png`, or `antici_<participant>.png` for an antiCI, so the naming outlives a renamed folder or moved contents. `filename` is a free-form argument, though, so a group CI written by `generateCI(save_as_png = TRUE, filename = "p3")` lands at `<targetpath>/ci_p3.png` and is indistinguishable by name alone (`R/generateCI.R:207`, `saveToImage()` at 392-406). Once the directory structure is gone, confirm a loose file from the script or the data before treating it as an individual CI.
 
-**Telling one folder of PNGs from another.** Every other writer in the package puts its images *flat* into the path you gave it: `individual_cis/` is the only subdirectory any of them creates, which is what makes its presence such a clean signal. The filenames differ too:
+**Telling one folder of PNGs from another.** Every other writer in the package puts its images *flat* into the path you gave it: `individual_cis/` is the only sub-folder any of them creates, which is what makes finding it such a clear sign. The filenames differ too:
 
 | what wrote it | where | filename |
 |---|---|---|
-| `generateCI(save_individual_cis = TRUE)` | `<targetpath>/individual_cis/` | `ci_<participant>.png` — bare participant id |
+| `generateCI(save_individual_cis = TRUE)` | `<targetpath>/individual_cis/` | `ci_<participant>.png`, just the participant identifier |
 | `generateCI(save_as_png = TRUE)`, `generateCI2IFC()` | `<targetpath>/` | `ci_<filename>.png`, defaulting to the base image name |
 | `batchGenerateCI()`, `batchGenerateCI2IFC()` | `<targetpath>/` | `ci_<baseimage>_<by>_<unit>.png` |
 | `autoscale(save_as_pngs = TRUE)` | `<targetpath>/` | `<name>_autoscaled.png` |
@@ -152,9 +152,9 @@ Checked across the whole affected range, not only the latest release: `batchGene
 
 An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names are the conclusive ones: `ci_face_participant_p3.png` came from a batch function and is fine, because a batch name always carries the base image and the grouping column, being built from them. A bare `ci_p3.png` is only a clue in the other direction: it is what the affected call writes, but `generateCI(save_as_png = TRUE, filename = "p3")` writes the same name for a group CI, one directory up, so confirm it against the script or the data before treating a loose file as an individual CI. Applying the recovery permutation to a set that is really something else would scramble output that was correct.
 
-**You still have the script but not the output.** Read every `generateCI()` call that passes participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on its own: it is the sixth formal, so `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it positionally, and `do.call()` with an assembled list hides it too. Search for `individual`, then read by hand any call passing six or more arguments positionally.
+**You still have the script but not the output.** Read every `generateCI()` call that passes participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on its own: it is the sixth argument, so a call that lists its arguments in order without naming them, such as `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)`, switches it on with the name appearing nowhere, and `do.call()` with an assembled list hides it too. Search for `individual`, then read by hand any call passing six or more arguments positionally.
 
-**You still have the raw data, but neither the output images nor the script.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it hands you corrected output as a side effect: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
+**You still have the raw data, but neither the output images nor the script.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it gives you corrected files at the same time: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
 
 **You have only the published figure.** Then it cannot be verified directly, and the ordering question below is the best available evidence.
 
@@ -164,9 +164,9 @@ An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names
 identical(unique(participants), sort(unique(participants)))   # TRUE = the names were correct
 ```
 
-"Sorted" means *lexically* sorted for text labels, per the table earlier: sorting a data frame by a `"p1"`-style column does not make it safe once you reach ten participants.
+"Sorted" means sorted the way text sorts rather than the way numbers do, per the table earlier: `"p10"` comes before `"p2"`, so sorting a data frame by a `"p1"`-style column does not make it safe once you reach ten participants.
 
-Recovery is a rename, not a recomputation: the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
+Putting it right is a rename, not a recomputation: the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
 
 ## What it did to a second-stage analysis
 
