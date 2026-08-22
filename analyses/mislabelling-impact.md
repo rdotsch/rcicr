@@ -332,13 +332,9 @@ That result is structural rather than a lucky set of draws, *for an
 outcome that is exchangeable across participants*: permuting one side of
 a pair that is independent of the other leaves it independent, so the
 null distribution is unchanged by construction. The null cells here are
-iid Gaussian (independent, identically distributed) and satisfy that.
-Independence alone is not enough: if the outcome’s distribution shifts
-along collection order, say because its variance grows as data
-collection went on, then the permutation moves high-leverage
-observations against the covariate and a Pearson or Welch test’s
-rejection rate can shift even with no true association. Nothing in these
-runs speaks to that case.
+iid Gaussian (independent, identically distributed) and satisfy that. An
+outcome whose distribution drifts along collection order would not, and
+nothing in these runs speaks to that case.
 
 **A dataset can still get a different verdict even when the aggregate
 rate is unchanged.** The two analyses reach a different verdict on 7.5%
