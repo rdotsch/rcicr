@@ -1,0 +1,140 @@
+---
+title: "Individual-CI filename advisory (rcicr 0.4.0–1.2.3)"
+---
+
+This page is an advisory about a bug in rcicr that could save individual classification images under other participants' filenames. It sets out which versions carried it, how to tell whether your own stored results are affected, what it does to an analysis, and how to repair affected output.
+
+**The bug is in versions 0.4.0 through 1.2.3, all of them GitHub-only, and is fixed in [1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). (0.4.0 is affected only if you installed it on or after 2017-08-15; see "Which versions were affected" below.) This bug never reached CRAN: the last CRAN release, 0.3.4.1, predates the `save_individual_cis` option by thirteen months, so nothing installed with `install.packages('rcicr')` was ever affected.**
+
+## Are you affected?
+
+Most people reading this are not, and these three questions settle it without any statistics.
+
+1. **Did the copy of rcicr that produced your images come from CRAN**, installed with `install.packages("rcicr")`? Then stop reading, because no CRAN version ever carried this bug. The copy that counts is the one you had installed when you made the images: if you started on CRAN but later installed a version from GitHub, images made after that are not covered.
+2. **Did you make your per-participant images with `batchGenerateCI()`, `batchGenerateCI2IFC()` or `generateCI2IFC()`?** That is the route the tutorials use, none of them can produce the bug, and you can stop reading too.
+3. **Did your own script call `generateCI()` with a list of participants and `save_individual_cis = TRUE`?** Then it depends on which rcicr version made them. 1.3.0 and later name these files correctly, so images made with the fixed version need nothing, whatever your participant identifiers look like. If the images were produced by 0.4.0 through 1.2.3, read on: they are still correct images, but some may have been saved under another participant's name, and nothing has to be recomputed. [Check whether yours are affected](#how-you-can-quickly-check-whether-this-affects-you), then [rename them](#how-to-fix-it).
+
+Even then, many analyses are fine. It depends on how the participants were labelled, because a file is only misnamed where the identifiers were not already in sorted order:
+
+| `participants`, in the order you passed them | affected |
+|---|---|
+| `"p1"` … `"p9"`, fewer than ten participants | no |
+| `"p1"` … `"p10"` or beyond | **yes** |
+| `"p01"` … `"p12"`, zero-padded | no |
+| `"1"` … `"12"`, as text | **yes** |
+| `1` … `12`, as numbers | no |
+
+Sorting text puts `"p10"` before `"p2"`, which is what the affected rows have in common. [The check below](#how-you-can-quickly-check-whether-this-affects-you) settles any scheme not listed here.
+
+## This is the bug
+
+The bug is specific to one function, which is `generateCI()`. When called with `participants = ...` and `save_individual_cis = TRUE`, it could save each participant's classification image under a different participant's filename. The images themselves were computed correctly; only the file names were wrong.
+
+## Which versions were affected
+
+It affects versions 0.4.1 through 1.2.3 outright, all of them GitHub-only. An rcicr installed from CRAN, with `install.packages("rcicr")`, never carried this bug at any version, so work done with any of the CRAN versions is not affected. **Version 0.4.0 is a special case**: it lived only on the `development` branch, from 2016-10-26 to 2021-09-23, and the bug entered partway through that window, on 2017-08-15, so whether a 0.4.0 install is affected depends on exactly when you got it, not the version string alone (see [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) for the install-date table). Any of these versions is only actually affected whenever participant IDs weren't already in sorted order (e.g. "p10" sorting before "p2", the ordinary case from the tenth participant on).
+
+However, `batchGenerateCI()`, `batchGenerateCI2IFC()`, and `generateCI2IFC()`, the route most tutorials recommend for per-participant CIs, are not affected by the bug. If that's what your analysis used, this doesn't apply to you. The group classification image that `generateCI()` returns is also unaffected; only individual filenames could be wrong, and only from a *direct call*: one that reached `generateCI()` with a `participants` vector and `save_individual_cis = TRUE`. That argument combination is what makes a call direct, not where it was written: it counts whether your script spells the call out, assembles it with `do.call()`, or goes through a helper of your own. What makes the batch functions safe is that they never pass that combination.
+
+## What this does to an analysis
+
+The mislabelling breaks the link between a classification image and the participant it came from. Whether this impacts your analysis depends on what the images were then used for.
+
+If they were averaged into a group image, or looked at without reference to whose they were, nothing that came after it changed: the group CI is a mean over participants and does not depend on their order.
+
+It matters where something about each participant was matched up with their image. In the common second-stage design, naive raters judge each individual CI and those judgments are related back to the source participant's condition, score or group. That matching was done against a shuffled set of labels, so whatever the analysis found, it was not computed on the pairing it was reported as.
+
+The damage then depends on the design. Where what you matched to the images has nothing to do with the order participants were labelled in, the shuffle destroys the association rather than inventing one: at 50 participants a true correlation of 0.5 goes from being detected 97% of the time to 5%, and a study that then finds nothing is looking at a real association it can no longer see. This could lead to findings ending up in the file drawer: there may have been a real result, but it was very unlikely to be found in what the shuffle had turned into essentially random pairings. But where something varies along collection order (IDs assigned as participants arrived while conditions ran in blocks, an ID encoding testing date or cohort), the shuffle can instead weaken an effect, reverse its sign, or hand back *more* apparent support than the correct analysis would.
+
+How badly your own filenames were scrambled follows from how far your participant vector departed from sorted order:
+
+```r
+ids <- unique(participants)
+mean(sort(ids) == ids)   # share of files that kept their own participant
+```
+
+Under the common `p1 … pN` scheme past the tenth participant typically one file in the whole set still holds its own image.
+
+Mislabelled files do not always mean a changed analysis, and there is a more specific check for that. If the shuffle only swapped participants who share a value on whatever you matched the images to, the matching is unaffected and the result stands exactly as computed:
+
+```r
+ids <- unique(participants)
+misfiled <- match(sort(ids), ids)   # which participant each file actually holds
+
+identical(predictor, predictor[misfiled])   # TRUE = this analysis is untouched
+```
+
+with `predictor` the participant-level variable, in the same order you passed `participants`. A two-group comparison where the swaps happened to stay inside each group is the clear case: the filenames are wrong, and every number in the analysis is right. It is one line, and a `TRUE` ends the matter, so run it before anything else, even though the ordinary `p1 … pN` scheme with conditions in blocks does *not* survive it.
+
+A `TRUE` clears an analysis outright. A `FALSE` means the matching changed: whether the result changed with it is a separate question. In that case repair the filenames as below, re-run, and compare. Until then, two things follow, independent of your design:
+
+- **A null result from an affected analysis may be an artifact of the shuffle.** If the association was really in the data, this is what removed it. It is also the outcome least likely to have been published, so an affected analysis that "didn't work" is worth re-running before it is written off.
+- **A significant result from an affected analysis cannot be relied on until it is re-run**, because the pairing it was computed on was not the one it was reported as. The corrected run may reproduce it exactly; until it does, treat it as unestablished rather than wrong.
+
+A published figure needs the same distinction. One showing individual CIs labelled by participant is wrong as printed. One labelled only by condition or group is wrong only if the shuffle moved images across groups, meaning one or more participants' images moved from one condition into another. The check above tells you whether that happened.
+
+Re-running the analysis is usually possible: the images are correct and the filenames are repaired by renaming (below), so nothing needs regenerating. The exception is a design in which the wrong filenames determined what happened during data collection, rather than only how the results were filed afterwards: a participant shown "their own" CI picked out by filename, or blocks of stimuli assembled by condition from those labels. Renaming cannot reconstruct a response that was collected against the wrong image, and those observations have to be collected again.
+
+All of the above is supported by the simulations reported in [`analyses/mislabelling-impact.md`](https://github.com/rdotsch/rcicr/blob/main/analyses/mislabelling-impact.md).
+
+## How you can quickly check whether this affects you
+
+**Look for a folder called `individual_cis/` in your output.** Nothing else in the package writes one, so finding it means a direct call ran. Everything from here on applies only to images made before the fix, since 1.3.0 writes that same directory with the filenames correct. It is also how to tell which route your analysis took: the batch functions above pass `participants = NA` and never set `save_individual_cis`, so they cannot produce that folder, and only a direct `generateCI()` call can.
+
+Not finding it clears the analysis only if the files are still where the analysis left them. A folder that was renamed, folded into an archive, or had its PNGs moved elsewhere will not answer to that name any more. The filenames alone do not then settle it: an individual CI is `ci_<participant>.png`, but `generateCI(save_as_png = TRUE, filename = ...)` takes whatever filename it is given, so a group CI saved as `filename = "p3"` is also `ci_p3.png`. Confirm a loose file against the script that wrote it, or against the data, before treating it as an individual CI: running the rename below over a set of files that is really something else would scramble files that were correct. [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) has the table of what in the package writes which filename where.
+
+Do not rely on searching your scripts for `save_individual_cis` instead. It is the sixth argument of `generateCI()`, so a call that lists its arguments in order without naming them, such as `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)`, switches it on without the name appearing anywhere. `do.call()` hides it the same way. Searching your scripts for that text and finding nothing does **not** clear an analysis.
+
+If that folder is there, the order of your participant identifiers decides it. Run
+
+```r
+identical(unique(participants), sort(unique(participants)))
+```
+
+using the participant vector in the order you originally passed it. `FALSE` means the images are still correct but the filenames are swapped, and putting them right is a rename, with nothing to recompute (see below).
+
+`TRUE` means the files were named correctly, provided two things hold, because both change what `sort()` returns and so what the comparison means:
+
+- **Use the original `participants` you passed, not a copy converted to plain text.** A character copy is what you get from `as.character(participants)`, which throws away the fact that the identifiers were a factor. The bug ordered participants by `factor(participants)`, and a factor carries its own levels with it; `sort()` follows those same levels, so the check is right for a factor with a custom level order. Converting to character first can sort them into a different order and give you the wrong answer.
+- **Run the check on the computer that made the files.** How R sorts text depends on that computer's language and region settings, and two computers can still sort differently even when those settings look identical, because the sorting tables themselves differ between operating systems. So a `TRUE` obtained anywhere else can clear files that really were mislabelled. Plain numbers are safe, and `p1`/`p12` is not realistically at risk, but ordinary lowercase letters are no guarantee: some languages sort certain letter pairs as though they were a single letter. If your identifiers are anything more than digits and a simple prefix and the original computer is gone, comparing `Sys.getlocale("LC_COLLATE")` on both is the next best thing, but it is weaker evidence than re-running the check where the files were made.
+
+## How to fix it
+
+If you're affected, the file named `unique(participants)[i]` actually holds the classification image for `sort(unique(participants))[i]`, so this recovers the correct filenames without recomputing anything (two steps, so the rename doesn't overwrite a file it hasn't renamed yet):
+
+Work on a copy, and satisfy yourself first that the images were made before 1.3.0 and that `targetpath` below points at the folder from the same analysis these `participants` came from. Renaming output that a fixed version produced would permute a set that was already correct. The `stop()` calls catch a filename that is missing; they cannot catch a folder that is simply the wrong one. A folder from a different analysis with the same participant identifiers would rename cleanly, scrambling a set that had been correct.
+
+```r
+# The targetpath you originally passed to generateCI(). If you never passed one, it
+# was "./cis" by default in every affected release up to 1.2.1, so the files are in
+# "cis/individual_cis/" relative to where you ran the analysis, not in the working
+# directory itself.
+targetpath <- "./cis"
+
+old <- unique(participants)         # names the files currently carry
+new <- sort(unique(participants))   # participants they actually contain
+
+dir <- file.path(targetpath, "individual_cis")
+originals <- file.path(dir, paste0("ci_", old, ".png"))
+missing <- !file.exists(originals)
+if (any(missing)) stop("Missing file(s), nothing renamed: ", paste(old[missing], collapse = ", "))
+
+step1 <- file.rename(originals, file.path(dir, paste0("ci_", old, ".tmp")))
+if (!all(step1)) stop("Rename failed for: ", paste(old[!step1], collapse = ", "))
+
+step2 <- file.rename(file.path(dir, paste0("ci_", old, ".tmp")),
+                      file.path(dir, paste0("ci_", new, ".png")))
+if (!all(step2)) stop("Rename failed for: ", paste(old[!step2], collapse = ", "))
+```
+
+(This assumes `sort()` orders your IDs the way the original analysis did, which is the same condition the check above depends on: the original `participants` rather than a copy converted to text, under the same language and region settings.)
+
+(use the `antici_` prefix instead of `ci_` if you generated anti-CIs).
+
+If you plan to keep using the package, get the fixed version from [GitHub](https://github.com/rdotsch/rcicr) (`remotes::install_github("rdotsch/rcicr")`; a CRAN submission is in progress but not live yet).
+
+More detail: [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) has the full technical background (every affected version, its dates, and exactly which configurations trigger the bug), and [issue #267](https://github.com/rdotsch/rcicr/issues/267) is the pinned advisory tracking this on the repository.
+
+## Personal note
+
+I wrote rcicr in 2014, then left academia in 2017 and stopped maintaining it. I had other responsibilities and no time for something that felt part of a previous life. Recently I decided to see if AI would be able to maintain the package, and this week it found this bug. I'm glad it did, and I consider it the right and scientific thing to do to fix it and announce it publicly. I don't have the time to do more than that, so if you're still active in this field and would like to maintain this package, contact me and I'd gladly hand over the reins.

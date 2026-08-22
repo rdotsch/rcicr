@@ -1,0 +1,729 @@
+What the individual-CI mislabelling did to a second-stage analysis
+================
+
+- [The permutation the bug applied](#the-permutation-the-bug-applied)
+- [How much of the pairing survives](#how-much-of-the-pairing-survives)
+- [The designs](#the-designs)
+  - [A: a covariate unrelated to labelling
+    order](#a-a-covariate-unrelated-to-labelling-order)
+  - [B: a covariate that *is* collection
+    order](#b-a-covariate-that-is-collection-order)
+  - [C: condition assigned in blocks by collection
+    order](#c-condition-assigned-in-blocks-by-collection-order)
+- [Finding 1: the false positive rate is
+  unchanged](#finding-1-the-false-positive-rate-is-unchanged)
+- [Finding 2: a real association is weakened in proportion to the
+  scrambling](#finding-2-a-real-association-is-weakened-in-proportion-to-the-scrambling)
+- [Finding 3: where something tracks collection order, the residual
+  takes either
+  sign](#finding-3-where-something-tracks-collection-order-the-residual-takes-either-sign)
+- [Finding 4: the shuffle can also raise apparent
+  support](#finding-4-the-shuffle-can-also-raise-apparent-support)
+- [Checking one specific analysis](#checking-one-specific-analysis)
+
+The bug fixed in rcicr 1.3.0 shuffled output filenames, which means the
+filenames are no longer correctly associated with their classification
+image: the file named `unique(participants)[i]` held the classification
+image of `sort(unique(participants))[i]`. That shuffle is a
+*permutation* of the filenames, and the rest of this document calls it
+that. The
+[advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
+tells researchers what to do about it, and settles in three questions
+whether you are affected at all. The document you are currently reading
+provides the evidence behind the claims the advisory makes, and exists
+to prevent you from interpreting those claims incorrectly, which is an
+easy mistake to make in either direction: “it only adds noise” and “it
+could have produced spurious findings” are each half right, and acting
+on either one alone gets the answer wrong.
+
+``` r
+n_simulations <- 20000
+alpha <- 0.05
+set.seed(20260819)
+```
+
+## The permutation the bug applied
+
+For each position in the participants vector, which participant’s image
+did the file at that position actually hold? `generateCI()` looped over
+the sorted levels and named the output from the order of appearance, so
+the two orders have to be lined up against each other.
+
+``` r
+misfiled_as <- function(participant_ids) {
+  appearance_order <- unique(participant_ids)
+  loop_order <- sort(unique(participant_ids))
+  match(loop_order, appearance_order)
+}
+```
+
+`sort()` is correct for every input type. It follows a factor’s own
+levels, sorts numbers numerically, and sorts character strings by the
+session’s collation. Those are the same three behaviours `factor()` gave
+the original run.
+
+## How much of the pairing survives
+
+A common labelling scheme is to use identifiers `p1 … pN` in collection
+order. In that case almost nothing survives, as soon as there are ten or
+more participants.
+
+``` r
+survival <- data.frame(
+  identifiers = c(sprintf("p1..p%d", c(9, 12, 20, 30, 50, 99, 100, 120)),
+                  "p01..p12 (zero-padded)"),
+  stringsAsFactors = FALSE
+)
+id_sets <- c(lapply(c(9, 12, 20, 30, 50, 99, 100, 120),
+                    function(n) paste0("p", seq_len(n))),
+             list(sprintf("p%02d", 1:12)))
+survival$participants <- lengths(id_sets)
+survival$kept_own_image <- vapply(id_sets, function(ids) {
+  sum(misfiled_as(ids) == seq_along(unique(ids)))
+}, numeric(1))
+survival$share_kept <- round(survival$kept_own_image / survival$participants, 3)
+knitr::kable(survival)
+```
+
+| identifiers            | participants | kept_own_image | share_kept |
+|:-----------------------|-------------:|---------------:|-----------:|
+| p1..p9                 |            9 |              9 |      1.000 |
+| p1..p12                |           12 |              1 |      0.083 |
+| p1..p20                |           20 |              1 |      0.050 |
+| p1..p30                |           30 |              1 |      0.033 |
+| p1..p50                |           50 |              1 |      0.020 |
+| p1..p99                |           99 |             11 |      0.111 |
+| p1..p100               |          100 |             11 |      0.110 |
+| p1..p120               |          120 |              1 |      0.008 |
+| p01..p12 (zero-padded) |           12 |             12 |      1.000 |
+
+The count does not simply fall as N grows, because it depends on where
+the identifiers change width (e.g. the number “3” has width 1, while the
+number “103” has width 3). At 99, 100 and 101 participants eleven files
+keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while
+at 120 it is back to one.
+
+## The designs
+
+Four designs are simulated, plus a sweep over how scrambled the ordering
+was. Each pairs a participant-level variable with the images and asks
+what the mislabelling did to the analysis.
+
+``` r
+simulate_correlational_design <- function(n_participants, true_correlation,
+                                          draw_covariate,
+                                          iterations = n_simulations) {
+  misfiled <- misfiled_as(paste0("p", seq_len(n_participants)))
+  detected_correct <- detected_mislabelled <- logical(iterations)
+  significant_opposite <- logical(iterations)
+  correlation_recovered <- numeric(iterations)
+
+  for (i in seq_len(iterations)) {
+    covariate <- draw_covariate(n_participants)
+    outcome <- true_correlation * covariate +
+      sqrt(1 - true_correlation^2) * rnorm(n_participants)
+
+    test_correct <- cor.test(covariate, outcome)
+    test_mislabelled <- cor.test(covariate, outcome[misfiled])
+
+    detected_correct[i] <- test_correct$p.value < alpha
+    detected_mislabelled[i] <- test_mislabelled$p.value < alpha
+    significant_opposite[i] <- test_mislabelled$p.value < alpha &&
+      test_mislabelled$estimate < 0
+    correlation_recovered[i] <- test_mislabelled$estimate
+  }
+
+  # Both analyses see the same outcome vector each iteration, so the paired
+  # difference is the statistic that carries the claim: its error is far
+  # smaller than either rate's, and it does not confound the permutation with
+  # the test's own size at small N. Its SE comes from the per-iteration signed
+  # differences rather than from sqrt(discordant)/iterations, which is the
+  # McNemar SE *under equal rates* and overstates the error wherever the two
+  # rates genuinely differ.
+  decisions_changed <- sum(detected_correct != detected_mislabelled)
+  signed_difference <- detected_mislabelled - detected_correct
+  data.frame(
+    N = n_participants,
+    true_correlation = true_correlation,
+    detected_correct = mean(detected_correct),
+    detected_mislabelled = mean(detected_mislabelled),
+    difference = mean(detected_mislabelled) - mean(detected_correct),
+    difference_se = sd(signed_difference) / sqrt(iterations),
+    decisions_changed = decisions_changed / iterations,
+    became_significant = sum(!detected_correct & detected_mislabelled) / iterations,
+    mean_correlation_recovered = mean(correlation_recovered),
+    significant_opposite = mean(significant_opposite)
+  )
+}
+```
+
+### A: a covariate unrelated to labelling order
+
+The ordinary individual-differences design: raters judge each
+classification image, and those judgments are related back to something
+about the participant (their condition, their score on another measure,
+their group) that has nothing to do with the order participants happened
+to be numbered in.
+
+``` r
+grid <- expand.grid(N = c(12, 20, 30, 50), true_correlation = c(0, 0.3, 0.5))
+scenario_a <- do.call(rbind, Map(
+  function(n, rho) simulate_correlational_design(n, rho, function(k) rnorm(k)),
+  grid$N, grid$true_correlation
+))
+knitr::kable(scenario_a, digits = 3)
+```
+
+| N | true_correlation | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | mean_correlation_recovered | significant_opposite |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 12 | 0.0 | 0.050 | 0.050 | 0.000 | 0.002 | 0.094 | 0.047 | -0.003 | 0.026 |
+| 20 | 0.0 | 0.051 | 0.048 | -0.003 | 0.002 | 0.094 | 0.045 | 0.002 | 0.023 |
+| 30 | 0.0 | 0.052 | 0.049 | -0.003 | 0.002 | 0.095 | 0.046 | -0.001 | 0.025 |
+| 50 | 0.0 | 0.049 | 0.047 | -0.002 | 0.002 | 0.090 | 0.044 | 0.001 | 0.023 |
+| 12 | 0.3 | 0.160 | 0.047 | -0.112 | 0.003 | 0.192 | 0.040 | 0.001 | 0.024 |
+| 20 | 0.3 | 0.258 | 0.047 | -0.211 | 0.003 | 0.282 | 0.035 | 0.000 | 0.025 |
+| 30 | 0.3 | 0.369 | 0.047 | -0.323 | 0.004 | 0.382 | 0.029 | -0.001 | 0.024 |
+| 50 | 0.3 | 0.572 | 0.049 | -0.523 | 0.004 | 0.563 | 0.020 | -0.001 | 0.025 |
+| 12 | 0.5 | 0.399 | 0.047 | -0.352 | 0.004 | 0.414 | 0.031 | 0.000 | 0.024 |
+| 20 | 0.5 | 0.643 | 0.046 | -0.597 | 0.004 | 0.632 | 0.017 | 0.000 | 0.023 |
+| 30 | 0.5 | 0.832 | 0.049 | -0.783 | 0.003 | 0.799 | 0.008 | -0.001 | 0.025 |
+| 50 | 0.5 | 0.970 | 0.047 | -0.923 | 0.002 | 0.925 | 0.001 | -0.001 | 0.023 |
+
+### B: a covariate that *is* collection order
+
+Testing date, cohort and session number all advance as data are
+collected, which is exactly what the identifiers do too.
+
+``` r
+scenario_b <- do.call(rbind, Map(
+  function(n, rho) simulate_correlational_design(
+    n, rho, function(k) as.numeric(scale(seq_len(k)))
+  ),
+  grid$N, grid$true_correlation
+))
+knitr::kable(scenario_b, digits = 3)
+```
+
+| N | true_correlation | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | mean_correlation_recovered | significant_opposite |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 12 | 0.0 | 0.051 | 0.048 | -0.002 | 0.002 | 0.098 | 0.048 | 0.005 | 0.023 |
+| 20 | 0.0 | 0.053 | 0.048 | -0.005 | 0.002 | 0.095 | 0.045 | 0.000 | 0.025 |
+| 30 | 0.0 | 0.049 | 0.052 | 0.003 | 0.002 | 0.098 | 0.051 | 0.000 | 0.027 |
+| 50 | 0.0 | 0.049 | 0.051 | 0.003 | 0.002 | 0.085 | 0.044 | 0.000 | 0.024 |
+| 12 | 0.3 | 0.157 | 0.040 | -0.117 | 0.003 | 0.193 | 0.038 | 0.025 | 0.017 |
+| 20 | 0.3 | 0.259 | 0.048 | -0.211 | 0.003 | 0.285 | 0.037 | -0.069 | 0.039 |
+| 30 | 0.3 | 0.370 | 0.042 | -0.328 | 0.004 | 0.387 | 0.029 | 0.016 | 0.016 |
+| 50 | 0.3 | 0.587 | 0.146 | -0.441 | 0.004 | 0.498 | 0.028 | 0.136 | 0.001 |
+| 12 | 0.5 | 0.406 | 0.026 | -0.380 | 0.004 | 0.427 | 0.023 | 0.037 | 0.008 |
+| 20 | 0.5 | 0.662 | 0.048 | -0.613 | 0.004 | 0.648 | 0.017 | -0.114 | 0.046 |
+| 30 | 0.5 | 0.853 | 0.025 | -0.827 | 0.003 | 0.841 | 0.007 | 0.020 | 0.008 |
+| 50 | 0.5 | 0.976 | 0.336 | -0.640 | 0.003 | 0.644 | 0.002 | 0.224 | 0.000 |
+
+### C: condition assigned in blocks by collection order
+
+``` r
+simulate_blocked_design <- function(n_participants, effect_size,
+                                    iterations = n_simulations) {
+  misfiled <- misfiled_as(paste0("p", seq_len(n_participants)))
+  condition <- rep(c(0, 1), each = n_participants / 2)
+  detected_correct <- detected_mislabelled <- logical(iterations)
+  significant_predicted <- significant_opposite <- logical(iterations)
+
+  for (i in seq_len(iterations)) {
+    outcome <- effect_size * condition + rnorm(n_participants)
+    test_correct <- t.test(outcome[condition == 1], outcome[condition == 0])
+
+    mislabelled_outcome <- outcome[misfiled]
+    test_mislabelled <- t.test(mislabelled_outcome[condition == 1],
+                               mislabelled_outcome[condition == 0])
+    observed_difference <- test_mislabelled$estimate[1] - test_mislabelled$estimate[2]
+
+    detected_correct[i] <- test_correct$p.value < alpha
+    detected_mislabelled[i] <- test_mislabelled$p.value < alpha
+    significant_predicted[i] <- test_mislabelled$p.value < alpha &&
+      observed_difference > 0
+    significant_opposite[i] <- test_mislabelled$p.value < alpha &&
+      observed_difference < 0
+  }
+
+  decisions_changed <- sum(detected_correct != detected_mislabelled)
+  signed_difference <- detected_mislabelled - detected_correct
+  data.frame(
+    N = n_participants,
+    effect_size = effect_size,
+    detected_correct = mean(detected_correct),
+    detected_mislabelled = mean(detected_mislabelled),
+    difference = mean(detected_mislabelled) - mean(detected_correct),
+    difference_se = sd(signed_difference) / sqrt(iterations),
+    decisions_changed = decisions_changed / iterations,
+    became_significant = sum(!detected_correct & detected_mislabelled) / iterations,
+    significant_predicted = mean(significant_predicted),
+    significant_opposite = mean(significant_opposite),
+    crossed_condition = mean(condition[misfiled] != condition)
+  )
+}
+
+blocked_grid <- expand.grid(N = c(12, 20, 30, 50), effect_size = c(0, 0.8))
+scenario_c <- do.call(rbind, Map(
+  function(n, d) simulate_blocked_design(n, d),
+  blocked_grid$N, blocked_grid$effect_size
+))
+knitr::kable(scenario_c, digits = 3)
+```
+
+| N | effect_size | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | significant_predicted | significant_opposite | crossed_condition |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 12 | 0.0 | 0.047 | 0.046 | -0.001 | 0.002 | 0.092 | 0.045 | 0.022 | 0.024 | 0.500 |
+| 20 | 0.0 | 0.049 | 0.047 | -0.002 | 0.002 | 0.075 | 0.037 | 0.023 | 0.024 | 0.800 |
+| 30 | 0.0 | 0.049 | 0.050 | 0.001 | 0.002 | 0.094 | 0.048 | 0.025 | 0.025 | 0.467 |
+| 50 | 0.0 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.025 | 0.025 | 0.240 |
+| 12 | 0.8 | 0.222 | 0.032 | -0.189 | 0.003 | 0.252 | 0.031 | 0.016 | 0.017 | 0.500 |
+| 20 | 0.8 | 0.386 | 0.143 | -0.243 | 0.004 | 0.331 | 0.044 | 0.001 | 0.142 | 0.800 |
+| 30 | 0.8 | 0.559 | 0.036 | -0.523 | 0.004 | 0.564 | 0.021 | 0.025 | 0.012 | 0.467 |
+| 50 | 0.8 | 0.794 | 0.262 | -0.532 | 0.004 | 0.566 | 0.017 | 0.262 | 0.000 | 0.240 |
+
+## Finding 1: the false positive rate is unchanged
+
+Where there was no association to begin with, rejection stays at the
+nominal 5% in every design and at every sample size.
+
+``` r
+shared_columns <- c("N", "detected_correct", "detected_mislabelled",
+                    "difference", "difference_se", "decisions_changed",
+                    "became_significant")
+null_cells <- rbind(
+  data.frame(design = "A", test = "cor.test",
+             scenario_a[scenario_a$true_correlation == 0, shared_columns]),
+  data.frame(design = "B", test = "cor.test",
+             scenario_b[scenario_b$true_correlation == 0, shared_columns]),
+  data.frame(design = "C", test = "Welch t",
+             scenario_c[scenario_c$effect_size == 0, shared_columns])
+)
+null_cells$SEs_from_zero <- ifelse(
+  null_cells$difference_se > 0,
+  abs(null_cells$difference) / null_cells$difference_se, NA
+)
+knitr::kable(null_cells, digits = 3, row.names = FALSE)
+```
+
+| design | test | N | detected_correct | detected_mislabelled | difference | difference_se | decisions_changed | became_significant | SEs_from_zero |
+|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|
+| A | cor.test | 12 | 0.050 | 0.050 | 0.000 | 0.002 | 0.094 | 0.047 | 0.207 |
+| A | cor.test | 20 | 0.051 | 0.048 | -0.003 | 0.002 | 0.094 | 0.045 | 1.573 |
+| A | cor.test | 30 | 0.052 | 0.049 | -0.003 | 0.002 | 0.095 | 0.046 | 1.217 |
+| A | cor.test | 50 | 0.049 | 0.047 | -0.002 | 0.002 | 0.090 | 0.044 | 1.106 |
+| B | cor.test | 12 | 0.051 | 0.048 | -0.002 | 0.002 | 0.098 | 0.048 | 1.038 |
+| B | cor.test | 20 | 0.053 | 0.048 | -0.005 | 0.002 | 0.095 | 0.045 | 2.083 |
+| B | cor.test | 30 | 0.049 | 0.052 | 0.003 | 0.002 | 0.098 | 0.051 | 1.487 |
+| B | cor.test | 50 | 0.049 | 0.051 | 0.003 | 0.002 | 0.085 | 0.044 | 1.261 |
+| C | Welch t | 12 | 0.047 | 0.046 | -0.001 | 0.002 | 0.092 | 0.045 | 0.629 |
+| C | Welch t | 20 | 0.049 | 0.047 | -0.002 | 0.002 | 0.075 | 0.037 | 1.032 |
+| C | Welch t | 30 | 0.049 | 0.050 | 0.001 | 0.002 | 0.094 | 0.048 | 0.484 |
+| C | Welch t | 50 | 0.050 | 0.050 | 0.000 | 0.002 | 0.081 | 0.041 | 0.050 |
+
+Do not read the individual rates too closely: the Monte Carlo SE at 0.05
+is 0.0015 at this many iterations, and each test has its own
+false-positive rate even under correct labels, the Welch *t* in design C
+being mildly conservative at N = 12. The statistic that carries the
+claim is the **paired** difference, both analyses seeing the same
+simulated data within an iteration. It runs from -0.005 to +0.003, each
+within 2.1 paired SEs of zero.
+
+That result is structural rather than a lucky set of draws: shuffling
+one side of a pair that is independent of the other leaves it
+independent, so the shuffle cannot change how often a test rejects when
+there is nothing there. This holds for any outcome that is
+*exchangeable* across participants, which the iid Gaussian (independent,
+identically distributed) null cells here are. An outcome whose
+distribution drifts along collection order would not be, and nothing in
+these runs speaks to that case.
+
+**A dataset can still get a different verdict even when the aggregate
+rate is unchanged.** The two analyses reach a different verdict on 7.5%
+to 9.8% of null datasets, of which 48% to 52% are rejections the correct
+labels would not have given. A result that became significant only on
+mislabelled files is a false positive the bug handed over, however
+untouched the aggregate rate is.
+
+## Finding 2: a real association is weakened in proportion to the scrambling
+
+In design A the association is lost, and under the `p1 … pN` scheme that
+loss is close to total: at N = 50 a true correlation of 0.5 goes from
+0.970 detected to 0.047. The runs that then fail to reject are the false
+negatives.
+
+How much is lost depends on how far the ordering departed from sorted,
+which scenario E sweeps using the real mechanism: build an appearance
+order, let `misfiled_as()` derive the permutation from it.
+
+``` r
+simulate_severity <- function(n_participants, true_correlation, pairs_swapped,
+                              iterations = n_simulations) {
+  identifiers <- sprintf("p%02d", seq_len(n_participants))
+  appearance_order <- identifiers
+  if (pairs_swapped > 0) {
+    first_of_pair <- seq(1, by = 2, length.out = pairs_swapped)
+    appearance_order[c(rbind(first_of_pair, first_of_pair + 1))] <-
+      appearance_order[c(rbind(first_of_pair + 1, first_of_pair))]
+  }
+  misfiled <- misfiled_as(appearance_order)
+
+  detected_correct <- detected_mislabelled <- logical(iterations)
+  for (i in seq_len(iterations)) {
+    covariate <- rnorm(n_participants)
+    outcome <- true_correlation * covariate +
+      sqrt(1 - true_correlation^2) * rnorm(n_participants)
+    detected_correct[i] <- cor.test(covariate, outcome)$p.value < alpha
+    detected_mislabelled[i] <-
+      cor.test(covariate, outcome[misfiled])$p.value < alpha
+  }
+
+  data.frame(
+    pairs_swapped = pairs_swapped,
+    share_correctly_paired = mean(misfiled == seq_len(n_participants)),
+    detected_correct = mean(detected_correct),
+    detected_mislabelled = mean(detected_mislabelled)
+  )
+}
+
+scenario_e <- do.call(rbind, lapply(
+  c(1, 2, 5, 10, 25),
+  function(swaps) simulate_severity(50, 0.5, swaps)
+))
+knitr::kable(scenario_e, digits = 3)
+```
+
+| pairs_swapped | share_correctly_paired | detected_correct | detected_mislabelled |
+|--------------:|-----------------------:|-----------------:|---------------------:|
+|             1 |                   0.96 |            0.967 |                0.947 |
+|             2 |                   0.92 |            0.968 |                0.926 |
+|             5 |                   0.80 |            0.970 |                0.822 |
+|            10 |                   0.60 |            0.968 |                0.566 |
+|            25 |                   0.00 |            0.966 |                0.079 |
+
+Detection tracks the share still correctly paired almost one-for-one
+until the pairing is nearly gone. Two participants entered out of
+sequence cost a couple of points of power; the `p1 … pN` scheme at 50
+participants keeps 0.02 of the pairing and is the bottom of that range.
+
+The share fixes only the average attenuation. How the shuffle is
+arranged matters separately, so two orderings keeping the same share can
+differ in detection. The table below displaces the same number of
+participants two ways: `detected_transpositions`, straight swaps in
+pairs, where A holds B’s image and B holds A’s; and
+`detected_one_long_cycle`, a single chain in which each participant’s
+image moves to the next and the last wraps back to the first:
+
+``` r
+detection_for <- function(misfiled, n_participants = 50, true_correlation = 0.5,
+                          iterations = n_simulations) {
+  detected <- logical(iterations)
+  for (i in seq_len(iterations)) {
+    covariate <- rnorm(n_participants)
+    outcome <- true_correlation * covariate +
+      sqrt(1 - true_correlation^2) * rnorm(n_participants)
+    detected[i] <- cor.test(covariate, outcome[misfiled])$p.value < alpha
+  }
+  mean(detected)
+}
+
+as_transpositions <- function(n_participants, displaced) {
+  misfiled <- seq_len(n_participants)
+  first_of_pair <- seq(1, by = 2, length.out = displaced / 2)
+  misfiled[c(rbind(first_of_pair, first_of_pair + 1))] <-
+    misfiled[c(rbind(first_of_pair + 1, first_of_pair))]
+  misfiled
+}
+
+as_one_long_cycle <- function(n_participants, displaced) {
+  misfiled <- seq_len(n_participants)
+  cycle <- seq_len(displaced)
+  misfiled[cycle] <- c(cycle[-1], cycle[1])
+  misfiled
+}
+
+cycle_structure <- do.call(rbind, lapply(c(10, 20, 40, 50), function(displaced) {
+  transposed <- as_transpositions(50, displaced)
+  cycled <- as_one_long_cycle(50, displaced)
+  data.frame(
+    displaced = displaced,
+    share_correctly_paired = mean(transposed == seq_len(50)),
+    detected_transpositions = detection_for(transposed),
+    detected_one_long_cycle = detection_for(cycled)
+  )
+}))
+knitr::kable(cycle_structure, digits = 3, row.names = FALSE)
+```
+
+| displaced | share_correctly_paired | detected_transpositions | detected_one_long_cycle |
+|---:|---:|---:|---:|
+| 10 | 0.8 | 0.822 | 0.823 |
+| 20 | 0.6 | 0.561 | 0.565 |
+| 40 | 0.2 | 0.125 | 0.097 |
+| 50 | 0.0 | 0.079 | 0.049 |
+
+The gap reaches 0.030 at the severe end. So read these rows as
+illustrations of how much the structure of the shuffle matters, not as a
+table to look your own study up in.
+
+## Finding 3: where something tracks collection order, the residual takes either sign
+
+In designs B and C the permutation is no longer arbitrary with respect
+to the design, because the condition a participant was in tracks the
+order they were labelled in. What the shuffle does to a `d = 0.8`
+condition difference then depends on how many participants it moves
+across the boundary between the two conditions. At N = 50 it moves a
+quarter of them, and the difference survives attenuated and correctly
+signed: smaller than it should be, but still positive where the true
+difference is positive. At N = 20 it moves four fifths of them, and the
+difference comes back **reversed**: the sign flips, so the condition
+that was really higher tests as the lower one.
+
+## Finding 4: the shuffle can also raise apparent support
+
+Design D asks whether the permutation can hand back a
+hypothesis-consistent result rather than only destroy one. The
+assignment scheme decides the answer, so both are run: contiguous blocks
+already maximise the trend contrast under correct labels, so any
+permutation can only reduce it, and testing that alone would settle “the
+shuffle never helps” before the first simulation ran.
+
+``` r
+simulate_trend_design <- function(n_participants, trend, assignment,
+                                  iterations = n_simulations) {
+  misfiled <- misfiled_as(paste0("p", seq_len(n_participants)))
+  condition <- if (assignment == "blocked") {
+    rep(c(0, 1), each = n_participants / 2)
+  } else {
+    rep(c(0, 1), times = n_participants / 2)
+  }
+  collection_order <- as.numeric(scale(seq_len(n_participants)))
+
+  correct_predicted <- mislabelled_predicted <- logical(iterations)
+  mislabelled_opposite <- logical(iterations)
+
+  for (i in seq_len(iterations)) {
+    outcome <- trend * collection_order + rnorm(n_participants)
+    test_correct <- t.test(outcome[condition == 1], outcome[condition == 0])
+    mislabelled_outcome <- outcome[misfiled]
+    test_mislabelled <- t.test(mislabelled_outcome[condition == 1],
+                               mislabelled_outcome[condition == 0])
+
+    effect_correct <- test_correct$estimate[1] - test_correct$estimate[2]
+    effect_mislabelled <- test_mislabelled$estimate[1] - test_mislabelled$estimate[2]
+
+    correct_predicted[i] <- test_correct$p.value < alpha && effect_correct > 0
+    mislabelled_predicted[i] <- test_mislabelled$p.value < alpha &&
+      effect_mislabelled > 0
+    mislabelled_opposite[i] <- test_mislabelled$p.value < alpha &&
+      effect_mislabelled < 0
+  }
+
+  data.frame(
+    N = n_participants,
+    trend = trend,
+    assignment = assignment,
+    correct_predicted = mean(correct_predicted),
+    mislabelled_predicted = mean(mislabelled_predicted),
+    mislabelled_opposite = mean(mislabelled_opposite),
+    amplified = mean(mislabelled_predicted) > mean(correct_predicted)
+  )
+}
+
+trend_grid <- expand.grid(N = c(12, 20, 30, 50), trend = c(0.3, 0.6, 1.0),
+                          assignment = c("blocked", "alternating"),
+                          stringsAsFactors = FALSE)
+scenario_d <- do.call(rbind, Map(
+  function(n, t, a) simulate_trend_design(n, t, a),
+  trend_grid$N, trend_grid$trend, trend_grid$assignment
+))
+knitr::kable(scenario_d, digits = 3, row.names = FALSE)
+```
+
+| N | trend | assignment | correct_predicted | mislabelled_predicted | mislabelled_opposite | amplified |
+|---:|---:|:---|---:|---:|---:|:---|
+| 12 | 0.3 | blocked | 0.106 | 0.019 | 0.020 | FALSE |
+| 20 | 0.3 | blocked | 0.179 | 0.007 | 0.060 | FALSE |
+| 30 | 0.3 | blocked | 0.260 | 0.038 | 0.011 | FALSE |
+| 50 | 0.3 | blocked | 0.425 | 0.160 | 0.001 | FALSE |
+| 12 | 0.6 | blocked | 0.299 | 0.009 | 0.011 | FALSE |
+| 20 | 0.6 | blocked | 0.534 | 0.001 | 0.096 | FALSE |
+| 30 | 0.6 | blocked | 0.738 | 0.040 | 0.003 | FALSE |
+| 50 | 0.6 | blocked | 0.930 | 0.430 | 0.000 | FALSE |
+| 12 | 1.0 | blocked | 0.631 | 0.003 | 0.003 | FALSE |
+| 20 | 1.0 | blocked | 0.910 | 0.000 | 0.132 | FALSE |
+| 30 | 1.0 | blocked | 0.989 | 0.030 | 0.000 | FALSE |
+| 50 | 1.0 | blocked | 1.000 | 0.787 | 0.000 | FALSE |
+| 12 | 0.3 | alternating | 0.026 | 0.041 | 0.009 | TRUE |
+| 20 | 0.3 | alternating | 0.026 | 0.013 | 0.033 | FALSE |
+| 30 | 0.3 | alternating | 0.025 | 0.031 | 0.013 | TRUE |
+| 50 | 0.3 | alternating | 0.023 | 0.029 | 0.015 | TRUE |
+| 12 | 0.6 | alternating | 0.021 | 0.045 | 0.002 | TRUE |
+| 20 | 0.6 | alternating | 0.019 | 0.004 | 0.030 | FALSE |
+| 30 | 0.6 | alternating | 0.020 | 0.028 | 0.003 | TRUE |
+| 50 | 0.6 | alternating | 0.017 | 0.024 | 0.005 | TRUE |
+| 12 | 1.0 | alternating | 0.009 | 0.042 | 0.000 | TRUE |
+| 20 | 1.0 | alternating | 0.009 | 0.000 | 0.018 | FALSE |
+| 30 | 1.0 | alternating | 0.007 | 0.016 | 0.000 | TRUE |
+| 50 | 1.0 | alternating | 0.007 | 0.011 | 0.001 | TRUE |
+
+Alternating assignment is the opposite case: the correct pairing spreads
+the trend evenly across conditions, leaving little contrast to destroy
+and room to create one. The mislabelled analysis raises
+hypothesis-consistent rejections above the correctly labelled one in 9
+of 12 alternating cells.
+
+**So the mislabelling can hand back apparent support.** What it cannot
+do is know which direction anyone predicted: the sign it pushes is fixed
+by the identifier scheme and the assignment scheme together, and nothing
+in sorting refers to a hypothesis. How often that sign nevertheless
+agrees with a given prediction is *not* answered here: every cell fixes
+the trend and the “predicted” direction as positive rather than sampling
+them, so these runs cannot support a claim that the bug pushed results
+in the predicted direction across the literature.
+
+## Checking one specific analysis
+
+The advisory’s one-line check settles whether an ordering was affected.
+This goes further and estimates what it cost, for a given participant
+vector and an assumed effect size. It takes the vector itself, so
+factors, numbers and character strings all behave as they did in the
+original run.
+
+``` r
+ordering_impact <- function(participants, true_correlation = 0.5,
+                            iterations = 2000) {
+  # Validated before anything is allocated: iterations = 0 would return NaN for
+  # every advertised rate, and a non-numeric one would fail inside logical()
+  # with an implementation-level error rather than a usable message.
+  if (length(iterations) != 1 || !is.finite(iterations) || iterations < 1 ||
+        iterations != trunc(iterations)) {
+    stop("iterations must be a whole number of at least 1", call. = FALSE)
+  }
+  if (length(true_correlation) != 1 || !is.finite(true_correlation) ||
+        abs(true_correlation) > 1) {
+    stop("true_correlation must be a correlation between -1 and 1", call. = FALSE)
+  }
+  misfiled <- misfiled_as(participants)
+  n_participants <- length(unique(participants))
+  share_correctly_paired <- mean(misfiled == seq_len(n_participants))
+
+  # The permutation is derived with sort(), which for character identifiers
+  # uses this session's collation and not necessarily the one the original
+  # analysis ran under. That makes every result here -- including an
+  # all-clear -- conditional, so the condition travels in the return value
+  # rather than in prose somebody can drop. Comparing against C order, which
+  # method = "radix" gives regardless of LC_COLLATE, is evidence where the two
+  # disagree; agreement is not proof, since a third locale may collate letter
+  # pairs as units (Czech "ch" after "h", Danish "aa" last).
+  # Every type carries a condition, because for every type sort() answers a
+  # question about the object it was given rather than about the original run.
+  # A factor is the sharpest case: its levels *are* the loop order, so
+  # factor(c("a","b"), levels = c("b","a")) is fully swapped while a rebuilt
+  # factor(c("a","b")) reports a clean all-clear.
+  distinct_ids <- unique(participants)
+  conditions <- if (is.factor(participants)) {
+    c(sprintf("ordering follows this factor's levels: %s",
+              paste(levels(participants), collapse = ", ")),
+      "assumes those are the levels the original participants vector carried")
+  } else if (is.character(participants)) {
+    differs_from_c_order <- !identical(sort(distinct_ids),
+                                       sort(distinct_ids, method = "radix"))
+    c(sprintf("ordering derived under LC_COLLATE=%s%s",
+              Sys.getlocale("LC_COLLATE"),
+              if (differs_from_c_order) {
+                "; differs from C order, so the original locale decides"
+              } else {
+                "; identical under C order"
+              }),
+      "assumes participants is the original object, not a character copy")
+  } else {
+    "assumes participants was numeric originally, not the same digits as text"
+  }
+
+  if (share_correctly_paired == 1) {
+    return(list(share_correctly_paired = 1, affected = FALSE,
+                conditional_on = conditions))
+  }
+  if (n_participants < 3) {
+    return(list(share_correctly_paired = share_correctly_paired,
+                affected = TRUE, conditional_on = conditions,
+                note = "too few participants to estimate rates"))
+  }
+
+  detected_correct <- detected_mislabelled <- logical(iterations)
+  for (i in seq_len(iterations)) {
+    covariate <- rnorm(n_participants)
+    outcome <- true_correlation * covariate +
+      sqrt(1 - true_correlation^2) * rnorm(n_participants)
+    detected_correct[i] <- cor.test(covariate, outcome)$p.value < alpha
+    detected_mislabelled[i] <-
+      cor.test(covariate, outcome[misfiled])$p.value < alpha
+  }
+  list(share_correctly_paired = share_correctly_paired,
+       affected = TRUE,
+       conditional_on = conditions,
+       detected_correct = mean(detected_correct),
+       detected_mislabelled = mean(detected_mislabelled),
+       decisions_changed = mean(detected_correct != detected_mislabelled))
+}
+
+str(ordering_impact(paste0("p", 1:12), iterations = 2000))
+List of 6
+ $ share_correctly_paired: num 0.0833
+ $ affected              : logi TRUE
+ $ conditional_on        : chr [1:2] "ordering derived under LC_COLLATE=C; identical under C order" "assumes participants is the original object, not a character copy"
+ $ detected_correct      : num 0.403
+ $ detected_mislabelled  : num 0.043
+ $ decisions_changed     : num 0.417
+
+try(ordering_impact(paste0("p", 1:12), iterations = 0))
+Error : iterations must be a whole number of at least 1
+```
+
+A permutation that only exchanges participants sharing a value on the
+second-stage predictor leaves that analysis exactly as computed, however
+wrong the filenames are. The advisory gives readers
+`identical(predictor, predictor[misfiled_as(participants)])` for that.
+Run it first: a `TRUE` settles the question outright, though the
+ordinary `p1 … pN` scheme with conditions in blocks does not survive it.
+
+The implication runs one way only. `TRUE` proves the analysis is
+untouched; `FALSE` does not prove it changed, since two swapped
+participants whose images scored alike would also leave it as it was.
+What settles a `FALSE` is repairing the filenames and re-running, which
+the advisory asks for anyway.
+
+The detection rates assume a Pearson correlation on normally distributed
+data, so treat them as indicative if the second stage was a condition
+comparison or a regression. `share_correctly_paired` is exact, but exact
+for the permutation *this session* derives, which for character
+identifiers depends on its collation. That is why the result carries
+`conditional_on` rather than leaving the caveat in prose: an all-clear
+from the wrong locale is still an all-clear to whoever reads the return
+value.
+
+``` r
+str(ordering_impact(c("d", "ch"), iterations = 500))
+List of 4
+ $ share_correctly_paired: num 0
+ $ affected              : logi TRUE
+ $ conditional_on        : chr [1:2] "ordering derived under LC_COLLATE=C; identical under C order" "assumes participants is the original object, not a character copy"
+ $ note                  : chr "too few participants to estimate rates"
+
+# a factor's levels are the loop order, so a rebuilt one answers a different
+# question from the original -- the condition says which levels were used
+str(ordering_impact(factor(c("a", "b"), levels = c("b", "a")), iterations = 500))
+List of 4
+ $ share_correctly_paired: num 0
+ $ affected              : logi TRUE
+ $ conditional_on        : chr [1:2] "ordering follows this factor's levels: b, a" "assumes those are the levels the original participants vector carried"
+ $ note                  : chr "too few participants to estimate rates"
+```
+
+Lowercase ASCII is no guarantee here, since some locales collate letter
+pairs as units. Czech, for instance, orders `ch` after `h`, and
+traditional Danish puts `aa` at the end of the alphabet, so
+`c("d", "ch")` is sorted under Czech collation and swapped under C. Run
+the check under the original locale wherever the identifiers are
+anything more than digits and simple prefixes.
