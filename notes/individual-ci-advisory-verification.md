@@ -73,9 +73,13 @@ expression with no intervening change, which is taken as sufficient.
 
 The one substantive finding the earlier write-ups missed.
 
-**`cd04b28` broke every caller of `generateCI()` on 2016-10-28.** The 2IFC pair stayed broken
-until 2021-12-28; `batchGenerateCI()` was caught and repaired eleven days later. Each called
-`generateCI()` positionally:
+**`cd04b28` broke every caller of `generateCI()` on 2016-10-28.** "Every" is exact, not
+rhetorical: at that commit `generateCI()` had two direct callers, `batchGenerateCI()`
+(`R/rcicr.R:557`) and `generateCI2IFC()` (`R/rcicr_2IFC.R:177`), both calling positionally and
+both broken, with `batchGenerateCI2IFC()` broken through `generateCI2IFC()`.
+`R/rcicr_simulations.R` had none. The 2IFC pair stayed broken until 2021-12-28;
+`batchGenerateCI()` was caught and repaired eleven days later. Each called `generateCI()`
+positionally:
 
 ```r
 generateCI(stimuli, responses, baseimage, rdata, saveaspng, filename, targetpath, ...)
