@@ -129,7 +129,7 @@ The affected call needs **both** things: a `participants` vector *and* `save_ind
 
 > **Did a single `generateCI()` call produce one classification image per participant?**
 
-If the answer is no, nothing here touches you. There are several ways to answer that question, and most of them work even if the output files themselves are long gone. Each of the headings below is one such way, starting from whatever you still have.
+If the answer is no, nothing here touches you. There are several ways to answer that question, and most of them work even if the output files themselves are long gone. Each of the headings below is one such way, starting from whatever you still have: the data, the analysis script, or the classification images themselves.
 
 **You did not make per-participant images at all.** A group-level classification image is unaffected: it is a mean across participants and does not depend on their order.
 
