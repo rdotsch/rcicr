@@ -331,11 +331,12 @@ within 2.1 paired SEs of zero.
 
 That result is structural rather than a lucky set of draws: shuffling
 one side of a pair that is independent of the other leaves it
-independent, so the 5% could not have come out otherwise. This holds for
-any outcome that is *exchangeable* across participants, which the iid
-Gaussian (independent, identically distributed) null cells here are. An
-outcome whose distribution drifts along collection order would not be,
-and nothing in these runs speaks to that case.
+independent, so the shuffle cannot change how often a test rejects when
+there is nothing there. This holds for any outcome that is
+*exchangeable* across participants, which the iid Gaussian (independent,
+identically distributed) null cells here are. An outcome whose
+distribution drifts along collection order would not be, and nothing in
+these runs speaks to that case.
 
 **A dataset can still get a different verdict even when the aggregate
 rate is unchanged.** The two analyses reach a different verdict on 7.5%

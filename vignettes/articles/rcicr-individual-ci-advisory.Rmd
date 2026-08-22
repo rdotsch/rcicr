@@ -10,7 +10,7 @@ This page is an advisory about a bug in rcicr that could save individual classif
 
 Most people reading this are not, and these three questions settle it without any statistics.
 
-1. **Did you install rcicr from CRAN**, with `install.packages("rcicr")`? Then stop reading. No CRAN version ever carried this bug.
+1. **Did the copy of rcicr that produced your images come from CRAN**, installed with `install.packages("rcicr")`? Then stop reading, because no CRAN version ever carried this bug. Answer for the copy that was installed when you ran the analysis: a CRAN install that you later replaced with one from GitHub does not clear that run.
 2. **Did you make your per-participant images with `batchGenerateCI()`, `batchGenerateCI2IFC()` or `generateCI2IFC()`?** That is the route the tutorials use, none of them can produce the bug, and you can stop reading too.
 3. **Did your own script call `generateCI()` with a list of participants and `save_individual_cis = TRUE`?** Then read on. Your classification images are correct, but some may have been saved under another participant's name. Nothing has to be recomputed: [check whether yours are affected](#how-you-can-quickly-check-whether-this-affects-you), then [rename them](#how-to-fix-it).
 
