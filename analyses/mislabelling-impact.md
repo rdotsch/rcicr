@@ -97,8 +97,8 @@ knitr::kable(survival)
 | p1..p120               |          120 |              1 |      0.008 |
 | p01..p12 (zero-padded) |           12 |             12 |      1.000 |
 
-The count does not simply fall as N grows, because it turns on where the
-identifiers change width (e.g. the number “3” has width 1, while the
+The count does not simply fall as N grows, because it depends on where
+the identifiers change width (e.g. the number “3” has width 1, while the
 number “103” has width 3). At 99, 100 and 101 participants eleven files
 keep their own image (at N = 100 they are `p1` and `p80`–`p89`), while
 at 120 it is back to one.
