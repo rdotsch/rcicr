@@ -1,18 +1,65 @@
 # Individual-CI filename advisory (rcicr 0.4.0–1.2.3)
 
-This page is an advisory about a bug in rcicr that could save an
-individual classification image under another participant’s filename. It
-sets out which versions carried it, how to tell whether your own stored
-results are affected, what it does to an analysis, and how to repair
-affected output.
+This page is an advisory about a bug in rcicr that could save individual
+classification images under other participants’ filenames. It sets out
+which versions carried it, how to tell whether your own stored results
+are affected, what it does to an analysis, and how to repair affected
+output.
 
 **The bug is in versions 0.4.0 through 1.2.3, all of them GitHub-only,
 and is fixed in
 [1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). (0.4.0 is
 affected only if you installed it on or after 2017-08-15; see “Which
-versions were affected” below.) It never reached CRAN: the last CRAN
-release, 0.3.4.1, predates the option involved by thirteen months, so
-nothing installed with `install.packages('rcicr')` was ever affected.**
+versions were affected” below.) This bug never reached CRAN: the last
+CRAN release, 0.3.4.1, predates the option involved by thirteen months,
+so nothing installed with `install.packages('rcicr')` was ever
+affected.**
+
+## Are you affected?
+
+Most people reading this are not, and these three questions settle it
+without any statistics.
+
+1.  **Did the copy of rcicr that produced your images come from CRAN**,
+    installed with `install.packages("rcicr")`? Then stop reading,
+    because no CRAN version ever carried this bug. Answer for the copy
+    that was installed when you ran the analysis: a CRAN install that
+    you later replaced with one from GitHub does not clear that run.
+2.  **Did you make your per-participant images with
+    [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md),
+    [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+    or
+    [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)?**
+    That is the route the tutorials use, none of them can produce the
+    bug, and you can stop reading too.
+3.  **Did your own script call
+    [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+    with a list of participants and `save_individual_cis = TRUE`?** Then
+    it depends on which rcicr ran it. 1.3.0 and later name these files
+    correctly, so a run made with the fixed version needs nothing,
+    whatever your participant identifiers look like. If the images were
+    produced by 0.4.0 through 1.2.3, read on: they are still correct
+    images, but some may have been saved under another participant’s
+    name, and nothing has to be recomputed. [Check whether yours are
+    affected](#how-you-can-quickly-check-whether-this-affects-you), then
+    [rename them](#how-to-fix-it).
+
+Even then, many analyses are fine. It turns on how the participants were
+labelled, because a file is only misnamed where the identifiers were not
+already in sorted order:
+
+| `participants`, in the order you passed them | affected |
+|----------------------------------------------|----------|
+| `"p1"` … `"p9"`, fewer than ten participants | no       |
+| `"p1"` … `"p10"` or beyond                   | **yes**  |
+| `"p01"` … `"p12"`, zero-padded               | no       |
+| `"1"` … `"12"`, as text                      | **yes**  |
+| `1` … `12`, as numbers                       | no       |
+
+Sorting text puts `"p10"` before `"p2"`, which is what the affected rows
+have in common. [The check
+below](#how-you-can-quickly-check-whether-this-affects-you) settles any
+scheme not listed here.
 
 ## This is the bug
 
@@ -26,11 +73,13 @@ only the file names were wrong.
 ## Which versions were affected
 
 It affects versions 0.4.1 through 1.2.3 outright, all of them
-GitHub-only. **Version 0.4.0 is a special case**: it lived only on the
-`development` branch, from 2016-10-26 to 2021-09-23, and the bug entered
-partway through that window, on 2017-08-15, so whether a 0.4.0 install
-is affected depends on exactly when you got it, not the version string
-alone (see
+GitHub-only. An rcicr installed from CRAN, with
+`install.packages("rcicr")`, never carried this bug at any version, so
+work done with one is not affected. **Version 0.4.0 is a special case**:
+it lived only on the `development` branch, from 2016-10-26 to
+2021-09-23, and the bug entered partway through that window, on
+2017-08-15, so whether a 0.4.0 install is affected depends on exactly
+when you got it, not the version string alone (see
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
 for the install-date table). Any of these versions is only actually
 affected whenever participant IDs weren’t already in sorted order
@@ -46,8 +95,15 @@ the route most tutorials recommend for per-participant CIs, are not
 affected by the bug. If that’s what your analysis used, this doesn’t
 apply to you. The group classification image that
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-returns is also unaffected; only individual filenames from the direct
-call could be wrong.
+returns is also unaffected; only individual filenames could be wrong,
+and only from a *direct call*: one that reached
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+with a `participants` vector and `save_individual_cis = TRUE`. That
+argument combination is what makes a call direct, not where it was
+written: it counts whether your script spells the call out, assembles it
+with [`do.call()`](https://rdrr.io/r/base/do.call.html), or goes through
+a helper of your own. What makes the batch functions safe is that they
+never pass that combination.
 
 ## What this does to an analysis
 
@@ -71,12 +127,14 @@ images has nothing to do with the order participants were labelled in,
 the shuffle destroys the association rather than inventing one: at 50
 participants a true correlation of 0.5 goes from being detected 97% of
 the time to 5%, and the runs that then find nothing are looking at a
-real association they can no longer see. That is the file-drawer case.
-But where something varies along collection order (IDs assigned as
-participants arrived while conditions ran in blocks, an ID encoding
-testing date or cohort), the shuffle can instead weaken an effect,
-reverse its sign, or hand back *more* apparent support than the correct
-analysis would.
+real association they can no longer see. This could lead to findings
+ending up in the file drawer: there may have been a real result, but it
+was very unlikely to be found in what the shuffle had turned into
+essentially random pairings. But where something varies along collection
+order (IDs assigned as participants arrived while conditions ran in
+blocks, an ID encoding testing date or cohort), the shuffle can instead
+weaken an effect, reverse its sign, or hand back *more* apparent support
+than the correct analysis would.
 
 How badly your own filenames were scrambled follows from how far your
 participant vector departed from sorted order:
@@ -106,9 +164,10 @@ identical(predictor, predictor[misfiled])   # TRUE = this analysis is untouched
 with `predictor` the participant-level variable, in the same order you
 passed `participants`. A two-group comparison where the swaps happened
 to stay inside each group is the clear case: the filenames are wrong,
-and every number in the analysis is right. It is worth a line to rule
-in, even though the ordinary `p1 … pN` scheme with conditions in blocks
-does *not* survive it.
+and every number in the analysis is right. It is one line, and a `TRUE`
+ends the matter, so run it before anything else, even though the
+ordinary `p1 … pN` scheme with conditions in blocks does *not* survive
+it.
 
 A `TRUE` clears an analysis outright. A `FALSE` means the join changed:
 whether the result changed with it is a separate question. In that case
@@ -128,7 +187,8 @@ things follow, independent of your design:
 A published figure needs the same distinction. One showing individual
 CIs labelled by participant is wrong as printed. One labelled only by
 condition or group is wrong only if the shuffle moved images across
-those groups, which is what the check above tells you.
+groups, meaning one or more participants’ images moved from one
+condition into another. The check above tells you whether that happened.
 
 Re-running the analysis is usually possible: the images are correct and
 the filenames are repaired by renaming (below), so nothing needs
@@ -146,10 +206,12 @@ All of the above is supported by the simulations reported in
 ## How you can quickly check whether this affects you
 
 **Look for an `individual_cis/` directory in your output.** Nothing else
-in the package writes one, so finding it means the affected call ran. It
-is also how to tell which route your analysis took: the batch functions
-above pass `participants = NA` and never set `save_individual_cis`, so
-they cannot produce that directory, and only a direct
+in the package writes one, so finding it means a direct call ran.
+Everything from here on applies only to a run made before the fix, since
+1.3.0 writes that same directory with the filenames correct. It is also
+how to tell which route your analysis took: the batch functions above
+pass `participants = NA` and never set `save_individual_cis`, so they
+cannot produce that directory, and only a direct
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
 call can.
 
@@ -174,7 +236,8 @@ so a positional call such as
 `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it without
 the name appearing anywhere, and
 [`do.call()`](https://rdrr.io/r/base/do.call.html) hides it the same
-way. Grepping and finding nothing does **not** clear an analysis.
+way. Searching your scripts for that text and finding nothing does
+**not** clear an analysis.
 
 If the directory is there, the ordering of your participant IDs decides
 it. Run
@@ -193,12 +256,15 @@ anything (see below).
 because both change what [`sort()`](https://rdrr.io/r/base/sort.html)
 returns and so what the comparison means:
 
-- **Use the original `participants` object, not a character copy of
-  it.** The bug ordered participants by `factor(participants)`, whose
-  levels a factor carries with it.
+- **Use the original `participants` object, not a copy converted to
+  plain text.** A character copy is what you get from
+  `as.character(participants)`, which throws away the fact that the
+  identifiers were a factor. The bug ordered participants by
+  `factor(participants)`, and a factor carries its own levels with it;
   [`sort()`](https://rdrr.io/r/base/sort.html) follows those same
-  levels, so the check is right for a factor with custom level order. Do
-  not convert to character, it may order differently.
+  levels, so the check is right for a factor with a custom level order.
+  Converting to character first can sort them into a different order and
+  give you the wrong answer.
 - **Run it under the collation the original analysis ran under.**
   Sorting text is locale-dependent, so a `TRUE` obtained elsewhere can
   clear output that really was mislabelled. Numeric identifiers are
@@ -216,8 +282,10 @@ holds the classification image for `sort(unique(participants))[i]`, so
 this recovers the correct filenames without recomputing anything (two
 steps, so the rename doesn’t overwrite a file it hasn’t renamed yet):
 
-Work on a copy, and satisfy yourself first that `targetpath` below
-points at the output of the run these `participants` came from. The
+Work on a copy, and satisfy yourself first that the run predates 1.3.0
+and that `targetpath` below points at the output of the run these
+`participants` came from. Renaming output that a fixed version produced
+would permute a set that was already correct. The
 [`stop()`](https://rdrr.io/r/base/stop.html) calls catch a filename that
 is missing; they cannot catch a directory that is simply the wrong one.
 A different run holding the same participant identifiers would rename
