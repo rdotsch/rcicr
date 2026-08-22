@@ -85,10 +85,10 @@ without any statistics.</p>
 <li>
 <strong>Did the copy of rcicr that produced your images come from
 CRAN</strong>, installed with <code>install.packages("rcicr")</code>?
-Then stop reading, because no CRAN version ever carried this bug. Answer
-for the copy that was installed when you ran the analysis: a CRAN
-install that you later replaced with one from GitHub does not clear that
-run.</li>
+Then stop reading, because no CRAN version ever carried this bug. The
+copy that counts is the one you had installed when you made the images:
+if you started on CRAN but later installed a version from GitHub, images
+made after that are not covered.</li>
 <li>
 <strong>Did you make your per-participant images with
 <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> or
@@ -99,16 +99,16 @@ too.</li>
 <strong>Did your own script call <code><a href="../reference/generateCI.html">generateCI()</a></code> with a
 list of participants and
 <code>save_individual_cis = TRUE</code>?</strong> Then it depends on
-which rcicr ran it. 1.3.0 and later name these files correctly, so a run
-made with the fixed version needs nothing, whatever your participant
-identifiers look like. If the images were produced by 0.4.0 through
-1.2.3, read on: they are still correct images, but some may have been
-saved under another participant’s name, and nothing has to be
-recomputed. <a href="#how-you-can-quickly-check-whether-this-affects-you">Check whether
+which rcicr version made them. 1.3.0 and later name these files
+correctly, so images made with the fixed version need nothing, whatever
+your participant identifiers look like. If the images were produced by
+0.4.0 through 1.2.3, read on: they are still correct images, but some
+may have been saved under another participant’s name, and nothing has to
+be recomputed. <a href="#how-you-can-quickly-check-whether-this-affects-you">Check whether
 yours are affected</a>, then <a href="#how-to-fix-it">rename
 them</a>.</li>
 </ol>
-<p>Even then, many analyses are fine. It turns on how the participants
+<p>Even then, many analyses are fine. It depends on how the participants
 were labelled, because a file is only misnamed where the identifiers
 were not already in sorted order:</p>
 <table class="table">
@@ -167,12 +167,12 @@ names were wrong.</p>
 <p>It affects versions 0.4.1 through 1.2.3 outright, all of them
 GitHub-only. An rcicr installed from CRAN, with
 <code>install.packages("rcicr")</code>, never carried this bug at any
-version, so work done with one is not affected. <strong>Version 0.4.0 is
-a special case</strong>: it lived only on the <code>development</code>
-branch, from 2016-10-26 to 2021-09-23, and the bug entered partway
-through that window, on 2017-08-15, so whether a 0.4.0 install is
-affected depends on exactly when you got it, not the version string
-alone (see <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
+version, so work done with any of the CRAN versions is not affected.
+<strong>Version 0.4.0 is a special case</strong>: it lived only on the
+<code>development</code> branch, from 2016-10-26 to 2021-09-23, and the
+bug entered partway through that window, on 2017-08-15, so whether a
+0.4.0 install is affected depends on exactly when you got it, not the
+version string alone (see <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
 for the install-date table). Any of these versions is only actually
 affected whenever participant IDs weren’t already in sorted order
 (e.g. “p10” sorting before “p2”, the ordinary case from the tenth
@@ -210,8 +210,8 @@ computed on the pairing it was reported as.</p>
 the images has nothing to do with the order participants were labelled
 in, the shuffle destroys the association rather than inventing one: at
 50 participants a true correlation of 0.5 goes from being detected 97%
-of the time to 5%, and the runs that then find nothing are looking at a
-real association they can no longer see. This could lead to findings
+of the time to 5%, and a study that then finds nothing is looking at a
+real association it can no longer see. This could lead to findings
 ending up in the file drawer: there may have been a real result, but it
 was very unlikely to be found in what the shuffle had turned into
 essentially random pairings. But where something varies along collection
@@ -283,16 +283,16 @@ again.</p>
 </h2>
 <p><strong>Look for an <code>individual_cis/</code> directory in your
 output.</strong> Nothing else in the package writes one, so finding it
-means a direct call ran. Everything from here on applies only to a run
+means a direct call ran. Everything from here on applies only to images
 made before the fix, since 1.3.0 writes that same directory with the
 filenames correct. It is also how to tell which route your analysis
 took: the batch functions above pass <code>participants = NA</code> and
 never set <code>save_individual_cis</code>, so they cannot produce that
 directory, and only a direct <code><a href="../reference/generateCI.html">generateCI()</a></code> call can.</p>
-<p>Not finding it clears the analysis only if the output still sits as
-the run left it. A directory that was renamed, folded into an archive,
-or had its PNGs moved elsewhere will not answer to that name any more.
-The filenames alone do not then settle it: an individual CI is
+<p>Not finding it clears the analysis only if the files are still where
+the analysis left them. A directory that was renamed, folded into an
+archive, or had its PNGs moved elsewhere will not answer to that name
+any more. The filenames alone do not then settle it: an individual CI is
 <code>ci_&lt;participant&gt;.png</code>, but
 <code>generateCI(save_as_png = TRUE, filename = ...)</code> takes
 whatever filename it is given, so a group CI saved as
@@ -351,14 +351,14 @@ session.</li>
 image for <code>sort(unique(participants))[i]</code>, so this recovers
 the correct filenames without recomputing anything (two steps, so the
 rename doesn’t overwrite a file it hasn’t renamed yet):</p>
-<p>Work on a copy, and satisfy yourself first that the run predates
-1.3.0 and that <code>targetpath</code> below points at the output of the
-run these <code>participants</code> came from. Renaming output that a
-fixed version produced would permute a set that was already correct. The
-<code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> calls catch a filename that is missing; they cannot
-catch a directory that is simply the wrong one. A different run holding
-the same participant identifiers would rename cleanly, permuting a set
-that had been correct.</p>
+<p>Work on a copy, and satisfy yourself first that the images were made
+before 1.3.0 and that <code>targetpath</code> below points at the folder
+from the same analysis these <code>participants</code> came from.
+Renaming output that a fixed version produced would permute a set that
+was already correct. The <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> calls catch a filename that
+is missing; they cannot catch a directory that is simply the wrong one.
+A folder from a different analysis with the same participant identifiers
+would rename cleanly, scrambling a set that had been correct.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The targetpath you originally passed to generateCI(). If you never passed one, it</span></span>
 <span><span class="co"># was "./cis" by default in every affected release up to 1.2.1, so the files are in</span></span>
@@ -381,8 +381,8 @@ that had been correct.</p>
 <span>                      <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"ci_"</span>, <span class="va">new</span>, <span class="st">".png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">step2</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Rename failed for: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">old</span><span class="op">[</span><span class="op">!</span><span class="va">step2</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>(This assumes <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> orders your IDs the way the
-original run did, which is the same condition the check above depends
-on: the original <code>participants</code> object rather than a
+original analysis did, which is the same condition the check above
+depends on: the original <code>participants</code> object rather than a
 character copy, under the original collation.)</p>
 <p>(use the <code>antici_</code> prefix instead of <code>ci_</code> if
 you generated anti-CIs).</p>
