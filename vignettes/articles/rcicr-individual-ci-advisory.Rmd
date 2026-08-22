@@ -16,6 +16,8 @@ It affects versions 0.4.1 through 1.2.3 outright, all of them GitHub-only. **Ver
 
 However, `batchGenerateCI()`, `batchGenerateCI2IFC()`, and `generateCI2IFC()`, the route most tutorials recommend for per-participant CIs, are not affected by the bug. If that's what your analysis used, this doesn't apply to you. The group classification image that `generateCI()` returns is also unaffected; only individual filenames from the direct call could be wrong.
 
+One caveat if you were on 0.4.0, which is to say on the `development` branch before 2021-12-28: `generateCI2IFC()` and `batchGenerateCI2IFC()` could not run at all there. A separate defect made them stop with `must have 'max' > 'min'` on every call, so they produced no output rather than wrong output — they are safe on those versions, but they were not a route anyone could have used. On 0.4.0, `batchGenerateCI()` is the only per-participant route that both ran and named its output correctly. See [`individual-ci-advisory-verification.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-advisory-verification.md) for the detail.
+
 ## What this does to an analysis
 
 The mislabelling breaks the link between a classification image and the participant it came from. Whether this impacts your analysis depends on what the images were then used for.
