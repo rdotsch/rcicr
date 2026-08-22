@@ -30,6 +30,8 @@ The images themselves were always computed correctly. Only the filenames were wr
 
 **Only one call is affected**: `generateCI(participants = ..., save_individual_cis = TRUE)`. `batchGenerateCI()`, `batchGenerateCI2IFC()` and `generateCI2IFC()` cannot reach it: they call `generateCI()` once per group with `participants = NA`, so the loop never runs, and they name each image from the group value they are already iterating over. Verified against the released 1.2.3, where the direct call gets 11 of 12 wrong: both batch functions got **0 of 12** wrong and never created `individual_cis/` at all.
 
+On a `development`-branch install made between 2016-10-28 and 2021-12-28 — all of 0.4.0 bar its first two days, and 0.4.1 up to that later date — that sentence needs a caveat. A separate argument-misalignment defect, introduced by `cd04b28` on 2016-10-28, broke every caller of `generateCI()`: each stopped with `must have 'max' > 'min'` rather than producing output. `batchGenerateCI()` was repaired on 2016-11-08 by `8e44cfb`, which switched it to named arguments and an explicit `participants = NA` — the very line this note cites as making it safe. `generateCI2IFC()` and `batchGenerateCI2IFC()` kept the positional call until `90fee07` on 2021-12-28. They emit nothing rather than something wrong, so "cannot reach the defect" still holds, but for the eleven days from 2016-10-28 to 2016-11-08 no per-participant route ran at all, and from 2016-11-08 on, `batchGenerateCI()` is the only one that did. See [`individual-ci-advisory-verification.md`](individual-ci-advisory-verification.md).
+
 Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`), released in 1.3.0.
 
 ## Every version, and where it lived
@@ -133,7 +135,7 @@ If the answer is no, nothing here touches you. There are several ways to answer 
 
 **You did not make per-participant images at all.** A group-level classification image is unaffected: it is a mean across participants and does not depend on their order.
 
-**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()` cannot produce the bug: they call `generateCI()` once per group with `participants = NA`, so the code that does the mislabelling never runs, and they name each image from the group value they are iterating over. This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()` does not expose either argument.
+**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()` cannot produce the bug: they call `generateCI()` once per group with `participants = NA`, so the code that does the mislabelling never runs, and they name each image from the group value they are iterating over. This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()` does not expose either argument. (On a `development` install made between 2016-11-08 and 2021-12-27, only `batchGenerateCI()` of these actually ran; between 2016-10-28 and 2016-11-07 none of them did — see the caveat above.)
 
 Checked across the whole affected range, not only the latest release: `batchGenerateCI()` passes `participants = NA` explicitly in every version from 2017-08-15 to 1.2.3, and neither batch function mentions `save_individual_cis` in any of them. Measured too: run against the released 1.2.3 with participants `p1 … p12` in collection order, where the direct call gets 11 of 12 filenames wrong, both batch functions got 0 of 12 wrong and created no `individual_cis` directory at all.
 
