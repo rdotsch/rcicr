@@ -1,6 +1,6 @@
 # Which rcicr you had, and whether it carried the individual-CI bug
 
-Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed in 1.3.0 (issue #261). The short answer is that **the version number alone does not tell you**: for anything installed from GitHub before 2026, the date and the *branch* matter more than the version.
+Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed in 1.3.0 (issue #261). If you only want to know whether your own work is affected, the [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) answers that in three questions; this page is the version-by-version background behind it. The short answer is that **the version number alone does not tell you**: for anything installed from GitHub before 2026, the date and the *branch* matter more than the version.
 
 ## What the bug was
 
@@ -114,14 +114,14 @@ Half of it expired in June 2021: CRAN archived the package, so "wait until we ma
 
 ### From the latest GitHub release — `install_github('rdotsch/rcicr@*release')`
 
-| you installed | you got |
-|---|---|
-| before 2026-07-27 | **nothing** — no releases existed to resolve against |
-| 2026-07-27 → 2026-07-28 | 1.1.0 |
-| 2026-07-28 → 2026-08-07 | 1.2.0, then 1.2.1 the same day |
-| 2026-08-07 → 2026-08-08 | 1.2.2 |
-| 2026-08-08 → 2026-08-18 | 1.2.3 |
-| 2026-08-18 → now | **1.3.0** |
+| you installed | you got | affected |
+|---|---|---|
+| before 2026-07-27 | **nothing** — no releases existed to resolve against | — |
+| 2026-07-27 → 2026-07-28 | 1.1.0 | **yes** |
+| 2026-07-28 → 2026-08-07 | 1.2.0, then 1.2.1 the same day | **yes** |
+| 2026-08-07 → 2026-08-08 | 1.2.2 | **yes** |
+| 2026-08-08 → 2026-08-18 | 1.2.3 | **yes** |
+| 2026-08-18 → now | **1.3.0** | no |
 
 Every GitHub release before 1.3.0 carries the bug. `v1.0.1` has a tag but no GitHub *release*, and it was tagged retroactively in 2026 against a 2023 commit, so `@*release` never resolved to it.
 
@@ -131,21 +131,21 @@ The affected call needs **both** things: a `participants` vector *and* `save_ind
 
 > **Did a single `generateCI()` call produce one classification image per participant?**
 
-If the answer is no, nothing here touches you, and there are several ways to reach it that do not depend on any file surviving.
+If the answer is no, nothing here touches you. There are several ways to answer that question, and most of them work even if the output files themselves are long gone. Each of the headings below is one such way, starting from whatever you still have: the data, the analysis script, or the classification images themselves.
 
 **You did not make per-participant images at all.** A group-level classification image is unaffected: it is a mean across participants and does not depend on their order.
 
-**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()` cannot reach the defect: they call `generateCI()` once per group with `participants = NA`, so the loop never runs, and they name each image from the group value they are iterating over. This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()` does not expose either argument. (On a `development` install predating 2021-12-28, only `batchGenerateCI()` of these actually ran — see the caveat above.)
+**You made them with the batch functions.** `batchGenerateCI()` and `batchGenerateCI2IFC()` cannot produce the bug: they call `generateCI()` once per group with `participants = NA`, so the code that does the mislabelling never runs, and they name each image from the group value they are iterating over. This is also the route the documentation has recommended since the CRAN era. `generateCI2IFC()` does not expose either argument. (On a `development` install predating 2021-12-28, only `batchGenerateCI()` of these actually ran — see the caveat above.)
 
 Checked across the whole affected range, not only the latest release: `batchGenerateCI()` passes `participants = NA` explicitly in every version from 2017-08-15 to 1.2.3, and neither batch function mentions `save_individual_cis` in any of them. Measured too: run against the released 1.2.3 with participants `p1 … p12` in collection order, where the direct call gets 11 of 12 filenames wrong, both batch functions got 0 of 12 wrong and created no `individual_cis` directory at all.
 
-**You still have the output.** The images live in a directory called `individual_cis`, and nothing else in the package writes there: the only such write is in `computeParticipantCIs()`, reachable only from `generateCI()`. That has held in every version: exactly one file contains the write, `R/generateCI.R` from 2017 through 1.2.3 and `R/ci-compute.R` after the loop was extracted. Individual files are named `ci_<participant>.png`, or `antici_<participant>.png` for an antiCI, so the naming outlives a renamed folder or moved contents. `filename` is a free-form argument, though, so a group CI written by `generateCI(save_as_png = TRUE, filename = "p3")` lands at `<targetpath>/ci_p3.png` and is indistinguishable by name alone (`R/generateCI.R:207`, `saveToImage()` at 392-406). Once the directory structure is gone, confirm a loose file from the script or the data before treating it as an individual CI.
+**You still have the output.** The images live in a folder called `individual_cis`, and nothing else in the package writes there: the only such write is in `computeParticipantCIs()`, reachable only from `generateCI()`. That has held in every version: exactly one file contains the write, `R/generateCI.R` from 2017 through 1.2.3 and `R/ci-compute.R` after the loop was extracted. Individual files are named `ci_<participant>.png`, or `antici_<participant>.png` for an antiCI, so the naming outlives a renamed folder or moved contents. `filename` is a free-form argument, though, so a group CI written by `generateCI(save_as_png = TRUE, filename = "p3")` lands at `<targetpath>/ci_p3.png` and is indistinguishable by name alone (`R/generateCI.R:207`, `saveToImage()` at 392-406). Once the directory structure is gone, confirm a loose file from the script or the data before treating it as an individual CI.
 
-**Telling one folder of PNGs from another.** Every other writer in the package puts its images *flat* into the path you gave it: `individual_cis/` is the only subdirectory any of them creates, which is what makes its presence such a clean signal. The filenames differ too:
+**Telling one folder of PNGs from another.** Every other writer in the package puts its images *flat* into the path you gave it: `individual_cis/` is the only sub-folder any of them creates, which is what makes finding it such a clear sign. The filenames differ too:
 
 | what wrote it | where | filename |
 |---|---|---|
-| `generateCI(save_individual_cis = TRUE)` | `<targetpath>/individual_cis/` | `ci_<participant>.png` — bare participant id |
+| `generateCI(save_individual_cis = TRUE)` | `<targetpath>/individual_cis/` | `ci_<participant>.png`, just the participant identifier |
 | `generateCI(save_as_png = TRUE)`, `generateCI2IFC()` | `<targetpath>/` | `ci_<filename>.png`, defaulting to the base image name |
 | `batchGenerateCI()`, `batchGenerateCI2IFC()` | `<targetpath>/` | `ci_<baseimage>_<by>_<unit>.png` |
 | `autoscale(save_as_pngs = TRUE)` | `<targetpath>/` | `<name>_autoscaled.png` |
@@ -154,9 +154,9 @@ Checked across the whole affected range, not only the latest release: `batchGene
 
 An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names are the conclusive ones: `ci_face_participant_p3.png` came from a batch function and is fine, because a batch name always carries the base image and the grouping column, being built from them. A bare `ci_p3.png` is only a clue in the other direction: it is what the affected call writes, but `generateCI(save_as_png = TRUE, filename = "p3")` writes the same name for a group CI, one directory up, so confirm it against the script or the data before treating a loose file as an individual CI. Applying the recovery permutation to a set that is really something else would scramble output that was correct.
 
-**You still have the script but not the output.** Read every `generateCI()` call that passes participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on its own: it is the sixth formal, so `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it positionally, and `do.call()` with an assembled list hides it too. Search for `individual`, then read by hand any call passing six or more arguments positionally.
+**You still have the script but not the output.** Read every `generateCI()` call that passes participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on its own: it is the sixth argument, so a call that lists its arguments in order without naming them, such as `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)`, switches it on with the name appearing nowhere, and `do.call()` with an assembled list hides it too. Search for `individual`, then read by hand any call passing six or more arguments positionally.
 
-**You still have the data but neither.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it hands you corrected output as a side effect: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
+**You still have the raw data, but neither the output images nor the script.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it gives you corrected files at the same time: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
 
 **You have only the published figure.** Then it cannot be verified directly, and the ordering question below is the best available evidence.
 
@@ -166,9 +166,9 @@ An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names
 identical(unique(participants), sort(unique(participants)))   # TRUE = the names were correct
 ```
 
-"Sorted" means *lexically* sorted for text labels, per the table earlier: sorting a data frame by a `"p1"`-style column does not make it safe once you reach ten participants.
+"Sorted" means sorted the way text sorts rather than the way numbers do, per the table earlier: `"p10"` comes before `"p2"`, so sorting a data frame by a `"p1"`-style column does not make it safe once you reach ten participants.
 
-Recovery is a rename, not a recomputation: the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
+Putting it right is a rename, not a recomputation: the file named `unique(participants)[i]` holds the image of `sort(unique(participants))[i]`.
 
 ## What it did to a second-stage analysis
 
@@ -176,7 +176,7 @@ The mislabelling scrambles the pairing between a classification image and the pa
 
 The findings it establishes, kept separate rather than averaged, since nothing samples how common each design is:
 
-- **A covariate unrelated to labelling order.** The association is lost, in proportion to how scrambled the ordering was; under the `p1 … pN` scheme that is close to total. The runs that then fail to reject are false negatives. This is the file-drawer case.
+- **A covariate unrelated to labelling order.** The association is lost, in proportion to how scrambled the ordering was; under the `p1 … pN` scheme that is close to total. The runs that then fail to reject are false negatives. This could lead to findings ending up in the file drawer: there may have been a real result, but it was very unlikely to be found in what the shuffle had turned into essentially random pairings.
 - **The same, with no true association.** The false positive *rate* is unchanged, by exchangeability, which the iid null cells satisfy, and an outcome whose distribution drifts over collection order would not. Individual verdicts still flip in both directions, on roughly 9% of datasets.
 - **Condition or covariate tracking labelling order.** The residual takes either sign: attenuated and correctly signed, or reversed.
 - **A nuisance trend along collection order.** Contiguous blocks lose the effect; alternating assignment *can raise* hypothesis-consistent rejections above the correctly labelled analysis, in 9 of the 12 cells simulated. The three exceptions are all at N = 20, where that scheme's permutation happens to cut the contrast rather than add to it. That is a reminder that the direction belongs to the particular ordering, not to the design.
