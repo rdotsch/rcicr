@@ -87,11 +87,14 @@ reaching `txtProgressBar(min = 1, max = 1)` and stopping with `must have 'max' >
 Confirmed at 0.4.0 for both functions, with `saveaspng` `TRUE` and `FALSE`; it fails either way.
 Fixed by `90fee07` (2021-12-28).
 
-**This window is not the same as "0.4.0".** 0.4.0 ran to 2021-09-23 and 0.4.1 took over from
-there, but the misalignment lasted until 2021-12-28 — so 0.4.1 installs taken from
-`development` between those two dates failed in exactly the same way. The boundary that matters
-is the date, not the version string, and both the advisory and
-[`individual-ci-mislabelling.md`](individual-ci-mislabelling.md) state it as a date.
+**This window is not the same as "0.4.0", at either end.** 0.4.0 ran to 2021-09-23 and 0.4.1
+took over from there, but the misalignment lasted until 2021-12-28 — so 0.4.1 installs taken
+from `development` between those two dates failed in exactly the same way. At the other end,
+0.4.0 appeared on 2016-10-26 (`271751f`) and the misalignment only arrived on 2016-10-28, so
+0.4.0's first two days are clean: `cd04b28^` is `a5921dc`, still 2016-10-26, and its positional
+call still lines up. The boundary that matters is the date, not the version string, and both
+the advisory and [`individual-ci-mislabelling.md`](individual-ci-mislabelling.md) state it as a
+date.
 
 **It was reported at the time and sat open for four and a half years.**
 [Issue #79](https://github.com/rdotsch/rcicr/issues/79), opened 2017-07-19, is a user hitting
