@@ -1,6 +1,6 @@
 # Which rcicr you had, and whether it carried the individual-CI bug
 
-Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed in 1.3.0 (issue #261). The short answer is that **the version number alone does not tell you**: for anything installed from GitHub before 2026, the date and the *branch* matter more than the version.
+Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed in 1.3.0 (issue #261). If you only want to know whether your own work is affected, the [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) answers that in three questions; this page is the version-by-version background behind it. The short answer is that **the version number alone does not tell you**: for anything installed from GitHub before 2026, the date and the *branch* matter more than the version.
 
 ## What the bug was
 

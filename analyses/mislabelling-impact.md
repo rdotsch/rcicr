@@ -28,12 +28,13 @@ image of `sort(unique(participants))[i]`. That shuffle is a
 *permutation* of the filenames, and the rest of this document calls it
 that. The
 [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
-tells researchers what to do about it. The document you are currently
-reading provides the evidence behind the claims the advisory makes, and
-exists to prevent you from interpreting those claims incorrectly, which
-is an easy mistake to make in either direction: “it only adds noise” and
-“it could have produced spurious findings” are each half right, and
-acting on either one alone gets the answer wrong.
+tells researchers what to do about it, and settles in three questions
+whether you are affected at all. The document you are currently reading
+provides the evidence behind the claims the advisory makes, and exists
+to prevent you from interpreting those claims incorrectly, which is an
+easy mistake to make in either direction: “it only adds noise” and “it
+could have produced spurious findings” are each half right, and acting
+on either one alone gets the answer wrong.
 
 ``` r
 n_simulations <- 20000
