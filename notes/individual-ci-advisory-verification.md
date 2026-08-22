@@ -121,3 +121,24 @@ branch, and the default branch never served it:
 So the fix was already in at the moment the switch happened. `install_github('rdotsch/rcicr')`
 never returned broken 2IFC functions; only `ref = 'development'` did, and only before
 2021-12-28.
+
+## Do not date anything from an issue's close
+
+**Issue close dates in this repository do not track when the code landed**, because the 2026
+migration from `BACKLOG.md` to GitHub Issues closed a long tail of requests retroactively.
+
+The trap is [issue #43](https://github.com/rdotsch/rcicr/issues/43), which asked for
+`save_individual_cis` in the first place. It was opened 2016-11-08 and closed 2026-08-08 with a
+comment beginning "Done." — phrasing that reads as a fresh implementation. Nothing was
+implemented that day. The feature shipped in 2017: `a7b265b` (2017-07-31) added the argument,
+`8a74974` (2017-08-15) made the saving work and introduced the mislabelling, and `d969ed2`
+(2017-08-17) added `individual_scaling` and `individual_scaling_constant`. The only nearby 2026
+change is `a2ccbd5` (2026-08-07), which made `targetpath` required in answer to CRAN's review.
+
+This matters for the advisory specifically. A researcher who finds #43, reads a 2026 close on a
+feature request, and concludes the option is two weeks old would then dismiss their own 2018 to
+2023 output as impossible to affect — the exact wrong conclusion, and one nothing else on the
+page would correct. A comment on #43 now gives the real dates and links the advisory.
+
+The general rule: take dates from `git log`, and prefer `git log -S <the code itself>` over a
+commit subject or an issue, both of which describe intent rather than what changed.
