@@ -1,6 +1,6 @@
 # Which rcicr you had, and whether it carried the individual-CI bug
 
-Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed in 1.3.0 (issue #261). The short answer is that **the version number alone does not tell you**: for anything installed from GitHub before 2026, the date and the *branch* matter more than the version.
+Reference for anyone checking whether a stored analysis is affected by the mislabelling fixed in 1.3.0 (issue #261). If you only want to know whether your own work is affected, the [advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) answers that in three questions; this page is the version-by-version background behind it. The short answer is that **the version number alone does not tell you**: for anything installed from GitHub before 2026, the date and the *branch* matter more than the version.
 
 ## What the bug was
 
@@ -112,14 +112,14 @@ Half of it expired in June 2021: CRAN archived the package, so "wait until we ma
 
 ### From the latest GitHub release — `install_github('rdotsch/rcicr@*release')`
 
-| you installed | you got |
-|---|---|
-| before 2026-07-27 | **nothing** — no releases existed to resolve against |
-| 2026-07-27 → 2026-07-28 | 1.1.0 |
-| 2026-07-28 → 2026-08-07 | 1.2.0, then 1.2.1 the same day |
-| 2026-08-07 → 2026-08-08 | 1.2.2 |
-| 2026-08-08 → 2026-08-18 | 1.2.3 |
-| 2026-08-18 → now | **1.3.0** |
+| you installed | you got | affected |
+|---|---|---|
+| before 2026-07-27 | **nothing** — no releases existed to resolve against | — |
+| 2026-07-27 → 2026-07-28 | 1.1.0 | **yes** |
+| 2026-07-28 → 2026-08-07 | 1.2.0, then 1.2.1 the same day | **yes** |
+| 2026-08-07 → 2026-08-08 | 1.2.2 | **yes** |
+| 2026-08-08 → 2026-08-18 | 1.2.3 | **yes** |
+| 2026-08-18 → now | **1.3.0** | no |
 
 Every GitHub release before 1.3.0 carries the bug. `v1.0.1` has a tag but no GitHub *release*, and it was tagged retroactively in 2026 against a 2023 commit, so `@*release` never resolved to it.
 
@@ -129,7 +129,7 @@ The affected call needs **both** things: a `participants` vector *and* `save_ind
 
 > **Did a single `generateCI()` call produce one classification image per participant?**
 
-If the answer is no, nothing here touches you, and there are several ways to reach it that do not depend on any file surviving.
+If the answer is no, nothing here touches you. There are several ways to answer that question, and most of them work even if the output files themselves are long gone. Each of the headings below is one such way, starting from whatever you still have.
 
 **You did not make per-participant images at all.** A group-level classification image is unaffected: it is a mean across participants and does not depend on their order.
 
@@ -154,7 +154,7 @@ An `antiCI` swaps the `ci_` prefix for `antici_` throughout. The composite names
 
 **You still have the script but not the output.** Read every `generateCI()` call that passes participant identifiers. Searching for the string `save_individual_cis` is *not* sufficient on its own: it is the sixth formal, so `generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it positionally, and `do.call()` with an assembled list hides it too. Search for `individual`, then read by hand any call passing six or more arguments positionally.
 
-**You still have the data but neither.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it hands you corrected output as a side effect: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
+**You still have the raw data, but neither the output images nor the script.** Recompute with 1.3.0 and compare. This is the only fully conclusive answer, and it hands you corrected output as a side effect: the responses and the stimulus `.Rdata` are all that is needed, and a classification image is deterministic given them.
 
 **You have only the published figure.** Then it cannot be verified directly, and the ordering question below is the best available evidence.
 
@@ -174,7 +174,7 @@ The mislabelling scrambles the pairing between a classification image and the pa
 
 The findings it establishes, kept separate rather than averaged, since nothing samples how common each design is:
 
-- **A covariate unrelated to labelling order.** The association is lost, in proportion to how scrambled the ordering was; under the `p1 … pN` scheme that is close to total. The runs that then fail to reject are false negatives. This is the file-drawer case.
+- **A covariate unrelated to labelling order.** The association is lost, in proportion to how scrambled the ordering was; under the `p1 … pN` scheme that is close to total. The runs that then fail to reject are false negatives. This could lead to findings ending up in the file drawer: there may have been a real result, but it was very unlikely to be found in what the shuffle had turned into essentially random pairings.
 - **The same, with no true association.** The false positive *rate* is unchanged, by exchangeability, which the iid null cells satisfy, and an outcome whose distribution drifts over collection order would not. Individual verdicts still flip in both directions, on roughly 9% of datasets.
 - **Condition or covariate tracking labelling order.** The residual takes either sign: attenuated and correctly signed, or reversed.
 - **A nuisance trend along collection order.** Contiguous blocks lose the effect; alternating assignment *can raise* hypothesis-consistent rejections above the correctly labelled analysis, in 9 of the 12 cells simulated. The three exceptions are all at N = 20, where that scheme's permutation happens to cut the contrast rather than add to it. That is a reminder that the direction belongs to the particular ordering, not to the design.
