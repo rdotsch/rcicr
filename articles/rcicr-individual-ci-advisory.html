@@ -73,9 +73,10 @@ affected output.</p>
 GitHub-only, and is fixed in <a href="https://github.com/rdotsch/rcicr/releases/tag/v1.3.0" class="external-link">1.3.0</a>.
 (0.4.0 is affected only if you installed it on or after 2017-08-15; see
 “Which versions were affected” below.) This bug never reached CRAN: the
-last CRAN release, 0.3.4.1, predates the option involved by thirteen
-months, so nothing installed with <code>install.packages('rcicr')</code>
-was ever affected.</strong></p>
+last CRAN release, 0.3.4.1, predates the
+<code>save_individual_cis</code> option by thirteen months, so nothing
+installed with <code>install.packages('rcicr')</code> was ever
+affected.</strong></p>
 <div class="section level2">
 <h2 id="are-you-affected">Are you affected?<a class="anchor" aria-label="anchor" href="#are-you-affected"></a>
 </h2>
@@ -198,27 +199,28 @@ the batch functions safe is that they never pass that combination.</p>
 the participant it came from. Whether this impacts your analysis depends
 on what the images were then used for.</p>
 <p>If they were averaged into a group image, or looked at without
-reference to whose they were, nothing downstream changed: the group CI
-is a mean over participants and does not depend on their order.</p>
-<p>It matters where a participant-level variable was joined to the
-images. In the common second-stage design, naive raters judge each
+reference to whose they were, nothing that came after it changed: the
+group CI is a mean over participants and does not depend on their
+order.</p>
+<p>It matters where something about each participant was matched up with
+their image. In the common second-stage design, naive raters judge each
 individual CI and those judgments are related back to the source
-participant’s condition, score or group. That join was made against a
-shuffled set of labels, so whatever the analysis found, it was not
+participant’s condition, score or group. That matching was done against
+a shuffled set of labels, so whatever the analysis found, it was not
 computed on the pairing it was reported as.</p>
-<p>The damage then depends on the design. Where the variable joined to
-the images has nothing to do with the order participants were labelled
-in, the shuffle destroys the association rather than inventing one: at
-50 participants a true correlation of 0.5 goes from being detected 97%
-of the time to 5%, and a study that then finds nothing is looking at a
-real association it can no longer see. This could lead to findings
-ending up in the file drawer: there may have been a real result, but it
-was very unlikely to be found in what the shuffle had turned into
-essentially random pairings. But where something varies along collection
-order (IDs assigned as participants arrived while conditions ran in
-blocks, an ID encoding testing date or cohort), the shuffle can instead
-weaken an effect, reverse its sign, or hand back <em>more</em> apparent
-support than the correct analysis would.</p>
+<p>The damage then depends on the design. Where what you matched to the
+images has nothing to do with the order participants were labelled in,
+the shuffle destroys the association rather than inventing one: at 50
+participants a true correlation of 0.5 goes from being detected 97% of
+the time to 5%, and a study that then finds nothing is looking at a real
+association it can no longer see. This could lead to findings ending up
+in the file drawer: there may have been a real result, but it was very
+unlikely to be found in what the shuffle had turned into essentially
+random pairings. But where something varies along collection order (IDs
+assigned as participants arrived while conditions ran in blocks, an ID
+encoding testing date or cohort), the shuffle can instead weaken an
+effect, reverse its sign, or hand back <em>more</em> apparent support
+than the correct analysis would.</p>
 <p>How badly your own filenames were scrambled follows from how far your
 participant vector departed from sorted order:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -228,9 +230,9 @@ participant vector departed from sorted order:</p>
 participant typically one file in the whole set still holds its own
 image.</p>
 <p>Mislabelled files do not always mean a changed analysis, and there is
-a more specific check for that. If the shuffle only exchanged
-participants who share a value on whatever you related the images to,
-the join is unaffected and the result stands exactly as computed:</p>
+a more specific check for that. If the shuffle only swapped participants
+who share a value on whatever you matched the images to, the matching is
+unaffected and the result stands exactly as computed:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span></span>
 <span><span class="va">misfiled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="va">ids</span><span class="op">)</span>, <span class="va">ids</span><span class="op">)</span>   <span class="co"># which participant each file actually holds</span></span>
@@ -244,9 +246,10 @@ is one line, and a <code>TRUE</code> ends the matter, so run it before
 anything else, even though the ordinary <code>p1 … pN</code> scheme with
 conditions in blocks does <em>not</em> survive it.</p>
 <p>A <code>TRUE</code> clears an analysis outright. A <code>FALSE</code>
-means the join changed: whether the result changed with it is a separate
-question. In that case repair the filenames as below, re-run, and
-compare. Until then, two things follow, independent of your design:</p>
+means the matching changed: whether the result changed with it is a
+separate question. In that case repair the filenames as below, re-run,
+and compare. Until then, two things follow, independent of your
+design:</p>
 <ul>
 <li>
 <strong>A null result from an affected analysis may be an artifact
@@ -281,16 +284,16 @@ again.</p>
 <div class="section level2">
 <h2 id="how-you-can-quickly-check-whether-this-affects-you">How you can quickly check whether this affects you<a class="anchor" aria-label="anchor" href="#how-you-can-quickly-check-whether-this-affects-you"></a>
 </h2>
-<p><strong>Look for an <code>individual_cis/</code> directory in your
+<p><strong>Look for a folder called <code>individual_cis/</code> in your
 output.</strong> Nothing else in the package writes one, so finding it
 means a direct call ran. Everything from here on applies only to images
 made before the fix, since 1.3.0 writes that same directory with the
 filenames correct. It is also how to tell which route your analysis
 took: the batch functions above pass <code>participants = NA</code> and
 never set <code>save_individual_cis</code>, so they cannot produce that
-directory, and only a direct <code><a href="../reference/generateCI.html">generateCI()</a></code> call can.</p>
+folder, and only a direct <code><a href="../reference/generateCI.html">generateCI()</a></code> call can.</p>
 <p>Not finding it clears the analysis only if the files are still where
-the analysis left them. A directory that was renamed, folded into an
+the analysis left them. A folder that was renamed, folded into an
 archive, or had its PNGs moved elsewhere will not answer to that name
 any more. The filenames alone do not then settle it: an individual CI is
 <code>ci_&lt;participant&gt;.png</code>, but
@@ -298,30 +301,33 @@ any more. The filenames alone do not then settle it: an individual CI is
 whatever filename it is given, so a group CI saved as
 <code>filename = "p3"</code> is also <code>ci_p3.png</code>. Confirm a
 loose file against the script that wrote it, or against the data, before
-treating it as an individual CI: running the recovery below over a set
-that is really something else would scramble output that was correct. <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
+treating it as an individual CI: running the rename below over a set of
+files that is really something else would scramble files that were
+correct. <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
 has the table of what in the package writes which filename where.</p>
 <p>Do not rely on searching your scripts for
 <code>save_individual_cis</code> instead. It is the sixth argument of
-<code><a href="../reference/generateCI.html">generateCI()</a></code>, so a positional call such as
-<code>generateCI(stim, resp, "face", rdata, pids, TRUE, ...)</code> sets
-it without the name appearing anywhere, and <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> hides
-it the same way. Searching your scripts for that text and finding
-nothing does <strong>not</strong> clear an analysis.</p>
-<p>If the directory is there, the ordering of your participant IDs
+<code><a href="../reference/generateCI.html">generateCI()</a></code>, so a call that lists its arguments in order
+without naming them, such as
+<code>generateCI(stim, resp, "face", rdata, pids, TRUE, ...)</code>,
+switches it on without the name appearing anywhere.
+<code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> hides it the same way. Searching your scripts for
+that text and finding nothing does <strong>not</strong> clear an
+analysis.</p>
+<p>If that folder is there, the order of your participant identifiers
 decides it. Run</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">participants</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>using the participant vector in the order you originally passed it.
 <code>FALSE</code> means the images are still correct but the filenames
-are swapped, and the mapping to fix them is exact, with no need to
-recompute anything (see below).</p>
+are swapped, and putting them right is a rename, with nothing to
+recompute (see below).</p>
 <p><code>TRUE</code> means the files were named correctly, provided two
 things hold, because both change what <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> returns and so
 what the comparison means:</p>
 <ul>
 <li>
-<strong>Use the original <code>participants</code> object, not a
+<strong>Use the original <code>participants</code> you passed, not a
 copy converted to plain text.</strong> A character copy is what you get
 from <code>as.character(participants)</code>, which throws away the fact
 that the identifiers were a factor. The bug ordered participants by
@@ -331,16 +337,19 @@ right for a factor with a custom level order. Converting to character
 first can sort them into a different order and give you the wrong
 answer.</li>
 <li>
-<strong>Run it under the collation the original analysis ran
-under.</strong> Sorting text is locale-dependent, so a <code>TRUE</code>
-obtained elsewhere can clear output that really was mislabelled. Numeric
-identifiers are exempt and <code>p1</code>/<code>p12</code> is not
-realistically exposed, but plain lowercase letters are no guarantee in
-general: some locales collate letter pairs as single units. If your
-identifiers are anything more than digits and simple prefixes, run the
-check on the machine that produced the files, or compare
-<code>Sys.getlocale("LC_COLLATE")</code> against the original
-session.</li>
+<strong>Run the check on the computer that made the files.</strong>
+How R sorts text depends on that computer’s language and region
+settings, and two computers can still sort differently even when those
+settings look identical, because the sorting tables themselves differ
+between operating systems. So a <code>TRUE</code> obtained anywhere else
+can clear files that really were mislabelled. Plain numbers are safe,
+and <code>p1</code>/<code>p12</code> is not realistically at risk, but
+ordinary lowercase letters are no guarantee: some languages sort certain
+letter pairs as though they were a single letter. If your identifiers
+are anything more than digits and a simple prefix and the original
+computer is gone, comparing <code>Sys.getlocale("LC_COLLATE")</code> on
+both is the next best thing, but it is weaker evidence than re-running
+the check where the files were made.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -356,8 +365,8 @@ before 1.3.0 and that <code>targetpath</code> below points at the folder
 from the same analysis these <code>participants</code> came from.
 Renaming output that a fixed version produced would permute a set that
 was already correct. The <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> calls catch a filename that
-is missing; they cannot catch a directory that is simply the wrong one.
-A folder from a different analysis with the same participant identifiers
+is missing; they cannot catch a folder that is simply the wrong one. A
+folder from a different analysis with the same participant identifiers
 would rename cleanly, scrambling a set that had been correct.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The targetpath you originally passed to generateCI(). If you never passed one, it</span></span>
@@ -382,8 +391,8 @@ would rename cleanly, scrambling a set that had been correct.</p>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">step2</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Rename failed for: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">old</span><span class="op">[</span><span class="op">!</span><span class="va">step2</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>(This assumes <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> orders your IDs the way the
 original analysis did, which is the same condition the check above
-depends on: the original <code>participants</code> object rather than a
-character copy, under the original collation.)</p>
+depends on: the original <code>participants</code> rather than a copy
+converted to text, under the same language and region settings.)</p>
 <p>(use the <code>antici_</code> prefix instead of <code>ci_</code> if
 you generated anti-CIs).</p>
 <p>If you plan to keep using the package, get the fixed version from <a href="https://github.com/rdotsch/rcicr" class="external-link">GitHub</a>

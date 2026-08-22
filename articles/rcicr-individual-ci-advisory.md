@@ -11,9 +11,9 @@ and is fixed in
 [1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). (0.4.0 is
 affected only if you installed it on or after 2017-08-15; see “Which
 versions were affected” below.) This bug never reached CRAN: the last
-CRAN release, 0.3.4.1, predates the option involved by thirteen months,
-so nothing installed with `install.packages('rcicr')` was ever
-affected.**
+CRAN release, 0.3.4.1, predates the `save_individual_cis` option by
+thirteen months, so nothing installed with `install.packages('rcicr')`
+was ever affected.**
 
 ## Are you affected?
 
@@ -114,17 +114,17 @@ participant it came from. Whether this impacts your analysis depends on
 what the images were then used for.
 
 If they were averaged into a group image, or looked at without reference
-to whose they were, nothing downstream changed: the group CI is a mean
-over participants and does not depend on their order.
+to whose they were, nothing that came after it changed: the group CI is
+a mean over participants and does not depend on their order.
 
-It matters where a participant-level variable was joined to the images.
-In the common second-stage design, naive raters judge each individual CI
-and those judgments are related back to the source participant’s
-condition, score or group. That join was made against a shuffled set of
-labels, so whatever the analysis found, it was not computed on the
-pairing it was reported as.
+It matters where something about each participant was matched up with
+their image. In the common second-stage design, naive raters judge each
+individual CI and those judgments are related back to the source
+participant’s condition, score or group. That matching was done against
+a shuffled set of labels, so whatever the analysis found, it was not
+computed on the pairing it was reported as.
 
-The damage then depends on the design. Where the variable joined to the
+The damage then depends on the design. Where what you matched to the
 images has nothing to do with the order participants were labelled in,
 the shuffle destroys the association rather than inventing one: at 50
 participants a true correlation of 0.5 goes from being detected 97% of
@@ -151,8 +151,8 @@ Under the common `p1 … pN` scheme past the tenth participant typically
 one file in the whole set still holds its own image.
 
 Mislabelled files do not always mean a changed analysis, and there is a
-more specific check for that. If the shuffle only exchanged participants
-who share a value on whatever you related the images to, the join is
+more specific check for that. If the shuffle only swapped participants
+who share a value on whatever you matched the images to, the matching is
 unaffected and the result stands exactly as computed:
 
 ``` r
@@ -171,10 +171,10 @@ ends the matter, so run it before anything else, even though the
 ordinary `p1 … pN` scheme with conditions in blocks does *not* survive
 it.
 
-A `TRUE` clears an analysis outright. A `FALSE` means the join changed:
-whether the result changed with it is a separate question. In that case
-repair the filenames as below, re-run, and compare. Until then, two
-things follow, independent of your design:
+A `TRUE` clears an analysis outright. A `FALSE` means the matching
+changed: whether the result changed with it is a separate question. In
+that case repair the filenames as below, re-run, and compare. Until
+then, two things follow, independent of your design:
 
 - **A null result from an affected analysis may be an artifact of the
   shuffle.** If the association was really in the data, this is what
@@ -207,42 +207,42 @@ All of the above is supported by the simulations reported in
 
 ## How you can quickly check whether this affects you
 
-**Look for an `individual_cis/` directory in your output.** Nothing else
-in the package writes one, so finding it means a direct call ran.
+**Look for a folder called `individual_cis/` in your output.** Nothing
+else in the package writes one, so finding it means a direct call ran.
 Everything from here on applies only to images made before the fix,
 since 1.3.0 writes that same directory with the filenames correct. It is
 also how to tell which route your analysis took: the batch functions
 above pass `participants = NA` and never set `save_individual_cis`, so
-they cannot produce that directory, and only a direct
+they cannot produce that folder, and only a direct
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
 call can.
 
 Not finding it clears the analysis only if the files are still where the
-analysis left them. A directory that was renamed, folded into an
-archive, or had its PNGs moved elsewhere will not answer to that name
-any more. The filenames alone do not then settle it: an individual CI is
+analysis left them. A folder that was renamed, folded into an archive,
+or had its PNGs moved elsewhere will not answer to that name any more.
+The filenames alone do not then settle it: an individual CI is
 `ci_<participant>.png`, but
 `generateCI(save_as_png = TRUE, filename = ...)` takes whatever filename
 it is given, so a group CI saved as `filename = "p3"` is also
 `ci_p3.png`. Confirm a loose file against the script that wrote it, or
 against the data, before treating it as an individual CI: running the
-recovery below over a set that is really something else would scramble
-output that was correct.
+rename below over a set of files that is really something else would
+scramble files that were correct.
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
 has the table of what in the package writes which filename where.
 
 Do not rely on searching your scripts for `save_individual_cis` instead.
 It is the sixth argument of
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
-so a positional call such as
-`generateCI(stim, resp, "face", rdata, pids, TRUE, ...)` sets it without
-the name appearing anywhere, and
+so a call that lists its arguments in order without naming them, such as
+`generateCI(stim, resp, "face", rdata, pids, TRUE, ...)`, switches it on
+without the name appearing anywhere.
 [`do.call()`](https://rdrr.io/r/base/do.call.html) hides it the same
 way. Searching your scripts for that text and finding nothing does
 **not** clear an analysis.
 
-If the directory is there, the ordering of your participant IDs decides
-it. Run
+If that folder is there, the order of your participant identifiers
+decides it. Run
 
 ``` r
 
@@ -251,14 +251,14 @@ identical(unique(participants), sort(unique(participants)))
 
 using the participant vector in the order you originally passed it.
 `FALSE` means the images are still correct but the filenames are
-swapped, and the mapping to fix them is exact, with no need to recompute
-anything (see below).
+swapped, and putting them right is a rename, with nothing to recompute
+(see below).
 
 `TRUE` means the files were named correctly, provided two things hold,
 because both change what [`sort()`](https://rdrr.io/r/base/sort.html)
 returns and so what the comparison means:
 
-- **Use the original `participants` object, not a copy converted to
+- **Use the original `participants` you passed, not a copy converted to
   plain text.** A character copy is what you get from
   `as.character(participants)`, which throws away the fact that the
   identifiers were a factor. The bug ordered participants by
@@ -267,15 +267,19 @@ returns and so what the comparison means:
   levels, so the check is right for a factor with a custom level order.
   Converting to character first can sort them into a different order and
   give you the wrong answer.
-- **Run it under the collation the original analysis ran under.**
-  Sorting text is locale-dependent, so a `TRUE` obtained elsewhere can
-  clear output that really was mislabelled. Numeric identifiers are
-  exempt and `p1`/`p12` is not realistically exposed, but plain
-  lowercase letters are no guarantee in general: some locales collate
-  letter pairs as single units. If your identifiers are anything more
-  than digits and simple prefixes, run the check on the machine that
-  produced the files, or compare `Sys.getlocale("LC_COLLATE")` against
-  the original session.
+- **Run the check on the computer that made the files.** How R sorts
+  text depends on that computer’s language and region settings, and two
+  computers can still sort differently even when those settings look
+  identical, because the sorting tables themselves differ between
+  operating systems. So a `TRUE` obtained anywhere else can clear files
+  that really were mislabelled. Plain numbers are safe, and `p1`/`p12`
+  is not realistically at risk, but ordinary lowercase letters are no
+  guarantee: some languages sort certain letter pairs as though they
+  were a single letter. If your identifiers are anything more than
+  digits and a simple prefix and the original computer is gone,
+  comparing `Sys.getlocale("LC_COLLATE")` on both is the next best
+  thing, but it is weaker evidence than re-running the check where the
+  files were made.
 
 ## How to fix it
 
@@ -289,8 +293,8 @@ before 1.3.0 and that `targetpath` below points at the folder from the
 same analysis these `participants` came from. Renaming output that a
 fixed version produced would permute a set that was already correct. The
 [`stop()`](https://rdrr.io/r/base/stop.html) calls catch a filename that
-is missing; they cannot catch a directory that is simply the wrong one.
-A folder from a different analysis with the same participant identifiers
+is missing; they cannot catch a folder that is simply the wrong one. A
+folder from a different analysis with the same participant identifiers
 would rename cleanly, scrambling a set that had been correct.
 
 ``` r
@@ -319,8 +323,8 @@ if (!all(step2)) stop("Rename failed for: ", paste(old[!step2], collapse = ", ")
 
 (This assumes [`sort()`](https://rdrr.io/r/base/sort.html) orders your
 IDs the way the original analysis did, which is the same condition the
-check above depends on: the original `participants` object rather than a
-character copy, under the original collation.)
+check above depends on: the original `participants` rather than a copy
+converted to text, under the same language and region settings.)
 
 (use the `antici_` prefix instead of `ci_` if you generated anti-CIs).
 
