@@ -129,9 +129,9 @@
 - **Individual-CI PNGs written by `generateCI(save_individual_cis = TRUE)` carried the wrong
   participant's name, and are now named correctly.** The per-participant loop selects each
   participant's trials by *sorted* order and took the output filename from order of
-  *appearance*. Where those two orders differ, every file in `<targetpath>/individual_cis`
-  was given another participant's ID. The pixels were always right; only the names were
-  wrong.
+  *appearance*. At each position where those two orders differ, the file in
+  `<targetpath>/individual_cis` was given another participant's ID. The pixels were always
+  right; only the names were wrong.
 
   **Affected:** a direct call to
   `generateCI(participants = ..., save_individual_cis = TRUE)` where the `participants`
@@ -416,7 +416,7 @@
   version expects and an older one never saved. It runs on every platform with no network: the
   fixtures are 205 KB (1.0.1) and 45 KB (1.1.0).
 
-# rcicr 1.2.3 (2026-08-07)
+# rcicr 1.2.3 (2026-08-08)
 
 **Documentation only. Nothing this package computes has changed** — no function,
 argument, return value or number differs from 1.2.2, and no analysis script needs
