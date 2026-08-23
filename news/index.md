@@ -190,10 +190,10 @@
   `generateCI(save_individual_cis = TRUE)` carried the wrong
   participant’s name, and are now named correctly.** The per-participant
   loop selects each participant’s trials by *sorted* order and took the
-  output filename from order of *appearance*. Where those two orders
-  differ, every file in `<targetpath>/individual_cis` was given another
-  participant’s ID. The pixels were always right; only the names were
-  wrong.
+  output filename from order of *appearance*. At each position where
+  those two orders differ, the file in `<targetpath>/individual_cis` was
+  given another participant’s ID. The pixels were always right; only the
+  names were wrong.
 
   **Affected:** a direct call to
   `generateCI(participants = ..., save_individual_cis = TRUE)` where the
@@ -263,10 +263,11 @@
   where the two differ, that page is kept current and this section is
   not.
 
-  *Step 1 — did you use the affected call at all?* Look for an
+  *Step 1 — did you use the relevant call at all?* Look for an
   `individual_cis/` directory in your output. Nothing else in the
-  package creates it, so finding it means the affected call ran. If your
-  per-participant images came from
+  package creates it, so finding it means the direct call ran. For
+  output made before 1.3.0, continue to step 2. If your per-participant
+  images came from
   [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
   or
   [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md),
@@ -614,7 +615,7 @@
   It runs on every platform with no network: the fixtures are 205 KB
   (1.0.1) and 45 KB (1.1.0).
 
-## rcicr 1.2.3 (2026-08-07)
+## rcicr 1.2.3 (2026-08-08)
 
 **Documentation only. Nothing this package computes has changed** — no
 function, argument, return value or number differs from 1.2.2, and no

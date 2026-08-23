@@ -191,6 +191,21 @@ combination is what makes a call direct, not where it was written: it
 counts whether your script spells the call out, assembles it with
 <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code>, or goes through a helper of your own. What makes
 the batch functions safe is that they never pass that combination.</p>
+<p>One caveat if you installed from the <code>development</code> branch
+between 2016-10-28 and 2021-12-28. On 2016-10-28 a separate defect broke
+<em>every</em> function that calls <code><a href="../reference/generateCI.html">generateCI()</a></code>, so
+<code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> and
+<code><a href="../reference/generateCI2IFC.html">generateCI2IFC()</a></code> all stopped with
+<code>must have 'max' &gt; 'min'</code> instead of producing anything.
+<code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> was repaired eleven days later, on
+2016-11-08. The other two stayed broken for five years — reported in
+July 2017 as <a href="https://github.com/rdotsch/rcicr/issues/79" class="external-link">issue
+#79</a> — and were fixed on 2021-12-28. None of this could mislabel
+anything — a function that stops writes no files — so these routes are
+safe on those versions; they simply were not available. From 2016-11-08
+onward, <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> is the per-participant route that
+both ran and named its output correctly. See <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-advisory-verification.md" class="external-link"><code>individual-ci-advisory-verification.md</code></a>
+for the detail.</p>
 </div>
 <div class="section level2">
 <h2 id="what-this-does-to-an-analysis">What this does to an analysis<a class="anchor" aria-label="anchor" href="#what-this-does-to-an-analysis"></a>
@@ -396,7 +411,7 @@ converted to text, under the same language and region settings.)</p>
 <p>(use the <code>antici_</code> prefix instead of <code>ci_</code> if
 you generated anti-CIs).</p>
 <p>If you plan to keep using the package, get the fixed version from <a href="https://github.com/rdotsch/rcicr" class="external-link">GitHub</a>
-(<code>remotes::install_github("rdotsch/rcicr")</code>; a CRAN
+(<code>remotes::install_github("rdotsch/rcicr@v1.3.0")</code>; a CRAN
 submission is in progress but not live yet).</p>
 <p>More detail: <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
 has the full technical background (every affected version, its dates,

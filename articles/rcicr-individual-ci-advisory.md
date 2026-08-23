@@ -107,6 +107,30 @@ with [`do.call()`](https://rdrr.io/r/base/do.call.html), or goes through
 a helper of your own. What makes the batch functions safe is that they
 never pass that combination.
 
+One caveat if you installed from the `development` branch between
+2016-10-28 and 2021-12-28. On 2016-10-28 a separate defect broke *every*
+function that calls
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
+so
+[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md),
+[`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+and
+[`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
+all stopped with `must have 'max' > 'min'` instead of producing
+anything.
+[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+was repaired eleven days later, on 2016-11-08. The other two stayed
+broken for five years — reported in July 2017 as [issue
+\#79](https://github.com/rdotsch/rcicr/issues/79) — and were fixed on
+2021-12-28. None of this could mislabel anything — a function that stops
+writes no files — so these routes are safe on those versions; they
+simply were not available. From 2016-11-08 onward,
+[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+is the per-participant route that both ran and named its output
+correctly. See
+[`individual-ci-advisory-verification.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-advisory-verification.md)
+for the detail.
+
 ## What this does to an analysis
 
 The mislabelling breaks the link between a classification image and the
@@ -330,8 +354,8 @@ converted to text, under the same language and region settings.)
 
 If you plan to keep using the package, get the fixed version from
 [GitHub](https://github.com/rdotsch/rcicr)
-(`remotes::install_github("rdotsch/rcicr")`; a CRAN submission is in
-progress but not live yet).
+(`remotes::install_github("rdotsch/rcicr@v1.3.0")`; a CRAN submission is
+in progress but not live yet).
 
 More detail:
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)

@@ -40,13 +40,13 @@ says so in [`NEWS.md`](https://rdotsch.github.io/rcicr/NEWS.md) under
 
 > **If you saved per-participant classification images before 1.3.0,
 > check them.**
-> `generateCI(participants = ..., save_individual_cis = TRUE)` wrote
-> each image under the wrong participant’s filename whenever the
-> participant IDs were not already in sorted order (for text identifiers
-> that means lexical order, which includes the ordinary case of
-> `p1 ... p10` in collection order). The images were correct; only the
-> names were wrong, and correcting them is a rename rather than a
-> re-run. The [individual-CI filename
+> `generateCI(participants = ..., save_individual_cis = TRUE)` wrote an
+> image under another participant’s filename at each position where
+> appearance order and sorted order differed (for text identifiers that
+> means lexical order, which includes the ordinary case of `p1 ... p10`
+> in collection order). The images were correct; only the names were
+> wrong, and correcting them is a rename rather than a re-run. The
+> [individual-CI filename
 > advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
 > is the full version: how to tell whether you are affected, what it did
 > to an analysis, and the recovery. A shorter form is in
