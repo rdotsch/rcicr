@@ -129,9 +129,9 @@
 - **Individual-CI PNGs written by `generateCI(save_individual_cis = TRUE)` carried the wrong
   participant's name, and are now named correctly.** The per-participant loop selects each
   participant's trials by *sorted* order and took the output filename from order of
-  *appearance*. Where those two orders differ, every file in `<targetpath>/individual_cis`
-  was given another participant's ID. The pixels were always right; only the names were
-  wrong.
+  *appearance*. At each position where those two orders differ, the file in
+  `<targetpath>/individual_cis` was given another participant's ID. The pixels were always
+  right; only the names were wrong.
 
   **Affected:** a direct call to
   `generateCI(participants = ..., save_individual_cis = TRUE)` where the `participants`
@@ -177,7 +177,7 @@
 
   **If you have published from individual-CI images, check your analysis scripts.** Two steps, neither of which requires re-running anything. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) carries the fuller version of this, including what the mislabelling does to a second-stage analysis and how much of an effect survives it; where the two differ, that page is kept current and this section is not.
 
-  *Step 1 — did you use the affected call at all?* Look for an `individual_cis/` directory in your output. Nothing else in the package creates it, so finding it means the affected call ran. If your per-participant images came from `batchGenerateCI()` or `batchGenerateCI2IFC()`, those cannot reach the defect.
+  *Step 1 — did you use the relevant call at all?* Look for an `individual_cis/` directory in your output. Nothing else in the package creates it, so finding it means the direct call ran. For output made before 1.3.0, continue to step 2. If your per-participant images came from `batchGenerateCI()` or `batchGenerateCI2IFC()`, those cannot reach the defect.
 
   Check the output rather than the script. `save_individual_cis` is the sixth formal of
   `generateCI()`, so a call can set it positionally —
@@ -416,7 +416,7 @@
   version expects and an older one never saved. It runs on every platform with no network: the
   fixtures are 205 KB (1.0.1) and 45 KB (1.1.0).
 
-# rcicr 1.2.3 (2026-08-07)
+# rcicr 1.2.3 (2026-08-08)
 
 **Documentation only. Nothing this package computes has changed** — no function,
 argument, return value or number differs from 1.2.2, and no analysis script needs
