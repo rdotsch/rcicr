@@ -22,11 +22,18 @@ resolved for the maintainer any more — not the log dir, and not either of the 
 The full logs are therefore gone unless someone saved them, and the NOTE text survives only
 because the mail reproduces it — which is the whole of what was ever actionable.
 
-Nothing else is lost. `cran-comments.md` records our own pre-submission runs reporting the
-same single NOTE on win-builder release and devel, and `Status: OK` on all three R-hub
-platforms, and `devtools::check_win_devel()` against the `v1.3.0` tag reproduces an
-equivalent log at any time. The directory's removal is a cleanup job, not a status signal:
-it says nothing about where the submission sits in CRAN's queue.
+**What survives, and what does not.** The NOTE itself survives because the mail quotes it
+in full, and `cran-comments.md` holds our own pre-submission evidence: the same single NOTE
+from win-builder on release and devel, and `Status: OK` from R-hub on Linux, macOS and
+Windows. The pretest run itself is unrecoverable — it was CRAN's own incoming check under
+R Under development r90440 of 2026-08-21, on a Debian and a Windows flavour. A later
+`devtools::check_win_devel()` sends the same tree to whatever R-devel, dependency versions
+and check infrastructure exist at that point, and win-builder has no Debian flavour at all.
+It can show that the `v1.3.0` tree still passes; it cannot reconstitute this evidence, and a
+fresh log should never be filed as if it were this one.
+
+The directory's removal is a cleanup job, not a status signal: it says nothing about where
+the submission sits in CRAN's queue.
 
 **Two observations that are easy to misread, recorded so they are not re-derived:**
 
