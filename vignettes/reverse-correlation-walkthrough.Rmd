@@ -32,10 +32,6 @@ instruction pointed at a branch that no longer exists.
 
 ```{r setup}
 library(rcicr)
-
-# Graphical parameters are changed below to draw the images without margins;
-# this records the originals so the last chunk can put them back.
-old_par <- par(no.readonly = TRUE)
 ```
 
 One small helper, used throughout to display an image matrix:
@@ -421,7 +417,3 @@ citation("rcicr")
 
 If you use the technique, cite the method papers as well as the software — see the
 package's `CITATION` file and the README for the relevant references.
-
-```{r reset-par, include = FALSE}
-par(old_par)
-```
