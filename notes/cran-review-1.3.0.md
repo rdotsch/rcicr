@@ -16,10 +16,11 @@ days", which from 2026-08-22 lands around **2026-09-04**.
 
 **Why this file exists before there is a review to log.** The `incoming_pretest` log
 directory is win-builder scratch space on its own cleanup schedule, and it went early: the
-mail said "roughly 7 days", but by **2026-08-27**, day five, the log dir URL below no longer
-resolved for the maintainer. The full `00check.log` files are therefore gone unless someone
-saved them, and the NOTE text survives only because the mail reproduces it — which is the
-whole of what was ever actionable.
+mail said "roughly 7 days", but by **2026-08-27**, day five, none of the three URLs below
+resolved for the maintainer any more — not the log dir, and not either of the two
+`00check.log` files under it, which can outlive an unbrowsable directory but here did not.
+The full logs are therefore gone unless someone saved them, and the NOTE text survives only
+because the mail reproduces it — which is the whole of what was ever actionable.
 
 Nothing else is lost. `cran-comments.md` records our own pre-submission runs reporting the
 same single NOTE on win-builder release and devel, and `Status: OK` on all three R-hub
