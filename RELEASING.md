@@ -35,7 +35,7 @@ Widening a tolerance, dropping a configuration, or skipping the run is none of t
 
 ## 1. Prepare the release PR
 
-Branch from `main` (`release-X.Y.Z`) and make five edits together:
+Branch from `main` (`release-X.Y.Z`) and make four edits together:
 
 - **`NEWS.md`** — rename `# rcicr (development version)` to `# rcicr X.Y.Z (YYYY-MM-DD)`. Until
   you do, none of this release's entries are in the news database: R indexes only sections under
@@ -43,7 +43,6 @@ Branch from `main` (`release-X.Y.Z`) and make five edits together:
   stops parsing and `R CMD check` NOTEs.
 - **`DESCRIPTION`** — drop the `.9000`. This also switches CI from the `--quick` gate to the full
   battery, so it must happen **before** the PR is opened.
-- **`ChangeLog`** — a dated pointer entry deferring to `NEWS.md`, never a duplicate.
 - **`CITATION.cff`** — regenerate *after* the `DESCRIPTION` edit, with
   `cffr::cff_write("DESCRIPTION", dependencies = FALSE, gh_keywords = FALSE)`. CI compares it and
   fails until you do.
@@ -155,7 +154,22 @@ Bump `DESCRIPTION` to `X.Y.Z.9000` and start a fresh `# rcicr (development versi
 `NEWS.md`, through a small PR like anything else.
 
 **Tagging and reopening `.9000` deliberately precede CRAN acceptance**, unlike
-`usethis:::release_checklist()`. The `.9000` suffix is what selects `--quick` over the full
-~20-minute battery, so holding `main` at a clean version for the weeks CRAN can take would run
-the full gate on every unrelated PR in that window. A rejection means shipping X.Y.Z+1 anyway,
-leaving a tag naming a tree that was never on CRAN — already true of `v1.2.0` and `v1.2.2`.
+`usethis:::release_checklist()`, which tags only once CRAN has accepted. Two reasons. The
+`.9000` suffix is what selects `--quick` over the full ~20-minute battery, so holding `main` at
+a clean version for the weeks CRAN can take would run the full gate on every unrelated PR in
+that window. And **a tag here marks a release, not an acceptance**: GitHub is a real
+distribution channel for this package — 1.0.1 through 1.2.3 were released there and nowhere
+else — and while a submission is under review it is the only way anyone can install the new
+version. Tagging on acceptance would point
+`remotes::install_github('rdotsch/rcicr@*release')` at the previous release for as long as
+CRAN takes.
+
+So a tag naming a tree CRAN never took is expected here rather than a defect — already true of
+`v1.2.0` and `v1.2.2` — and answering a review means shipping X.Y.Z+1, an ordinary release
+whose `cran-comments.md` happens to be a point-by-point reply. **Which versions CRAN accepted
+is recorded rather than inferred from the tags**: in `notes/cran-review-<version>.md` and in
+the tag's GitHub release notes.
+
+The alternative is to stop making GitHub releases once the package is back on CRAN and adopt
+the `usethis` order wholesale. That trade is only worth revisiting if CRAN becomes the channel
+people actually install from.

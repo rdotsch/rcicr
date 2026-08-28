@@ -29,7 +29,7 @@ that task will hit it. The general form:
 A standard R package — roxygen2 docs, a testthat suite under `tests/testthat/`, GitHub Actions CI — so the usual `roxygen2::roxygenise()` / `devtools::load_all()` / `test()` / `check()` / `install()` workflow applies unchanged, run from the package root. Two things about it are *not* standard:
 
 - `generateStimuli2IFC()` spawns parallel workers via `parallel::makeCluster()` that each `library(rcicr)` themselves (`.packages='rcicr'` in its `foreach` call) — any test or script that calls it needs the package actually **installed** (`devtools::install()`), not just `load_all()`-loaded, or workers fail with "there is no package called 'rcicr'".
-- Version and dependency metadata lives in `DESCRIPTION`; user-facing changes go in `NEWS.md`. `ChangeLog` predates `NEWS.md` and takes only a dated pointer entry per release — see `CONTRIBUTING.md`.
+- Version and dependency metadata lives in `DESCRIPTION`; user-facing changes go in `NEWS.md`. `ChangeLog` is the frozen pre-`NEWS.md` archive, ending at 1.0.1 — never add to it.
 
 ## Testing and CI
 
@@ -89,8 +89,9 @@ would this still matter if the package were maintained somewhere else entirely?
 
 - **Re-read `CONTRIBUTING.md` → "Pull requests" when opening a PR, every time — not from
   memory.** Its steps fail by producing silence rather than an error, so a half-remembered
-  version looks like it worked. Two of them have now been re-learned the hard way, after
-  being written down.
+  version looks like it worked. The rule most often lost is one of omission: a PR body or
+  commit message states the end result, never the route taken. A hook in
+  `.claude/settings.json` repeats it at the moment of writing.
 - **Plan first when a change touches behaviour, numbers or a contract** — `R/` behaviour,
   numeric output, the `.Rdata` contract, fixtures, or the release and CI machinery. The plan is
   the branch's first commit, reviewed as a **draft** PR before any of the change is written,
@@ -130,7 +131,9 @@ onto `main`, and releases are marked by tags.
   `DESCRIPTION` goes to `<released>.9000`; the release commit drops it to the clean number.
   `NEWS.md` accumulates entries under a `# rcicr (development version)` heading, renamed to
   `# rcicr X.Y.Z (date)` at release time.
-- **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a GitHub release.
+- **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a GitHub release. A tag
+  marks a *release*, not CRAN acceptance; `RELEASING.md` → "Reopen development" says why, and
+  where acceptance is recorded instead.
 - **Log every CRAN reply verbatim** in `notes/cran-review-<version>.md`, named for the
   version whose tarball it reviews — `cran-review-1.2.1.md` reviews the 1.2.1 submission,
   answered by 1.2.2 and 1.2.3. Add a new file per reply rather than editing an old one, and
