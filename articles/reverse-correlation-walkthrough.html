@@ -79,8 +79,10 @@ instruction pointed at a branch that no longer exists.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rdotsch.github.io/rcicr/">rcicr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Graphical parameters are changed below to draw the images without margins;</span></span>
-<span><span class="co"># this records the originals so the last chunk can put them back.</span></span>
+<span><span class="co"># CRAN asks that a vignette restore any graphical parameters it changes, so this</span></span>
+<span><span class="co"># records them and the last chunk puts them back. The show() helper below already</span></span>
+<span><span class="co"># restores the margins it sets, so this pair is a safety net -- and the pattern to</span></span>
+<span><span class="co"># copy into your own scripts.</span></span>
 <span><span class="va">old_par</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>no.readonly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>One small helper, used throughout to display an image matrix:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">

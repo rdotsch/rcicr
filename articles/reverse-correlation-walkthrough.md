@@ -21,8 +21,10 @@ branch that no longer exists.
 
 library(rcicr)
 
-# Graphical parameters are changed below to draw the images without margins;
-# this records the originals so the last chunk can put them back.
+# CRAN asks that a vignette restore any graphical parameters it changes, so this
+# records them and the last chunk puts them back. The show() helper below already
+# restores the margins it sets, so this pair is a safety net -- and the pattern to
+# copy into your own scripts.
 old_par <- par(no.readonly = TRUE)
 ```
 
