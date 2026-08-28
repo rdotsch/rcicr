@@ -74,3 +74,45 @@ make_face_set <- function(dir, n = 6, size = 16) {
   }
   files
 }
+
+# A simulated 2IFC observer for the latent module.
+#
+# The observer has a hidden target latent and, on each trial, picks whichever of
+# the two rendered faces is closer to it. In latent space that reduces to the
+# sign of the perturbation's projection onto target - base, which is what makes
+# the recovered direction predictable rather than merely plausible: under
+# Gaussian perturbations of covariance S the response-weighted mean estimates
+# S %*% (target - base), not (target - base) itself.
+simulate_latent_observer <- function(latent_params, base_latent, target_latent) {
+  preference <- target_latent - base_latent
+  projection <- as.vector(latent_params %*% preference)
+
+  ifelse(projection > 0, 1, -1)
+}
+
+# What the response-weighted mean converges to for that observer: the preference
+# direction weighted by the sampling covariance.
+expected_latent_direction <- function(generator, base_latent, target_latent, latent_sigma = 1) {
+  (latent_sigma * generator$latent_sd)^2 * (target_latent - base_latent)
+}
+
+# A whole latent pipeline in one call: a generator, a stimulus set and the
+# .Rdata that links them. Lives here rather than in a test file so it is visible
+# to every test that needs one, and so it can be extended in one place.
+latent_fixture <- function(env = parent.frame(), n_trials = 20, n_components = 3, n_faces = 6) {
+  dir <- withr::local_tempdir(.local_envir = env)
+  out <- withr::local_tempdir(.local_envir = env)
+  generator <- latentGeneratorPCA(make_face_set(dir, n = n_faces),
+                                  n_components = n_components, img_size = 16)
+  stimuli <- generateStimuliLatent2IFC(generator, n_trials = n_trials,
+                                       stimulus_path = out, seed = 1,
+                                       save_as_png = FALSE)
+  list(generator = generator, stimuli = stimuli, out = out)
+}
+
+# A generator with enough dimensions for a recovery target to be interesting.
+recovery_generator <- function(env = parent.frame(), n_components = 6, n_faces = 12, size = 16) {
+  dir <- withr::local_tempdir(.local_envir = env)
+  latentGeneratorPCA(make_face_set(dir, n = n_faces, size = size),
+                     n_components = n_components, img_size = size)
+}

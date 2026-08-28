@@ -25,6 +25,16 @@
   As in the pixel-noise pipeline the accompanying .Rdata file is the only link to the analysis
   half, and nothing about the stimuli is recoverable without it.
 
+  `generateLatentCI()` turns the responses into a direction in latent space and renders the face
+  at the end of it. Its `latent_scaling` argument is the same trade-off the pixel pipeline's
+  `scaling` makes: the default `sd` moves the face a stated number of standard deviations, which
+  makes every classification image equally visible and none comparable with another, while
+  `constant` keeps magnitudes comparable across participants. `computeLatentInfoVal2IFC()` is
+  what tells a consistent participant from one answering at random, since under `sd` scaling the
+  picture cannot. Its null comes from permuting the observed responses, so it needs no rendering
+  and nothing is cached in the stimulus file; it is a different measure from
+  `computeInfoVal2IFC()` and the two numbers are not comparable.
+
   `latentGeneratorPCA()` is the generator: an eigenface model built in base R from a set of
   aligned face images. It is a much weaker face model than a generative adversarial network and
   renders blurred averages rather than photographs, and it is what lets the rest of the module be

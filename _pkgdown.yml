@@ -79,6 +79,8 @@ reference:
       not yet stable.
     contents:
       - generateStimuliLatent2IFC
+      - generateLatentCI
+      - computeLatentInfoVal2IFC
       - latentGeneratorPCA
 
   - title: Package
