@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__github__create_pull_request|mcp__github__update_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "msg=\"CONTRIBUTING.md -> Pull requests: write for the state the change ends in. State what the change is and why it is right. Leave out the route: attempts made, constraints weighed or overridden, verification performed along the way, and how the decision was reached. Keep a rejected alternative only if someone would otherwise retry it, and give it one line.\"; jq -n --arg m \"$msg\" '{hookSpecificOutput:{hookEventName:\"PreToolUse\",additionalContext:$m}}'",
+            "statusMessage": "PR body: end state, not route"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "c=$(jq -r '.tool_input.command // \"\"'); case \"$c\" in *\"git commit\"*) msg=\"CONTRIBUTING.md -> Pull requests: write for the state the change ends in. The commit message states what the change is and why it is right, not the route taken to it. A squash erases the branch history, so narration of attempts and deliberation reaches no one.\";; *\"gh pr create\"*|*\"gh pr edit\"*) msg=\"CONTRIBUTING.md -> Pull requests: write for the state the change ends in. State what the change is and why it is right. Leave out the route: attempts made, constraints weighed or overridden, verification performed along the way, and how the decision was reached. Keep a rejected alternative only if someone would otherwise retry it, and give it one line.\";; *) exit 0;; esac; jq -n --arg m \"$msg\" '{hookSpecificOutput:{hookEventName:\"PreToolUse\",additionalContext:$m}}'",
+            "statusMessage": "End state, not route"
+          }
+        ]
+      }
+    ]
+  }
+}
