@@ -116,3 +116,19 @@ recovery_generator <- function(env = parent.frame(), n_components = 6, n_faces =
   latentGeneratorPCA(make_face_set(dir, n = n_faces, size = size),
                      n_components = n_components, img_size = size)
 }
+
+# The simulated observer for the adaptive search: it sees the two faces as
+# latents and picks whichever is closer to its hidden target. Unlike
+# simulate_latent_observer() this works trial by trial, because the search moves
+# the centre between generations and the preference direction moves with it.
+latent_observer_callback <- function(target) {
+  function(trial) {
+    if (sum((trial$latent_original - target)^2) < sum((trial$latent_inverted - target)^2)) 1 else -1
+  }
+}
+
+# Distance from a latent to a target, in standard deviations of the generator's
+# training faces, so the number is comparable across generators.
+latent_sd_distance <- function(generator, latent, target) {
+  sqrt(sum(((latent - target) / generator$latent_sd)^2))
+}

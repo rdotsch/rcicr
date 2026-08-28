@@ -80,6 +80,7 @@ reference:
     contents:
       - generateStimuliLatent2IFC
       - generateLatentCI
+      - searchLatent2IFC
       - computeLatentInfoVal2IFC
       - latentGeneratorPCA
 

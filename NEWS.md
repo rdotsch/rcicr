@@ -35,6 +35,16 @@
   and nothing is cached in the stimulus file; it is a different measure from
   `computeInfoVal2IFC()` and the two numbers are not comparable.
 
+  `searchLatent2IFC()` runs the task across generations, moving the point the stimuli vary around
+  towards whatever the participant is choosing instead of sampling once around a fixed point. A
+  single round of trials cannot say how far along the estimated direction to go, because a 2IFC
+  response is a sign and a sign carries no magnitude; the scaling constant that turns a direction
+  into a face is the researcher's choice. Re-centring supplies the distance. Against simulated
+  observers given 300 trials each, the search landed 0.46 standard deviations from the target
+  where a single round at the default scaling landed 1.83, and it beat the best distance any
+  scaling constant could have given that single round, in all 12 runs. It can be run in one call
+  with a response callback, or one generation per call for a task that happens in another program.
+
   `latentGeneratorPCA()` is the generator: an eigenface model built in base R from a set of
   aligned face images. It is a much weaker face model than a generative adversarial network and
   renders blurred averages rather than photographs, and it is what lets the rest of the module be
