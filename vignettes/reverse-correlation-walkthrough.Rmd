@@ -32,6 +32,12 @@ instruction pointed at a branch that no longer exists.
 
 ```{r setup}
 library(rcicr)
+
+# CRAN asks that a vignette restore any graphical parameters it changes, so this
+# records them and the last chunk puts them back. The show() helper below already
+# restores the margins it sets, so this pair is a safety net -- and the pattern to
+# copy into your own scripts.
+old_par <- par(no.readonly = TRUE)
 ```
 
 One small helper, used throughout to display an image matrix:
@@ -417,3 +423,7 @@ citation("rcicr")
 
 If you use the technique, cite the method papers as well as the software — see the
 package's `CITATION` file and the README for the relevant references.
+
+```{r reset-par, include = FALSE}
+par(old_par)
+```
