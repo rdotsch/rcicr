@@ -207,6 +207,8 @@ generator <- latentGeneratorCommand(
 
 The shipped script prints values for `latent_mean` and `latent_sd` when run with `--report-stats`. They decide what `latent_sigma = 1` means, so they are worth getting from the network rather than guessing.
 
+A GPU is not required for any of this. NVIDIA's custom CUDA operations each ship a pure-PyTorch reference implementation that runs when no GPU is present, so the script works on CPU after printing warnings about the fallback. It is slow there, on the order of seconds per 1024px image, and a 256px checkpoint is much faster and needs no other change. That is usually fast enough regardless, because `generateStimuliLatent2IFC()` renders a whole stimulus set in one batch before the experiment runs rather than a face at a time while a participant waits. The exception is `searchLatent2IFC()` with a `respond` callback, which renders between generations; without a GPU, use its resumable mode, which batches each generation instead.
+
 Such a generator is too large to store, so the stimulus file records a fingerprint of it instead of the model. `generateLatentCI()` then needs the generator handed back to it, and refuses one whose fingerprint does not match: a classification image rendered through the wrong model is a face that looks entirely plausible and belongs to nobody. Passing `weights` ties the fingerprint to the model file, so swapping the weights behind the same script is caught.
 
 ## What these pictures are, and are not

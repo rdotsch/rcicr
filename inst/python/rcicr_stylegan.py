@@ -14,6 +14,19 @@ order of the rows.
 This needs a StyleGAN2 or StyleGAN3 checkout on sys.path, plus torch. Neither
 is an rcicr dependency, because rcicr only ever runs the command.
 
+A GPU is not required. NVIDIA's custom CUDA operations each ship a pure-PyTorch
+reference implementation, which is what runs when the plugin cannot be compiled
+or the tensors are not on a GPU, so this script works on CPU after printing
+warnings about the fallback. It is slow there, on the order of seconds per
+1024px image rather than milliseconds, and a 256px checkpoint is much faster
+and needs no other change, resolution being a property of the network.
+
+That is usually fast enough anyway, because rcicr renders a whole stimulus set
+in one batch before the experiment runs rather than a face at a time while a
+participant waits. The exception is searchLatent2IFC() with a respond callback,
+which renders between generations; its resumable mode batches each generation
+instead and is the one to use without a GPU.
+
 Point rcicr at it with, in R:
 
     generator <- latentGeneratorCommand(
@@ -100,7 +113,8 @@ def main(argv=None):
     parser.add_argument("--network", required=True, help="path to the .pkl checkpoint")
     parser.add_argument("--space", default="w", choices=["z", "w", "w+"])
     parser.add_argument("--truncation", type=float, default=1.0)
-    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--device", default="cuda",
+                        help="falls back to cpu on its own when no GPU is present")
     parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--report-stats", type=int, default=0, metavar="N",
                         help="print latent_mean and latent_sd from N samples, then exit")
