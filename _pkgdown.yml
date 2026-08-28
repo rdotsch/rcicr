@@ -71,6 +71,15 @@ reference:
       - generateGabor
       - deg2rad
 
+  - title: Latent-space reverse correlation (experimental)
+    desc: >
+      Reverse correlation in the latent space of a generative face model rather
+      than in the sinusoid basis. Switched off unless
+      options(rcicr.experimental = TRUE) is set, because the numeric output is
+      not yet stable.
+    contents:
+      - latentGeneratorPCA
+
   - title: Package
     contents:
       - rcicr-package

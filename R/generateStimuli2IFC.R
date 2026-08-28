@@ -59,74 +59,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
   # Before the noise basis, which is slow at the default 512px, and before the
   # directory is created.
-  base_faces <- list()
-
-  for (base_face in names(base_face_files)) {
-    # Read base face
-    filename <- base_face_files[[base_face]]
-    img_format <- baseImageFormat(filename)
-
-    img <- tryCatch(
-      if (img_format == 'png') png::readPNG(filename) else jpeg::readJPEG(filename),
-      error = function(e) {
-        stop(paste0('Base image "', base_face, '" (', filename, ') could not ',
-            'be read as ', img_format, ': ', conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-
-    # Check if base face is square. If not, throw an error
-    if (dim(img)[1] != dim(img)[2]) {
-      stop(paste0('Base image "', base_face, '" (', filename, ') is not ',
-        'square! It\'s ', dim(img)[1], ' by ', dim(img)[2],
-        ' pixels. Please use a square base face.'
-      ))
-    }
-
-    # Change base face to greyscale if necessary
-    if (length(dim(img)) == 3) {
-      img <- apply(img, c(1, 2), mean)
-    }
-
-    # Check that the base face matches the requested stimulus size. Automatic
-    # resizing used to happen here via biOps, but that dependency was dropped
-    # and never replaced, so a mismatch would otherwise surface much later as
-    # an opaque "non-conformable arrays" error from inside a parallel worker
-    # (when the noise is added to the base image).
-    if (nrow(img) != img_size) {
-      stop(paste0('Base image "', base_face, '" (', filename, ') is ',
-        nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
-        img_size, '. rcicr does not resize base images: please ',
-        'either resize the image to ', img_size, ' by ', img_size,
-        ' pixels, or call generateStimuli2IFC() with img_size = ',
-        nrow(img), '.'
-      ))
-    }
-
-    # If necessary, rescale to maximize contrast
-    if (maximize_baseimage_contrast) {
-      # (img - min) / (max - min) is 0/0 on a uniform image, and the all-NaN
-      # base face went into the .Rdata unremarked (#176). Only an error here:
-      # with the rescale off a flat base image is usable and produces valid
-      # stimuli, so rejecting it outright would break a legitimate call.
-      if (max(img) == min(img)) {
-        stop(paste0('Base image "', base_face, '" (', filename, ') has no ',
-          'contrast: every pixel is ', min(img), '. Contrast cannot ',
-          'be maximized on a uniform image, and doing so would make ',
-          'the base image entirely NaN. Use a base image with some ',
-          'variation, or call generateStimuli2IFC() with ',
-          'maximize_baseimage_contrast = FALSE.'
-        ))
-      }
-
-      img <- (img - min(img)) / (max(img) - min(img))
-    }
-
-    # Save base image to list
-    base_faces[[base_face]] <- img
-  }
+  base_faces <- readBaseImages(
+    base_face_files, img_size, maximize_baseimage_contrast, 'generateStimuli2IFC'
+  )
 
   # Initialize #
   p <- generateNoisePattern(img_size, noise_type = noise_type, nscales = nscales, sigma = sigma)
@@ -295,20 +230,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   if (return_as_dataframe) {
     return(stims)
   }
-}
-
-# Which reader a base image needs: 'png', 'jpeg', or NA.
-#
-# Anchored to the extension. The old grepl('png|PNG', filename) matched anywhere
-# in the path, so a JPEG under a directory named "png" went to png::readPNG().
-baseImageFormat <- function(filename) {
-  if (grepl('\\.png$', filename, ignore.case = TRUE)) {
-    return('png')
-  }
-  if (grepl('\\.jpe?g$', filename, ignore.case = TRUE)) {
-    return('jpeg')
-  }
-  NA_character_
 }
 
 # Check base_face_files up front and name the offending entry.

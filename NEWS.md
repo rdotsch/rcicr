@@ -1,5 +1,31 @@
 # rcicr (development version)
 
+## Experimental
+
+- **Reverse correlation can now run in the latent space of a generative face model, behind an
+  opt-in switch.** The sinusoid basis is unconstrained, so most of its parameter space is not a
+  face and a classification image comes out as a greyscale field. In a generative model's latent
+  space every point is a face, so the estimate stays on the face manifold. The arithmetic is
+  unchanged: the classification image is still a response-weighted mean of the perturbations a
+  participant chose, in a different basis. For the method see Albohn, Uddenberg and Todorov
+  (2022) in Behavior Research Methods, <https://doi.org/10.3758/s13428-022-01958-6>.
+
+  Nothing in this module runs unless you set `options(rcicr.experimental = TRUE)`, and setting it
+  means accepting a weaker guarantee than the rest of the package gives: **while the module is
+  experimental its numeric output is not covered by the promise that a stored analysis script
+  reproduces its results.** A latent classification image computed today may not reproduce under a
+  later version. Record the rcicr version alongside anything you keep. The switch is removed once
+  the numbers are pinned by a golden master and a release has shipped them.
+
+  `latentGeneratorPCA()` is the first piece: an eigenface generator built in base R from a set of
+  aligned face images. It is a much weaker face model than a generative adversarial network and
+  renders blurred averages rather than photographs, and it is what lets the rest of the module be
+  run, tested and checked with no GPU, no Python, no network and no additional package. Backends
+  for a real generative adversarial network follow, and nothing else about the pipeline changes
+  when one is supplied.
+
+  No existing function, argument, saved field or number changes.
+
 ## Documentation
 
 - **`ChangeLog` is frozen at 1.0.1 and is no longer updated.** It keeps the record of

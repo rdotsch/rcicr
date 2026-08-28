@@ -63,3 +63,14 @@ mutate_rdata <- function(.path, ..., .remove = character()) {
   save(list = ls(e), file = .path, envir = e)
   invisible(.path)
 }
+
+# A set of distinct synthetic faces for the latent module, which needs several
+# images rather than one to have a face space at all. Each gets its own seed, so
+# the set has variation to decompose; identical images leave nothing to build.
+make_face_set <- function(dir, n = 6, size = 16) {
+  files <- file.path(dir, sprintf('face%02d.png', seq_len(n)))
+  for (i in seq_along(files)) {
+    make_square_png(files[i], size = size, seed = i)
+  }
+  files
+}
