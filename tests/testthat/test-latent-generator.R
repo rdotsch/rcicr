@@ -17,6 +17,7 @@ make_generator <- function(..., probe = TRUE) {
 }
 
 test_that("a well formed generator validates and renders", {
+  withr::local_options(rcicr.experimental = TRUE)
   generator <- make_generator()
 
   expect_s3_class(generator, 'rcicr_generator')
@@ -28,6 +29,7 @@ test_that("a well formed generator validates and renders", {
 })
 
 test_that("renderLatent accepts a bare vector as one latent", {
+  withr::local_options(rcicr.experimental = TRUE)
   generator <- make_generator()
   expect_equal(dim(renderLatent(generator, c(0, 0))), c(1, 4, 4))
 })
@@ -75,6 +77,7 @@ test_that("a render() leaving [0, 1] is rejected, naming the range", {
 })
 
 test_that("latents of the wrong width are rejected before reaching render()", {
+  withr::local_options(rcicr.experimental = TRUE)
   generator <- make_generator(render = function(latents) stop("render should not be reached"))
   expect_error(renderLatent(generator, matrix(0, nrow = 1, ncol = 5), validate = FALSE),
                'latent_dim is 2')
@@ -87,4 +90,15 @@ test_that("fingerprints separate different content and repeat for the same", {
   # Ordering has to move the fingerprint, or a permuted component matrix would
   # pass as the generator that made the stimuli.
   expect_false(identical(fingerprintNumeric(c(1, 2, 3)), fingerprintNumeric(c(3, 2, 1))))
+})
+
+test_that("validating a generator does not need the experimental option", {
+  # validateGenerator() renders the centre of the space to check the contract.
+  # That is the package checking itself, so it must work whether or not the
+  # caller has opened the gate, or building a generator would fail inside its
+  # own validation.
+  withr::local_options(rcicr.experimental = NULL)
+
+  expect_silent(validateGenerator(make_generator()))
+  expect_error(renderLatent(make_generator(), c(0, 0)), 'experimental')
 })

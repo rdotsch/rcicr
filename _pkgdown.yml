@@ -24,6 +24,9 @@ articles:
     contents:
       - getting-started
       - reverse-correlation-walkthrough
+  - title: Experimental
+    contents:
+      - articles/latent-reverse-correlation
   - title: Advisories
     contents:
       - articles/rcicr-individual-ci-advisory
@@ -83,6 +86,8 @@ reference:
       - searchLatent2IFC
       - computeLatentInfoVal2IFC
       - latentGeneratorPCA
+      - latentGeneratorCommand
+      - renderLatent
 
   - title: Package
     contents:

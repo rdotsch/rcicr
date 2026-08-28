@@ -95,10 +95,14 @@ for (i in seq_along(faces)) {
 }
 generator <- latentGeneratorPCA(faces, n_components = 3, img_size = 16)
 
+# Its own directory, not tempdir() itself: the .Rdata file written here
+# would otherwise sit among any others already there.
+stimulus_path <- file.path(tempdir(), "rcicr_latent_example")
+
 generateStimuliLatent2IFC(
   generator = generator,
   n_trials = 4,
-  stimulus_path = tempdir(),
+  stimulus_path = stimulus_path,
   seed = 1
 )
 }

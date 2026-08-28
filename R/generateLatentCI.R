@@ -90,7 +90,8 @@
 #' generator <- latentGeneratorPCA(faces, n_components = 3, img_size = 16)
 #'
 #' stimuli <- generateStimuliLatent2IFC(
-#'   generator, n_trials = 20, stimulus_path = tempdir(),
+#'   generator, n_trials = 20,
+#'   stimulus_path = file.path(tempdir(), "rcicr_latent_ci_example"),
 #'   seed = 1, save_as_png = FALSE
 #' )
 #'
@@ -98,7 +99,7 @@
 #'   stimuli = 1:20,
 #'   responses = rep(c(1, -1), 10),
 #'   rdata = stimuli$rdata,
-#'   targetpath = tempdir()
+#'   targetpath = file.path(tempdir(), "rcicr_latent_ci_example")
 #' )
 #' dim(ci$ci_image)
 generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = NULL, participants = NA, latent_scaling = 'sd', scaling_constant = 2, antiCI = FALSE, save_as_png = TRUE, filename = '') {
@@ -143,8 +144,8 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
                                generator$latent_sd)
 
   latent_ci <- stored$base_latent + scaled
-  ci_image <- renderLatent(generator, latent_ci, validate = FALSE)[1, , ]
-  base_image <- renderLatent(generator, stored$base_latent, validate = FALSE)[1, , ]
+  ci_image <- renderUnchecked(generator, latent_ci, validate = FALSE)[1, , ]
+  base_image <- renderUnchecked(generator, stored$base_latent, validate = FALSE)[1, , ]
 
   if (save_as_png) {
     label <- if (filename == '') latentLabel(rdata) else filename

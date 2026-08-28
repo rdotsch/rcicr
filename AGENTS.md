@@ -65,6 +65,7 @@ duplicated rule drifts, and the copy a reader hits first is then wrong.
 | `MAINTENANCE.md` | how the repo's CI, gates and generated files are wired | 1800 |
 | `SECURITY.md` | vulnerability reporting and dependency posture | 600 |
 | `DECISIONS.md` | why the **package** behaves as it does | 5200 |
+| `DECISIONS-latent.md` | the same, for the gated latent-space module | 1800 |
 | `NEWS.md` | what changed for users | none — trimmed at each release |
 
 Budgets are in **words, not lines**: a line budget is defeated by writing longer lines, which

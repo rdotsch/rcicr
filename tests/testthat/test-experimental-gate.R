@@ -1,6 +1,10 @@
 # Every export in the latent module is gated, and nothing else is.
 
-latent_exports <- c('latentGeneratorPCA')
+# Every export of the latent module. A new one added without a gate is what
+# this list exists to catch, so it is written out rather than derived.
+latent_exports <- c('latentGeneratorPCA', 'latentGeneratorCommand', 'renderLatent',
+                    'generateStimuliLatent2IFC', 'generateLatentCI',
+                    'searchLatent2IFC', 'computeLatentInfoVal2IFC')
 
 test_that("the latent exports refuse to run with the option unset", {
   withr::local_options(rcicr.experimental = NULL)
@@ -21,6 +25,14 @@ test_that("the gate opens only for TRUE", {
 
   withr::local_options(rcicr.experimental = TRUE)
   expect_true(requireExperimental('someFunction'))
+})
+
+test_that("the list above is every export of the latent module", {
+  # A gate that a new export forgets is invisible until someone reaches it, so
+  # the roster is checked against the package rather than trusted.
+  latent_named <- grep('^(latent|renderLatent|generateStimuliLatent|generateLatentCI|searchLatent|computeLatentInfoVal)',
+                       getNamespaceExports('rcicr'), value = TRUE)
+  expect_setequal(latent_named, latent_exports)
 })
 
 test_that("the existing exports are not gated", {

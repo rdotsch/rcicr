@@ -128,7 +128,9 @@ latent_observer_callback <- function(target) {
 }
 
 # Distance from a latent to a target, in standard deviations of the generator's
-# training faces, so the number is comparable across generators.
+# training faces. The root mean square, matching what applyLatentScaling() and
+# latentNorm() mean by a displacement of so many standard deviations, so the
+# number is comparable across generators of different dimensionality.
 latent_sd_distance <- function(generator, latent, target) {
-  sqrt(sum(((latent - target) / generator$latent_sd)^2))
+  sqrt(mean(((latent - target) / generator$latent_sd)^2))
 }

@@ -1,0 +1,215 @@
+---
+title: "Reverse correlation in a generative model's latent space"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6, fig.height = 3)
+options(rcicr.experimental = TRUE)
+library(rcicr)
+```
+
+Ordinary reverse correlation adds sinusoid noise to a base face. That basis is unconstrained, which is its strength and its cost: it can express anything, and almost every point in it is not a face. The classification image comes out as a grey field that a reader has to be told how to see.
+
+Reverse correlation in the latent space of a generative face model swaps the basis and leaves the arithmetic alone. The classification image is still a response-weighted mean of the perturbations a participant chose. Because every point in that space is a face, the answer is a face too. For the method see Albohn, Uddenberg and Todorov (2022), *Behavior Research Methods*, <https://doi.org/10.3758/s13428-022-01958-6>.
+
+**This module is experimental and switched off by default.** Nothing in it runs unless you set `options(rcicr.experimental = TRUE)`, and setting it means accepting that its numeric output is not yet covered by the guarantee that a stored analysis script reproduces its results. Record the rcicr version alongside anything you keep.
+
+## The generator
+
+R cannot run a StyleGAN, so rcicr separates the method from the renderer. A generator is an object that turns latent vectors into pixels, and everything else works on latents.
+
+`latentGeneratorPCA()` builds one in base R from a set of aligned face images: an eigenface model, with the mean face at the origin. It is a far weaker face model than a generative adversarial network and renders blurred averages rather than photographs. It is here so the whole pipeline runs with no GPU, no Python and no network, which is what this page relies on. [Using a real generative model](#using-a-real-generative-model) below covers the swap.
+
+```{r generator}
+# Synthetic images stand in for a set of aligned face photographs. They are
+# built from parts that vary independently, because a set that varies in only
+# one way gives a face space with one direction in it and nothing to search.
+axis <- seq(-1, 1, length.out = 48)
+blob <- function(cx, cy, width) {
+  outer(axis, axis, function(x, y) exp(-(((x - cx)^2 + (y - cy)^2) / width)))
+}
+
+faces <- replicate(30, tempfile(fileext = ".png"))
+for (i in seq_along(faces)) {
+  set.seed(i)
+  p <- runif(6)
+  img <- 0.5 * blob(0, 0.35, 0.5 + p[1]) +                        # brow
+    0.6 * blob(-0.35 - 0.1 * p[2], -0.1, 0.03 + 0.03 * p[3]) +    # eyes
+    0.6 * blob(0.35 + 0.1 * p[2], -0.1, 0.03 + 0.03 * p[3]) +
+    0.5 * blob(0, -0.5 - 0.2 * p[4], 0.02 + 0.08 * p[5]) +        # mouth
+    0.3 * p[6] * blob(0, 0, 2)                                    # overall tone
+  png::writePNG((img - min(img)) / diff(range(img)), faces[i])
+}
+
+generator <- latentGeneratorPCA(faces, n_components = 8, img_size = 48)
+round(generator$latent_sd, 3)
+```
+
+`latent_sd` is how far the training faces spread along each dimension. Every perturbation size in this module is expressed in those units, so `latent_sigma = 1` moves a face about as much as real faces differ from each other, whatever scale the underlying space happens to use.
+
+Those numbers are also worth a look before running anything. A set whose first component dwarfs the rest has most of its variation along one direction, and both the classification image and the search will be dominated by it, because that is genuinely where the faces differ. The fix is a more varied set of images, not a setting.
+
+## Generating stimuli
+
+```{r stimuli}
+stimulus_path <- file.path(tempdir(), "latent_stimuli")
+
+stimuli <- generateStimuliLatent2IFC(
+  generator     = generator,
+  n_trials      = 300,
+  stimulus_path = stimulus_path,
+  latent_sigma  = 1,
+  seed          = 1,
+  save_as_png   = FALSE
+)
+```
+
+Each trial draws one perturbation and renders two faces: the base latent plus it, and the base latent minus it. That is the same original-and-inverted pair the sinusoid pipeline writes, so a task script that already codes `1` for the original and `-1` for the inverted image needs no reshaping. The `%05d` number in a stimulus filename is the trial number, and that number indexes the perturbations.
+
+As in the pixel pipeline, the `.Rdata` file is the only link to the analysis half and nothing about the stimuli is recoverable without it. Back it up with the response data.
+
+## Computing the classification image
+
+Rather than run a study to write this page, the responses below come from a simulated observer with a hidden target face, who picks whichever of the two images is closer to it.
+
+```{r responses}
+set.seed(42)
+target <- stimuli$base_latent + generator$latent_sd * rnorm(8, sd = 2)
+
+responses <- ifelse(
+  as.vector(stimuli$latent_params %*% (target - stimuli$base_latent)) > 0, 1, -1
+)
+```
+
+```{r ci}
+ci <- generateLatentCI(
+  stimuli     = 1:300,
+  responses   = responses,
+  rdata       = stimuli$rdata,
+  save_as_png = FALSE
+)
+```
+
+```{r ci-plot, echo = FALSE}
+show <- function(images, titles) {
+  op <- par(mfrow = c(1, length(images)), mar = c(0, 0, 2, 0))
+  on.exit(par(op))
+  for (i in seq_along(images)) {
+    plot.new(); plot.window(c(0, 1), c(0, 1), asp = 1)
+    rasterImage(images[[i]], 0, 0, 1, 1)
+    title(titles[i])
+  }
+}
+show(list(ci$base_image, ci$ci_image, renderLatent(generator, target)[1, , ]),
+     c("base face", "classification image", "what the observer wanted"))
+```
+
+## Telling signal from noise
+
+The default `latent_scaling = "sd"` moves the face a stated number of standard deviations, which makes every classification image equally visible. That is convenient and it means **the picture cannot be read as evidence**: a participant answering at random produces one that looks just as strong.
+
+`computeLatentInfoVal2IFC()` is what separates them. Its null comes from permuting the observed responses over the same trials, so it holds the stimuli fixed and asks only what the responses contributed.
+
+```{r infoval}
+random_ci <- generateLatentCI(
+  stimuli = 1:300, responses = sample(c(-1, 1), 300, replace = TRUE),
+  rdata = stimuli$rdata, save_as_png = FALSE
+)
+
+real <- computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:300, iter = 1000, response_seed = 1)
+noise <- computeLatentInfoVal2IFC(random_ci, stimuli$rdata, 1:300, iter = 1000, response_seed = 1)
+
+c(real = real$infoVal, random = noise$infoVal)
+c(real = real$p, random = noise$p)
+```
+
+Use `latent_scaling = "constant"` when classification images are shown side by side as evidence: it divides every direction by the same number, so their magnitudes stay comparable.
+
+## Searching for the face rather than the direction
+
+A single round of trials says which way a representation lies and nothing about how far. That is a property of the response, not of the estimator: a two-alternative choice is a sign, and a sign has no magnitude. The constant that turns the direction into a face is the researcher's choice, and it decides where the answer lands.
+
+`searchLatent2IFC()` supplies the distance by re-centring. Each generation re-estimates the direction from the new position and steps along it. How far to step cannot come from the estimate either, so it comes from whether successive generations agree: the step grows while they point the same way, meaning the centre is still short, and shrinks when they reverse, meaning it went past.
+
+```{r search}
+observer <- function(trial) {
+  if (sum((trial$latent_original - target)^2) < sum((trial$latent_inverted - target)^2)) 1 else -1
+}
+
+search <- searchLatent2IFC(
+  generator     = generator,
+  n_generations = 10,
+  n_trials      = 30,
+  respond       = observer,
+  save_as_png   = FALSE,
+  seed          = 1
+)
+
+search$generations
+```
+
+`cosine_with_previous` is the column to read, alongside `step_size`.
+
+- **Alternating in sign, with `step_size` falling**: the search is closing in, stepping past the answer by less each time.
+- **Falling towards zero**: it has arrived. Once the centre reaches what the participant is choosing, their responses stop carrying a direction and successive estimates become unrelated.
+- **Positive throughout, with `step_size` still growing**: it ran out of generations while still travelling. Every generation agreed on the way to go and none of them got there. Run more.
+- **Near zero from the very first generation**: the participant was never discriminating, and no search fixes that.
+
+```{r search-distance}
+# Root mean square across dimensions, which is what this module means by a
+# displacement of so many standard deviations.
+in_sd <- function(latent) sqrt(mean(((latent - target) / generator$latent_sd)^2))
+
+c(start = in_sd(search$base_latent),
+  one_round = in_sd(ci$latent_ci),
+  after_search = in_sd(search$latent))
+```
+
+```{r search-plot, echo = FALSE}
+show(list(search$base_image, search$latent_image, renderLatent(generator, target)[1, , ]),
+     c("base face", "after the search", "what the observer wanted"))
+```
+
+The same trial budget spent on one round and spent across generations does not reach the same place. The single round had the direction right; what it could not know was how far to go.
+
+### Running it against real participants
+
+The example above hands `searchLatent2IFC()` a function that answers every trial, which suits a simulation or a live harness. Real trials usually happen in another program, so leaving out `respond` runs one generation per call instead: the stimuli and a state file are written, you run the trials, and you call it again with `state` and the responses.
+
+```{r resumable, eval = FALSE}
+step <- searchLatent2IFC(generator, n_generations = 10, n_trials = 30,
+                         stimulus_path = "./search")
+
+# Run the trials in step$state's generation, collect responses, then:
+step <- searchLatent2IFC(generator, n_generations = 10, n_trials = 30,
+                         stimulus_path = "./search",
+                         state = step$state, responses = collected)
+```
+
+## Using a real generative model
+
+Nothing above changes when the generator does. `latentGeneratorCommand()` renders by running an external program: rcicr writes the latents to a file, runs the command, and reads back the images it wrote. rcicr never loads the model and gains no dependency from it.
+
+```{r stylegan, eval = FALSE}
+generator <- latentGeneratorCommand(
+  command     = "python",
+  args        = c(system.file("python", "rcicr_stylegan.py", package = "rcicr"),
+                  "--network", "ffhq.pkl", "--space", "w"),
+  latent_dim  = 512,
+  img_size    = 1024,
+  space       = "w",
+  latent_mean = w_average,
+  latent_sd   = w_spread,
+  weights     = "ffhq.pkl"
+)
+```
+
+The shipped script prints values for `latent_mean` and `latent_sd` when run with `--report-stats`. They decide what `latent_sigma = 1` means, so they are worth getting from the network rather than guessing.
+
+Such a generator is too large to store, so the stimulus file records a fingerprint of it instead of the model. `generateLatentCI()` then needs the generator handed back to it, and refuses one whose fingerprint does not match: a classification image rendered through the wrong model is a face that looks entirely plausible and belongs to nobody. Passing `weights` ties the fingerprint to the model file, so swapping the weights behind the same script is caught.
+
+## What these pictures are, and are not
+
+A generative model carries the composition of its training set into every stimulus it renders. A model trained mostly on one demographic explores a space centred there, and a classification image drawn from it inherits that centre. This is not something the analysis can correct for afterwards: it is a property of which faces were reachable at all.
+
+The result is a picture of a participant's representation. It is not a photograph of a person, and it is not evidence about any real individual who happens to resemble it.

@@ -45,8 +45,17 @@
   scaling constant could have given that single round, in all 12 runs. It can be run in one call
   with a response callback, or one generation per call for a task that happens in another program.
 
-  `latentGeneratorPCA()` is the generator: an eigenface model built in base R from a set of
-  aligned face images. It is a much weaker face model than a generative adversarial network and
+  Generators are pluggable, and the module never loads a model itself.
+  `latentGeneratorCommand()` renders by running an external program: rcicr writes the latents to
+  a file, runs the command, and reads back the images it wrote, so a StyleGAN under Python works
+  as the renderer while rcicr gains no dependency. A helper script for StyleGAN2 and StyleGAN3
+  ships with the package at `system.file("python", "rcicr_stylegan.py", package = "rcicr")`.
+  Because such a generator is too large to store, the stimulus file records a fingerprint of it,
+  and the analysis half refuses a generator that does not match: a classification image rendered
+  through the wrong model is a face that looks entirely plausible and belongs to nobody.
+
+  `latentGeneratorPCA()` is the generator that needs nothing: an eigenface model built in base R
+  from a set of aligned face images. It is a much weaker face model than a generative adversarial network and
   renders blurred averages rather than photographs, and it is what lets the rest of the module be
   run, tested and checked with no GPU, no Python, no network and no additional package. Backends
   for a real generative adversarial network follow, and nothing else about the pipeline changes

@@ -64,10 +64,14 @@
 #' }
 #' generator <- latentGeneratorPCA(faces, n_components = 3, img_size = 16)
 #'
+#' # Its own directory, not tempdir() itself: the .Rdata file written here
+#' # would otherwise sit among any others already there.
+#' stimulus_path <- file.path(tempdir(), "rcicr_latent_example")
+#'
 #' generateStimuliLatent2IFC(
 #'   generator = generator,
 #'   n_trials = 4,
-#'   stimulus_path = tempdir(),
+#'   stimulus_path = stimulus_path,
 #'   seed = 1
 #' )
 generateStimuliLatent2IFC <- function(generator, n_trials = 300, stimulus_path, base_latent = NULL, label = 'rcic_latent', latent_sigma = 1, seed = 1, batch_size = 32, save_as_png = TRUE, save_rdata = TRUE) {
@@ -156,8 +160,8 @@ writeLatentStimuli <- function(generator, base_latent, latent_params, stimulus_p
     deltas <- latent_params[trials, , drop = FALSE]
 
     base <- matrix(base_latent, nrow = length(trials), ncol = length(base_latent), byrow = TRUE)
-    originals <- renderLatent(generator, base + deltas, validate = FALSE)
-    inverted <- renderLatent(generator, base - deltas, validate = FALSE)
+    originals <- renderUnchecked(generator, base + deltas, validate = FALSE)
+    inverted <- renderUnchecked(generator, base - deltas, validate = FALSE)
 
     for (i in seq_along(trials)) {
       png::writePNG(originals[i, , ], latentStimulusFile(stimulus_path, label, seed, trials[i], 'ori'))

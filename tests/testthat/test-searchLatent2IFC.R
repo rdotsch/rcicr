@@ -73,10 +73,11 @@ test_that("the search moves towards the target and the step shrinks as it arrive
   finish <- latent_sd_distance(generator, search$latent, target)
   expect_lt(finish, start / 3)
 
-  # A fixed step could not settle. Later steps have to be smaller than early
-  # ones, which is what the saturation scaling is for.
-  steps <- sqrt(rowSums(diff(search$trajectory)^2))
-  expect_lt(mean(utils::tail(steps, 3)), mean(utils::head(steps, 3)))
+  # The step is not on a schedule: it grows while generations agree and shrinks
+  # when they disagree. Having arrived, the last steps have to be smaller than
+  # the largest one taken on the way.
+  expect_lt(mean(utils::tail(search$generations$step_size, 3)),
+            max(search$generations$step_size))
 })
 
 test_that("the trajectory and diagnostics describe every generation", {
@@ -94,8 +95,8 @@ test_that("the trajectory and diagnostics describe every generation", {
   expect_equal(search$trajectory[5, ], search$latent)
 
   expect_equal(nrow(search$generations), 4)
-  expect_named(search$generations, c('generation', 'latent_sigma', 'direction_norm',
-                                     'cosine_with_previous'))
+  expect_named(search$generations, c('generation', 'latent_sigma', 'step_size',
+                                     'direction_norm', 'cosine_with_previous'))
   expect_true(is.na(search$generations$cosine_with_previous[1]))
   expect_false(any(is.na(search$generations$cosine_with_previous[-1])))
   expect_equal(dim(search$latent_image), c(16, 16))
@@ -267,4 +268,58 @@ test_that("a base latent of the wrong width is rejected", {
                                 respond = function(trial) 1, save_as_png = FALSE,
                                 base_latent = c(1, 2)),
                'latent_dim is 3')
+})
+
+test_that("the step grows while generations agree and shrinks when they do not", {
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 4, n_faces = 8)
+
+  withr::with_seed(4, target <- generator$latent_mean + generator$latent_sd * stats::rnorm(4, sd = 3))
+  run <- searchLatent2IFC(generator, n_generations = 8, n_trials = 20,
+                          respond = latent_observer_callback(target),
+                          save_as_png = FALSE, seed = 1,
+                          alpha = 1, step_grow = 2, step_shrink = 0.5)
+
+  # Every step after the first follows the sign of that generation's agreement
+  # with the one before it, and nothing else.
+  sizes <- run$generations$step_size
+  cosines <- run$generations$cosine_with_previous
+  expect_equal(sizes[1], 1)
+  expect_equal(sizes[-1],
+               sizes[-length(sizes)] * ifelse(cosines[-1] > 0, 2, 0.5))
+
+  # A target close to the start makes the search step past it and reverse, so
+  # the step has to come back down rather than run away.
+  withr::with_seed(2, target <- generator$latent_mean + generator$latent_sd * stats::rnorm(4, sd = 0.2))
+  closing <- searchLatent2IFC(generator, n_generations = 12, n_trials = 30,
+                              respond = latent_observer_callback(target),
+                              save_as_png = FALSE, seed = 1, alpha = 4)
+
+  expect_lt(min(closing$generations$step_size), 4)
+  expect_lt(utils::tail(closing$generations$step_size, 1), max(closing$generations$step_size))
+})
+
+test_that("the search reaches a distant representation without alpha being tuned for it", {
+  skip_on_cran()
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 6, n_faces = 14)
+
+  # The step size cannot be chosen in advance, because how far the
+  # representation lies from the base face is exactly what is unknown. The
+  # adaptive step has to cope with both without being told which it is facing.
+  reached <- function(spread) {
+    withr::with_seed(round(spread * 10),
+                     target <- generator$latent_mean + generator$latent_sd * stats::rnorm(6, sd = spread))
+    search <- searchLatent2IFC(generator, n_generations = 12, n_trials = 30,
+                               respond = latent_observer_callback(target),
+                               save_as_png = FALSE, seed = 1)
+    latent_sd_distance(generator, search$latent, target) /
+      latent_sd_distance(generator, generator$latent_mean, target)
+  }
+
+  # Closes at least 80 percent of the distance whether the target is near or far.
+  expect_lt(reached(0.5), 0.2)
+  expect_lt(reached(5), 0.2)
 })

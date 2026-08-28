@@ -123,7 +123,8 @@ for (i in seq_along(faces)) {
 generator <- latentGeneratorPCA(faces, n_components = 3, img_size = 16)
 
 stimuli <- generateStimuliLatent2IFC(
-  generator, n_trials = 20, stimulus_path = tempdir(),
+  generator, n_trials = 20,
+  stimulus_path = file.path(tempdir(), "rcicr_latent_ci_example"),
   seed = 1, save_as_png = FALSE
 )
 
@@ -131,7 +132,7 @@ ci <- generateLatentCI(
   stimuli = 1:20,
   responses = rep(c(1, -1), 10),
   rdata = stimuli$rdata,
-  targetpath = tempdir()
+  targetpath = file.path(tempdir(), "rcicr_latent_ci_example")
 )
 dim(ci$ci_image)
 }

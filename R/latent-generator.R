@@ -109,7 +109,7 @@ validateGenerator <- function(generator, probe = TRUE) {
 
 # One render of the centre of the space, checked against the declared contract.
 validateRender <- function(generator) {
-  probe <- renderLatent(generator, matrix(generator$latent_mean, nrow = 1), validate = FALSE)
+  probe <- renderUnchecked(generator, matrix(generator$latent_mean, nrow = 1), validate = FALSE)
 
   expected <- c(1L, generator$img_size, generator$img_size)
   if (!is.array(probe) || length(dim(probe)) != 3 || !identical(as.integer(dim(probe)), expected)) {
@@ -142,9 +142,18 @@ validateRender <- function(generator) {
   return(invisible(TRUE))
 }
 
-# Render latents through a generator, accepting a single vector as well as a
-# matrix so callers holding one latent do not each write the same as.matrix.
 renderLatent <- function(generator, latents, validate = TRUE) {
+  requireExperimental('renderLatent')
+
+  return(renderUnchecked(generator, latents, validate))
+}
+
+# The rendering itself, reached without the gate. validateGenerator() probes a
+# generator by rendering the centre of its space, and a check the package runs
+# on its own behalf must not depend on the user-facing switch: routing it
+# through renderLatent() made building a generator fail inside its own
+# validation.
+renderUnchecked <- function(generator, latents, validate = TRUE) {
   if (validate) {
     validateGenerator(generator, probe = FALSE)
   }

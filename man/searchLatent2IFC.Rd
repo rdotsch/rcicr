@@ -15,8 +15,9 @@ searchLatent2IFC(
   responses = NULL,
   latent_sigma = 1,
   sigma_decay = 1,
-  alpha = 2,
-  step_decay = 1,
+  alpha = 1,
+  step_grow = 1.6,
+  step_shrink = 0.55,
   seed = 1,
   batch_size = 32,
   save_as_png = TRUE
@@ -64,16 +65,17 @@ noise, no annealing beat every decay tried, and by the largest margin for
 the noisiest observers.}
 
 \item{alpha}{How far the centre moves on the first generation, in standard
-deviations. Later generations move \code{alpha / generation^step_decay}.}
+deviations. Later generations set their own step, so this is a starting
+point rather than a tuning parameter: it grows while generations agree on
+the way to go and shrinks when they disagree.}
 
-\item{step_decay}{How quickly the step shrinks. The default of 1 gives the
-Robbins-Monro schedule \code{alpha / generation}, whose steps sum to
-infinity, so the search can reach an answer however far away it starts,
-while their squares converge, so the noise in each generation's estimate
-averages out instead of accumulating. Values below 1 keep the steps larger
-for longer, which reaches a distant answer sooner and settles less
-precisely. The schedule is what supplies the distance: see the note in the
-source of \code{searchStepSize} for why the responses themselves cannot.}
+\item{step_grow}{Factor the step is multiplied by when a generation agrees
+with the one before it, meaning the centre is still short of the answer.}
+
+\item{step_shrink}{Factor the step is multiplied by when a generation
+disagrees with the one before it, meaning the centre went past. The product
+of the two is below 1, so a step that grows once and shrinks once ends
+smaller than it started and an oscillation cannot sustain itself.}
 
 \item{seed}{Integer seeding the random number generator (for
 reproducibility).}
@@ -103,11 +105,14 @@ from the new position answers that. Each generation re-centres on the
 participant's running optimum, the estimated direction shrinks as the centre
 approaches what they are looking for, and the search settles there.
 
-The update is the response-weighted mean of a generation's perturbations,
-rescaled to a step of \code{alpha} standard deviations. That is the
-evolution-strategy estimate of the gradient of the participant's implicit
-preference, and it is the same estimator \code{\link{generateLatentCI}}
-computes, used as a direction of travel rather than as an answer.
+The direction of travel is the response-weighted mean of a generation's
+perturbations: the evolution-strategy estimate of the gradient of the
+participant's implicit preference, and the same estimator
+\code{\link{generateLatentCI}} computes, used to travel rather than as an
+answer. How far to move along it cannot come from that estimate, whose length
+is the same however far away the answer is, so it comes from whether
+successive generations agree: the step grows while they do and shrinks when
+they do not.
 
 \subsection{Two ways to run it}{
 
@@ -124,12 +129,22 @@ happen in another program on another day.
 
 \subsection{Reading the diagnostics}{
 
-The \code{generations} data frame reports, per generation, the length of the
-estimated direction and its cosine with the previous generation's. Once the
-centre reaches what the participant is looking for their responses stop
-carrying a direction, so successive estimates become unrelated and the cosine
-falls to around zero. A cosine that is near zero from the first generation
-means something different: they were never discriminating.
+The \code{generations} data frame reports, per generation, the step size, the
+length of the estimated direction and its cosine with the previous
+generation's. The cosine is the one to read.
+
+\itemize{
+  \item \strong{Alternating in sign, with the step size falling}: the search
+    is closing in, stepping past the answer by less each time.
+  \item \strong{Falling towards zero}: it has arrived. Once the centre
+    reaches what the participant is looking for, their responses stop
+    carrying a direction and successive estimates become unrelated.
+  \item \strong{Positive throughout, with the step size still growing}: it
+    ran out of generations while still travelling. Every generation agreed on
+    the way to go and none got there. Run more generations.
+  \item \strong{Near zero from the very first generation}: the participant
+    was never discriminating, and no search fixes that.
+}
 }
 }
 \examples{

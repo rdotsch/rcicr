@@ -12,11 +12,14 @@
 #' participant's running optimum, the estimated direction shrinks as the centre
 #' approaches what they are looking for, and the search settles there.
 #'
-#' The update is the response-weighted mean of a generation's perturbations,
-#' rescaled to a step of \code{alpha} standard deviations. That is the
-#' evolution-strategy estimate of the gradient of the participant's implicit
-#' preference, and it is the same estimator \code{\link{generateLatentCI}}
-#' computes, used as a direction of travel rather than as an answer.
+#' The direction of travel is the response-weighted mean of a generation's
+#' perturbations: the evolution-strategy estimate of the gradient of the
+#' participant's implicit preference, and the same estimator
+#' \code{\link{generateLatentCI}} computes, used to travel rather than as an
+#' answer. How far to move along it cannot come from that estimate, whose length
+#' is the same however far away the answer is, so it comes from whether
+#' successive generations agree: the step grows while they do and shrinks when
+#' they do not.
 #'
 #' \subsection{Two ways to run it}{
 #'
@@ -33,12 +36,22 @@
 #'
 #' \subsection{Reading the diagnostics}{
 #'
-#' The \code{generations} data frame reports, per generation, the length of the
-#' estimated direction and its cosine with the previous generation's. Once the
-#' centre reaches what the participant is looking for their responses stop
-#' carrying a direction, so successive estimates become unrelated and the cosine
-#' falls to around zero. A cosine that is near zero from the first generation
-#' means something different: they were never discriminating.
+#' The \code{generations} data frame reports, per generation, the step size, the
+#' length of the estimated direction and its cosine with the previous
+#' generation's. The cosine is the one to read.
+#'
+#' \itemize{
+#'   \item \strong{Alternating in sign, with the step size falling}: the search
+#'     is closing in, stepping past the answer by less each time.
+#'   \item \strong{Falling towards zero}: it has arrived. Once the centre
+#'     reaches what the participant is looking for, their responses stop
+#'     carrying a direction and successive estimates become unrelated.
+#'   \item \strong{Positive throughout, with the step size still growing}: it
+#'     ran out of generations while still travelling. Every generation agreed on
+#'     the way to go and none got there. Run more generations.
+#'   \item \strong{Near zero from the very first generation}: the participant
+#'     was never discriminating, and no search fixes that.
+#' }
 #' }
 #'
 #' @export
@@ -73,15 +86,15 @@
 #'   noise, no annealing beat every decay tried, and by the largest margin for
 #'   the noisiest observers.
 #' @param alpha How far the centre moves on the first generation, in standard
-#'   deviations. Later generations move \code{alpha / generation^step_decay}.
-#' @param step_decay How quickly the step shrinks. The default of 1 gives the
-#'   Robbins-Monro schedule \code{alpha / generation}, whose steps sum to
-#'   infinity, so the search can reach an answer however far away it starts,
-#'   while their squares converge, so the noise in each generation's estimate
-#'   averages out instead of accumulating. Values below 1 keep the steps larger
-#'   for longer, which reaches a distant answer sooner and settles less
-#'   precisely. The schedule is what supplies the distance: see the note in the
-#'   source of \code{searchStepSize} for why the responses themselves cannot.
+#'   deviations. Later generations set their own step, so this is a starting
+#'   point rather than a tuning parameter: it grows while generations agree on
+#'   the way to go and shrinks when they disagree.
+#' @param step_grow Factor the step is multiplied by when a generation agrees
+#'   with the one before it, meaning the centre is still short of the answer.
+#' @param step_shrink Factor the step is multiplied by when a generation
+#'   disagrees with the one before it, meaning the centre went past. The product
+#'   of the two is below 1, so a step that grows once and shrinks once ends
+#'   smaller than it started and an oscillation cannot sustain itself.
 #' @param seed Integer seeding the random number generator (for
 #'   reproducibility).
 #' @param batch_size Number of stimuli rendered per call into the generator.
@@ -109,7 +122,7 @@
 #'   respond = brighter, save_as_png = FALSE
 #' )
 #' search$generations
-searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimulus_path, base_latent = NULL, respond = NULL, state = NULL, responses = NULL, latent_sigma = 1, sigma_decay = 1, alpha = 2, step_decay = 1, seed = 1, batch_size = 32, save_as_png = TRUE) {
+searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimulus_path, base_latent = NULL, respond = NULL, state = NULL, responses = NULL, latent_sigma = 1, sigma_decay = 1, alpha = 1, step_grow = 1.6, step_shrink = 0.55, seed = 1, batch_size = 32, save_as_png = TRUE) {
 
   requireExperimental('searchLatent2IFC')
 
@@ -134,8 +147,8 @@ searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimu
   if (is.null(respond)) {
     return(searchGenerationStep(generator, n_generations, n_trials, stimulus_path,
                                 base_latent, state, responses, latent_sigma,
-                                sigma_decay, alpha, step_decay, seed, batch_size,
-                                save_as_png))
+                                sigma_decay, alpha, step_grow, step_shrink, seed,
+                                batch_size, save_as_png))
   }
 
   if (!is.null(state)) {
@@ -147,10 +160,11 @@ searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimu
   centre <- if (is.null(base_latent)) generator$latent_mean else as.numeric(base_latent)
   checkBaseLatent(centre, generator)
 
-  first_image <- renderLatent(generator, centre, validate = FALSE)[1, , ]
+  first_image <- renderUnchecked(generator, centre, validate = FALSE)[1, , ]
   trajectory <- matrix(centre, nrow = 1)
   diagnostics <- NULL
   previous <- NULL
+  size <- alpha
 
   for (generation in seq_len(n_generations)) {
     sigma_now <- latent_sigma * sigma_decay^(generation - 1)
@@ -160,10 +174,10 @@ searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimu
                                 stimulus_path, seed, batch_size, save_as_png)
 
     direction <- weightedLatentMean(deltas, answers)
-    step <- searchStep(direction, generator$latent_sd,
-                       searchStepSize(alpha, generation, step_decay))
+    size <- adaptSearchStep(size, direction, previous, step_grow, step_shrink)
+    step <- searchStep(direction, generator$latent_sd, size)
 
-    diagnostics <- rbind(diagnostics, searchDiagnostics(generation, sigma_now,
+    diagnostics <- rbind(diagnostics, searchDiagnostics(generation, sigma_now, size,
                                                         direction, previous,
                                                         generator$latent_sd))
     previous <- direction
@@ -175,7 +189,7 @@ searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimu
 
   return(list(
     latent = centre,
-    latent_image = renderLatent(generator, centre, validate = FALSE)[1, , ],
+    latent_image = renderUnchecked(generator, centre, validate = FALSE)[1, , ],
     base_latent = trajectory[1, ],
     base_image = first_image,
     trajectory = trajectory,
@@ -187,7 +201,7 @@ searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimu
 # One generation, written to disk and handed back for the trials to be run
 # elsewhere. The state file carries everything the next call needs, so a search
 # survives the weeks between sessions that the .Rdata contract exists for.
-searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_path, base_latent, state, responses, latent_sigma, sigma_decay, alpha, step_decay, seed, batch_size, save_as_png) {
+searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_path, base_latent, state, responses, latent_sigma, sigma_decay, alpha, step_grow, step_shrink, seed, batch_size, save_as_png) {
   if (is.null(state)) {
     if (!is.null(responses)) {
       stop('responses were given without a state file to apply them to.', call. = FALSE)
@@ -198,9 +212,9 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     checkBaseLatent(centre, generator)
 
     previous <- list(generation = 0L, centre = centre, trajectory = matrix(centre, nrow = 1),
-                     diagnostics = NULL, direction = NULL)
+                     diagnostics = NULL, direction = NULL, size = alpha)
   } else {
-    previous <- advanceSearchState(generator, state, responses, alpha, step_decay)
+    previous <- advanceSearchState(generator, state, responses, step_grow, step_shrink)
   }
 
   generation <- previous$generation + 1L
@@ -208,7 +222,7 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
   if (generation > n_generations) {
     return(list(state = NULL, generation = previous$generation, remaining = 0L,
                 latent = previous$centre,
-                latent_image = renderLatent(generator, previous$centre, validate = FALSE)[1, , ],
+                latent_image = renderUnchecked(generator, previous$centre, validate = FALSE)[1, , ],
                 trajectory = previous$trajectory,
                 generations = previous$diagnostics,
                 generator_fingerprint = generator$fingerprint))
@@ -230,9 +244,9 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     trajectory = previous$trajectory,
     diagnostics = previous$diagnostics,
     direction = previous$direction,
+    size = previous$size,
     generator_spec = generatorSpec(generator),
     n_generations = n_generations,
-    alpha = alpha,
     seed = seed
   )
 
@@ -251,7 +265,7 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
 
 # The previous generation's state plus its responses, turned into the centre the
 # next generation varies around.
-advanceSearchState <- function(generator, state, responses, alpha, step_decay) {
+advanceSearchState <- function(generator, state, responses, step_grow, step_shrink) {
   env <- new.env(parent = emptyenv())
   load(state, envir = env)
 
@@ -285,11 +299,11 @@ advanceSearchState <- function(generator, state, responses, alpha, step_decay) {
   }
 
   direction <- weightedLatentMean(stored$latent_params, responses)
-  step <- searchStep(direction, generator$latent_sd,
-                     searchStepSize(alpha, stored$generation, step_decay))
+  size <- adaptSearchStep(stored$size, direction, stored$direction, step_grow, step_shrink)
+  step <- searchStep(direction, generator$latent_sd, size)
   centre <- stored$centre + step
 
-  latest <- searchDiagnostics(stored$generation, stored$latent_sigma, direction,
+  latest <- searchDiagnostics(stored$generation, stored$latent_sigma, size, direction,
                               stored$direction, generator$latent_sd)
   diagnostics <- rbind(stored$diagnostics, latest)
 
@@ -298,35 +312,60 @@ advanceSearchState <- function(generator, state, responses, alpha, step_decay) {
     centre = centre,
     trajectory = rbind(stored$trajectory, centre),
     diagnostics = diagnostics,
-    direction = direction
+    direction = direction,
+    size = size
   ))
 }
 
-# How far the centre moves on generation g.
+# How far the centre moves, and why it cannot be a fixed schedule.
 #
 # A 2IFC response is a sign, and a sign carries no magnitude: an observer who is
 # barely sure and one who is certain answer identically. Working out what the
 # response-weighted mean converges to shows the consequence exactly. For
 # perturbations of covariance S and a preference direction u, it converges to
 # sqrt(2/pi) * S %*% u / sqrt(t(u) %*% S %*% u), whose length in standard
-# deviations is the same whatever the length of u. So the estimate says which
-# way to go and nothing at all about how far, and a step proportional to it
-# moves the same distance however close the centre already is. Measured, that
-# leaves the search circling the answer at a fixed radius: steps of 0.93, 1.05,
-# 1.15, 1.05, 0.85, 1.06, 1.05, 1.28 standard deviations across eight
-# generations, with the distance to the target bouncing between 0.3 and 1.0
-# instead of settling.
+# deviations is the same whatever the length of u. So a generation's estimate
+# says which way to go and nothing at all about how far.
 #
-# The distance has to come from the schedule instead. alpha / g^step_decay is
-# the Robbins-Monro form: the steps still sum to infinity, so the search can
-# reach an answer however far away it starts, while their squares converge, so
-# the noise in each estimate averages out rather than accumulating.
-searchStepSize <- function(alpha, generation, step_decay) {
-  return(alpha / generation^step_decay)
+# A schedule of alpha / generation^step_decay was tried and is not enough: it
+# converges only when alpha happens to suit the distance, which is exactly what
+# is unknown. Measured against simulated observers, alpha = 1 ended 0.12
+# standard deviations from a target 1.6 away and 12.23 from one 15.6 away, where
+# alpha = 3 reversed the ordering.
+#
+# The distance is in the sequence of estimates rather than in any one of them.
+# Generations that agree mean the centre is still short of the answer and every
+# step so far pointed the same way; generations that disagree mean it went past.
+# So the step grows while they agree and shrinks when they do not. That settles
+# because a step that grows once and shrinks once ends smaller than it started,
+# step_grow * step_shrink being below 1, so an oscillation cannot sustain
+# itself. Against the same observers this reached 0.75 and 3.48 where the fixed
+# schedule reached 2.92 and 12.23, and cost nothing at the near distance.
+adaptSearchStep <- function(size, direction, previous, step_grow, step_shrink) {
+  if (is.null(previous)) {
+    return(size)
+  }
+
+  if (sum(previous * direction) > 0) {
+    return(size * step_grow)
+  }
+
+  return(size * step_shrink)
 }
 
-searchStep <- function(direction, latent_sd, alpha) {
-  return(applyLatentScaling(direction, 'sd', alpha, latent_sd))
+# The displacement of a step, measured as the Euclidean length in units of the
+# generator's per-dimension spread. Euclidean rather than the root mean square
+# applyLatentScaling() uses: a search direction is usually concentrated in a few
+# dimensions, and dividing by the number of dimensions would then inflate the
+# actual displacement by up to sqrt(latent_dim) and make the search overshoot.
+searchStep <- function(direction, latent_sd, size) {
+  length_in_sd <- sqrt(sum((direction / latent_sd)^2))
+
+  if (length_in_sd == 0) {
+    return(direction)
+  }
+
+  return(direction * (size / length_in_sd))
 }
 
 drawLatentDeltas <- function(n_trials, generator, latent_sigma) {
@@ -357,8 +396,8 @@ collectResponses <- function(generator, centre, deltas, respond, generation, sti
 
   n_trials <- nrow(deltas)
   base <- matrix(centre, nrow = n_trials, ncol = length(centre), byrow = TRUE)
-  originals <- renderLatent(generator, base + deltas, validate = FALSE)
-  inverted <- renderLatent(generator, base - deltas, validate = FALSE)
+  originals <- renderUnchecked(generator, base + deltas, validate = FALSE)
+  inverted <- renderUnchecked(generator, base - deltas, validate = FALSE)
 
   answers <- numeric(n_trials)
   for (i in seq_len(n_trials)) {
@@ -391,7 +430,7 @@ searchLabel <- function(generation) {
 # A cosine near zero after several generations says the centre has arrived: the
 # participant's responses no longer carry a direction, so successive estimates
 # are unrelated to each other.
-searchDiagnostics <- function(generation, latent_sigma, direction, previous, latent_sd) {
+searchDiagnostics <- function(generation, latent_sigma, size, direction, previous, latent_sd) {
   cosine <- NA_real_
   if (!is.null(previous)) {
     denominator <- sqrt(sum(previous^2)) * sqrt(sum(direction^2))
@@ -403,6 +442,7 @@ searchDiagnostics <- function(generation, latent_sigma, direction, previous, lat
   return(data.frame(
     generation = generation,
     latent_sigma = latent_sigma,
+    step_size = size,
     direction_norm = latentNorm(direction, latent_sd),
     cosine_with_previous = cosine
   ))

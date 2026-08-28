@@ -48,7 +48,8 @@
 #' generator <- latentGeneratorPCA(faces, n_components = 3, img_size = 16)
 #'
 #' stimuli <- generateStimuliLatent2IFC(
-#'   generator, n_trials = 20, stimulus_path = tempdir(),
+#'   generator, n_trials = 20,
+#'   stimulus_path = file.path(tempdir(), "rcicr_latent_infoval_example"),
 #'   seed = 1, save_as_png = FALSE
 #' )
 #' ci <- generateLatentCI(
@@ -103,7 +104,14 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, iter = 10000, re
 }
 
 # Length in units of the generator's own per-dimension spread, so the answer
-# does not depend on how the latent space happens to be scaled.
+# depends neither on how the latent space is scaled nor on how many dimensions
+# it has. The root mean square rather than the sum, matching what
+# applyLatentScaling() means by a displacement of so many standard deviations:
+# the two were written with different conventions, and the disagreement made a
+# search step overshoot by a factor of sqrt(latent_dim).
+#
+# Informational value is unaffected by the change, being a ratio in which any
+# constant factor cancels.
 latentNorm <- function(direction, latent_sd) {
-  return(sqrt(sum((direction / latent_sd)^2)))
+  return(sqrt(mean((direction / latent_sd)^2)))
 }
