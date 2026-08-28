@@ -95,7 +95,8 @@ show <- function(images, titles) {
   op <- par(mfrow = c(1, length(images)), mar = c(0, 0, 2, 0))
   on.exit(par(op))
   for (i in seq_along(images)) {
-    plot.new(); plot.window(c(0, 1), c(0, 1), asp = 1)
+    plot.new()
+    plot.window(c(0, 1), c(0, 1), asp = 1)
     rasterImage(images[[i]], 0, 0, 1, 1)
     title(titles[i])
   }

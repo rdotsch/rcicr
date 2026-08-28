@@ -105,19 +105,28 @@ latentGeneratorPCA <- function(base_face_files, n_components = 50, img_size = NU
   mean_face <- colMeans(pixels_by_face)
   centred <- sweep(pixels_by_face, 2, mean_face, '-')
 
-  decomposition <- svd(centred)
-
-  # The centred data has rank at most n - 1, so components beyond that are noise
-  # with a singular value of zero and a latent_sd of zero, which would make
-  # perturbing along them a no-op.
-  keep <- min(n_components, nrow(pixels_by_face) - 1, sum(decomposition$d > .Machine$double.eps * decomposition$d[1] * length(decomposition$d)))
-  if (keep < 1) {
+  # Checked before the decomposition rather than inferred from its singular
+  # values. For identical images every singular value is zero, which makes a
+  # threshold relative to the largest of them zero as well, and whether
+  # anything then clears it comes down to whether the platform's LAPACK returns
+  # exact zeros or values around 1e-18. Linux returned exact zeros and macOS
+  # ARM64 did not, so the same call errored on one and not the other.
+  if (max(abs(centred)) == 0) {
     msg <- paste0(
       'These images have no variation between them: every one ',
       'is identical, so there is no face space to build.'
     )
     stop(msg, call. = FALSE)
   }
+
+  decomposition <- svd(centred)
+
+  # The centred data has rank at most n - 1, so components beyond that are noise
+  # with a singular value of zero and a latent_sd of zero, which would make
+  # perturbing along them a no-op. The tolerance is the conventional one for a
+  # numerical rank: the largest singular value, scaled by the larger dimension.
+  tolerance <- .Machine$double.eps * max(dim(centred)) * decomposition$d[1]
+  keep <- min(n_components, nrow(pixels_by_face) - 1, sum(decomposition$d > tolerance))
 
   components <- decomposition$v[, seq_len(keep), drop = FALSE]
 

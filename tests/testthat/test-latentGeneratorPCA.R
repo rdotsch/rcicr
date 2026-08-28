@@ -134,7 +134,12 @@ test_that("bad input is rejected with a message naming the problem", {
   expect_error(latentGeneratorPCA(odd, img_size = 16), 'does not resize')
 })
 
-test_that("identical images leave no face space to build", {
+test_that("identical images leave no face space to build, on every platform", {
+  # Regression: this was decided from the singular values, whose threshold is
+  # relative to the largest of them and so becomes zero when every one is zero.
+  # macOS ARM64's LAPACK returns values around 1e-18 where Linux returns exact
+  # zeros, so the call errored on one platform and returned a generator with a
+  # meaningless component on the other.
   withr::local_options(rcicr.experimental = TRUE)
   dir <- withr::local_tempdir()
 
