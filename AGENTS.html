@@ -146,7 +146,7 @@
 <li>
 <strong><code>main</code> carries a <code>.9000</code> development version between releases.</strong> Right after a release, <code>DESCRIPTION</code> goes to <code>&lt;released&gt;.9000</code>; the release commit drops it to the clean number. <code>NEWS.md</code> accumulates entries under a <code># rcicr (development version)</code> heading, renamed to <code># rcicr X.Y.Z (date)</code> at release time.</li>
 <li>
-<strong>Tag every release</strong> — <code>git tag -a vX.Y.Z &lt;release commit&gt;</code> plus a GitHub release.</li>
+<strong>Tag every release</strong> — <code>git tag -a vX.Y.Z &lt;release commit&gt;</code> plus a GitHub release. A tag marks a <em>release</em>, not CRAN acceptance; <code>RELEASING.md</code> → “Reopen development” says why, and where acceptance is recorded instead.</li>
 <li>
 <strong>Log every CRAN reply verbatim</strong> in <code>notes/cran-review-&lt;version&gt;.md</code>, named for the version whose tarball it reviews — <code>cran-review-1.2.1.md</code> reviews the 1.2.1 submission, answered by 1.2.2 and 1.2.3. Add a new file per reply rather than editing an old one, and <strong>answer from the file, not from a summary of it</strong>: a summary dropped one of the two filenames in a point, and three drafts of the reply then told the reviewer we could not find what she had named.</li>
 <li>

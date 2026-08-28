@@ -232,7 +232,9 @@ second merge direction for no gain. Feature branches → PR → squash onto
   entries under a `# rcicr (development version)` heading, renamed to
   `# rcicr X.Y.Z (date)` at release time.
 - **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a
-  GitHub release.
+  GitHub release. A tag marks a *release*, not CRAN acceptance;
+  `RELEASING.md` → “Reopen development” says why, and where acceptance
+  is recorded instead.
 - **Log every CRAN reply verbatim** in `notes/cran-review-<version>.md`,
   named for the version whose tarball it reviews —
   `cran-review-1.2.1.md` reviews the 1.2.1 submission, answered by 1.2.2
