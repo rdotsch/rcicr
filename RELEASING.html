@@ -47,13 +47,11 @@
 </div>
 <div class="section level2">
 <h2 id="id_1-prepare-the-release-pr">1. Prepare the release PR<a class="anchor" aria-label="anchor" href="#id_1-prepare-the-release-pr"></a></h2>
-<p>Branch from <code>main</code> (<code>release-X.Y.Z</code>) and make five edits together:</p>
+<p>Branch from <code>main</code> (<code>release-X.Y.Z</code>) and make four edits together:</p>
 <ul><li>
 <strong><code>NEWS.md</code></strong> — rename <code># rcicr (development version)</code> to <code># rcicr X.Y.Z (YYYY-MM-DD)</code>. Until you do, none of this release’s entries are in the news database: R indexes only sections under a heading it can read a version from. Keep version numbers <em>out</em> of <code>##</code> headings or the file stops parsing and <code>R CMD check</code> NOTEs.</li>
 <li>
 <strong><code>DESCRIPTION</code></strong> — drop the <code>.9000</code>. This also switches CI from the <code>--quick</code> gate to the full battery, so it must happen <strong>before</strong> the PR is opened.</li>
-<li>
-<strong><code>ChangeLog</code></strong> — a dated pointer entry deferring to <code>NEWS.md</code>, never a duplicate.</li>
 <li>
 <strong><code>CITATION.cff</code></strong> — regenerate <em>after</em> the <code>DESCRIPTION</code> edit, with <code>cffr::cff_write("DESCRIPTION", dependencies = FALSE, gh_keywords = FALSE)</code>. CI compares it and fails until you do.</li>
 <li>

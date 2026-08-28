@@ -34,6 +34,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="rcicr-development-version">rcicr (development version)<a class="anchor" aria-label="anchor" href="#rcicr-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<ul><li>
+<strong><code>ChangeLog</code> is frozen at 1.0.1 and is no longer updated.</strong> It keeps the record of everything before 1.1.0, including the whole CRAN era up to the archived 0.3.4.1. <code>NEWS.md</code> is the changelog from 1.1.0 onward and the only one R indexes, so <code>news(package = "rcicr")</code> is unaffected. Entries for 1.1.0 to 1.3.0, which only pointed here, were removed from it.</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.3.0" id="rcicr-130-2026-08-18">rcicr 1.3.0 (2026-08-18)<a class="anchor" aria-label="anchor" href="#rcicr-130-2026-08-18"></a></h2>
@@ -401,7 +406,7 @@
 <strong>The infoVal formula itself.</strong> rcicr already implements the corrected version from the erratum to Schmitz et al. (2019): the Euclidean norm, with the <em>k</em> constant supplied by R’s <code><a href="https://rdrr.io/r/stats/mad.html" class="external-link">mad()</a></code> (<code>constant = 1.4826</code>). This was fixed years ago; it is now covered by a regression test so it cannot silently drift.</li>
 <li>
 <strong>The noise basis</strong> (<code><a href="../reference/generateNoisePattern.html">generateNoisePattern()</a></code>), the stimulus parameter draw, and all four scaling methods, for the default configuration.</li>
-</ul><hr><p><em>Older changes are recorded in <code>ChangeLog</code>.</em></p>
+</ul><hr><p><em>Changes before 1.1.0 are recorded in <code>ChangeLog</code>, which is frozen at 1.0.1 and covers the package back to 2014, including its CRAN era.</em></p>
 </div>
 </div>
 </div>

@@ -41,7 +41,7 @@ none of those.
 
 ## 1. Prepare the release PR
 
-Branch from `main` (`release-X.Y.Z`) and make five edits together:
+Branch from `main` (`release-X.Y.Z`) and make four edits together:
 
 - **`NEWS.md`** — rename `# rcicr (development version)` to
   `# rcicr X.Y.Z (YYYY-MM-DD)`. Until you do, none of this release’s
@@ -51,8 +51,6 @@ Branch from `main` (`release-X.Y.Z`) and make five edits together:
 - **`DESCRIPTION`** — drop the `.9000`. This also switches CI from the
   `--quick` gate to the full battery, so it must happen **before** the
   PR is opened.
-- **`ChangeLog`** — a dated pointer entry deferring to `NEWS.md`, never
-  a duplicate.
 - **`CITATION.cff`** — regenerate *after* the `DESCRIPTION` edit, with
   `cffr::cff_write("DESCRIPTION", dependencies = FALSE, gh_keywords = FALSE)`.
   CI compares it and fails until you do.

@@ -53,8 +53,8 @@ applies unchanged, run from the package root. Two things about it are
   (`devtools::install()`), not just `load_all()`-loaded, or workers fail
   with “there is no package called ‘rcicr’”.
 - Version and dependency metadata lives in `DESCRIPTION`; user-facing
-  changes go in `NEWS.md`. `ChangeLog` predates `NEWS.md` and takes only
-  a dated pointer entry per release — see `CONTRIBUTING.md`.
+  changes go in `NEWS.md`. `ChangeLog` is the frozen pre-`NEWS.md`
+  archive, ending at 1.0.1 — never add to it.
 
 ## Testing and CI
 

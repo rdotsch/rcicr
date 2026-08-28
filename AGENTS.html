@@ -55,7 +55,7 @@
 <p>A standard R package — roxygen2 docs, a testthat suite under <code>tests/testthat/</code>, GitHub Actions CI — so the usual <code><a href="https://roxygen2.r-lib.org/reference/roxygenize.html" class="external-link">roxygen2::roxygenise()</a></code> / <code>devtools::load_all()</code> / <code>test()</code> / <code>check()</code> / <code>install()</code> workflow applies unchanged, run from the package root. Two things about it are <em>not</em> standard:</p>
 <ul><li>
 <code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> spawns parallel workers via <code><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">parallel::makeCluster()</a></code> that each <code><a href="https://rdotsch.github.io/rcicr/">library(rcicr)</a></code> themselves (<code>.packages='rcicr'</code> in its <code>foreach</code> call) — any test or script that calls it needs the package actually <strong>installed</strong> (<code>devtools::install()</code>), not just <code>load_all()</code>-loaded, or workers fail with “there is no package called ‘rcicr’”.</li>
-<li>Version and dependency metadata lives in <code>DESCRIPTION</code>; user-facing changes go in <code>NEWS.md</code>. <code>ChangeLog</code> predates <code>NEWS.md</code> and takes only a dated pointer entry per release — see <code>CONTRIBUTING.md</code>.</li>
+<li>Version and dependency metadata lives in <code>DESCRIPTION</code>; user-facing changes go in <code>NEWS.md</code>. <code>ChangeLog</code> is the frozen pre-<code>NEWS.md</code> archive, ending at 1.0.1 — never add to it.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="testing-and-ci">Testing and CI<a class="anchor" aria-label="anchor" href="#testing-and-ci"></a></h2>

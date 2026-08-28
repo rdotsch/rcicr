@@ -2,6 +2,15 @@
 
 ## rcicr (development version)
 
+### Documentation
+
+- **`ChangeLog` is frozen at 1.0.1 and is no longer updated.** It keeps
+  the record of everything before 1.1.0, including the whole CRAN era up
+  to the archived 0.3.4.1. `NEWS.md` is the changelog from 1.1.0 onward
+  and the only one R indexes, so `news(package = "rcicr")` is
+  unaffected. Entries for 1.1.0 to 1.3.0, which only pointed here, were
+  removed from it.
+
 ## rcicr 1.3.0 (2026-08-18)
 
 ### Behaviour changes
@@ -1407,4 +1416,5 @@ bit-identical to the old behaviour.
 
 ------------------------------------------------------------------------
 
-*Older changes are recorded in `ChangeLog`.*
+*Changes before 1.1.0 are recorded in `ChangeLog`, which is frozen at
+1.0.1 and covers the package back to 2014, including its CRAN era.*
