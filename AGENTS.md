@@ -130,7 +130,9 @@ onto `main`, and releases are marked by tags.
   `DESCRIPTION` goes to `<released>.9000`; the release commit drops it to the clean number.
   `NEWS.md` accumulates entries under a `# rcicr (development version)` heading, renamed to
   `# rcicr X.Y.Z (date)` at release time.
-- **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a GitHub release.
+- **Tag every release** — `git tag -a vX.Y.Z <release commit>` plus a GitHub release. A tag
+  marks a *release*, not CRAN acceptance; `RELEASING.md` → "Reopen development" says why, and
+  where acceptance is recorded instead.
 - **Log every CRAN reply verbatim** in `notes/cran-review-<version>.md`, named for the
   version whose tarball it reviews — `cran-review-1.2.1.md` reviews the 1.2.1 submission,
   answered by 1.2.2 and 1.2.3. Add a new file per reply rather than editing an old one, and
