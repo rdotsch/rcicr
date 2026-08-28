@@ -105,13 +105,20 @@ latentGeneratorPCA <- function(base_face_files, n_components = 50, img_size = NU
   mean_face <- colMeans(pixels_by_face)
   centred <- sweep(pixels_by_face, 2, mean_face, '-')
 
-  # Checked before the decomposition rather than inferred from its singular
-  # values. For identical images every singular value is zero, which makes a
-  # threshold relative to the largest of them zero as well, and whether
-  # anything then clears it comes down to whether the platform's LAPACK returns
-  # exact zeros or values around 1e-18. Linux returned exact zeros and macOS
-  # ARM64 did not, so the same call errored on one and not the other.
-  if (max(abs(centred)) == 0) {
+  # Against a tolerance, never against zero. Centring identical rows does not
+  # leave exactly zero: the mean of three copies of a number is not always that
+  # number in floating point, so x - mean(c(x, x, x)) comes out around 1e-17 for
+  # some pixel values and exactly 0 for others, and which happens depends on the
+  # summation order the platform uses. Testing for zero here passed on Linux and
+  # failed on macOS ARM64, and so did reading the same thing off the singular
+  # values, whose threshold is relative to the largest of them and so collapses
+  # to zero in exactly this case.
+  #
+  # The scale is the pixel values themselves, which is the one quantity in this
+  # calculation that a degenerate set does not send to zero.
+  no_variation <- .Machine$double.eps * max(abs(pixels_by_face)) * max(dim(centred))
+
+  if (max(abs(centred)) <= no_variation) {
     msg <- paste0(
       'These images have no variation between them: every one ',
       'is identical, so there is no face space to build.'

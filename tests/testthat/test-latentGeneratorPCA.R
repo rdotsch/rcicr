@@ -134,12 +134,7 @@ test_that("bad input is rejected with a message naming the problem", {
   expect_error(latentGeneratorPCA(odd, img_size = 16), 'does not resize')
 })
 
-test_that("identical images leave no face space to build, on every platform", {
-  # Regression: this was decided from the singular values, whose threshold is
-  # relative to the largest of them and so becomes zero when every one is zero.
-  # macOS ARM64's LAPACK returns values around 1e-18 where Linux returns exact
-  # zeros, so the call errored on one platform and returned a generator with a
-  # meaningless component on the other.
+test_that("identical images leave no face space to build", {
   withr::local_options(rcicr.experimental = TRUE)
   dir <- withr::local_tempdir()
 
@@ -150,4 +145,50 @@ test_that("identical images leave no face space to build, on every platform", {
 
   expect_error(latentGeneratorPCA(files, n_components = 2, img_size = 8),
                'no variation between them')
+})
+
+test_that("no variation is judged against a tolerance rather than exact zero", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+
+  # Regression, and the reason the test above is not enough on its own. Centring
+  # identical rows does not leave exactly zero: the mean of three copies of a
+  # number is not always that number in floating point, and whether the residual
+  # lands on zero depends on the platform's summation order. Linux got exact
+  # zeros for this fixture and macOS ARM64 did not, so a check written against
+  # zero passed on one and failed on the other.
+  #
+  # Perturbing one pixel by far less than the tolerance reproduces the macOS
+  # arithmetic on any platform: the images are no longer bit-identical, and the
+  # set still has to be rejected.
+  base <- withr::with_seed(1, matrix(stats::runif(64), 8, 8))
+  nudged <- base
+  nudged[1, 1] <- nudged[1, 1] + 1e-16
+
+  files <- file.path(dir, sprintf('near%02d.png', 1:3))
+  png::writePNG(base, files[1])
+  png::writePNG(base, files[2])
+  png::writePNG(nudged, files[3])
+
+  expect_error(latentGeneratorPCA(files, n_components = 2, img_size = 8),
+               'no variation between them')
+})
+
+test_that("a real difference between images is not mistaken for none", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+
+  # The smallest difference a PNG can carry is one 8-bit step, which is about
+  # twelve orders of magnitude above the tolerance above. It must build.
+  base <- withr::with_seed(1, matrix(stats::runif(64), 8, 8))
+  stepped <- base
+  stepped[1, 1] <- stepped[1, 1] + 1 / 255
+
+  files <- file.path(dir, sprintf('step%02d.png', 1:3))
+  png::writePNG(base, files[1])
+  png::writePNG(base, files[2])
+  png::writePNG(stepped, files[3])
+
+  generator <- latentGeneratorPCA(files, n_components = 2, img_size = 8)
+  expect_gte(generator$latent_dim, 1L)
 })
