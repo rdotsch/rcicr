@@ -194,3 +194,58 @@ fingerprintNumeric <- function(...) {
 
   return(paste(unlist(parts), collapse = ':'))
 }
+
+# What goes into a stimulus file so the generator can be identified, and where
+# possible rebuilt, months later.
+#
+# A StyleGAN cannot be stored in an .Rdata, so for most backends the spec is
+# metadata plus the fingerprint and the caller has to hand the generator back at
+# analysis time. The PCA backend is a few megabytes of components, so its state
+# travels with the stimuli and the file is self-contained the way base_faces
+# makes the pixel-noise file self-contained.
+generatorSpec <- function(generator) {
+  portable <- identical(generator$kind, 'pca')
+
+  return(list(
+    kind = generator$kind,
+    latent_dim = generator$latent_dim,
+    img_size = generator$img_size,
+    space = generator$space,
+    latent_mean = generator$latent_mean,
+    latent_sd = generator$latent_sd,
+    fingerprint = generator$fingerprint,
+    portable = portable,
+    state = if (portable) generator$state else NULL
+  ))
+}
+
+# NULL when the spec carries no renderer, which is the signal to the caller that
+# a generator has to be supplied.
+generatorFromSpec <- function(spec) {
+  if (!isTRUE(spec$portable)) {
+    return(NULL)
+  }
+
+  return(pcaGenerator(spec$state$mean_face, spec$state$components,
+                      spec$latent_sd, spec$img_size, spec$state$n_faces,
+                      spec$state$base_face_files))
+}
+
+# Rendering the wrong generator produces a face that looks plausible and is not
+# the participant's, so a mismatch is an error rather than a warning.
+matchGenerator <- function(generator, spec, caller) {
+  if (identical(generator$fingerprint, spec$fingerprint)) {
+    return(invisible(TRUE))
+  }
+
+  msg <- paste0(
+    'This generator is not the one that made these stimuli. The stimulus file ',
+    'was written with a ', spec$kind, ' generator of ', spec$latent_dim,
+    ' dimensions at ', spec$img_size, 'px; the generator given to ', caller,
+    '() is ', generator$kind, ' of ', generator$latent_dim, ' dimensions at ',
+    generator$img_size, 'px, and their fingerprints differ. Rendering a ',
+    'classification image through a different generator gives a face that is ',
+    'not the participant\'s.'
+  )
+  stop(msg, call. = FALSE)
+}

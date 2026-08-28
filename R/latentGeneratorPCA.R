@@ -126,38 +126,8 @@ latentGeneratorPCA <- function(base_face_files, n_components = 50, img_size = NU
   # A caller's sigma is then read in units of real face variation.
   latent_sd <- decomposition$d[seq_len(keep)] / sqrt(nrow(pixels_by_face) - 1)
 
-  render <- function(latents) {
-    pixels <- sweep(latents %*% t(components), 2, mean_face, '+')
-
-    # An eigenface reconstruction leaves [0, 1] readily, and the contract is
-    # that a generator hands back displayable pixels.
-    pixels[pixels < 0] <- 0
-    pixels[pixels > 1] <- 1
-
-    out <- array(0, dim = c(nrow(latents), img_size, img_size))
-    for (i in seq_len(nrow(latents))) {
-      out[i, , ] <- matrix(pixels[i, ], img_size, img_size)
-    }
-
-    return(out)
-  }
-
-  generator <- rcicrGenerator(
-    kind = 'pca',
-    latent_dim = keep,
-    img_size = img_size,
-    space = 'pca',
-    latent_mean = rep(0, keep),
-    latent_sd = latent_sd,
-    render = render,
-    fingerprint = paste0('pca:', fingerprintNumeric(mean_face, components, latent_sd)),
-    state = list(
-      mean_face = mean_face,
-      components = components,
-      n_faces = nrow(pixels_by_face),
-      base_face_files = files
-    )
-  )
+  generator <- pcaGenerator(mean_face, components, latent_sd, img_size,
+                            nrow(pixels_by_face), files)
 
   validateGenerator(generator)
 
@@ -194,4 +164,43 @@ normalizeImagePaths <- function(base_face_files) {
   }
 
   return(base_face_files)
+}
+
+# The generator itself, separated from the analysis that produces it so a
+# stimulus file can rebuild the identical renderer without the original images.
+pcaGenerator <- function(mean_face, components, latent_sd, img_size, n_faces, base_face_files) {
+  render <- function(latents) {
+    pixels <- sweep(latents %*% t(components), 2, mean_face, '+')
+
+    # An eigenface reconstruction leaves [0, 1] readily, and the contract is
+    # that a generator hands back displayable pixels.
+    pixels[pixels < 0] <- 0
+    pixels[pixels > 1] <- 1
+
+    out <- array(0, dim = c(nrow(latents), img_size, img_size))
+    for (i in seq_len(nrow(latents))) {
+      out[i, , ] <- matrix(pixels[i, ], img_size, img_size)
+    }
+
+    return(out)
+  }
+
+  keep <- ncol(components)
+
+  return(rcicrGenerator(
+    kind = 'pca',
+    latent_dim = keep,
+    img_size = img_size,
+    space = 'pca',
+    latent_mean = rep(0, keep),
+    latent_sd = latent_sd,
+    render = render,
+    fingerprint = paste0('pca:', fingerprintNumeric(mean_face, components, latent_sd)),
+    state = list(
+      mean_face = mean_face,
+      components = components,
+      n_faces = n_faces,
+      base_face_files = base_face_files
+    )
+  ))
 }

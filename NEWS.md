@@ -17,7 +17,15 @@
   later version. Record the rcicr version alongside anything you keep. The switch is removed once
   the numbers are pinned by a golden master and a release has shipped them.
 
-  `latentGeneratorPCA()` is the first piece: an eigenface generator built in base R from a set of
+  `generateStimuliLatent2IFC()` writes the stimuli. Each trial draws one perturbation of a base
+  latent and renders two faces from it, the base plus the perturbation and the base minus it, so
+  the response coding is the one an existing task script already uses: `1` for the original, `-1`
+  for the inverted image. Perturbation size is given in units of how far the generator's own
+  training faces vary, so `latent_sigma = 1` moves a face about as much as real faces differ.
+  As in the pixel-noise pipeline the accompanying .Rdata file is the only link to the analysis
+  half, and nothing about the stimuli is recoverable without it.
+
+  `latentGeneratorPCA()` is the generator: an eigenface model built in base R from a set of
   aligned face images. It is a much weaker face model than a generative adversarial network and
   renders blurred averages rather than photographs, and it is what lets the rest of the module be
   run, tested and checked with no GPU, no Python, no network and no additional package. Backends

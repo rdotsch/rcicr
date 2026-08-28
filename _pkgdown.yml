@@ -78,6 +78,7 @@ reference:
       options(rcicr.experimental = TRUE) is set, because the numeric output is
       not yet stable.
     contents:
+      - generateStimuliLatent2IFC
       - latentGeneratorPCA
 
   - title: Package
