@@ -126,7 +126,7 @@
 <div class="section level2">
 <h2 id="git-and-merge-strategy">Git and merge strategy<a class="anchor" aria-label="anchor" href="#git-and-merge-strategy"></a></h2>
 <ul><li>
-<strong>Re-read <code>CONTRIBUTING.md</code> → “Pull requests” when opening a PR, every time — not from memory.</strong> Its steps fail by producing silence rather than an error, so a half-remembered version looks like it worked. Two of them have now been re-learned the hard way, after being written down.</li>
+<strong>Re-read <code>CONTRIBUTING.md</code> → “Pull requests” when opening a PR, every time — not from memory.</strong> Its steps fail by producing silence rather than an error, so a half-remembered version looks like it worked. The rule most often lost is one of omission: a PR body or commit message states the end result, never the route taken. A hook in <code>.claude/settings.json</code> repeats it at the moment of writing.</li>
 <li>
 <strong>Plan first when a change touches behaviour, numbers or a contract</strong> — <code>R/</code> behaviour, numeric output, the <code>.Rdata</code> contract, fixtures, or the release and CI machinery. The plan is the branch’s first commit, reviewed as a <strong>draft</strong> PR before any of the change is written, then deleted on that same branch so the squash leaves <code>main</code> one commit and no plan file. Full procedure in <code>CONTRIBUTING.md</code> → “Plan first, in the same pull request”; read it there. Prose, <code>man/</code>, <code>NEWS.md</code> wording and comment-only edits are exempt.</li>
 <li>

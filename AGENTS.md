@@ -179,9 +179,10 @@ maintained somewhere else entirely?
 
 - **Re-read `CONTRIBUTING.md` → “Pull requests” when opening a PR, every
   time — not from memory.** Its steps fail by producing silence rather
-  than an error, so a half-remembered version looks like it worked. Two
-  of them have now been re-learned the hard way, after being written
-  down.
+  than an error, so a half-remembered version looks like it worked. The
+  rule most often lost is one of omission: a PR body or commit message
+  states the end result, never the route taken. A hook in
+  `.claude/settings.json` repeats it at the moment of writing.
 - **Plan first when a change touches behaviour, numbers or a contract**
   — `R/` behaviour, numeric output, the `.Rdata` contract, fixtures, or
   the release and CI machinery. The plan is the branch’s first commit,
