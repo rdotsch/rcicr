@@ -30,14 +30,24 @@ enforces them, are in `CONTRIBUTING.md`.
 ## Numerics and the random number stream
 
 ### `purrr::rbernoulli()` was replaced with `runif()`, not `rbinom()`
-An earlier note recommended `stats::rbinom(n, 1, p)`. **That advice was wrong.** `rbernoulli(n,
-p)` is internally `runif(n) > (1 - p)`, and `rbinom` draws from the stream differently —
-verified across 150 seed/probability combinations. Swapping it in would have silently changed
-every reference distribution, and therefore every InfoVal, computed from a given seed. The
-`runif` form is bit-identical to the old behaviour.
+`stats::rbinom(n, 1, p)`, which an earlier note recommended, is **wrong**: `rbernoulli(n, p)`
+is internally `runif(n) > (1 - p)`, and `rbinom` draws from the stream differently — verified
+across 150 seed/probability combinations. It would have silently changed every reference
+distribution, and so every InfoVal, computed from a given seed. The `runif` form is
+bit-identical.
 
-**The rule this stands for: check the random *stream*, not just the distribution.** Two
-functions with the same marginal distribution are not interchangeable in a seeded pipeline.
+**The rule: check the random *stream*, not just the distribution.** Two functions with the
+same marginal distribution are not interchangeable in a seeded pipeline.
+
+### A base image's alpha channel is discarded, not composited
+Greyscale conversion keeps the colour channels and drops alpha. Compositing onto a background
+invents a number the file does not contain and makes that background a contract of its own;
+rejecting transparency turns files that have always been accepted into an error.
+
+The cost a researcher meets: the RGB under a transparent pixel need not resemble what a viewer
+shows there, so a cut-out face whose editor kept the photograph underneath renders with the
+crop undone. rcicr never composites — a stimulus is opaque — so the pixels a file stores are
+the honest reading of it.
 
 ### `rowMeans(x, dims = 2)` was adopted despite not being bit-identical
 The patch-averaging step in `generateNoiseImage()` moved from `apply(..., 1:2, mean)`, about
@@ -438,25 +448,23 @@ in `computeCumulativeCICorrelation()` and the test caught it. The predicate is *
 ## Documentation
 
 ### The Medium walkthrough moved into a vignette, and the post stays up
-A tutorial outside the repo cannot execute at build time, so it goes stale silently. The
-premise proved itself during the port: two of the post's lines no longer worked —
-`autoscale()`'s `saveasjpegs` argument, now `save_as_pngs`, and `install_github(..., ref =
-"development")`, a branch that does not exist. The post stays published for nine years of
-inbound links; this moves the canonical copy, it is not a takedown.
+A tutorial outside the repo cannot execute at build time, so it goes stale silently, as this
+one had: `saveasjpegs` is now `save_as_pngs`, and `install_github(..., ref = "development")`
+names a branch that does not exist. The post stays up for nine years of inbound links; this
+moves the canonical copy, it is not a takedown.
 
 ### Three vignette figures were wrong in ways only viewing them showed
 The rule this stands behind is in `CONTRIBUTING.md`. What it caught, none of it visible to an
 assertion:
 
-- **`image()` auto-stretches its input across the palette**, so every linear rescaling of the
-  same image renders *identically* — which made a four-way scaling comparison meaningless
-  until `zlim = c(0, 1)` was pinned.
+- **`image()` auto-stretches its input across the palette**, so every linear rescaling renders
+  *identically*, making a four-way scaling comparison meaningless until `zlim = c(0, 1)` was
+  pinned.
 - **`zmapmethod = "quick"` z-scores across the pixels of one image**, so its values are
-  relative to that image's own spatial structure, not a null distribution. At small sizes they
-  span only ±1.65 and the **default `threshold = 3` returns a blank map** — which reads as "no
-  signal" but means "wrong ruler".
-- A white-noise synthetic base drowned every figure; a crude Gaussian blob is legible and
-  still obviously synthetic.
+  relative to that image's own spatial structure, not a null. At small sizes they span only
+  ±1.65 and the **default `threshold = 3` returns a blank map** — which reads as "no signal"
+  but means "wrong ruler".
+- A white-noise base drowned every figure; a Gaussian blob is legible and still synthetic.
 
 ### When the docs and the code disagreed about `mask`, the code was the contract
 Both `?plotZmap` and `?generateCI` said a *matrix* masks where the cell is `1`/`TRUE` while a

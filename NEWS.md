@@ -26,6 +26,11 @@
   it. Re-running `generateCI()` against the same `.Rdata` will not fix it, because the base
   face is stored there -- the stimuli have to be regenerated from the images.
 
+  One thing to know if you do have transparent base faces: alpha is discarded, not composited,
+  so the colour values stored *under* a transparent pixel are what you get. An editor that kept
+  the original photograph beneath a cut-out will render that base face with the crop undone.
+  `DECISIONS.md` records why discarding is the right reading and what the alternatives cost.
+
   The reproducibility gate agrees that nothing else moves: 130 checks identical to v1.0.1, the
   3 pre-existing expected deviations, 0 unexpected, and no new entry required.
 
