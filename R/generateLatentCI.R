@@ -135,8 +135,16 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
   direction <- estimate$direction
   pid_directions <- estimate$pid_directions
 
+  # Both, so that the group direction stays the average of the participant
+  # directions returned beside it. The pixel pipeline negates its parameters
+  # before computing anything, which has the same effect there; here the
+  # estimator is shared with the permutation null, which antiCI must not touch,
+  # so the negation happens on the way out instead.
   if (antiCI) {
     direction <- -direction
+    if (!is.null(pid_directions)) {
+      pid_directions <- -pid_directions
+    }
   }
 
   scaled <- applyLatentScaling(direction, latent_scaling, scaling_constant,
@@ -187,11 +195,20 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
 # always accepted into an error, which is the one thing this package does not do
 # to an existing script; #294 tracks that side.
 checkParticipants <- function(participants, stimuli, caller) {
-  if (all(is.na(participants))) {
+  values <- unlist(participants, use.names = FALSE)
+
+  # All-NA is the sentinel meaning "pool every trial". A vector that is only
+  # partly NA is not: computeParticipantDirections() takes its levels from
+  # sort(unique(participants)), which drops NA, so those trials would be left
+  # out of every per-participant direction and out of the group average of them,
+  # while the length check above passed and nothing said so.
+  if (all(is.na(values))) {
     return(invisible(TRUE))
   }
 
-  n_participants <- length(unlist(participants, use.names = FALSE))
+  # Length first, as with responses: a caller who supplied the wrong number of
+  # identifiers is better told that than told some of them are missing.
+  n_participants <- length(values)
   n_trials <- length(unlist(stimuli, use.names = FALSE))
 
   if (n_participants != n_trials) {
@@ -199,6 +216,17 @@ checkParticipants <- function(participants, stimuli, caller) {
       caller, '() needs one participant identifier per trial. It was given ',
       n_participants, ' for ', n_trials, ' trials. Leave participants at its ',
       'default to pool every trial into one classification image.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  if (anyNA(values)) {
+    msg <- paste0(
+      caller, '() was given participant identifiers for some trials and NA for ',
+      sum(is.na(values)), ' of ', length(values), '. Those trials would be ',
+      'dropped from every participant\'s direction without appearing anywhere ',
+      'in the result. Name a participant for every trial, or leave participants ',
+      'at its default to pool them all into one classification image.'
     )
     stop(msg, call. = FALSE)
   }

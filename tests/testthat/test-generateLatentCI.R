@@ -493,3 +493,62 @@ test_that("a participant vector shorter than the trials is refused", {
     generateLatentCI(1:20, responses, fixture$stimuli$rdata, save_as_png = FALSE)
   )
 })
+
+test_that("participants that are only partly named are refused", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 20)
+  responses <- rep(c(1, -1), 10)
+
+  # The all-NA sentinel means "pool everything". A vector that is only partly NA
+  # is not that: computeParticipantDirections() takes its levels from
+  # sort(unique(participants)), which drops NA, so those trials would vanish from
+  # every participant's direction and from the group average of them, with the
+  # length check satisfied and nothing else to say so.
+  partly <- rep(c('a', 'b'), 10)
+  partly[c(3, 7, 11)] <- NA
+
+  expect_length(sort(unique(partly)), 2)
+  expect_equal(sum(partly %in% sort(unique(partly))), 17)
+
+  expect_error(
+    generateLatentCI(1:20, responses, fixture$stimuli$rdata, participants = partly,
+                     save_as_png = FALSE),
+    'NA for 3 of 20'
+  )
+  expect_error(
+    computeLatentInfoVal2IFC(list(), fixture$stimuli$rdata, 1:20, responses,
+                             participants = partly, iter = 5),
+    'NA for 3 of 20'
+  )
+
+  # The all-NA sentinel is still the way to pool, and naming everyone still works.
+  expect_no_error(
+    generateLatentCI(1:20, responses, fixture$stimuli$rdata, participants = NA,
+                     save_as_png = FALSE)
+  )
+  expect_no_error(
+    generateLatentCI(1:20, responses, fixture$stimuli$rdata,
+                     participants = rep(c('a', 'b'), 10), save_as_png = FALSE)
+  )
+})
+
+test_that("antiCI turns the participant directions with the group one", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 20)
+  responses <- rep(c(1, -1, 1, -1, 1), 4)
+  participants <- rep(c('a', 'b'), 10)
+
+  ci <- generateLatentCI(1:20, responses, fixture$stimuli$rdata,
+                         participants = participants, save_as_png = FALSE)
+  anti <- generateLatentCI(1:20, responses, fixture$stimuli$rdata,
+                           participants = participants, antiCI = TRUE,
+                           save_as_png = FALSE)
+
+  expect_equal(anti$direction, -ci$direction)
+  expect_equal(anti$pid_directions, -ci$pid_directions)
+
+  # The invariant that makes the pair meaningful: the group direction is the
+  # average of the participant directions returned beside it, in both.
+  expect_equal(ci$direction, colMeans(ci$pid_directions))
+  expect_equal(anti$direction, colMeans(anti$pid_directions))
+})
