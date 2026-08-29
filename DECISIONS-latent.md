@@ -12,13 +12,13 @@ The gate is not to hide the code but to make a user accept a weaker guarantee: t
 
 Exported rather than internal: an unexported function gets no manual page, no pkgdown entry, and no `R CMD check` of its examples, and the checking is the point of running continuous integration on it.
 
-The gate comes off once a golden master pins the numbers and a release ships them. 
+The gate comes off once a golden master pins the numbers and a release ships them.
 
 ## The generator is a contract, not a dependency on torch
 
 R cannot run a StyleGAN. A hard dependency on torch was rejected: it downloads libtorch on first use, would be an Import for a feature most users never touch, and still would not run a StyleGAN without a TorchScript export the user makes.
 
-A generator is instead a list satisfying a documented contract, which `latentGeneratorPCA()` meets in base R. That is what lets the module be run, tested and checked with no GPU, no Python, no network and no extra package. An eigenface model is far weaker than a GAN; it is there to make the arithmetic verifiable, not to be a good face model. 
+A generator is instead a list satisfying a documented contract, which `latentGeneratorPCA()` meets in base R. That is what lets the module be run, tested and checked with no GPU, no Python, no network and no extra package. An eigenface model is far weaker than a GAN; it is there to make the arithmetic verifiable, not to be a good face model.
 
 This is the first `class()` in `R/`. A generator is the one thing a user supplies and the package checks, so it needs a type; the classification image is still a plain list.
 
