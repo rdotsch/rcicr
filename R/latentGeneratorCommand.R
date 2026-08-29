@@ -166,7 +166,13 @@ readRenderedImages <- function(outdir, n_latents, img_size, log_file) {
 
     img <- png::readPNG(file)
     if (length(dim(img)) == 3) {
-      img <- apply(img[, , seq_len(min(3, dim(img)[3])), drop = FALSE], c(1, 2), mean)
+      # Two channels is grey plus alpha, not two colours. Averaging them folds
+      # opacity into the pixel value, so an opaque black pixel reads back as 0.5
+      # rather than 0 and every stimulus from such a renderer is wrong. Three or
+      # four channels are RGB or RGBA, where the first three do average.
+      channels <- dim(img)[3]
+      keep <- if (channels == 2) 1L else seq_len(min(3, channels))
+      img <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
     }
 
     if (nrow(img) != img_size || ncol(img) != img_size) {

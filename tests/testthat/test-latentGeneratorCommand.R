@@ -218,3 +218,35 @@ test_that("the shipped StyleGAN helper is installed and documents its protocol",
   expect_match(source_text, '%05d.png', fixed = TRUE)
   expect_match(source_text, 'latents.csv', fixed = TRUE)
 })
+
+test_that("a grey-plus-alpha image keeps its grey and drops its alpha", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+
+  # Two channels is grey plus alpha, not two colours. Averaging them folds
+  # opacity into the pixel value, so a fully opaque black pixel comes back as
+  # 0.5 rather than 0 and every stimulus this renderer produces is wrong.
+  grey_alpha <- c(
+    'for (i in seq_len(nrow(latents))) {',
+    '  ga <- array(0, dim = c(8, 8, 2))',
+    '  ga[, , 1] <- max(0, min(1, (latents[i, 1] + 1) / 2))',
+    '  ga[, , 2] <- 1',
+    '  png::writePNG(ga, file.path(outdir, sprintf("%05d.png", i)))',
+    '}'
+  )
+
+  generator <- latentGeneratorCommand(
+    command = rscript(), args = write_renderer(dir, grey_alpha),
+    latent_dim = 2, img_size = 8, latent_sd = 1
+  )
+
+  latents <- matrix(c(-1, 0, 1, 0), ncol = 2, byrow = TRUE)
+  rendered <- renderLatent(generator, latents)
+
+  expect_equal(dim(rendered), c(2, 8, 8))
+  expect_equal(c(rendered[1, 1, 1], rendered[2, 1, 1]), c(0, 1), tolerance = 1 / 255)
+
+  # An opaque grey image is still fully opaque, so alpha carries no information
+  # and averaging it in would pull both values towards 0.5.
+  expect_false(isTRUE(all.equal(rendered[1, 1, 1], 0.5, tolerance = 1 / 255)))
+})

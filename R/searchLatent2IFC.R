@@ -433,27 +433,33 @@ checkBaseLatent <- function(base_latent, generator) {
 # The callback sees the two faces rather than the two latents, because that is
 # what a participant sees and what a real harness has to work from.
 collectResponses <- function(generator, centre, deltas, respond, generation, stimulus_path, seed, batch_size, save_as_png) {
-  if (save_as_png) {
-    writeLatentStimuli(generator, centre, deltas, stimulus_path,
-                       searchLabel(generation), seed, batch_size)
-  }
+  label <- searchLabel(generation)
 
-  n_trials <- nrow(deltas)
-  base <- matrix(centre, nrow = n_trials, ncol = length(centre), byrow = TRUE)
-  originals <- renderUnchecked(generator, base + deltas, validate = FALSE)
-  inverted <- renderUnchecked(generator, base - deltas, validate = FALSE)
+  # One render per stimulus, feeding the callback and the archive from the same
+  # arrays, in batches of batch_size as everywhere else in the module. Writing
+  # the whole generation first and rendering it again for the callback called
+  # the generator twice per stimulus and ignored batch_size entirely, which a
+  # renderer that has to batch cannot survive. The cost is that the PNGs now
+  # appear a batch at a time rather than all before the first question.
+  answers <- unlist(renderStimuliInBatches(generator, centre, deltas, batch_size,
+    function(trials, originals, inverted) {
+      if (save_as_png) {
+        writeStimulusBatch(trials, originals, inverted, stimulus_path, label, seed)
+      }
 
-  answers <- numeric(n_trials)
-  for (i in seq_len(n_trials)) {
-    answers[i] <- respond(list(
-      original = originals[i, , ],
-      inverted = inverted[i, , ],
-      latent_original = centre + deltas[i, ],
-      latent_inverted = centre - deltas[i, ],
-      generation = generation,
-      trial = i
-    ))
-  }
+      vapply(seq_along(trials), function(i) {
+        respond(list(
+          original = originals[i, , ],
+          inverted = inverted[i, , ],
+          latent_original = centre + deltas[trials[i], ],
+          latent_inverted = centre - deltas[trials[i], ],
+          generation = generation,
+          trial = trials[i]
+        ))
+      }, numeric(1))
+    },
+    progress = save_as_png
+  ))
 
   if (!all(answers %in% c(-1, 1))) {
     msg <- paste0(

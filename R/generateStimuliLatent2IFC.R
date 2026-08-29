@@ -149,26 +149,58 @@ generateStimuliLatent2IFC <- function(generator, n_trials = 300, stimulus_path, 
 # is in render()'s batching instead, which is why the contract makes it take a
 # matrix of latents rather than one at a time.
 writeLatentStimuli <- function(generator, base_latent, latent_params, stimulus_path, label, seed, batch_size) {
+  renderStimuliInBatches(generator, base_latent, latent_params, batch_size,
+    function(trials, originals, inverted) {
+      writeStimulusBatch(trials, originals, inverted, stimulus_path, label, seed)
+    }
+  )
+
+  return(invisible(NULL))
+}
+
+# One pass over the trials, rendering each batch exactly once and handing it to
+# the caller. What a batch is then used for -- written to disk, shown to a
+# respond callback, or both -- is the caller's business.
+#
+# Sharing this rather than rendering separately per destination is not only
+# speed. A generator is often an external program, so rendering the same
+# stimulus twice doubles the cost of the slowest step; and a generator with any
+# nondeterminism would otherwise show a participant pixels that the archived PNG
+# does not match, which is unrecoverable after the fact.
+renderStimuliInBatches <- function(generator, base_latent, latent_params, batch_size, on_batch, progress = TRUE) {
   n_trials <- nrow(latent_params)
   batch_size <- max(1L, as.integer(batch_size))
+  starts <- seq(1, n_trials, by = batch_size)
+  collected <- vector('list', length(starts))
 
-  pb <- utils::txtProgressBar(min = 0, max = n_trials, style = 3)
-  on.exit(close(pb), add = TRUE)
+  pb <- NULL
+  if (progress) {
+    pb <- utils::txtProgressBar(min = 0, max = n_trials, style = 3)
+    on.exit(close(pb), add = TRUE)
+  }
 
-  for (start in seq(1, n_trials, by = batch_size)) {
-    trials <- seq(start, min(start + batch_size - 1L, n_trials))
+  for (b in seq_along(starts)) {
+    trials <- seq(starts[b], min(starts[b] + batch_size - 1L, n_trials))
     deltas <- latent_params[trials, , drop = FALSE]
 
     base <- matrix(base_latent, nrow = length(trials), ncol = length(base_latent), byrow = TRUE)
     originals <- renderUnchecked(generator, base + deltas, validate = FALSE)
     inverted <- renderUnchecked(generator, base - deltas, validate = FALSE)
 
-    for (i in seq_along(trials)) {
-      png::writePNG(originals[i, , ], latentStimulusFile(stimulus_path, label, seed, trials[i], 'ori'))
-      png::writePNG(inverted[i, , ], latentStimulusFile(stimulus_path, label, seed, trials[i], 'inv'))
-    }
+    collected[[b]] <- on_batch(trials, originals, inverted)
 
-    utils::setTxtProgressBar(pb, max(trials))
+    if (!is.null(pb)) {
+      utils::setTxtProgressBar(pb, max(trials))
+    }
+  }
+
+  return(invisible(collected))
+}
+
+writeStimulusBatch <- function(trials, originals, inverted, stimulus_path, label, seed) {
+  for (i in seq_along(trials)) {
+    png::writePNG(originals[i, , ], latentStimulusFile(stimulus_path, label, seed, trials[i], 'ori'))
+    png::writePNG(inverted[i, , ], latentStimulusFile(stimulus_path, label, seed, trials[i], 'inv'))
   }
 
   return(invisible(NULL))

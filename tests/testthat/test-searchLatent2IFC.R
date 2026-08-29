@@ -443,3 +443,71 @@ test_that("a resumed search keeps the seed it was started with", {
                            state = step$state, responses = rep(c(1, -1), 2))
   expect_true(grepl('seed_77', basename(step$state)))
 })
+
+test_that("callback mode renders each stimulus once, in batches", {
+  withr::local_options(rcicr.experimental = TRUE)
+  base <- recovery_generator(n_components = 4, n_faces = 8, size = 8)
+
+  # A generator that records every call, so the number of renders and the size
+  # of each is observable rather than inferred.
+  calls <- new.env(parent = emptyenv())
+  calls$sizes <- integer(0)
+  counting <- base
+  counting$render <- function(latents) {
+    calls$sizes <- c(calls$sizes, nrow(latents))
+    base$render(latents)
+  }
+
+  out <- withr::local_tempdir()
+  searchLatent2IFC(counting, n_generations = 1, n_trials = 10, stimulus_path = out,
+                   respond = function(trial) 1, batch_size = 4, seed = 1)
+
+  # No call anywhere exceeds batch_size. Rendering a whole generation at once
+  # gave calls of 10, which is what a renderer that has to batch cannot survive.
+  expect_true(all(calls$sizes <= 4))
+
+  # Single-latent calls are validateGenerator()'s contract probe, which renders
+  # latent_mean before the search begins. The generation's own renders are the
+  # rest: ten trials at batch_size 4 is three batches, each rendering the
+  # originals and then the inversions, so 4, 4, 4, 4, 2, 2.
+  batches <- calls$sizes[calls$sizes > 1]
+  expect_identical(sort(batches), c(2L, 2L, 4L, 4L, 4L, 4L))
+
+  # Twenty images for ten trials: each original and each inversion rendered once.
+  # Rendering separately for the archive and for the callback doubled this.
+  expect_identical(sum(batches), 20L)
+})
+
+test_that("the callback sees the pixels that were archived", {
+  withr::local_options(rcicr.experimental = TRUE)
+  base <- recovery_generator(n_components = 4, n_faces = 8, size = 8)
+
+  # A generator whose output changes on every call. Rendering once for the PNG
+  # and again for the callback would show a participant an image the saved file
+  # does not match, which nothing downstream could detect.
+  drift <- new.env(parent = emptyenv())
+  drift$n <- 0
+  shifting <- base
+  shifting$render <- function(latents) {
+    drift$n <- drift$n + 1
+    rendered <- base$render(latents)
+    pmin(pmax(rendered + drift$n / 1000, 0), 1)
+  }
+
+  out <- withr::local_tempdir()
+  seen <- new.env(parent = emptyenv())
+  seen$originals <- list()
+
+  searchLatent2IFC(shifting, n_generations = 1, n_trials = 4, stimulus_path = out,
+                   respond = function(trial) {
+                     seen$originals[[trial$trial]] <- trial$original
+                     1
+                   },
+                   batch_size = 2, seed = 1)
+
+  files <- sort(list.files(out, pattern = '_ori[.]png$', full.names = TRUE))
+  expect_length(files, 4)
+  for (i in seq_along(files)) {
+    expect_equal(png::readPNG(files[i]), seen$originals[[i]], tolerance = 1 / 255)
+  }
+})
