@@ -577,3 +577,54 @@ test_that("rendering settings survive a resume", {
   expect_length(list.files(out, pattern = '_ori[.]png$'), 0)
   expect_true(all(calls$sizes <= 2))
 })
+
+test_that("resuming one generation twice does not overwrite the first result", {
+  withr::local_options(rcicr.experimental = TRUE)
+  generator <- recovery_generator(n_components = 4, n_faces = 8, size = 8)
+  out <- withr::local_tempdir()
+
+  first <- searchLatent2IFC(generator, n_generations = 3, n_trials = 4,
+                            stimulus_path = out, save_as_png = FALSE)
+
+  # Two resumes of the same state with different answers: comparing two codings,
+  # or redoing a mistaken batch. run_id, generation and seed are all unchanged,
+  # so the second used to overwrite the first and the path the first returned
+  # then described the second's responses.
+  one <- searchLatent2IFC(generator, stimulus_path = out, state = first$state,
+                          responses = c(1, 1, -1, -1))
+  two <- searchLatent2IFC(generator, stimulus_path = out, state = first$state,
+                          responses = c(-1, -1, 1, 1))
+
+  expect_false(one$state == two$state)
+  expect_true(file.exists(one$state))
+
+  centre_of <- function(file) {
+    env <- new.env()
+    load(file, envir = env)
+    env$search_state$centre
+  }
+
+  # Opposite answers move the centre opposite ways, so the two states must differ
+  # and the first must still hold its own.
+  expect_false(isTRUE(all.equal(centre_of(one$state), centre_of(two$state))))
+})
+
+test_that("a second resume refuses to replace the images of the first", {
+  withr::local_options(rcicr.experimental = TRUE)
+  generator <- recovery_generator(n_components = 4, n_faces = 8, size = 8)
+  out <- withr::local_tempdir()
+
+  first <- searchLatent2IFC(generator, n_generations = 3, n_trials = 2,
+                            stimulus_path = out, save_as_png = TRUE)
+
+  searchLatent2IFC(generator, stimulus_path = out, state = first$state,
+                   responses = c(1, -1))
+
+  # Unlike the state file, generation images cannot be renamed to stay unique:
+  # their names are what a task script builds to show generation g, trial 42.
+  expect_error(
+    searchLatent2IFC(generator, stimulus_path = out, state = first$state,
+                     responses = c(-1, 1)),
+    'would overwrite'
+  )
+})

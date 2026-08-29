@@ -254,8 +254,14 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
   deltas <- drawLatentDeltas(n_trials, generator, sigma_now)
 
   if (save_as_png) {
+    # The images cannot be made unique the way the state file is: their names are
+    # what a task script builds to show generation g, trial 42. So a second
+    # resume of the same generation is refused rather than silently replacing the
+    # faces the first resume's participant was shown.
+    generation_label <- searchLabel(generation, previous$run_id)
+    refuseToOverwriteStimuli(stimulus_path, generation_label, seed, 'searchLatent2IFC')
     writeLatentStimuli(generator, previous$centre, deltas, stimulus_path,
-                       searchLabel(generation, previous$run_id), seed, batch_size)
+                       generation_label, seed, batch_size)
   }
 
   search_state <- list(
@@ -298,9 +304,15 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     rng_state = get('.Random.seed', envir = globalenv())
   )
 
+  # A write identifier as well as the run's. Resuming one generation twice with
+  # different responses -- comparing two codings, or redoing a mistaken batch --
+  # leaves run_id, generation and seed all unchanged, so the second resume
+  # overwrote the first and the path the first returned then described the
+  # second's responses and trajectory. This path is returned rather than
+  # constructed by the caller, so making it unique costs nothing.
   file <- file.path(stimulus_path,
-                    sprintf('search_%s_gen%03d_seed_%s.Rdata',
-                            previous$run_id, generation, seed))
+                    sprintf('search_%s_gen%03d_seed_%s_%s.Rdata',
+                            previous$run_id, generation, seed, newSearchRunId()))
   save(search_state, file = file)
 
   return(list(
