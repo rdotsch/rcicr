@@ -156,7 +156,7 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
   base_image <- renderUnchecked(generator, stored$base_latent, validate = FALSE)[1, , ]
 
   if (save_as_png) {
-    label <- if (filename == '') latentLabel(rdata) else filename
+    label <- if (filename == '') latentLabel(stored, rdata) else filename
     saveToImage(label, ci_image, targetpath, filename, antiCI)
   }
 
@@ -408,9 +408,19 @@ resolveGenerator <- function(generator, spec, caller) {
   return(rebuilt)
 }
 
-# The label the stimuli were written under, recovered from the file name the
-# .Rdata was saved as, so a classification image is named after its stimulus set
-# without the label having to be passed in again.
-latentLabel <- function(rdata) {
+# The label the stimuli were written under, so a classification image is named
+# after its stimulus set without the label having to be passed in again.
+#
+# Taken from the file's own `label` field. Recovering it from the file name
+# instead means splitting on '_seed_', which a label may itself contain --
+# "my_seed_test" came back as "my" -- so the image was named after part of its
+# set, and two sets whose labels shared a first segment wrote the same file.
+# Falling back to the file name for a stimulus file written before `label` was
+# stored, which is the append-only contract working as intended.
+latentLabel <- function(stored, rdata) {
+  if (!is.null(stored$label) && !is.na(stored$label) && nzchar(stored$label)) {
+    return(stored$label)
+  }
+
   return(sub('_seed_.*$', '', basename(rdata)))
 }

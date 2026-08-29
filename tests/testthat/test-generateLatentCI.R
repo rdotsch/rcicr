@@ -626,3 +626,29 @@ test_that("a fractional trial number is refused rather than truncated", {
                      save_as_png = FALSE)
   )
 })
+
+test_that("a classification image is named after its whole stimulus set", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  generator <- latentGeneratorPCA(make_face_set(dir, n = 6), n_components = 3,
+                                  img_size = 16)
+  out <- withr::local_tempdir()
+  target <- withr::local_tempdir()
+
+  # Nothing forbids "_seed_" in a label, and recovering the label by splitting
+  # the file name on it truncates at the first occurrence: "my_seed_test" came
+  # back as "my", so the image was named after part of its set and two sets
+  # sharing a first segment would write the same file.
+  expect_equal(sub('_seed_.*$', '', 'my_seed_test_seed_1_time_x.Rdata'), 'my')
+
+  stimuli <- generateStimuliLatent2IFC(generator, n_trials = 4, stimulus_path = out,
+                                       label = 'my_seed_test', seed = 1,
+                                       save_as_png = FALSE)
+  generateLatentCI(1:4, rep(c(1, -1), 2), stimuli$rdata, targetpath = target)
+
+  # saveToImage() prefixes ci_, so the whole label has to survive after that.
+  written <- list.files(target, pattern = '[.]png$')
+  expect_length(written, 1)
+  expect_identical(written, 'ci_my_seed_test.png')
+  expect_false(identical(written, 'ci_my.png'))
+})

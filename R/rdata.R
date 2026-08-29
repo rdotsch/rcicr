@@ -153,6 +153,11 @@ loadLatentStimulusParams <- function(rdata) {
     base_latent = take('base_latent'),
     generator_spec = take('generator_spec'),
     img_size = take('img_size'),
-    latent_sigma = if (has('latent_sigma')) take('latent_sigma') else NA_real_
+    latent_sigma = if (has('latent_sigma')) take('latent_sigma') else NA_real_,
+    # The label the stimuli were written under. Read rather than parsed back out
+    # of the file name: a label containing "_seed_" -- which nothing forbids --
+    # truncates at the first occurrence, so the classification image is named
+    # after part of its set and two sets can produce the same file name.
+    label = if (has('label')) take('label') else NA_character_
   ))
 }
