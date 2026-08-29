@@ -109,16 +109,19 @@ show(list(ci$base_image, ci$ci_image, renderLatent(generator, target)[1, , ]),
 
 The default `latent_scaling = "sd"` moves the face a stated number of standard deviations, which makes every classification image equally visible. That is convenient and it means **the picture cannot be read as evidence**: a participant answering at random produces one that looks just as strong.
 
-`computeLatentInfoVal2IFC()` is what separates them. Its null comes from permuting the observed responses over the same trials, so it holds the stimuli fixed and asks only what the responses contributed.
+`computeLatentInfoVal2IFC()` is what separates them. Its null shuffles the responses the participant actually gave over the same trials, so it holds both the stimuli and the responses fixed and asks only what their pairing contributed. Shuffling rather than re-drawing matters whenever someone pressed one key more often than the other: a null of fresh balanced responses is one they could never have produced, and their bias would come back as signal.
 
 ```{r infoval}
+random_responses <- sample(c(-1, 1), 300, replace = TRUE)
 random_ci <- generateLatentCI(
-  stimuli = 1:300, responses = sample(c(-1, 1), 300, replace = TRUE),
+  stimuli = 1:300, responses = random_responses,
   rdata = stimuli$rdata, save_as_png = FALSE
 )
 
-real <- computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:300, iter = 1000, response_seed = 1)
-noise <- computeLatentInfoVal2IFC(random_ci, stimuli$rdata, 1:300, iter = 1000, response_seed = 1)
+real <- computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:300, responses,
+                                 iter = 1000, response_seed = 1)
+noise <- computeLatentInfoVal2IFC(random_ci, stimuli$rdata, 1:300, random_responses,
+                                  iter = 1000, response_seed = 1)
 
 c(real = real$infoVal, random = noise$infoVal)
 c(real = real$p, random = noise$p)

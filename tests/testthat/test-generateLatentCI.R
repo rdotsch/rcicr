@@ -213,7 +213,8 @@ test_that("informational value refuses a classification image from other stimuli
   ci <- generateLatentCI(stimuli = 1:20, responses = rep(c(1, -1), 10),
                          rdata = fx$stimuli$rdata, save_as_png = FALSE)
 
-  expect_error(computeLatentInfoVal2IFC(ci, other$stimuli$rdata, 1:20, iter = 10),
+  expect_error(computeLatentInfoVal2IFC(ci, other$stimuli$rdata, 1:20,
+                                        rep(c(1, -1), 10), iter = 10),
                'not computed from these stimuli')
 })
 
@@ -224,12 +225,74 @@ test_that("the null is reproducible under a response_seed and free without one",
   ci <- generateLatentCI(stimuli = 1:20, responses = rep(c(1, -1), 10),
                          rdata = fx$stimuli$rdata, save_as_png = FALSE)
 
-  first <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:20, iter = 200, response_seed = 5)
-  again <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:20, iter = 200, response_seed = 5)
+  first <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:20, rep(c(1, -1), 10),
+                                    iter = 200, response_seed = 5)
+  again <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:20, rep(c(1, -1), 10),
+                                    iter = 200, response_seed = 5)
   expect_equal(first$infoVal, again$infoVal)
   expect_equal(first$reference_median, again$reference_median)
 
   expect_gte(first$p, 0)
   expect_lte(first$p, 1)
   expect_equal(first$iter, 200)
+})
+
+test_that("the null preserves the responses the participant actually gave", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture(n_trials = 60)
+
+  # A participant who pressed one key throughout carries no information about
+  # the stimuli at all: every permutation of their responses is the same vector,
+  # so the observed direction has to sit in the middle of its own null. Drawing
+  # fresh balanced responses instead builds a null this participant could never
+  # have produced, and reports their key-press bias as signal.
+  biased <- rep(1, 60)
+  ci <- generateLatentCI(stimuli = 1:60, responses = biased,
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+
+  result <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:60, biased,
+                                     iter = 300, response_seed = 1)
+
+  expect_equal(result$p, 1)
+  expect_equal(result$observed_norm, result$reference_median)
+})
+
+test_that("a lopsided but informative participant is still scored fairly", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture(n_trials = 200, n_components = 4)
+
+  # Three quarters of one answer, but the answers still track the stimuli. The
+  # null holds that imbalance fixed, so what is left to measure is the pairing.
+  target <- fx$stimuli$base_latent + fx$generator$latent_sd * c(2, -1, 1, 0)
+  honest <- simulate_latent_observer(fx$stimuli$latent_params,
+                                     fx$stimuli$base_latent, target)
+  lopsided <- honest
+  lopsided[seq(2, 200, by = 4)] <- 1
+
+  ci <- generateLatentCI(stimuli = seq_len(200), responses = lopsided,
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+  result <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, seq_len(200), lopsided,
+                                     iter = 300, response_seed = 1)
+
+  expect_lt(result$p, 0.05)
+})
+
+test_that("informational value is tied to the stimulus set, not just the generator", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture()
+  out <- withr::local_tempdir()
+
+  # The same generator, a different seed. The generator fingerprints match by
+  # design, so only a stimulus-set fingerprint can tell these apart, and without
+  # one the direction gets scored against unrelated perturbations.
+  other <- generateStimuliLatent2IFC(fx$generator, n_trials = 20,
+                                     stimulus_path = out, seed = 99,
+                                     save_as_png = FALSE)
+
+  ci <- generateLatentCI(stimuli = 1:20, responses = rep(c(1, -1), 10),
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+
+  expect_error(computeLatentInfoVal2IFC(ci, other$rdata, 1:20, rep(c(1, -1), 10),
+                                        iter = 10),
+               'not computed from these stimuli')
 })

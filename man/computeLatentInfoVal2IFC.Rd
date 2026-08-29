@@ -8,6 +8,7 @@ computeLatentInfoVal2IFC(
   latent_ci,
   rdata,
   stimuli,
+  responses,
   iter = 10000,
   response_seed = NULL
 )
@@ -21,6 +22,10 @@ image was computed from.}
 
 \item{stimuli}{Vector of stimulus numbers, in the order they were presented:
 the same vector passed to \code{\link{generateLatentCI}}.}
+
+\item{responses}{Vector of responses, the same vector passed to
+\code{\link{generateLatentCI}}. These are what the null shuffles, so
+passing anything else makes the number meaningless.}
 
 \item{iter}{Number of permutations in the null distribution.}
 
@@ -43,9 +48,13 @@ the picture alone cannot separate a consistent participant from one pressing
 keys at random, and \code{latent_scaling = 'sd'} removes the difference
 entirely by construction. This gives the number that does separate them.
 
-The null is built by re-drawing the responses at random over the same trials
-and recomputing the direction, so it holds the stimuli fixed and asks only
-what the responses contributed. It needs no rendering, which is why it is
+The null shuffles the responses the participant actually gave over the same
+trials and recomputes the direction, so it holds both the stimuli and the
+responses fixed and asks only what their pairing contributed. Shuffling
+rather than re-drawing matters whenever a participant pressed one key more
+often than the other: fresh balanced responses would be a null that an
+imbalanced participant could never have produced, and their bias would come
+back as signal. It needs no rendering, which is why it is
 cheap here where the equivalent for the pixel pipeline is expensive enough
 that \code{\link{computeInfoVal2IFC}} caches it in the stimulus file.
 
@@ -78,5 +87,5 @@ ci <- generateLatentCI(
   rdata = stimuli$rdata, save_as_png = FALSE
 )
 
-computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:20, iter = 200)$infoVal
+computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:20, rep(c(1, -1), 10), iter = 200)$infoVal
 }

@@ -72,6 +72,26 @@ The argument stays, because a real participant's discriminability is not the sim
 
 A noiseless simulated observer cannot inform this at all: its responses depend only on the sign of a projection, which is unchanged by scaling the perturbations, so `sigma_decay` has mathematically no effect on such a run. Any tuning of it needs an observer with internal noise, and anyone re-measuring it should check that first, because a sweep against a noiseless observer returns identical numbers for every value and reads as a bug in the sweep.
 
+## The null shuffles the observed responses rather than drawing fresh ones
+
+Written first as `((runif(n) > 0.5) * 2) - 1`, copied from `generateReferenceDistribution2IFC()` where it is correct: that function simulates an observer from scratch, so balanced coin flips are exactly what it wants. Here the documentation promised a permutation null and the code did not deliver one.
+
+The difference is not cosmetic. A participant who pressed one key more often than the other would be compared against balanced null vectors they could never have produced, and the imbalance would be reported as latent signal. In the limit, an all-one response vector has a single possible permutation and must sit at the centre of its own null; against fresh coin flips it scores as though it carried information.
+
+Holding the multiset of responses fixed and breaking only its pairing with the stimuli is the question actually being asked. `computeLatentInfoVal2IFC()` therefore takes the responses as an argument.
+
+## Informational value is bound to the stimulus set, not the generator
+
+The first version compared generator fingerprints. Two experiments run through one generator have identical fingerprints by design, which is the whole point of a fingerprint that identifies a renderer, so that check accepted a classification image from one experiment scored against another's perturbations and returned a plausible, meaningless number.
+
+The fingerprint compared now covers the perturbations and the base latent as well. It is derived on demand rather than stored, so the `.Rdata` contract is unchanged.
+
+## A resumed search restores its design and its random stream
+
+Resumable mode was written taking its settings from whichever call supplied them. A search begun at `latent_sigma = 0.5, sigma_decay = 0.8` and resumed by the documented call, which names only the state and the responses, silently continued at sigma 1 rather than 0.4, mixing two designs inside one search. `set.seed(seed)` likewise ran only when the first state was written, so a search resumed in another R session drew its later generations from that session's unrelated stream and the seed did not reproduce it.
+
+Both now travel in the state: the seven settings that define the design, and the position of the random stream. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind would revert a resume later. The tests that missed this passed every argument on every call, which no documented usage does.
+
 ## Informational value uses a permutation null, not the erratum formula
 
 `computeInfoVal2IFC()` compares a classification image against a simulated reference distribution of noise images, and its definition is fixed by the published erratum. `computeLatentInfoVal2IFC()` permutes the observed responses over the same trials instead.

@@ -86,9 +86,23 @@ def render(network, latents, space, device, truncation):
             return network(batch, label, truncation_psi=truncation, noise_mode="const")
 
         # W is one vector per image; the synthesis network wants it repeated
-        # once per layer, which is what W+ already is.
+        # once per layer.
         if space == "w":
             batch = batch.unsqueeze(1).repeat([1, network.num_ws, 1])
+
+        # W+ is already one vector per layer, but it arrives flattened, because
+        # a CSV row is one dimensional. Synthesis needs it back as
+        # [batch, num_ws, w_dim].
+        if space == "w+":
+            expected = network.num_ws * network.w_dim
+            if batch.shape[1] != expected:
+                raise SystemExit(
+                    "--space w+ needs %d numbers per row for this network "
+                    "(num_ws=%d x w_dim=%d), but the latents file has %d. "
+                    "Set latent_dim = %d in latentGeneratorCommand()."
+                    % (expected, network.num_ws, network.w_dim,
+                       batch.shape[1], expected))
+            batch = batch.reshape([batch.shape[0], network.num_ws, network.w_dim])
 
         return network.synthesis(batch, noise_mode="const")
 
@@ -99,7 +113,14 @@ def report_stats(network, device, samples, space):
     with torch.no_grad():
         z = torch.randn([samples, network.z_dim], device=device)
         label = torch.zeros([samples, network.c_dim], device=device)
-        w = network.mapping(z, label)[:, 0, :] if space != "z" else z
+        if space == "z":
+            w = z
+        elif space == "w":
+            w = network.mapping(z, label)[:, 0, :]
+        else:
+            # W+ flattened the same way render() expects to receive it, so
+            # latent_mean and latent_sd line up with the latents rcicr sends.
+            w = network.mapping(z, label).reshape([samples, -1])
 
     w = w.cpu().numpy()
     fmt = lambda values: ", ".join("%.6f" % v for v in values)  # noqa: E731

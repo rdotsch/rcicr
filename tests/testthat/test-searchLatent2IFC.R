@@ -323,3 +323,104 @@ test_that("the search reaches a distant representation without alpha being tuned
   expect_lt(reached(0.5), 0.2)
   expect_lt(reached(5), 0.2)
 })
+
+test_that("a resumed search keeps the design it was started with", {
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 4, n_faces = 8)
+  out <- withr::local_tempdir()
+
+  # Started with non-default settings, then resumed naming only the state and
+  # the responses, which is how the documented call reads. The second generation
+  # must not fall back to this call's defaults: sigma has to be 0.5 * 0.8, not 1.
+  step <- searchLatent2IFC(generator, n_generations = 3, n_trials = 8,
+                           stimulus_path = out, save_as_png = FALSE, seed = 1,
+                           latent_sigma = 0.5, sigma_decay = 0.8)
+
+  step <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                           state = step$state, responses = rep(c(1, -1), 4))
+
+  expect_equal(nrow(step$latent_params), 8)
+  expect_equal(step$remaining, 1)
+
+  answers <- rep(c(1, -1), 4)
+  final <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                            state = step$state, responses = answers)
+  final <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                            state = final$state, responses = answers)
+
+  expect_equal(final$generations$latent_sigma, c(0.5, 0.4, 0.32))
+})
+
+test_that("every setting survives a second resume, not just the first", {
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 4, n_faces = 8)
+  out <- withr::local_tempdir()
+
+  # The settings are written back into each new state, so one that is restored
+  # for the current generation but not carried forward reverts to this call's
+  # default a resume later. step_grow and step_shrink are the ones that do not
+  # affect generation 2 at all and so only show up here.
+  step <- searchLatent2IFC(generator, n_generations = 4, n_trials = 8,
+                           stimulus_path = out, save_as_png = FALSE, seed = 1,
+                           alpha = 3, step_grow = 2, step_shrink = 0.5)
+
+  answers <- rep(c(1, -1), 4)
+  for (i in 1:3) {
+    step <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                             state = step$state, responses = answers)
+  }
+  final <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                            state = step$state, responses = answers)
+
+  sizes <- final$generations$step_size
+  cosines <- final$generations$cosine_with_previous
+  expect_equal(sizes[1], 3)
+  expect_equal(sizes[-1], sizes[-length(sizes)] * ifelse(cosines[-1] > 0, 2, 0.5))
+})
+
+test_that("a resumed search reproduces itself from the seed across sessions", {
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 4, n_faces = 8)
+  answers <- rep(c(1, -1, 1, -1, -1, 1, 1, -1, -1, 1), 1)
+
+  # set.seed(seed) runs only when the first state is written, so without the RNG
+  # stream travelling in that state a search resumed in another session draws its
+  # later generations from whatever that session's stream happened to be. Two
+  # runs separated by an unrelated draw stand in for two sessions.
+  run <- function(disturb) {
+    out <- withr::local_tempdir(.local_envir = parent.frame())
+    step <- searchLatent2IFC(generator, n_generations = 3, n_trials = 10,
+                             stimulus_path = out, save_as_png = FALSE, seed = 7)
+    if (disturb) {
+      stats::rnorm(1000)
+    }
+    step <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                             state = step$state, responses = answers)
+    step$latent_params
+  }
+
+  expect_equal(run(FALSE), run(TRUE))
+})
+
+test_that("a resumed generation rejects responses that are not 1 or -1", {
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 3, n_faces = 6)
+  out <- withr::local_tempdir()
+
+  step <- searchLatent2IFC(generator, n_generations = 2, n_trials = 4,
+                           stimulus_path = out, save_as_png = FALSE)
+
+  # Responses collected in another program arrive as whatever that program
+  # wrote. A 0/1 coding would otherwise pass into the weighted mean and move the
+  # search to the wrong centre with no error at all.
+  expect_error(searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                                state = step$state, responses = c(0, 1, 1, 0)),
+               'responses must be 1')
+  expect_error(searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                                state = step$state, responses = c(1, -1, NA, 1)),
+               'responses must be 1')
+})

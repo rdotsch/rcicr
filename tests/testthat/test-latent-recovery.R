@@ -82,16 +82,14 @@ test_that("informational value separates a real observer from a random one", {
 
   real <- generateLatentCI(stimuli = seq_len(300), responses = responses,
                            rdata = stimuli$rdata, save_as_png = FALSE)
-  random <- withr::with_seed(11, {
-    generateLatentCI(stimuli = seq_len(300),
-                     responses = sample(c(-1, 1), 300, replace = TRUE),
-                     rdata = stimuli$rdata, save_as_png = FALSE)
-  })
+  random_responses <- withr::with_seed(11, sample(c(-1, 1), 300, replace = TRUE))
+  random <- generateLatentCI(stimuli = seq_len(300), responses = random_responses,
+                             rdata = stimuli$rdata, save_as_png = FALSE)
 
-  real_iv <- computeLatentInfoVal2IFC(real, stimuli$rdata, seq_len(300),
+  real_iv <- computeLatentInfoVal2IFC(real, stimuli$rdata, seq_len(300), responses,
                                       iter = 500, response_seed = 1)
   random_iv <- computeLatentInfoVal2IFC(random, stimuli$rdata, seq_len(300),
-                                        iter = 500, response_seed = 1)
+                                        random_responses, iter = 500, response_seed = 1)
 
   expect_gt(real_iv$infoVal, random_iv$infoVal)
   expect_lt(real_iv$p, 0.01)

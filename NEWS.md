@@ -35,6 +35,10 @@
   and nothing is cached in the stimulus file; it is a different measure from
   `computeInfoVal2IFC()` and the two numbers are not comparable.
 
+  `computeLatentInfoVal2IFC()` takes the responses as an argument, because its null shuffles them
+  rather than drawing fresh ones, and it is bound to the stimulus set rather than only to the
+  generator that rendered it.
+
   `searchLatent2IFC()` runs the task across generations, moving the point the stimuli vary around
   towards whatever the participant is choosing instead of sampling once around a fixed point. A
   single round of trials cannot say how far along the estimated direction to go, because a 2IFC

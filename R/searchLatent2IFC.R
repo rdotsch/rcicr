@@ -214,7 +214,20 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     previous <- list(generation = 0L, centre = centre, trajectory = matrix(centre, nrow = 1),
                      diagnostics = NULL, direction = NULL, size = alpha)
   } else {
-    previous <- advanceSearchState(generator, state, responses, step_grow, step_shrink)
+    previous <- advanceSearchState(generator, state, responses)
+
+    # Every one of these, not only the ones this generation reads: they are
+    # written back into the next state below, so any left un-restored would
+    # quietly revert to this call's defaults one resume later.
+    config <- previous$config
+    n_generations <- config$n_generations
+    n_trials <- config$n_trials
+    latent_sigma <- config$latent_sigma
+    sigma_decay <- config$sigma_decay
+    alpha <- config$alpha
+    step_grow <- config$step_grow
+    step_shrink <- config$step_shrink
+    assign('.Random.seed', previous$rng_state, envir = globalenv())
   }
 
   generation <- previous$generation + 1L
@@ -246,8 +259,25 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     direction = previous$direction,
     size = previous$size,
     generator_spec = generatorSpec(generator),
-    n_generations = n_generations,
-    seed = seed
+    seed = seed,
+    # The design travels with the state. A resumed call that names none of these
+    # would otherwise silently continue under this call's defaults: a search
+    # begun at latent_sigma = 0.5 with sigma_decay = 0.8 would put generation 2
+    # at 1 rather than at 0.4, mixing two designs inside one search.
+    config = list(
+      n_generations = n_generations,
+      n_trials = n_trials,
+      latent_sigma = latent_sigma,
+      sigma_decay = sigma_decay,
+      alpha = alpha,
+      step_grow = step_grow,
+      step_shrink = step_shrink
+    ),
+    # Where the random number stream had reached. set.seed(seed) runs only when
+    # the first generation is created, so without this a search resumed in a new
+    # R session would draw its later generations from that session's unrelated
+    # stream and the seed would not reproduce it.
+    rng_state = get('.Random.seed', envir = globalenv())
   )
 
   file <- file.path(stimulus_path,
@@ -265,7 +295,7 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
 
 # The previous generation's state plus its responses, turned into the centre the
 # next generation varies around.
-advanceSearchState <- function(generator, state, responses, step_grow, step_shrink) {
+advanceSearchState <- function(generator, state, responses) {
   env <- new.env(parent = emptyenv())
   load(state, envir = env)
 
@@ -298,8 +328,24 @@ advanceSearchState <- function(generator, state, responses, step_grow, step_shri
     stop(msg, call. = FALSE)
   }
 
+  # Checked here as well as in callback mode. Responses collected in another
+  # program arrive as whatever that program wrote, and a 0/1 coding would pass
+  # straight into the weighted mean, changing the estimator and moving the
+  # search to the wrong centre without any error at all.
+  if (anyNA(responses) || !all(responses %in% c(-1, 1))) {
+    offending <- unique(responses[is.na(responses) | !(responses %in% c(-1, 1))])
+    msg <- paste0(
+      'responses must be 1 (the original image was chosen) or -1 (the inverted ',
+      'image was), one per trial. Generation ', stored$generation, ' was given ',
+      paste(utils::head(offending, 3), collapse = ', '), '.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  config <- stored$config
   direction <- weightedLatentMean(stored$latent_params, responses)
-  size <- adaptSearchStep(stored$size, direction, stored$direction, step_grow, step_shrink)
+  size <- adaptSearchStep(stored$size, direction, stored$direction,
+                          config$step_grow, config$step_shrink)
   step <- searchStep(direction, generator$latent_sd, size)
   centre <- stored$centre + step
 
@@ -313,7 +359,9 @@ advanceSearchState <- function(generator, state, responses, step_grow, step_shri
     trajectory = rbind(stored$trajectory, centre),
     diagnostics = diagnostics,
     direction = direction,
-    size = size
+    size = size,
+    config = config,
+    rng_state = stored$rng_state
   ))
 }
 

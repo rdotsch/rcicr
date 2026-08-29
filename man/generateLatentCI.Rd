@@ -63,7 +63,8 @@ the label recorded in the .Rdata file.}
 \value{
 A list with the classification latent, the direction before and after
   scaling, the rendered classification image, the base latent and its render,
-  and the per-participant directions when \code{participants} was given.
+  the per-participant directions when \code{participants} was given, and
+  fingerprints of the generator and of the stimulus set it came from.
 }
 \description{
 Turn the responses from a latent-space 2IFC task into a direction in latent

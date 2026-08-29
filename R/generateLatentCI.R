@@ -78,7 +78,8 @@
 #'   the label recorded in the .Rdata file.
 #' @return A list with the classification latent, the direction before and after
 #'   scaling, the rendered classification image, the base latent and its render,
-#'   and the per-participant directions when \code{participants} was given.
+#'   the per-participant directions when \code{participants} was given, and
+#'   fingerprints of the generator and of the stimulus set it came from.
 #' @examples
 #' # This function is part of the experimental latent-space module.
 #' options(rcicr.experimental = TRUE)
@@ -160,7 +161,8 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
     base_latent = stored$base_latent,
     base_image = base_image,
     pid_directions = pid_directions,
-    generator_fingerprint = generator$fingerprint
+    generator_fingerprint = generator$fingerprint,
+    stimulus_fingerprint = stimulusFingerprint(stored)
   ))
 }
 
