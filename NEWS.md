@@ -35,9 +35,10 @@
   and nothing is cached in the stimulus file; it is a different measure from
   `computeInfoVal2IFC()` and the two numbers are not comparable.
 
-  `computeLatentInfoVal2IFC()` takes the responses as an argument, because its null shuffles them
-  rather than drawing fresh ones, and it is bound to the stimulus set rather than only to the
-  generator that rendered it.
+  `computeLatentInfoVal2IFC()` takes the responses and participants as arguments, because its null
+  shuffles the responses rather than drawing fresh ones and rebuilds the direction through the
+  same computation the classification image used. It is bound to the analysis that produced that
+  image, so it will not score one against a null built from other trials or other answers.
 
   `searchLatent2IFC()` runs the task across generations, moving the point the stimuli vary around
   towards whatever the participant is choosing instead of sampling once around a fixed point. A

@@ -9,6 +9,7 @@ computeLatentInfoVal2IFC(
   rdata,
   stimuli,
   responses,
+  participants = NA,
   iter = 10000,
   response_seed = NULL
 )
@@ -26,6 +27,11 @@ the same vector passed to \code{\link{generateLatentCI}}.}
 \item{responses}{Vector of responses, the same vector passed to
 \code{\link{generateLatentCI}}. These are what the null shuffles, so
 passing anything else makes the number meaningless.}
+
+\item{participants}{Vector of participant identifiers, the same vector passed
+to \code{\link{generateLatentCI}}. Defaults to NA, matching its default.
+The null is built through the same estimator the classification image was,
+so a per-participant image is compared against a per-participant null.}
 
 \item{iter}{Number of permutations in the null distribution.}
 
@@ -58,6 +64,12 @@ back as signal. It needs no rendering, which is why it is
 cheap here where the equivalent for the pixel pipeline is expensive enough
 that \code{\link{computeInfoVal2IFC}} caches it in the stimulus file.
 
+Each iteration rebuilds the direction through the same computation that
+produced the observed one, so the cost grows with the number of trials as
+well as with \code{iter}: a 300-trial study takes a few seconds at the
+default. That is still far below what the pixel-noise equivalent costs, which
+has to render.
+
 Length is measured in standard deviations of the generator's training faces,
 summed across dimensions, so a generator whose components have very different
 scales does not have its widest dimension decide the answer on its own.
@@ -87,5 +99,7 @@ ci <- generateLatentCI(
   rdata = stimuli$rdata, save_as_png = FALSE
 )
 
-computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:20, rep(c(1, -1), 10), iter = 200)$infoVal
+computeLatentInfoVal2IFC(
+  ci, stimuli$rdata, 1:20, rep(c(1, -1), 10), iter = 200
+)$infoVal
 }

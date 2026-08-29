@@ -116,26 +116,12 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
     stop(msg, call. = FALSE)
   }
 
-  trials <- coerceTrialVectors(stimuli, responses, participants)
-
   stored <- loadLatentStimulusParams(rdata)
   generator <- resolveGenerator(generator, stored$generator_spec, 'generateLatentCI')
 
-  if (all(is.na(trials$participants))) {
-    aggregated <- aggregateResponses(trials$stimuli, trials$responses)
-    trials$stimuli <- aggregated$stimuli
-    trials$responses <- aggregated$responses
-  }
-
-  params <- selectLatentParams(stored$latent_params, trials$stimuli)
-
-  pid_directions <- NULL
-  if (all(is.na(trials$participants))) {
-    direction <- weightedLatentMean(params, trials$responses)
-  } else {
-    pid_directions <- computeParticipantDirections(params, trials$responses, trials$participants)
-    direction <- colMeans(pid_directions)
-  }
+  estimate <- latentDirection(stored$latent_params, stimuli, responses, participants)
+  direction <- estimate$direction
+  pid_directions <- estimate$pid_directions
 
   if (antiCI) {
     direction <- -direction
@@ -162,8 +148,36 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
     base_image = base_image,
     pid_directions = pid_directions,
     generator_fingerprint = generator$fingerprint,
-    stimulus_fingerprint = stimulusFingerprint(stored)
+    stimulus_fingerprint = stimulusFingerprint(stored),
+    analysis_fingerprint = analysisFingerprint(stored, stimuli, responses, participants)
   ))
+}
+
+# The whole path from trials to a direction, in one place because
+# computeLatentInfoVal2IFC() has to build its null through exactly this
+# computation. Two implementations of it drifted apart once already: the null
+# pooled where the classification image had averaged per participant, and it
+# permuted responses that had already been collapsed over repeated stimuli, so
+# it was scoring the observed direction against a differently-built one.
+latentDirection <- function(latent_params, stimuli, responses, participants) {
+  trials <- coerceTrialVectors(stimuli, responses, participants)
+
+  # Pooling collapses repeated presentations of a stimulus to their mean
+  # response, so this has to happen after any permutation rather than before it.
+  if (all(is.na(trials$participants))) {
+    aggregated <- aggregateResponses(trials$stimuli, trials$responses)
+    params <- selectLatentParams(latent_params, aggregated$stimuli)
+
+    return(list(direction = weightedLatentMean(params, aggregated$responses),
+                pid_directions = NULL))
+  }
+
+  params <- selectLatentParams(latent_params, trials$stimuli)
+  pid_directions <- computeParticipantDirections(params, trials$responses,
+                                                 trials$participants)
+
+  return(list(direction = colMeans(pid_directions),
+              pid_directions = pid_directions))
 }
 
 # The response-weighted mean, the same operation generateCINoise() performs on

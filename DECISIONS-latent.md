@@ -16,15 +16,15 @@ The gate comes off once a golden master pins the numbers and a release has shipp
 
 ## The generator is a contract, not a dependency on torch
 
-R cannot run a StyleGAN. A hard dependency on the torch package was rejected: it downloads libtorch on first use, it would be an Import for a feature most users never touch, and it still would not run a StyleGAN without a TorchScript export the user has to make themselves.
+R cannot run a StyleGAN. A hard dependency on torch was rejected: it downloads libtorch on first use, would be an Import for a feature most users never touch, and still would not run a StyleGAN without a TorchScript export the user makes themselves.
 
-Instead a generator is a list satisfying a documented contract, and `latentGeneratorPCA()` satisfies it in base R. That is what lets every function in the module be run, tested and checked with no GPU, no Python, no network and no additional package. An eigenface model is far weaker than a generative adversarial network, and is not there to be a good one but so the arithmetic is verifiable.
+A generator is instead a list satisfying a documented contract, which `latentGeneratorPCA()` does in base R. That is what lets the module be run, tested and checked with no GPU, no Python, no network and no additional package. An eigenface model is far weaker than a generative adversarial network; it is not there to be a good one, but so the arithmetic is verifiable.
 
-This is the first `class()` and the first `inherits()` in `R/`, where every other object is an unclassed list. A generator is the one thing here that a user supplies and the package dispatches on, so it needs a type that can be checked. The classification image the module returns is still a plain list, matching the rest of the package.
+This is the first `class()` in `R/`, where every other object is an unclassed list. A generator is the one thing a user supplies and the package checks, so it needs a type. The classification image is still a plain list.
 
 ## `latentGeneratorTorch()` was planned and not written
 
-A backend loading a TorchScript module through the torch package was in the plan and is not here (issue #291). Nothing in this sandbox or in continuous integration can install torch, so it would have shipped with no test at any level, and `latentGeneratorCommand()` already reaches a TorchScript generator through a three-line script while being exercised end to end against a real subprocess.
+A TorchScript backend through the torch package was planned and is not here (#291). Nothing available can install torch, so it would ship with no test at any level, and `latentGeneratorCommand()` already reaches such a generator through a short script while being tested end to end against a real subprocess.
 
 ## The stimulus file stores a fingerprint, not the model
 
@@ -56,7 +56,7 @@ The same sequence is what the `cosine_with_previous` diagnostic reports, so the 
 
 The recovered direction is weighted by the sampling covariance, as above. For a direction of travel rather than a rendered answer that weighting looked like a liability: on a generator whose components differ in scale by 65 to 1, the search can barely move along the narrow ones. Dividing the covariance back out was the obvious fix and measures worse at every distance tried, ending 1.91, 6.32 and 15.61 standard deviations from targets where leaving it in ended 0.77, 3.89 and 12.93.
 
-An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction applied afterwards. `latent_sd` is exported on the generator so this can be seen before a study is run: a first component that dwarfs the rest says most of the variation is along one direction.
+An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction afterwards. `latent_sd` is on the generator so this is visible before a study runs: a first component dwarfing the rest means most variation lies along one direction.
 
 ## Two meanings of "so many standard deviations", and where each belongs
 
@@ -78,13 +78,21 @@ Written first as `((runif(n) > 0.5) * 2) - 1`, copied from `generateReferenceDis
 
 The difference is not cosmetic. A participant who pressed one key more often than the other would be compared against balanced null vectors they could never have produced, and the imbalance would be reported as latent signal. In the limit, an all-one response vector has a single possible permutation and must sit at the centre of its own null; against fresh coin flips it scores as though it carried information.
 
-Holding the multiset of responses fixed and breaking only its pairing with the stimuli is the question actually being asked. `computeLatentInfoVal2IFC()` therefore takes the responses as an argument.
+Holding the response multiset fixed and breaking only its pairing with the stimuli is the question being asked, so `computeLatentInfoVal2IFC()` takes the responses as an argument.
 
-## Informational value is bound to the stimulus set, not the generator
+## One direction computation, shared by the estimate and its null
 
-The first version compared generator fingerprints. Two experiments run through one generator have identical fingerprints by design, which is the whole point of a fingerprint that identifies a renderer, so that check accepted a classification image from one experiment scored against another's perturbations and returned a plausible, meaningless number.
+`computeLatentInfoVal2IFC()` first built its null with its own copy of the arithmetic, and the copy drifted from `generateLatentCI()` in two ways at once. It pooled where the classification image had averaged per participant, so an image built from unequal trial counts was scored against a null that let the participant with more trials decide it. And it permuted responses that pooling had already collapsed over repeated stimuli, so what it shuffled were means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, and the two arrangements of that pair are not the three arrangements of the answers, collapsed.
 
-The fingerprint compared now covers the perturbations and the base latent as well. It is derived on demand rather than stored, so the `.Rdata` contract is unchanged.
+Both are the same mistake, and the fix is the same one: `latentDirection()` holds the whole path from trials to a direction, and the null calls it per iteration on a trial-level permutation. The estimate and its null cannot diverge again without the estimate changing too.
+
+The cost is that each iteration re-aggregates, so the null now scales with trial count as well as with `iter`. A 300-trial study takes a few seconds at the default, which is far below the pixel-noise equivalent, and correctness is not worth trading for it.
+
+## Informational value is bound to the analysis, not the stimulus set
+
+The first version compared generator fingerprints. Two experiments run through one generator have identical fingerprints by design, which is the whole point of a fingerprint that identifies a renderer, so that check accepted a classification image from one experiment scored against another's perturbations.
+
+Widening it to the stimulus file was still not enough: one file's trials can be analysed many ways, so a classification image built from one subset of trials, or from one set of answers, could be scored against a null built from another. The fingerprint now covers the stimulus file, the trials analysed, the responses and the participant structure, so it identifies the analysis rather than the material. It is derived on demand, so the `.Rdata` contract is unchanged.
 
 ## A resumed search restores its design and its random stream
 

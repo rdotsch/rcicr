@@ -227,7 +227,7 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     alpha <- config$alpha
     step_grow <- config$step_grow
     step_shrink <- config$step_shrink
-    assign('.Random.seed', previous$rng_state, envir = globalenv())
+    assign('.Random.seed', previous$rng_state, envir = globalenv()) # nolint: object_name_linter.
   }
 
   generation <- previous$generation + 1L

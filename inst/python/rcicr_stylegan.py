@@ -71,8 +71,15 @@ def read_latents(path):
 
 
 def to_uint8(image):
-    """StyleGAN emits roughly [-1, 1]; PNG wants [0, 255]."""
-    return (image.clamp(-1, 1) * 127.5 + 128).clamp(0, 255).to("cpu", dtype=int)
+    """StyleGAN emits roughly [-1, 1]; PNG wants [0, 255].
+
+    torch.uint8 rather than Python's int: Tensor.to() wants a torch dtype and
+    raises TypeError on the builtin, which would fail before the first PNG was
+    written and take latentGeneratorCommand()'s validation probe with it.
+    """
+    import torch
+
+    return (image.clamp(-1, 1) * 127.5 + 128).clamp(0, 255).to("cpu", torch.uint8)
 
 
 def render(network, latents, space, device, truncation):
@@ -164,7 +171,7 @@ def main(argv=None):
                         device, args.truncation)
         for image in images:
             written += 1
-            array = to_uint8(image.permute(1, 2, 0)).numpy().astype("uint8")
+            array = to_uint8(image.permute(1, 2, 0)).numpy()
             Image.fromarray(array).save("%s/%05d.png" % (args.outdir, written))
 
     return 0

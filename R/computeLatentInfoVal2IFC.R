@@ -18,6 +18,12 @@
 #' cheap here where the equivalent for the pixel pipeline is expensive enough
 #' that \code{\link{computeInfoVal2IFC}} caches it in the stimulus file.
 #'
+#' Each iteration rebuilds the direction through the same computation that
+#' produced the observed one, so the cost grows with the number of trials as
+#' well as with \code{iter}: a 300-trial study takes a few seconds at the
+#' default. That is still far below what the pixel-noise equivalent costs, which
+#' has to render.
+#'
 #' Length is measured in standard deviations of the generator's training faces,
 #' summed across dimensions, so a generator whose components have very different
 #' scales does not have its widest dimension decide the answer on its own.
@@ -37,6 +43,10 @@
 #' @param responses Vector of responses, the same vector passed to
 #'   \code{\link{generateLatentCI}}. These are what the null shuffles, so
 #'   passing anything else makes the number meaningless.
+#' @param participants Vector of participant identifiers, the same vector passed
+#'   to \code{\link{generateLatentCI}}. Defaults to NA, matching its default.
+#'   The null is built through the same estimator the classification image was,
+#'   so a per-participant image is compared against a per-participant null.
 #' @param iter Number of permutations in the null distribution.
 #' @param response_seed Integer seeding the permutations, for a reproducible
 #'   null. Defaults to NULL, which leaves the caller's random number stream
@@ -64,37 +74,32 @@
 #'   rdata = stimuli$rdata, save_as_png = FALSE
 #' )
 #'
-#' computeLatentInfoVal2IFC(ci, stimuli$rdata, 1:20, rep(c(1, -1), 10), iter = 200)$infoVal
-computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, iter = 10000, response_seed = NULL) {
+#' computeLatentInfoVal2IFC(
+#'   ci, stimuli$rdata, 1:20, rep(c(1, -1), 10), iter = 200
+#' )$infoVal
+computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, participants = NA, iter = 10000, response_seed = NULL) {
 
   requireExperimental('computeLatentInfoVal2IFC')
 
   stored <- loadLatentStimulusParams(rdata)
 
-  # The stimulus set, not just the generator. Two experiments run through one
-  # generator have identical generator fingerprints by design, so checking only
-  # that would accept a classification image from one experiment scored against
-  # the other's perturbations, which produces a plausible and meaningless
-  # number.
-  if (!identical(latent_ci$stimulus_fingerprint, stimulusFingerprint(stored))) {
+  # The trials and the answers, not just the stimulus file. Fingerprinting the
+  # file alone still accepts a classification image built from a different
+  # subset of its trials, or from different responses to the same ones, and
+  # scores it against a null it has nothing to do with.
+  if (!identical(latent_ci$analysis_fingerprint,
+                 analysisFingerprint(stored, stimuli, responses, participants))) {
     msg <- paste0(
-      'This classification image was not computed from these stimuli. Pass the ',
-      'stimulus file that generateLatentCI() was given, and the same stimuli ',
-      'and responses.'
+      'This classification image was not computed from these inputs. Pass the ',
+      'stimulus file, stimuli, responses and participants that ',
+      'generateLatentCI() was given.'
     )
     stop(msg, call. = FALSE)
   }
 
-  # Aggregated the way generateLatentCI() aggregates when pooling, so the
-  # observed direction and the null are computed over the same trials.
-  trials <- coerceTrialVectors(stimuli, responses, NA)
-  aggregated <- aggregateResponses(trials$stimuli, trials$responses)
-
-  params <- selectLatentParams(stored$latent_params, aggregated$stimuli)
   latent_sd <- stored$generator_spec$latent_sd
-  observed_responses <- aggregated$responses
-
   observed <- latentNorm(latent_ci$direction, latent_sd)
+  trial_responses <- unlist(responses, use.names = FALSE)
 
   # response_seed, not seed: the stimuli were already drawn under the stimulus
   # file's own seed, and reusing that name would suggest this reproduces them.
@@ -108,10 +113,17 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, iter 
   # one key more often than the other would score as carrying signal. The
   # multiset of responses is held fixed and only its pairing with the stimuli
   # is broken, which is the question being asked.
+  #
+  # Permuted at trial level and then put through latentDirection(), the same
+  # function that produced the observed direction. Permuting after aggregation
+  # would shuffle means rather than answers, and pooling the trials of a
+  # per-participant classification image would compare it against a null built
+  # by a different estimator.
   reference <- numeric(iter)
   for (i in seq_len(iter)) {
-    permuted <- sample(observed_responses)
-    reference[i] <- latentNorm(weightedLatentMean(params, permuted), latent_sd)
+    permuted <- latentDirection(stored$latent_params, stimuli,
+                                sample(trial_responses), participants)
+    reference[i] <- latentNorm(permuted$direction, latent_sd)
   }
 
   reference_median <- stats::median(reference)
@@ -133,6 +145,17 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, iter 
 stimulusFingerprint <- function(stored) {
   return(paste0(stored$generator_spec$fingerprint, '|',
                 fingerprintNumeric(stored$latent_params, stored$base_latent)))
+}
+
+# The stimulus set plus which of its trials were analysed and what was answered.
+# Participants are folded in as their factor levels, so a per-participant
+# classification image cannot be scored against a pooled null.
+analysisFingerprint <- function(stored, stimuli, responses, participants) {
+  trials <- coerceTrialVectors(stimuli, responses, participants)
+  pids <- if (all(is.na(trials$participants))) 0 else as.numeric(factor(trials$participants))
+
+  return(paste0(stimulusFingerprint(stored), '|',
+                fingerprintNumeric(trials$stimuli, trials$responses, pids)))
 }
 
 # Length in units of the generator's own per-dimension spread, so the answer

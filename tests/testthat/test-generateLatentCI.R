@@ -215,7 +215,7 @@ test_that("informational value refuses a classification image from other stimuli
 
   expect_error(computeLatentInfoVal2IFC(ci, other$stimuli$rdata, 1:20,
                                         rep(c(1, -1), 10), iter = 10),
-               'not computed from these stimuli')
+               'not computed from these inputs')
 })
 
 test_that("the null is reproducible under a response_seed and free without one", {
@@ -294,5 +294,85 @@ test_that("informational value is tied to the stimulus set, not just the generat
 
   expect_error(computeLatentInfoVal2IFC(ci, other$rdata, 1:20, rep(c(1, -1), 10),
                                         iter = 10),
-               'not computed from these stimuli')
+               'not computed from these inputs')
+})
+
+test_that("the null shuffles trials rather than collapsed means", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture()
+
+  # Codex's case. Stimulus 1 is seen twice, so pooling collapses it to a mean,
+  # and permuting the collapsed means is a different null from permuting the
+  # answers and collapsing afterwards. Here the two do not even overlap.
+  stimuli <- c(1, 1, 2)
+  responses <- c(1, 1, -1)
+
+  ci <- generateLatentCI(stimuli = stimuli, responses = responses,
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+  result <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, stimuli, responses,
+                                     iter = 100, response_seed = 1)
+
+  params <- fx$stimuli$latent_params
+  latent_sd <- fx$generator$latent_sd
+  norm_of <- function(weights) {
+    sqrt(mean((colSums(params[c(1, 2), ] * weights) / length(weights) / latent_sd)^2))
+  }
+
+  # Every arrangement of the three answers, collapsed the way pooling collapses
+  # them: (1,1,-1) gives stimulus 1 a mean of 1, the other two give it 0.
+  trial_level <- unique(vapply(
+    list(c(1, 1, -1), c(1, -1, 1), c(-1, 1, 1)),
+    function(r) norm_of(c(mean(r[1:2]), r[3])), numeric(1)
+  ))
+
+  # Permuting the collapsed means instead: (1, -1) and (-1, 1).
+  mean_level <- vapply(list(c(1, -1), c(-1, 1)), norm_of, numeric(1))
+
+  observed <- unique(round(result$reference_median, 10))
+  expect_true(all(round(observed, 10) %in% round(trial_level, 10)))
+  expect_false(any(round(observed, 10) %in% round(setdiff(mean_level, trial_level), 10)))
+})
+
+test_that("a per-participant image is scored against a per-participant null", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture(n_trials = 40)
+
+  # Unequal trial counts. Pooling the null while the classification image
+  # averaged per participant compares the observed direction against one built
+  # by a different estimator, and lets the participant who ran more trials
+  # decide the answer.
+  participants <- c(rep('a', 32), rep('b', 8))
+  responses <- rep(c(1, -1), 20)
+
+  ci <- generateLatentCI(stimuli = 1:40, responses = responses,
+                         participants = participants,
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+
+  result <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:40, responses,
+                                     participants, iter = 200, response_seed = 1)
+  expect_true(is.finite(result$infoVal))
+
+  # The same trials analysed pooled are a different analysis, and must not be
+  # scored against this image.
+  expect_error(computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:40, responses,
+                                        iter = 10),
+               'not computed from these inputs')
+})
+
+test_that("informational value is tied to the trials and answers analysed", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture()
+
+  ci <- generateLatentCI(stimuli = 1:20, responses = rep(c(1, -1), 10),
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+
+  # Same file, same generator, different answers.
+  expect_error(computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:20,
+                                        rep(c(-1, 1), 10), iter = 10),
+               'not computed from these inputs')
+
+  # Same file, same answers, a different subset of its trials.
+  expect_error(computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:10,
+                                        rep(c(1, -1), 5), iter = 10),
+               'not computed from these inputs')
 })
