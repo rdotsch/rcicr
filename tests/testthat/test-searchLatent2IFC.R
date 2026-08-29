@@ -511,3 +511,39 @@ test_that("the callback sees the pixels that were archived", {
     expect_equal(png::readPNG(files[i]), seen$originals[[i]], tolerance = 1 / 255)
   }
 })
+
+test_that("two searches in one directory do not overwrite each other's state", {
+  withr::local_options(rcicr.experimental = TRUE)
+  generator <- recovery_generator(n_components = 4, n_faces = 8, size = 8)
+  out <- withr::local_tempdir()
+
+  # Same stimulus_path and the same seed, which is the default, so the seed
+  # cannot tell the two apart. Every generation used to write the same state
+  # filename: the second search overwrote the first, and resuming the first then
+  # applied its responses to the second's centre with nothing to say so.
+  first <- searchLatent2IFC(generator, n_generations = 3, n_trials = 4,
+                            stimulus_path = out, save_as_png = FALSE)
+  second <- searchLatent2IFC(generator, n_generations = 3, n_trials = 4,
+                             stimulus_path = out, save_as_png = FALSE,
+                             base_latent = generator$latent_mean + generator$latent_sd)
+
+  expect_false(first$state == second$state)
+  expect_true(file.exists(first$state))
+  expect_true(file.exists(second$state))
+
+  # And the first search's own centre survives, rather than the second's.
+  centre_of <- function(file) {
+    env <- new.env()
+    load(file, envir = env)
+    env$search_state$centre
+  }
+  expect_equal(centre_of(first$state), generator$latent_mean)
+  expect_false(isTRUE(all.equal(centre_of(second$state), generator$latent_mean)))
+
+  # A resume keeps its own run, so generation 2 does not collide either.
+  resumed <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                              state = first$state, responses = rep(c(1, -1), 2))
+  expect_false(resumed$state == second$state)
+  expect_true(grepl(sub('^search_([^_]+)_.*', '\\1', basename(first$state)),
+                    basename(resumed$state), fixed = TRUE))
+})

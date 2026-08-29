@@ -165,13 +165,14 @@ searchLatent2IFC <- function(generator, n_generations = 10, n_trials = 30, stimu
   diagnostics <- NULL
   previous <- NULL
   size <- alpha
+  run_id <- newSearchRunId()
 
   for (generation in seq_len(n_generations)) {
     sigma_now <- latent_sigma * sigma_decay^(generation - 1)
     deltas <- drawLatentDeltas(n_trials, generator, sigma_now)
 
     answers <- collectResponses(generator, centre, deltas, respond, generation,
-                                stimulus_path, seed, batch_size, save_as_png)
+                                stimulus_path, seed, batch_size, save_as_png, run_id)
 
     direction <- weightedLatentMean(deltas, answers)
     size <- adaptSearchStep(size, direction, previous, step_grow, step_shrink)
@@ -212,7 +213,8 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     checkBaseLatent(centre, generator)
 
     previous <- list(generation = 0L, centre = centre, trajectory = matrix(centre, nrow = 1),
-                     diagnostics = NULL, direction = NULL, size = alpha)
+                     diagnostics = NULL, direction = NULL, size = alpha,
+                     run_id = newSearchRunId())
   } else {
     previous <- advanceSearchState(generator, state, responses)
 
@@ -251,11 +253,12 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
 
   if (save_as_png) {
     writeLatentStimuli(generator, previous$centre, deltas, stimulus_path,
-                       searchLabel(generation), seed, batch_size)
+                       searchLabel(generation, previous$run_id), seed, batch_size)
   }
 
   search_state <- list(
     generation = generation,
+    run_id = previous$run_id,
     centre = previous$centre,
     latent_params = deltas,
     latent_sigma = sigma_now,
@@ -287,7 +290,8 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
   )
 
   file <- file.path(stimulus_path,
-                    sprintf('search_gen%03d_seed_%s.Rdata', generation, seed))
+                    sprintf('search_%s_gen%03d_seed_%s.Rdata',
+                            previous$run_id, generation, seed))
   save(search_state, file = file)
 
   return(list(
@@ -357,7 +361,10 @@ advanceSearchState <- function(generator, state, responses) {
     direction = direction,
     size = size,
     config = config,
-    rng_state = stored$rng_state
+    rng_state = stored$rng_state,
+    # Travels with the state, so every generation of one search shares a run id
+    # and two searches in one stimulus_path never write the same filename.
+    run_id = stored$run_id
   ))
 }
 
@@ -432,8 +439,8 @@ checkBaseLatent <- function(base_latent, generator) {
 
 # The callback sees the two faces rather than the two latents, because that is
 # what a participant sees and what a real harness has to work from.
-collectResponses <- function(generator, centre, deltas, respond, generation, stimulus_path, seed, batch_size, save_as_png) {
-  label <- searchLabel(generation)
+collectResponses <- function(generator, centre, deltas, respond, generation, stimulus_path, seed, batch_size, save_as_png, run_id) {
+  label <- searchLabel(generation, run_id)
 
   # One render per stimulus, feeding the callback and the archive from the same
   # arrays, in batches of batch_size as everywhere else in the module. Writing
@@ -473,8 +480,20 @@ collectResponses <- function(generator, centre, deltas, respond, generation, sti
   return(answers)
 }
 
-searchLabel <- function(generation) {
-  return(sprintf('rcic_search_gen%03d', generation))
+searchLabel <- function(generation, run_id) {
+  return(sprintf('rcic_search_%s_gen%03d', run_id, generation))
+}
+
+# Identifies one search across its generations, so two of them can share a
+# stimulus_path without overwriting each other. The seed cannot do this: two
+# searches at the same seed -- and the default is one seed -- wrote the same
+# state filename every generation, and resuming the first then applied its
+# responses to the second's centre and configuration with no error anywhere.
+#
+# Not drawn from the random stream, which set.seed(seed) owns and the search
+# reproduces itself from: tempfile() does not consume it.
+newSearchRunId <- function() {
+  return(paste0(format(Sys.time(), '%Y%m%d%H%M%S'), basename(tempfile(''))))
 }
 
 # A cosine near zero after several generations says the centre has arrived: the

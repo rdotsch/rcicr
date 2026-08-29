@@ -86,7 +86,7 @@ One check, `checkResponseCoding()`, at every entry point that takes responses; t
 
 `computeLatentInfoVal2IFC()` holds the response multiset fixed and breaks only its pairing with the stimuli, which is the question being asked; it takes the responses as an argument for that reason.
 
-Balanced coin flips are right in `generateReferenceDistribution2IFC()`, which simulates an observer from scratch, and wrong here: a participant who pressed one key more often would be compared against vectors they could never have produced, and the imbalance reported as signal. An all-one response vector has a single permutation and must sit at the centre of its own null; against coin flips it scores as though it carried information. That case also leaves the null with one arrangement, no spread, and a score of 0/0 — the limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the null exists to handle.
+Balanced coin flips are right in `generateReferenceDistribution2IFC()`, which simulates an observer from scratch, and wrong here. a participant who pressed one key more often would be compared against vectors they could never have produced, and the imbalance reported as signal. An all-one response vector has a single permutation and must sit at the centre of its own null; against coin flips it scores as though it carried information. That case also leaves the null with one arrangement, no spread, and a score of 0/0 — the limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the null exists to handle.
 
 The shuffle is within each participant, when there are participants. A global one moves answers between people, so the difference between two participants' key biases reads as signal.
 
@@ -94,15 +94,15 @@ A null built from its own copy of the arithmetic drifts from the estimate in two
 
 ## Informational value is bound to the analysis, not the stimulus set
 
-A fingerprint that identifies a renderer is identical for two experiments run through one generator, by design, so it cannot say a classification image and a stimulus file belong together. Nor is the file enough: one file's trials can be analysed many ways. `generateLatentCI()` returns the trials, responses and participants it used, and the null is refused unless they match exactly.
+A fingerprint identifying a renderer is identical for two experiments run through one generator, so it cannot say a classification image and a stimulus file belong together. Nor is the file enough: one file's trials can be analysed many ways. `generateLatentCI()` returns the trials, responses and participants it used, and the null is refused unless they match exactly.
 
 The trials themselves rather than a fingerprint of them: summary statistics over a vector of 1s and -1s are close to no information, since the count of each is fixed by the sum, so only the index-weighted sum separates arrangements and `c(1, -1, -1, 1, -1, -1)` and `c(-1, 1, 1, -1, -1, -1)` agree on all six. A few hundred numbers is cheaper than any digest base R could build. Derived on demand, so the `.Rdata` contract is unchanged.
 
 ## A resumed search restores its design and its random stream
 
-The documented resume names only the state and the responses, so anything not carried in the state reverts to the call's defaults: a search begun at `latent_sigma = 0.5, sigma_decay = 0.8` would continue at sigma 1 rather than 0.4, and one resumed in a new session would draw from that session's unrelated stream.
+The documented resume names only the state and the responses, so anything not in the state reverts to the call's defaults: a search begun at `latent_sigma = 0.5, sigma_decay = 0.8` would continue at sigma 1 rather than 0.4, and one resumed in a new session would draw from that session's unrelated stream.
 
-The settings, the seed that names the files, and `.Random.seed` all travel in the state. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind reverts a resume later. Tests that pass every argument on every call, which no documented usage does, cannot see any of this.
+The settings, the seed, a run identifier and `.Random.seed` travel in the state. The run identifier separates two searches sharing a `stimulus_path`, which the seed cannot: the default is one seed, so two searches under it wrote the same state filename every generation. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind reverts a resume later.
 
 ## Informational value uses a permutation null, not the erratum formula
 

@@ -552,3 +552,29 @@ test_that("antiCI turns the participant directions with the group one", {
   expect_equal(ci$direction, colMeans(ci$pid_directions))
   expect_equal(anti$direction, colMeans(anti$pid_directions))
 })
+
+test_that("a classification image is not refused for a numeric round trip", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 20)
+  responses <- rep(c(1, -1), 10)
+
+  # 1:20 is integer and the same values read back from a file are double, and
+  # identical() separates them. They select and weight the same trials, so a
+  # classification image must not be refused against its own data for having
+  # made a round trip through a CSV.
+  expect_false(identical(1:20, as.numeric(1:20)))
+
+  ci <- generateLatentCI(1:20, responses, fixture$stimuli$rdata, save_as_png = FALSE)
+
+  expect_no_error(
+    computeLatentInfoVal2IFC(ci, fixture$stimuli$rdata, as.numeric(1:20),
+                             as.numeric(responses), iter = 5)
+  )
+
+  # Different values are still refused, so the check has not simply been loosened.
+  expect_error(
+    computeLatentInfoVal2IFC(ci, fixture$stimuli$rdata, as.numeric(1:20),
+                             rev(responses), iter = 5),
+    'not computed from these inputs'
+  )
+})

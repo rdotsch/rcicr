@@ -204,9 +204,14 @@ analysisInputs <- function(stored, stimuli, responses, participants) {
   #
   # Participants as characters, so a factor and the character vector it came from
   # are the same analysis.
+  # As doubles, because the storage type is not part of the analysis: stimuli
+  # written as 1:20 are integer and the same values read back from a CSV are
+  # double, and identical() separates them. Both select and weight the same
+  # trials, so a classification image must not be refused against its own data
+  # for having made a round trip through a file.
   return(list(stimulus = stimulusFingerprint(stored),
-              stimuli = trials$stimuli,
-              responses = trials$responses,
+              stimuli = as.numeric(trials$stimuli),
+              responses = as.numeric(trials$responses),
               participants = pids))
 }
 
