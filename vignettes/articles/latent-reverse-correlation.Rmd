@@ -10,7 +10,7 @@ library(rcicr)
 
 Ordinary reverse correlation adds sinusoid noise to a base face. That basis is unconstrained, which is its strength and its cost: it can express anything, and almost every point in it is not a face. The classification image comes out as a grey field that a reader has to be told how to see.
 
-Reverse correlation in the latent space of a generative face model swaps the basis and leaves the arithmetic alone. The classification image is still a response-weighted mean of the perturbations a participant chose. Because every point in that space is a face, the answer is a face too. For the method see Albohn, Uddenberg and Todorov (2022), *Frontiers in Psychology*, 13, 997498, <https://doi.org/10.3389/fpsyg.2022.997498>.
+Reverse correlation in the latent space of a generative face model swaps the basis and leaves the arithmetic alone. The classification image is still a response-weighted mean of the perturbations a participant chose. Because every point in that space is a face, the answer is a face too. Albohn, Uddenberg and Todorov (2022) showed that this works on StyleGAN2 faces (*Frontiers in Psychology*, 13, 997498, <https://doi.org/10.3389/fpsyg.2022.997498>). What follows is not their procedure, and [Where this differs from the published method](#where-this-differs-from-the-published-method) sets the two side by side.
 
 **This module is experimental and switched off by default.** Nothing in it runs unless you set `options(rcicr.experimental = TRUE)`, and setting it means accepting that its numeric output is not yet covered by the guarantee that a stored analysis script reproduces its results. Record the rcicr version alongside anything you keep.
 
@@ -417,6 +417,28 @@ The shipped script prints values for `latent_mean` and `latent_sd` when run with
 A GPU is not required for any of this. NVIDIA's custom CUDA operations each ship a pure-PyTorch reference implementation that runs when no GPU is present, so the script works on CPU after printing warnings about the fallback. It is slow there, on the order of seconds per 1024px image, and a 256px checkpoint is much faster and needs no other change. That is usually fast enough regardless, because `generateStimuliLatent2IFC()` renders a whole stimulus set in one batch before the experiment runs rather than a face at a time while a participant waits. The exception is `searchLatent2IFC()` with a `respond` callback, which renders between generations; without a GPU, use its resumable mode, which batches each generation instead.
 
 Such a generator is too large to store, so the stimulus file records a fingerprint of it instead of the model. `generateLatentCI()` then needs the generator handed back to it, and refuses one whose fingerprint does not match: a classification image rendered through the wrong model is a face that looks entirely plausible and belongs to nobody. Passing `weights` ties the fingerprint to the model file, so swapping the weights behind the same script is caught.
+
+## Where this differs from the published method
+
+Albohn, Uddenberg and Todorov (2022) demonstrated latent-space reverse correlation, and rcicr does not reimplement their task. Their design and this one share an estimator shape — a difference of means over the latents a participant chose — and differ in almost everything around it.
+
+| | Albohn, Uddenberg and Todorov (2022) | `generateStimuliLatent2IFC()` |
+|---|---|---|
+| generator | StyleGAN2, W+ (an 18 × 512 matrix per face), with 2,484 real neutral faces GAN-inverted into it | any generator meeting rcicr's contract |
+| what one stimulus is | ten of those inverted faces averaged, plus noise | one fixed base latent, plus a per-trial perturbation |
+| perturbation | Gaussian, `sd = 0.4` in latent units | Gaussian, `latent_sigma` in units of how far the training faces spread |
+| what a trial shows | one face | two: the base plus the perturbation, and the base minus it |
+| the response | three-way: the trait, its opposite, or "neither" | two-way, coded `1` and `-1` |
+| the origin | that participant's average "neither" latent | the base latent the stimuli were built around |
+| the estimate | mean latent of the trait bin, minus that of the opposite bin | response-weighted mean of the perturbations |
+| intensity | direction times a constant chosen by the researcher | `latent_scaling` |
+| trials | 300 stimuli, the same set for every participant | `n_trials`, 300 by default, the same set for every participant |
+
+The reason for the two-way task is continuity rather than principle. An rcicr user already has a 2IFC script that shows an original and an inverted image and records `1` or `-1`, and that script runs against these stimuli unchanged. The antithetic pair is also worth having on its own terms, because it halves the variance of the estimator. A three-way task with a per-participant origin is a coherent alternative and would be a second entry point, not a setting on this one: the "neither" bin puts the starting point in the analysis, whereas the base latent here is fixed when the stimuli are made and written into the `.Rdata`.
+
+Two further things in this article are not from the paper at all. There is no GAN inversion step, so nothing here starts from a real face unless you invert one yourself and pass it as `base_latent`. And the paper runs one round; [the search](#searching-for-the-face-rather-than-the-direction) above is an addition, motivated by the distance problem, which a single round of signs cannot solve in any of these designs.
+
+One result of theirs the measurements above independently reproduce: they set out to need "only a few hundred trials" where noise-only methods need thousands, and the [basis comparison](#what-the-change-of-basis-buys) puts thirty latent trials ahead of a thousand sinusoid ones.
 
 ## What these pictures are, and are not
 

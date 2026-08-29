@@ -2,15 +2,15 @@
 
 Why the experimental latent-space reverse correlation behaves as it does.
 
-Separate from [`DECISIONS.md`](DECISIONS.md), which was within 80 words of its budget when this module was written. Fold this in and drop the file when the module leaves the experimental gate behind.
+Separate from [`DECISIONS.md`](DECISIONS.md), which was near its budget when this module was written. Fold this in and drop the file when the gate comes off.
 
 ## The module is exported and gated rather than unexported
 
 Every function here refuses to run unless `options(rcicr.experimental = TRUE)` is set.
 
-The gate is not to hide the code but to make a user state that they accept a weaker guarantee: the module's numeric output is not covered by the promise that a stored script reproduces its results, so a classification image computed today may not reproduce under the next development build.
+The gate is not to hide the code but to make a user state that they accept a weaker guarantee: the module's numeric output is not covered by the promise that a stored script reproduces its results, so a classification image computed today may not reproduce under the next build.
 
-Exported rather than internal, because an unexported function gets no manual page, no pkgdown entry, and no `R CMD check` of its examples, and the checking is the point of having continuous integration on it at all.
+Exported rather than internal, because an unexported function gets no manual page, no pkgdown entry, and no `R CMD check` of its examples, and the checking is the point of running continuous integration on it.
 
 The gate comes off once a golden master pins the numbers and a release ships them.
 
@@ -40,9 +40,9 @@ Under Gaussian perturbations of covariance S, the response-weighted mean estimat
 
 ## A 2IFC response carries no distance, so agreement between generations supplies it
 
-A sign says which of two faces is preferred and not by how much. The consequence is exact rather than approximate: the response-weighted mean converges to `sqrt(2/pi) * S %*% u / sqrt(t(u) %*% S %*% u)`, whose length in standard deviations is the same whatever the length of `u`. A single round of trials therefore cannot say how far along the estimated direction to go, which is why the scaling constant in `generateLatentCI()` is the researcher's choice and not something the data can settle.
+A sign says which of two faces is preferred, not by how much. The consequence is exact: the response-weighted mean converges to `sqrt(2/pi) * S %*% u / sqrt(t(u) %*% S %*% u)`, whose length in standard deviations is the same whatever the length of `u`. A single round therefore cannot say how far along the estimated direction to go, which is why the scaling constant in `generateLatentCI()` is the researcher's choice and not something the data can settle.
 
-Two rules for `searchLatent2IFC()` were tried and rejected before the one that is there.
+Two rules for `searchLatent2IFC()` were rejected first.
 
 A step proportional to the estimate does not converge: it moved about one standard deviation every generation however close the centre already was, circling the answer while the distance bounced between 0.3 and 1.0.
 
@@ -50,7 +50,7 @@ A fixed schedule of `alpha / generation^step_decay` converges only when `alpha` 
 
 The distance is in the sequence of estimates rather than any one of them: generations that agree mean the centre is still short, generations that disagree mean it went past. The step grows while they agree and shrinks when they do not, which settles because `step_grow * step_shrink` is below 1, so an oscillation cannot sustain itself. Against the same observers this reached 0.75 and 3.48 where the fixed schedule reached 2.92 and 12.23, at no cost near the target.
 
-The same sequence is what the `cosine_with_previous` diagnostic reports, so the number that drives the step is also the number a researcher reads to see what the search did.
+The `cosine_with_previous` diagnostic reports that same sequence, so the number driving the step is the one a researcher reads.
 
 ## Whitening the search direction was tried and is worse
 
@@ -70,7 +70,7 @@ Shrinking the perturbations as the search proceeds sounds like it should sharpen
 
 The argument stays, because a real participant's discriminability is not the simulation's. The default does not.
 
-A noiseless simulated observer cannot inform this at all: its responses depend only on the sign of a projection, which is unchanged by scaling the perturbations, so `sigma_decay` has mathematically no effect on such a run. Any tuning of it needs an observer with internal noise, and anyone re-measuring it should check that first, because a sweep against a noiseless observer returns identical numbers for every value and reads as a bug in the sweep.
+A noiseless simulated observer cannot inform this at all: its responses depend only on the sign of a projection, which is unchanged by scaling the perturbations, so `sigma_decay` has mathematically no effect on such a run. Tuning it needs an observer with internal noise: a sweep against a noiseless one returns identical numbers for every value and reads as a bug in the sweep.
 
 ## Responses are checked, and the module is stricter than the pixel pipeline
 
@@ -82,15 +82,13 @@ One check, `checkResponseCoding()`, at every entry point that takes responses. C
 
 ## The null shuffles the observed responses rather than drawing fresh ones
 
-Written first as `((runif(n) > 0.5) * 2) - 1`, copied from `generateReferenceDistribution2IFC()` where it is correct: that function simulates an observer from scratch, so balanced coin flips are exactly what it wants. Here the documentation promised a permutation null and the code did not deliver one.
+`computeLatentInfoVal2IFC()` holds the response multiset fixed and breaks only its pairing with the stimuli, which is the question being asked; it takes the responses as an argument for that reason.
 
-The difference is not cosmetic. A participant who pressed one key more often than the other would be compared against balanced null vectors they could never have produced, and the imbalance would be reported as latent signal. In the limit, an all-one response vector has a single possible permutation and must sit at the centre of its own null; against fresh coin flips it scores as though it carried information.
+Balanced coin flips are right in `generateReferenceDistribution2IFC()`, which simulates an observer from scratch, and wrong here. A participant who pressed one key more often than the other would be compared against null vectors they could never have produced, and the imbalance would be reported as latent signal. In the limit, an all-one response vector has a single possible permutation and must sit at the centre of its own null; against fresh coin flips it scores as though it carried information.
 
-Holding the response multiset fixed and breaking only its pairing with the stimuli is the question being asked, so `computeLatentInfoVal2IFC()` takes the responses as an argument.
+The shuffle is within each participant, when there are participants. A global one moves answers between people, so the difference between two participants' key biases would read as signal.
 
-Within each participant, when there are participants. A global shuffle moves answers between people, so one who always pressed one key and one who always pressed the other would be compared against a null full of mixed answers neither could have given, and the difference between their key biases would read as signal.
-
-That case also makes the null degenerate: one arrangement means no spread, and the standardised score is 0/0. The limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the permutation null exists to handle.
+That case also leaves the null with one arrangement, no spread, and a standardised score of 0/0. The limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the permutation null exists to handle.
 
 ## One direction computation, shared by the estimate and its null
 
@@ -124,10 +122,12 @@ The two numbers are not comparable with each other, and the documentation says s
 
 The rest of the package parallelises with `parallel` and `foreach`. This module renders in the calling process.
 
-A generator is a single external resource: a GPU, a Python interpreter, a loaded model. Fanning it across workers either duplicates the model in memory or contends for the device, and neither is an improvement. The speed is in batching instead, which is why `render()` takes a matrix of latents rather than one at a time, and why `generateStimuliLatent2IFC()` has a `batch_size` rather than an `ncores`.
+A generator is a single external resource: a GPU, a Python interpreter, a loaded model. Fanning it across workers either duplicates the model in memory or contends for the device. The speed is in batching instead, which is why `render()` takes a matrix of latents rather than one at a time, and why `generateStimuliLatent2IFC()` has a `batch_size` rather than an `ncores`.
 
-## The antithetic pair was kept
+## The task is 2IFC, where the published procedure is a three-way categorisation
 
-Each trial renders the base latent plus a perturbation and the base latent minus it, rather than two independent samples.
+Each trial renders the base latent plus a perturbation and the base latent minus it, and the participant chooses between them.
 
-It keeps the response coding of the existing pipeline exactly, so a task script producing 1 for the original image and -1 for the inverted one needs no reshaping. The pair is also antithetic, which halves the variance of the estimator built from it.
+Albohn, Uddenberg and Todorov (2022) show one face per trial -- ten inverted faces averaged, plus N(0, 0.4) noise -- and ask for the trait, its opposite, or "neither". Their direction is the trait bin's mean latent minus the opposite bin's, applied to the mean of that participant's "neither" bin.
+
+Both are differences of means over chosen latents, and the 2IFC form is the one that fits here: it keeps the existing response coding, so a task script producing 1 for the original and -1 for the inverted image needs no reshaping, and the antithetic pair halves the estimator's variance. A per-participant origin drawn from a "neither" bin could not go in the stimulus file anyway, which fixes the base latent when the stimuli are made. Their task would be a second entry point, not a change to this one.

@@ -7,8 +7,10 @@
   face and a classification image comes out as a greyscale field. In a generative model's latent
   space every point is a face, so the estimate stays on the face manifold. The arithmetic is
   unchanged: the classification image is still a response-weighted mean of the perturbations a
-  participant chose, in a different basis. For the method see Albohn, Uddenberg and Todorov
-  (2022) in Frontiers in Psychology, <https://doi.org/10.3389/fpsyg.2022.997498>.
+  participant chose, in a different basis. Albohn, Uddenberg and Todorov (2022) showed the idea
+  works on StyleGAN2 faces, in Frontiers in Psychology, <https://doi.org/10.3389/fpsyg.2022.997498>;
+  the task here is rcicr's own 2IFC rather than their three-way categorisation, and the article
+  sets the two designs side by side.
 
   Nothing in this module runs unless you set `options(rcicr.experimental = TRUE)`, and setting it
   means accepting a weaker guarantee than the rest of the package gives: **while the module is
