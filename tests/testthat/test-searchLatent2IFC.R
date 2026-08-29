@@ -547,3 +547,33 @@ test_that("two searches in one directory do not overwrite each other's state", {
   expect_true(grepl(sub('^search_([^_]+)_.*', '\\1', basename(first$state)),
                     basename(resumed$state), fixed = TRUE))
 })
+
+test_that("rendering settings survive a resume", {
+  withr::local_options(rcicr.experimental = TRUE)
+  generator <- recovery_generator(n_components = 4, n_faces = 8, size = 8)
+  out <- withr::local_tempdir()
+
+  # batch_size and save_as_png have defaults, which is what makes leaving them
+  # out of the state dangerous: the documented resume names only the state and
+  # the responses, so both would quietly revert.
+  calls <- new.env(parent = emptyenv())
+  calls$sizes <- integer(0)
+  counting <- generator
+  counting$render <- function(latents) {
+    calls$sizes <- c(calls$sizes, nrow(latents))
+    generator$render(latents)
+  }
+
+  step <- searchLatent2IFC(counting, n_generations = 3, n_trials = 8,
+                           stimulus_path = out, batch_size = 2, save_as_png = FALSE,
+                           seed = 1)
+  expect_length(list.files(out, pattern = '_ori[.]png$'), 0)
+
+  calls$sizes <- integer(0)
+  step <- searchLatent2IFC(counting, stimulus_path = out, state = step$state,
+                           responses = rep(c(1, -1), 4))
+
+  # Still no images, and still rendered two at a time rather than eight.
+  expect_length(list.files(out, pattern = '_ori[.]png$'), 0)
+  expect_true(all(calls$sizes <= 2))
+})

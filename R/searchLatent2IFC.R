@@ -234,6 +234,8 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     # resumed into one directory would write over each other's generations, and
     # the files that survived would name a seed that did not produce them.
     seed <- config$seed
+    batch_size <- config$batch_size
+    save_as_png <- config$save_as_png
     assign('.Random.seed', previous$rng_state, envir = globalenv()) # nolint: object_name_linter.
   }
 
@@ -280,7 +282,14 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
       alpha = alpha,
       step_grow = step_grow,
       step_shrink = step_shrink,
-      seed = seed
+      seed = seed,
+      # Rendering settings too. They have defaults, which is what makes leaving
+      # them out dangerous: the documented resume names only the state and the
+      # responses, so a search begun at batch_size = 4 would resume at 32 and
+      # exhaust the memory of the generator it was sized for, and one begun with
+      # save_as_png = FALSE would start writing images it was asked not to.
+      batch_size = batch_size,
+      save_as_png = save_as_png
     ),
     # Where the random number stream had reached. set.seed(seed) runs only when
     # the first generation is created, so without this a search resumed in a new

@@ -254,3 +254,29 @@ test_that("loading a latent file cannot overwrite the caller's variables", {
     expect_identical(get(nm), 'mine', info = nm)
   }
 })
+
+test_that("two stimulus sets in one directory do not overwrite each other", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  generator <- latentGeneratorPCA(make_face_set(dir, n = 6), n_components = 3,
+                                  img_size = 16)
+  out <- withr::local_tempdir()
+
+  # Same label and seed, made well within one minute of each other, differing
+  # only in latent_sigma. A timestamp resolved to the minute gave both the same
+  # filename, so the first call's returned path pointed at the second call's
+  # perturbations and responses to the first set would be analysed against them.
+  first <- generateStimuliLatent2IFC(generator, n_trials = 4, stimulus_path = out,
+                                     latent_sigma = 1, seed = 1, save_as_png = FALSE)
+  second <- generateStimuliLatent2IFC(generator, n_trials = 4, stimulus_path = out,
+                                      latent_sigma = 3, seed = 1, save_as_png = FALSE)
+
+  expect_false(first$rdata == second$rdata)
+  expect_true(file.exists(first$rdata))
+  expect_true(file.exists(second$rdata))
+
+  # And the first file still holds the first call's own perturbations.
+  stored <- loadLatentStimulusParams(first$rdata)
+  expect_equal(stored$latent_params, first$latent_params)
+  expect_equal(stored$latent_sigma, 1)
+})

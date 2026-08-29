@@ -220,9 +220,16 @@ writeLatentRdata <- function(generator, base_latent, latent_params, stimulus_pat
   n_trials <- nrow(latent_params)
   generator_version <- utils::packageVersion('rcicr')
 
+  # The pixel pipeline's timestamp resolves to the minute, which is enough there
+  # because generating a stimulus set at 512px takes longer than that. Here a set
+  # can be made in under a second, so two calls sharing a label and seed within
+  # one minute wrote the same file and the first call's returned path then
+  # pointed at the second's perturbations. The run id makes the name unique
+  # without consuming the random stream that seed reproduces the set from.
   name <- paste(
     label, 'seed', seed, 'time',
-    format(Sys.time(), format = '%b_%d_%Y_%H_%M.Rdata'), sep = '_'
+    paste0(format(Sys.time(), format = '%b_%d_%Y_%H_%M'), '_', basename(tempfile('')), '.Rdata'),
+    sep = '_'
   )
   file <- file.path(stimulus_path, name)
 
