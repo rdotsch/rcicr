@@ -10,7 +10,7 @@ library(rcicr)
 
 Ordinary reverse correlation adds sinusoid noise to a base face. That basis is unconstrained, which is its strength and its cost: it can express anything, and almost every point in it is not a face. The classification image comes out as a grey field that a reader has to be told how to see.
 
-Reverse correlation in the latent space of a generative face model swaps the basis and leaves the arithmetic alone. The classification image is still a response-weighted mean of the perturbations a participant chose. Because every point in that space is a face, the answer is a face too. For the method see Albohn, Uddenberg and Todorov (2022), *Behavior Research Methods*, <https://doi.org/10.3758/s13428-022-01958-6>.
+Reverse correlation in the latent space of a generative face model swaps the basis and leaves the arithmetic alone. The classification image is still a response-weighted mean of the perturbations a participant chose. Because every point in that space is a face, the answer is a face too. For the method see Albohn, Uddenberg and Todorov (2022), *Frontiers in Psychology*, 13, 997498, <https://doi.org/10.3389/fpsyg.2022.997498>.
 
 **This module is experimental and switched off by default.** Nothing in it runs unless you set `options(rcicr.experimental = TRUE)`, and setting it means accepting that its numeric output is not yet covered by the guarantee that a stored analysis script reproduces its results. Record the rcicr version alongside anything you keep.
 
