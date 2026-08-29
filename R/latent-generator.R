@@ -107,8 +107,17 @@ validateGenerator <- function(generator, probe = TRUE) {
     stop(msg, call. = FALSE)
   }
 
-  if (!is.character(generator$fingerprint) || length(generator$fingerprint) != 1) {
-    stop('This generator\'s fingerprint is not a single string.', call. = FALSE)
+  # A fingerprint is what says two generators are the same renderer, so a blank
+  # or missing one makes every generator carrying it interchangeable with every
+  # other -- matchGenerator() would render a classification image through a model
+  # the participants never saw. Nothing usable can be identified by nothing.
+  if (!is.character(generator$fingerprint) || length(generator$fingerprint) != 1 ||
+        is.na(generator$fingerprint) || !nzchar(trimws(generator$fingerprint))) {
+    stop(paste0('This generator\'s fingerprint is not a single non-empty ',
+                'string. It is what identifies the renderer that made a set of ',
+                'stimuli, so a blank or missing one would let any generator ',
+                'pass as the one participants saw.'),
+         call. = FALSE)
   }
 
   if (probe) {

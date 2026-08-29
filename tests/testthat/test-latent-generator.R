@@ -153,3 +153,29 @@ test_that("a dimension with no spread is rejected rather than dividing by zero",
   negative$latent_sd[1] <- -1
   expect_error(validateGenerator(negative), 'zero or negative')
 })
+
+test_that("a blank or missing fingerprint is refused", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  generator <- latentGeneratorPCA(make_face_set(dir), n_components = 3, img_size = 16)
+
+  # A fingerprint is what says two generators are the same renderer. If a blank
+  # one were allowed, every generator carrying it would match every other, and
+  # matchGenerator() would render a classification image through a model the
+  # participants never saw.
+  for (bad in list(NA_character_, '', '   ')) {
+    broken <- generator
+    broken$fingerprint <- bad
+    expect_error(validateGenerator(broken, probe = FALSE), 'single non-empty')
+  }
+
+  # Two generators sharing a blank fingerprint would otherwise be
+  # indistinguishable, which is the consequence worth naming.
+  blank <- generator
+  blank$fingerprint <- ''
+  other <- blank
+  other$state$mean_face <- other$state$mean_face + 0.1
+  expect_identical(blank$fingerprint, other$fingerprint)
+
+  expect_silent(validateGenerator(generator, probe = FALSE))
+})
