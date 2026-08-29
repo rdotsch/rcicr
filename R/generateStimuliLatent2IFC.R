@@ -124,7 +124,10 @@ generateStimuliLatent2IFC <- function(generator, n_trials = 300, stimulus_path, 
   )
   latent_params <- sweep(latent_params, 2, latent_sigma * generator$latent_sd, '*')
 
+  run_id <- newSearchRunId()
+
   if (save_as_png) {
+    refuseToOverwriteStimuli(stimulus_path, label, seed, 'generateStimuliLatent2IFC')
     writeLatentStimuli(generator, base_latent, latent_params, stimulus_path,
                        label, seed, batch_size)
   }
@@ -132,7 +135,7 @@ generateStimuliLatent2IFC <- function(generator, n_trials = 300, stimulus_path, 
   rdata_file <- NA_character_
   if (save_rdata) {
     rdata_file <- writeLatentRdata(generator, base_latent, latent_params,
-                                   stimulus_path, label, latent_sigma, seed)
+                                   stimulus_path, label, latent_sigma, seed, run_id)
   }
 
   return(invisible(list(
@@ -208,13 +211,40 @@ writeStimulusBatch <- function(trials, originals, inverted, stimulus_path, label
 
 # The %05d trial number is the stimulus index into latent_params, matching the
 # pixel pipeline's naming so a task script reads either set the same way.
+# Two calls at the same label and seed write the same image names, so the second
+# replaces the first participant's stimuli while the first .Rdata survives,
+# pointing at perturbations whose faces have been swapped underneath it.
+#
+# Refused rather than renamed. The trial number in a stimulus filename is part of
+# what this module documents -- it is how a task script finds image 42 and how a
+# response file is matched back to a perturbation -- so making the names
+# unpredictable to keep them unique would break the thing they exist for. An
+# error names the collision and the two ways out.
+refuseToOverwriteStimuli <- function(stimulus_path, label, seed, caller) {
+  existing <- list.files(stimulus_path,
+                         pattern = paste0('^', sprintf('%s_%s_', label, seed), '[0-9]{5}_(ori|inv)[.]png$'))
+
+  if (length(existing) > 0) {
+    msg <- paste0(
+      caller, '() would overwrite ', length(existing), ' stimulus image(s) ',
+      'already in ', stimulus_path, ', because they carry the same label ("',
+      label, '") and seed (', seed, '). Their .Rdata would survive and point at ',
+      'perturbations whose images had been replaced. Give this set its own ',
+      'label, or write it to an empty directory.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  return(invisible(TRUE))
+}
+
 latentStimulusFile <- function(stimulus_path, label, seed, trial, suffix) {
   name <- sprintf('%s_%s_%05d_%s.png', label, seed, trial, suffix)
 
   return(file.path(stimulus_path, name))
 }
 
-writeLatentRdata <- function(generator, base_latent, latent_params, stimulus_path, label, latent_sigma, seed) {
+writeLatentRdata <- function(generator, base_latent, latent_params, stimulus_path, label, latent_sigma, seed, run_id) {
   generator_spec <- generatorSpec(generator)
   img_size <- generator$img_size
   n_trials <- nrow(latent_params)
@@ -228,7 +258,7 @@ writeLatentRdata <- function(generator, base_latent, latent_params, stimulus_pat
   # without consuming the random stream that seed reproduces the set from.
   name <- paste(
     label, 'seed', seed, 'time',
-    paste0(format(Sys.time(), format = '%b_%d_%Y_%H_%M'), '_', basename(tempfile('')), '.Rdata'),
+    paste0(format(Sys.time(), format = '%b_%d_%Y_%H_%M'), '_', run_id, '.Rdata'),
     sep = '_'
   )
   file <- file.path(stimulus_path, name)

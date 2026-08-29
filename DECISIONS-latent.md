@@ -58,7 +58,7 @@ The `cosine_with_previous` diagnostic reports that same sequence, so the number 
 
 For a direction of travel the covariance weighting looked like a liability: on a generator whose components differ in scale by 65 to 1, the search barely moves along the narrow ones. Dividing it back out measures worse at every distance tried, ending 1.91, 6.32 and 15.61 standard deviations out where leaving it in ended 0.77, 3.89 and 12.93.
 
-An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction afterwards. `latent_sd` sits on the generator so this is visible before a study runs: a first component dwarfing the rest means most variation lies one way.
+An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction afterwards. `latent_sd` on the generator shows this before a study runs.
 
 ## Two meanings of "so many standard deviations", and where each belongs
 
@@ -76,11 +76,11 @@ A noiseless simulated observer cannot inform this at all: its responses depend o
 
 `generateCINoise()` documents that a response "can be changed into a scale", and the pixel pipeline accepts what it is given. The latent module does not: 1 and -1, or an error.
 
-The case that decides it is a 0/1 coding, which several experiment programs write. It raises no error anywhere downstream: it turns the response-weighted mean into a quantity with no meaning and still renders a plausible face. Nothing here depends on the older latitude yet, so a scale can be added later as a decision rather than inherited as an accident.
+The case that decides it is a 0/1 coding, which several experiment programs write. It raises no error downstream: it turns the response-weighted mean into a quantity with no meaning and still renders a plausible face. Nothing here depends on the older latitude, so a scale can be added later as a decision rather than inherited as an accident.
 
 One check, `checkResponseCoding()`, at every entry point that takes responses; the resumable path is the one fed by another program, so it needs it most.
 
-`participants` is length-checked the same way: `coerceTrialVectors()` compares stimuli against responses only, so a short vector recycles through `participants == pid` and deals the trials out among people nobody ran. The check is here rather than in that shared helper, where it would turn data `generateCI()` has always accepted into an error.
+`participants` is length-checked the same way: `coerceTrialVectors()` compares stimuli against responses only, so a short vector recycles through `participants == pid` and deals trials out among people nobody ran. The check is here, not in that shared helper, where it would error on data `generateCI()` has always accepted.
 
 ## The null is the estimator, applied to permuted responses
 
@@ -90,7 +90,7 @@ Balanced coin flips are right in `generateReferenceDistribution2IFC()`, which si
 
 The shuffle is within each participant, when there are participants. A global one moves answers between people, so the difference between two participants' key biases reads as signal.
 
-A null built from its own copy of the arithmetic drifts from the estimate in two ways at once. It pools where the classification image averaged per participant, letting the participant with more trials decide the score. And it permutes responses that pooling has already collapsed over repeated stimuli, shuffling means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, whose two arrangements are not the three arrangements of the answers, collapsed. So `latentDirection()` holds the whole path from trials to a direction and the null calls it per iteration on a trial-level permutation, and the two cannot diverge again without the estimate changing too. Each iteration re-aggregates, so the null scales with trial count as well as `iter`: seconds for 300 trials at the default, far below the pixel-noise equivalent.
+A null built from its own copy of the arithmetic drifts in two ways. It pools where the classification image averaged per participant, letting the participant with more trials decide the score, and it permutes responses that pooling has already collapsed over repeated stimuli, shuffling means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, whose two arrangements are not the three arrangements of the answers, collapsed. So `latentDirection()` holds the whole path from trials to a direction and the null calls it per iteration on a trial-level permutation, and the two cannot diverge again without the estimate changing too. Each iteration re-aggregates, so the null scales with trial count as well as `iter`: seconds for 300 trials at the default, far below the pixel-noise equivalent.
 
 ## Informational value is bound to the analysis, not the stimulus set
 
@@ -102,7 +102,9 @@ The trials themselves rather than a fingerprint of them: summary statistics over
 
 The documented resume names only the state and the responses, so anything not in the state reverts to the call's defaults: a search begun at `latent_sigma = 0.5, sigma_decay = 0.8` would continue at sigma 1 rather than 0.4, and one resumed in a new session would draw from that session's unrelated stream.
 
-The settings, the seed, a run identifier and `.Random.seed` travel in the state. The run identifier separates two searches sharing a `stimulus_path`, which the seed cannot: the default is one seed, so two searches under it wrote the same state filename every generation. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind reverts a resume later.
+The settings, the seed, a run identifier and `.Random.seed` travel in the state. The run identifier separates two searches sharing a `stimulus_path`, which the seed cannot: the default is one seed, so two searches under it wrote the same state filename every generation.
+
+Stimulus images are not renamed that way: the trial number in a filename is how responses are matched back to perturbations, so a collision is refused rather than made unpredictable. Every setting is restored, not only those this generation reads: they are written back into the next state, so one left behind reverts a resume later.
 
 ## Informational value uses a permutation null, not the erratum formula
 
@@ -120,6 +122,6 @@ A generator is a single external resource: a GPU, a Python interpreter, a loaded
 
 Each trial renders the base latent plus a perturbation and the base latent minus it, and the participant chooses between them.
 
-Albohn, Uddenberg and Todorov (2022) show one face per trial -- ten inverted faces averaged, plus N(0, 0.4) noise -- and ask for the trait, its opposite, or "neither", taking the trait bin's mean latent minus the opposite bin's and applying it to that participant's "neither" mean.
+Albohn, Uddenberg and Todorov (2022) show one face per trial -- ten inverted faces averaged, plus N(0, 0.4) noise -- and ask for the trait, its opposite, or "neither", taking the trait bin's mean latent minus the opposite bin's and applying it to that participant's "neither" mean. Their task would be a second entry point (#293), not a change to this one.
 
-Both are differences of means over chosen latents, and the 2IFC form fits here: it keeps the existing response coding, so a task script producing 1 for the original and -1 for the inverted image needs no reshaping, and the antithetic pair halves the estimator's variance. A per-participant origin from a "neither" bin could not go in the stimulus file anyway, which fixes the base latent when the stimuli are made. Their task would be a second entry point (#293), not a change to this one.
+Both are differences of means over chosen latents, and the 2IFC form fits here: it keeps the existing response coding, so a task script producing 1 for the original and -1 for the inverted image needs no reshaping, and the antithetic pair halves the estimator's variance. A per-participant origin from a "neither" bin could not go in the stimulus file anyway.

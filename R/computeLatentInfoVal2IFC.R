@@ -133,7 +133,7 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, parti
   reference_mad <- stats::mad(reference)
 
   return(list(
-    infoVal = standardiseAgainstNull(observed, reference_median, reference_mad),
+    infoVal = standardiseAgainstNull(observed, reference, reference_median, reference_mad),
     observed_norm = observed,
     p = mean(reference >= observed),
     reference_median = reference_median,
@@ -176,9 +176,23 @@ permuteResponses <- function(responses, participants) {
 # pressed one key throughout produces, since their responses have one
 # arrangement. The limit is what is reported, so the number stays readable in
 # the direction it means, and p is unaffected either way.
-standardiseAgainstNull <- function(observed, reference_median, reference_mad) {
+standardiseAgainstNull <- function(observed, reference, reference_median, reference_mad) {
   if (reference_mad > 0) {
     return((observed - reference_median) / reference_mad)
+  }
+
+  # A zero MAD does not mean a null with no spread. It means more than half the
+  # permutations landed on one value, which repeated stimuli make ordinary:
+  # stimuli c(1, 1, 2) answered c(1, 1, -1) put two thirds of the arrangements on
+  # one weighting. Reporting an infinity there would put no scale at all beside a
+  # perfectly finite tail probability.
+  #
+  # The standard deviation is a scale for that case; the limit is only for a null
+  # that genuinely cannot vary, which is the all-one-answer case the permutation
+  # null exists to handle.
+  spread <- stats::sd(reference)
+  if (spread > 0) {
+    return((observed - reference_median) / spread)
   }
 
   if (isTRUE(all.equal(observed, reference_median))) {

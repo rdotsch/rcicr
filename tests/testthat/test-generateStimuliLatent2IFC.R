@@ -280,3 +280,38 @@ test_that("two stimulus sets in one directory do not overwrite each other", {
   expect_equal(stored$latent_params, first$latent_params)
   expect_equal(stored$latent_sigma, 1)
 })
+
+test_that("a second set refuses to overwrite the first's images", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  generator <- latentGeneratorPCA(make_face_set(dir, n = 6), n_components = 3,
+                                  img_size = 16)
+  out <- withr::local_tempdir()
+
+  generateStimuliLatent2IFC(generator, n_trials = 3, stimulus_path = out, seed = 5)
+  expect_length(list.files(out, pattern = '_ori[.]png$'), 3)
+
+  # The trial number in a stimulus filename is how a task script finds image 42
+  # and how a response file is matched back to a perturbation, so the names stay
+  # predictable and the collision is refused instead. Renaming to keep them
+  # unique would break what they exist for.
+  expect_error(
+    generateStimuliLatent2IFC(generator, n_trials = 3, stimulus_path = out, seed = 5),
+    'would overwrite 6 stimulus image'
+  )
+
+  # Its own label, or its own directory, and it goes through.
+  expect_no_error(
+    generateStimuliLatent2IFC(generator, n_trials = 3, stimulus_path = out,
+                              seed = 5, label = 'second')
+  )
+  expect_no_error(
+    generateStimuliLatent2IFC(generator, n_trials = 3, seed = 5,
+                              stimulus_path = withr::local_tempdir())
+  )
+
+  # A different seed is a different set of names, so it is not a collision.
+  expect_no_error(
+    generateStimuliLatent2IFC(generator, n_trials = 3, stimulus_path = out, seed = 6)
+  )
+})

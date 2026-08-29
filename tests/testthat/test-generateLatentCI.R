@@ -578,3 +578,26 @@ test_that("a classification image is not refused for a numeric round trip", {
     'not computed from these inputs'
   )
 })
+
+test_that("a null whose MAD is zero but which varies gets a scale, not an infinity", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 3)
+
+  # Repeated stimuli make this ordinary: c(1, 1, 2) answered c(1, 1, -1) puts two
+  # thirds of the arrangements on one weighting, so more than half the null lands
+  # on a single value and the MAD is zero while the null plainly varies.
+  expect_equal(stats::mad(c(1, 1, 1, 2, 2)), 0)
+
+  ci <- generateLatentCI(c(1, 1, 2), c(1, 1, -1), fixture$stimuli$rdata,
+                         save_as_png = FALSE)
+  info <- computeLatentInfoVal2IFC(ci, fixture$stimuli$rdata, c(1, 1, 2),
+                                   c(1, 1, -1), iter = 200)
+
+  expect_equal(info$reference_mad, 0)
+  expect_true(is.finite(info$infoVal))
+  expect_false(is.na(info$infoVal))
+
+  # And p stays the number to read: a finite tail, not 0 or 1.
+  expect_gt(info$p, 0)
+  expect_lt(info$p, 1)
+})
