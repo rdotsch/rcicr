@@ -2,25 +2,25 @@
 
 Why the experimental latent-space reverse correlation behaves as it does.
 
-Separate from [`DECISIONS.md`](DECISIONS.md), which was near its budget when this module was written. Fold this in and drop the file when the gate comes off.
+Separate from [`DECISIONS.md`](DECISIONS.md), which was near its budget when this module was written. Fold it in and drop this file when the gate comes off.
 
 ## The module is exported and gated rather than unexported
 
 Every function here refuses to run unless `options(rcicr.experimental = TRUE)` is set.
 
-The gate is not to hide the code but to make a user state that they accept a weaker guarantee: the module's numeric output is not covered by the promise that a stored script reproduces its results, so a classification image computed today may not reproduce under the next build.
+The gate is not to hide the code but to make a user accept a weaker guarantee: the module's numeric output is not covered by the promise that a stored script reproduces its results, so a classification image computed today may not reproduce under the next build.
 
-Exported rather than internal, because an unexported function gets no manual page, no pkgdown entry, and no `R CMD check` of its examples, and the checking is the point of running continuous integration on it.
+Exported rather than internal: an unexported function gets no manual page, no pkgdown entry, and no `R CMD check` of its examples, and the checking is the point of running continuous integration on it.
 
-The gate comes off once a golden master pins the numbers and a release ships them.
+The gate comes off once a golden master pins the numbers and a release ships them. 
 
 ## The generator is a contract, not a dependency on torch
 
-R cannot run a StyleGAN. A hard dependency on torch was rejected: it downloads libtorch on first use, would be an Import for a feature most users never touch, and still would not run a StyleGAN without a TorchScript export the user makes themselves.
+R cannot run a StyleGAN. A hard dependency on torch was rejected: it downloads libtorch on first use, would be an Import for a feature most users never touch, and still would not run a StyleGAN without a TorchScript export the user makes.
 
-A generator is instead a list satisfying a documented contract, which `latentGeneratorPCA()` does in base R. That is what lets the module be run, tested and checked with no GPU, no Python, no network and no additional package. An eigenface model is far weaker than a generative adversarial network; it is not there to be a good one, but so the arithmetic is verifiable.
+A generator is instead a list satisfying a documented contract, which `latentGeneratorPCA()` meets in base R. That is what lets the module be run, tested and checked with no GPU, no Python, no network and no extra package. An eigenface model is far weaker than a GAN; it is there to make the arithmetic verifiable, not to be a good face model. 
 
-This is the first `class()` in `R/`, where every other object is an unclassed list. A generator is the one thing a user supplies and the package checks, so it needs a type. The classification image is still a plain list.
+This is the first `class()` in `R/`. A generator is the one thing a user supplies and the package checks, so it needs a type; the classification image is still a plain list.
 
 ## `latentGeneratorTorch()` was planned and not written
 
@@ -28,11 +28,13 @@ A TorchScript backend through the torch package was planned and is not here (#29
 
 ## The stimulus file stores a fingerprint, not the model
 
-A multi-gigabyte generator cannot go in an `.Rdata`, so the file records a string identifying the renderer and `generateLatentCI()` refuses one that does not match. Rendering through the wrong model gives a face that looks plausible and belongs to nobody, which is why it errors rather than warns.
+A multi-gigabyte generator cannot go in an `.Rdata`, so the file records a string identifying the renderer and `generateLatentCI()` refuses one that does not match. The wrong model renders a face that looks plausible and belongs to nobody, so it errors rather than warns.
 
 `latentGeneratorPCA()` is small enough that its components travel inside the file, so it rebuilds from the file alone months later, as `base_faces` makes the pixel-noise pipeline self-contained.
 
-It is summary statistics at full precision, not a digest: base R has no hashing function and none of the Imports provides one, and a determined caller can construct a collision. For an external generator, passing the weights file gives a fingerprint that follows the model, via `tools::md5sum()`.
+It is summary statistics at full precision, not a digest: base R has no hashing function, so a determined caller can construct a collision. Passing an external generator's weights file gives a fingerprint that follows the model, via `tools::md5sum()`.
+
+It cannot cover the scale, which `latentGeneratorCommand()` leaves out of it entirely, so re-estimated `latent_mean` or `latent_sd` match while every size in the module is expressed in those units. `matchGenerator()` compares those directly against the stored spec instead, which needs no digest to be exact.
 
 ## The recovered direction is left weighted by the sampling covariance
 
@@ -40,15 +42,15 @@ Under Gaussian perturbations of covariance S, the response-weighted mean estimat
 
 ## A 2IFC response carries no distance, so agreement between generations supplies it
 
-A sign says which of two faces is preferred, not by how much. The consequence is exact: the response-weighted mean converges to `sqrt(2/pi) * S %*% u / sqrt(t(u) %*% S %*% u)`, whose length in standard deviations is the same whatever the length of `u`. A single round therefore cannot say how far along the estimated direction to go, which is why the scaling constant in `generateLatentCI()` is the researcher's choice and not something the data can settle.
+A sign says which of two faces is preferred, not by how much. The response-weighted mean converges to `sqrt(2/pi) * S %*% u / sqrt(t(u) %*% S %*% u)`, whose length in standard deviations is the same whatever the length of `u`. A single round therefore cannot say how far along the direction to go, which is why `generateLatentCI()`'s scaling constant is the researcher's choice rather than something the data settles.
 
 Two rules for `searchLatent2IFC()` were rejected first.
 
 A step proportional to the estimate does not converge: it moved about one standard deviation every generation however close the centre already was, circling the answer while the distance bounced between 0.3 and 1.0.
 
-A fixed schedule of `alpha / generation^step_decay` converges only when `alpha` happens to suit the distance, which is exactly what is unknown. Measured against simulated observers, `alpha = 1` ended 0.12 standard deviations from a target 1.6 away and 12.23 from one 15.6 away, while `alpha = 3` reversed the ordering. No default can be right for both.
+A fixed schedule of `alpha / generation^step_decay` converges only when `alpha` suits the distance, which is what is unknown. Against simulated observers, `alpha = 1` ended 0.12 standard deviations from a target 1.6 away and 12.23 from one 15.6 away, while `alpha = 3` reversed the ordering. No default is right for both.
 
-The distance is in the sequence of estimates rather than any one of them: generations that agree mean the centre is still short, generations that disagree mean it went past. The step grows while they agree and shrinks when they do not, which settles because `step_grow * step_shrink` is below 1, so an oscillation cannot sustain itself. Against the same observers this reached 0.75 and 3.48 where the fixed schedule reached 2.92 and 12.23, at no cost near the target.
+The distance is in the sequence of estimates rather than any one of them: generations that agree mean the centre is still short, generations that disagree mean it went past. The step grows while they agree and shrinks when they do not, which settles because `step_grow * step_shrink` is below 1. Against the same observers this reached 0.75 and 3.48 where the fixed schedule reached 2.92 and 12.23, at no cost near the target.
 
 The `cosine_with_previous` diagnostic reports that same sequence, so the number driving the step is the one a researcher reads.
 
@@ -56,78 +58,68 @@ The `cosine_with_previous` diagnostic reports that same sequence, so the number 
 
 For a direction of travel the covariance weighting looked like a liability: on a generator whose components differ in scale by 65 to 1, the search barely moves along the narrow ones. Dividing it back out measures worse at every distance tried, ending 1.91, 6.32 and 15.61 standard deviations out where leaving it in ended 0.77, 3.89 and 12.93.
 
-An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction afterwards. `latent_sd` is on the generator so this is visible before a study runs: a first component dwarfing the rest means most variation lies along one direction.
+An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction afterwards. `latent_sd` sits on the generator so this is visible before a study runs: a first component dwarfing the rest means most variation lies one way.
 
 ## Two meanings of "so many standard deviations", and where each belongs
 
 `applyLatentScaling()` measures a displacement as a root mean square across dimensions, so `scaling_constant` means the same on generators of different dimensionality. `searchLatent2IFC()` uses a Euclidean length, because a search direction is usually concentrated in a few dimensions and dividing by their number would inflate the step by up to `sqrt(latent_dim)`.
 
-Writing both as a root mean square made a search step overshoot by exactly that factor: `cosine_with_previous` was -1 in every generation and the search ended further from its target than it began. `latentNorm()` follows `applyLatentScaling()`; informational value is unaffected either way, being a ratio in which a constant factor cancels.
+Writing both as a root mean square overshoots by exactly that factor: `cosine_with_previous` is -1 in every generation and the search ends further from its target than it began. `latentNorm()` follows `applyLatentScaling()`; informational value is unaffected either way, being a ratio in which a constant cancels.
 
 ## `sigma_decay` defaults to 1, against expectation
 
-Shrinking the perturbations as the search proceeds sounds like it should sharpen the answer. Measured against observers with internal noise it is worse at every level, and worst for the noisiest: it shrinks the difference between the two faces while the participant's uncertainty stays put, so responses get noisier exactly as the search needs them finer.
-
-The argument stays, because a real participant's discriminability is not the simulation's. The default does not.
+Shrinking the perturbations as the search proceeds sounds like it should sharpen the answer. Against observers with internal noise it is worse at every level, and worst for the noisiest: it shrinks the difference between the two faces while the participant's uncertainty stays put, so responses get noisier exactly as the search needs them finer. The argument stays, because a real participant's discriminability is not the simulation's; the default does not.
 
 A noiseless simulated observer cannot inform this at all: its responses depend only on the sign of a projection, which is unchanged by scaling the perturbations, so `sigma_decay` has mathematically no effect on such a run. Tuning it needs an observer with internal noise: a sweep against a noiseless one returns identical numbers for every value and reads as a bug in the sweep.
 
 ## Responses are checked, and the module is stricter than the pixel pipeline
 
-`generateCINoise()` documents that a response "can be changed into a scale", and the pixel pipeline accepts whatever it is given. The latent module does not: 1 and -1 or an error.
+`generateCINoise()` documents that a response "can be changed into a scale", and the pixel pipeline accepts what it is given. The latent module does not: 1 and -1, or an error.
 
-The case that decides it is a 0/1 coding, which several experiment programs write. It raises no error anywhere downstream. It turns the response-weighted mean into a quantity with no meaning and still renders a perfectly plausible face, so nothing about the result looks wrong. Nothing in this module depends on the older latitude yet, so a scale can be added later as a decision rather than inherited as an accident.
+The case that decides it is a 0/1 coding, which several experiment programs write. It raises no error anywhere downstream: it turns the response-weighted mean into a quantity with no meaning and still renders a plausible face. Nothing here depends on the older latitude yet, so a scale can be added later as a decision rather than inherited as an accident.
 
-One check, `checkResponseCoding()`, at every entry point that takes responses. Callback mode had it and the resumable path did not, which is the wrong way round: the resumable path is the one fed by another program.
+One check, `checkResponseCoding()`, at every entry point that takes responses; the resumable path is the one fed by another program, so it needs it most.
 
-## The null shuffles the observed responses rather than drawing fresh ones
+`participants` is length-checked the same way: `coerceTrialVectors()` compares stimuli against responses only, so a short vector recycles through `participants == pid` and deals the trials out among people nobody ran. The check is here rather than in that shared helper, where it would turn data `generateCI()` has always accepted into an error.
+
+## The null is the estimator, applied to permuted responses
 
 `computeLatentInfoVal2IFC()` holds the response multiset fixed and breaks only its pairing with the stimuli, which is the question being asked; it takes the responses as an argument for that reason.
 
-Balanced coin flips are right in `generateReferenceDistribution2IFC()`, which simulates an observer from scratch, and wrong here. A participant who pressed one key more often than the other would be compared against null vectors they could never have produced, and the imbalance would be reported as latent signal. In the limit, an all-one response vector has a single possible permutation and must sit at the centre of its own null; against fresh coin flips it scores as though it carried information.
+Balanced coin flips are right in `generateReferenceDistribution2IFC()`, which simulates an observer from scratch, and wrong here: a participant who pressed one key more often would be compared against vectors they could never have produced, and the imbalance reported as signal. An all-one response vector has a single permutation and must sit at the centre of its own null; against coin flips it scores as though it carried information. That case also leaves the null with one arrangement, no spread, and a score of 0/0 — the limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the null exists to handle.
 
-The shuffle is within each participant, when there are participants. A global one moves answers between people, so the difference between two participants' key biases would read as signal.
+The shuffle is within each participant, when there are participants. A global one moves answers between people, so the difference between two participants' key biases reads as signal.
 
-That case also leaves the null with one arrangement, no spread, and a standardised score of 0/0. The limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the permutation null exists to handle.
-
-## One direction computation, shared by the estimate and its null
-
-The null was built by its own copy of the arithmetic, and the copy drifted. It pooled where the classification image had averaged per participant, letting the participant with more trials decide the score. And it permuted responses that pooling had already collapsed over repeated stimuli, shuffling means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, whose two arrangements are not the three arrangements of the answers, collapsed.
-
-Both are one mistake with one fix: `latentDirection()` holds the whole path from trials to a direction, and the null calls it per iteration on a trial-level permutation, so the two cannot diverge again without the estimate changing too.
-
-Each iteration re-aggregates, so the null scales with trial count as well as `iter`: a few seconds for 300 trials at the default, far below the pixel-noise equivalent.
+A null built from its own copy of the arithmetic drifts from the estimate in two ways at once. It pools where the classification image averaged per participant, letting the participant with more trials decide the score. And it permutes responses that pooling has already collapsed over repeated stimuli, shuffling means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, whose two arrangements are not the three arrangements of the answers, collapsed. So `latentDirection()` holds the whole path from trials to a direction and the null calls it per iteration on a trial-level permutation, and the two cannot diverge again without the estimate changing too. Each iteration re-aggregates, so the null scales with trial count as well as `iter`: seconds for 300 trials at the default, far below the pixel-noise equivalent.
 
 ## Informational value is bound to the analysis, not the stimulus set
 
-The first version compared generator fingerprints. Two experiments run through one generator have identical fingerprints by design, which is the whole point of a fingerprint that identifies a renderer, so that check accepted a classification image from one experiment scored against another's perturbations.
+A fingerprint that identifies a renderer is identical for two experiments run through one generator, by design, so it cannot say a classification image and a stimulus file belong together. Nor is the file enough: one file's trials can be analysed many ways. `generateLatentCI()` returns the trials, responses and participants it used, and the null is refused unless they match exactly.
 
-Widening it to the stimulus file was not enough either: one file's trials can be analysed many ways. The fingerprint now covers the file, the trials analysed, the responses and the participant structure, so it identifies the analysis rather than the material. It is derived on demand, so the `.Rdata` contract is unchanged.
+The trials themselves rather than a fingerprint of them: summary statistics over a vector of 1s and -1s are close to no information, since the count of each is fixed by the sum, so only the index-weighted sum separates arrangements and `c(1, -1, -1, 1, -1, -1)` and `c(-1, 1, 1, -1, -1, -1)` agree on all six. A few hundred numbers is cheaper than any digest base R could build. Derived on demand, so the `.Rdata` contract is unchanged.
 
 ## A resumed search restores its design and its random stream
 
-Resumable mode took its settings from whichever call supplied them, so a search begun at `latent_sigma = 0.5, sigma_decay = 0.8` and resumed by the documented call, which names only the state and the responses, continued at sigma 1 rather than 0.4. `set.seed(seed)` likewise ran only when the first state was written, so a search resumed in another session drew from that session's unrelated stream.
+The documented resume names only the state and the responses, so anything not carried in the state reverts to the call's defaults: a search begun at `latent_sigma = 0.5, sigma_decay = 0.8` would continue at sigma 1 rather than 0.4, and one resumed in a new session would draw from that session's unrelated stream.
 
-Both now travel in the state, along with the seed, which names the files. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind reverts a resume later. The tests that missed this passed every argument on every call, which no documented usage does.
+The settings, the seed that names the files, and `.Random.seed` all travel in the state. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind reverts a resume later. Tests that pass every argument on every call, which no documented usage does, cannot see any of this.
 
 ## Informational value uses a permutation null, not the erratum formula
 
 `computeInfoVal2IFC()` compares a classification image against a simulated reference distribution of noise images, and its definition is fixed by the published erratum. `computeLatentInfoVal2IFC()` permutes the observed responses over the same trials instead.
 
-That null needs no rendering, which is why nothing is cached in the stimulus file and there is no interactive prompt, where the pixel-noise equivalent is expensive enough to need both. Length is measured in standard deviations of the generator's training faces so a generator whose components have very different scales does not have its widest dimension decide the answer alone.
-
-The two numbers are not comparable with each other, and the documentation says so rather than leaving a reader to assume a shared scale.
+That null needs no rendering, which is why nothing is cached in the stimulus file and there is no interactive prompt, where the pixel-noise equivalent needs both. Length is in standard deviations of the training faces, so a generator whose components differ wildly in scale does not have its widest dimension decide the answer alone. The two numbers are not comparable with each other, and the documentation says so.
 
 ## Rendering does not go through the foreach backend
 
 The rest of the package parallelises with `parallel` and `foreach`. This module renders in the calling process.
 
-A generator is a single external resource: a GPU, a Python interpreter, a loaded model. Fanning it across workers either duplicates the model in memory or contends for the device. The speed is in batching instead, which is why `render()` takes a matrix of latents rather than one at a time, and why `generateStimuliLatent2IFC()` has a `batch_size` rather than an `ncores`.
+A generator is a single external resource: a GPU, a Python interpreter, a loaded model. Fanning it across workers either duplicates the model or contends for the device. The speed is in batching, which is why `render()` takes a matrix of latents and `generateStimuliLatent2IFC()` has a `batch_size` rather than an `ncores`.
 
 ## The task is 2IFC, where the published procedure is a three-way categorisation
 
 Each trial renders the base latent plus a perturbation and the base latent minus it, and the participant chooses between them.
 
-Albohn, Uddenberg and Todorov (2022) show one face per trial -- ten inverted faces averaged, plus N(0, 0.4) noise -- and ask for the trait, its opposite, or "neither". Their direction is the trait bin's mean latent minus the opposite bin's, applied to the mean of that participant's "neither" bin.
+Albohn, Uddenberg and Todorov (2022) show one face per trial -- ten inverted faces averaged, plus N(0, 0.4) noise -- and ask for the trait, its opposite, or "neither", taking the trait bin's mean latent minus the opposite bin's and applying it to that participant's "neither" mean.
 
-Both are differences of means over chosen latents, and the 2IFC form is the one that fits here: it keeps the existing response coding, so a task script producing 1 for the original and -1 for the inverted image needs no reshaping, and the antithetic pair halves the estimator's variance. A per-participant origin drawn from a "neither" bin could not go in the stimulus file anyway, which fixes the base latent when the stimuli are made. Their task would be a second entry point, not a change to this one.
+Both are differences of means over chosen latents, and the 2IFC form fits here: it keeps the existing response coding, so a task script producing 1 for the original and -1 for the inverted image needs no reshaping, and the antithetic pair halves the estimator's variance. A per-participant origin from a "neither" bin could not go in the stimulus file anyway, which fixes the base latent when the stimuli are made. Their task would be a second entry point (#293), not a change to this one.

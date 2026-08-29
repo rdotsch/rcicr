@@ -102,3 +102,54 @@ test_that("validating a generator does not need the experimental option", {
   expect_silent(validateGenerator(make_generator()))
   expect_error(renderLatent(make_generator(), c(0, 0)), 'experimental')
 })
+
+test_that("a matching fingerprint is not enough when the latent scale differs", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 12)
+  responses <- rep(c(1, -1), 6)
+
+  # latentGeneratorCommand() builds its fingerprint from the command, the
+  # dimensions and the weights file, so re-estimated latent statistics leave it
+  # unchanged. Every size in this module is expressed in latent_sd, so the
+  # stored direction would be rendered against a ruler the stimuli were not made
+  # with.
+  rescaled <- fixture$generator
+  rescaled$latent_sd <- rescaled$latent_sd * 2
+
+  expect_error(
+    generateLatentCI(1:12, responses, fixture$stimuli$rdata, generator = rescaled,
+                     save_as_png = FALSE),
+    'latent_sd differs'
+  )
+
+  shifted <- fixture$generator
+  shifted$latent_mean <- shifted$latent_mean + 1
+  expect_error(
+    generateLatentCI(1:12, responses, fixture$stimuli$rdata, generator = shifted,
+                     save_as_png = FALSE),
+    'latent_mean differs'
+  )
+
+  # The generator the stimuli were made with still passes.
+  expect_no_error(
+    generateLatentCI(1:12, responses, fixture$stimuli$rdata,
+                     generator = fixture$generator, save_as_png = FALSE)
+  )
+})
+
+test_that("a dimension with no spread is rejected rather than dividing by zero", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 6)
+
+  flat <- fixture$generator
+  flat$latent_sd[2] <- 0
+
+  # Every analysis divides by latent_sd to express a size in units of it, so a
+  # zero-spread dimension gives 0 / 0 and the default scaling then compares NaN
+  # against zero, failing far from the generator that caused it.
+  expect_error(validateGenerator(flat), 'zero or negative')
+
+  negative <- fixture$generator
+  negative$latent_sd[1] <- -1
+  expect_error(validateGenerator(negative), 'zero or negative')
+})

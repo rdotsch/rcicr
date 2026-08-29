@@ -435,3 +435,61 @@ test_that("responses that are not 1 or -1 are refused", {
                                 rdata = fx$stimuli$rdata, save_as_png = FALSE),
                'takes responses coded 1')
 })
+
+test_that("responses that agree on every summary statistic are still told apart", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 6)
+
+  # Six statistics over a vector of 1s and -1s are close to no information: the
+  # count of each is fixed by the sum, so only the index-weighted sum separates
+  # the arrangements. These two agree on all six, so a summary-statistic
+  # fingerprint accepts one classification image against the other's responses
+  # and scores it against a null it has nothing to do with.
+  first <- c(1, -1, -1, 1, -1, -1)
+  second <- c(-1, 1, 1, -1, -1, -1)
+
+  summarise <- function(x) {
+    c(length(x), sum(x), sum(x^2), sum(x * seq_along(x)), min(x), max(x))
+  }
+  expect_equal(summarise(first), summarise(second))
+  expect_false(identical(first, second))
+
+  ci <- generateLatentCI(1:6, first, fixture$stimuli$rdata, save_as_png = FALSE)
+
+  expect_error(
+    computeLatentInfoVal2IFC(ci, fixture$stimuli$rdata, 1:6, second, iter = 5),
+    'not computed from these inputs'
+  )
+  expect_no_error(
+    computeLatentInfoVal2IFC(ci, fixture$stimuli$rdata, 1:6, first, iter = 5)
+  )
+})
+
+test_that("a participant vector shorter than the trials is refused", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 20)
+  responses <- rep(c(1, -1), 10)
+
+  # Two identifiers for twenty trials recycles through `participants == pid`,
+  # dealing the trials out alternately and producing a group classification
+  # image over participants nobody ran.
+  expect_error(
+    generateLatentCI(1:20, responses, fixture$stimuli$rdata,
+                     participants = c('a', 'b'), save_as_png = FALSE),
+    'one participant identifier per trial'
+  )
+  expect_error(
+    computeLatentInfoVal2IFC(list(), fixture$stimuli$rdata, 1:20, responses,
+                             participants = c('a', 'b'), iter = 5),
+    'one participant identifier per trial'
+  )
+
+  # One per trial is still accepted, and so is the pooling default.
+  expect_no_error(
+    generateLatentCI(1:20, responses, fixture$stimuli$rdata,
+                     participants = rep(c('a', 'b'), 10), save_as_png = FALSE)
+  )
+  expect_no_error(
+    generateLatentCI(1:20, responses, fixture$stimuli$rdata, save_as_png = FALSE)
+  )
+})

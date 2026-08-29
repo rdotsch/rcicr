@@ -92,8 +92,19 @@ validateGenerator <- function(generator, probe = TRUE) {
     }
   }
 
-  if (any(generator$latent_sd < 0)) {
-    stop('This generator\'s latent_sd contains negative values.', call. = FALSE)
+  # Not merely non-negative. Every analysis in this module divides by latent_sd
+  # to express a size in units of it, so a zero-spread dimension gives 0 / 0 and
+  # the default 'sd' scaling then compares NaN against zero and fails obscurely,
+  # far from the generator that caused it.
+  if (any(generator$latent_sd <= 0)) {
+    msg <- paste0(
+      'This generator\'s latent_sd contains values that are zero or negative, ',
+      'at position(s) ', paste(utils::head(which(generator$latent_sd <= 0), 3), collapse = ', '),
+      '. Every perturbation size here is measured in units of latent_sd, so a ',
+      'dimension with no spread cannot be perturbed or scaled. Drop those ',
+      'dimensions from the generator instead.'
+    )
+    stop(msg, call. = FALSE)
   }
 
   if (!is.character(generator$fingerprint) || length(generator$fingerprint) != 1) {
@@ -244,6 +255,27 @@ generatorFromSpec <- function(spec) {
 # the participant's, so a mismatch is an error rather than a warning.
 matchGenerator <- function(generator, spec, caller) {
   if (identical(generator$fingerprint, spec$fingerprint)) {
+    # The fingerprint identifies the renderer, and for an external one it says
+    # nothing about the scale the perturbations were measured against:
+    # latentGeneratorCommand() builds it from the command, the dimensions and
+    # the weights file. latent_mean and latent_sd are what every size in this
+    # module is expressed in, so a generator carrying re-estimated statistics
+    # renders the stored direction at the wrong scale while matching. They are
+    # compared directly, which needs no fingerprint to be exact.
+    for (field in c('latent_mean', 'latent_sd')) {
+      if (!isTRUE(all.equal(as.numeric(generator[[field]]), as.numeric(spec[[field]])))) {
+        msg <- paste0(
+          'This generator renders the same images as the one that made these ',
+          'stimuli, but its ', field, ' differs from the one recorded with ',
+          'them. Every perturbation size in this module is expressed in those ',
+          'units, so ', caller, '() would scale the stored direction against a ',
+          'ruler the stimuli were not made with. Pass the generator with the ',
+          field, ' the stimuli were generated under.'
+        )
+        stop(msg, call. = FALSE)
+      }
+    }
+
     return(invisible(TRUE))
   }
 

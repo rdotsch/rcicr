@@ -83,12 +83,14 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, parti
 
   stored <- loadLatentStimulusParams(rdata)
 
+  checkParticipants(participants, stimuli, 'computeLatentInfoVal2IFC')
+
   # The trials and the answers, not just the stimulus file. Fingerprinting the
   # file alone still accepts a classification image built from a different
   # subset of its trials, or from different responses to the same ones, and
   # scores it against a null it has nothing to do with.
-  if (!identical(latent_ci$analysis_fingerprint,
-                 analysisFingerprint(stored, stimuli, responses, participants))) {
+  if (!identical(latent_ci$analysis_inputs,
+                 analysisInputs(stored, stimuli, responses, participants))) {
     msg <- paste0(
       'This classification image was not computed from these inputs. Pass the ',
       'stimulus file, stimuli, responses and participants that ',
@@ -189,12 +191,23 @@ standardiseAgainstNull <- function(observed, reference_median, reference_mad) {
 # The stimulus set plus which of its trials were analysed and what was answered.
 # Participants are folded in as their factor levels, so a per-participant
 # classification image cannot be scored against a pooled null.
-analysisFingerprint <- function(stored, stimuli, responses, participants) {
+analysisInputs <- function(stored, stimuli, responses, participants) {
   trials <- coerceTrialVectors(stimuli, responses, participants)
-  pids <- if (all(is.na(trials$participants))) 0 else as.numeric(factor(trials$participants))
+  pids <- if (all(is.na(trials$participants))) NA_character_ else as.character(trials$participants)
 
-  return(paste0(stimulusFingerprint(stored), '|',
-                fingerprintNumeric(trials$stimuli, trials$responses, pids)))
+  # The trials themselves, not summary statistics of them. Six statistics over a
+  # vector of 1s and -1s carry almost nothing: the number of each is fixed by the
+  # sum, so only the index-weighted sum separates the arrangements and collisions
+  # are easy to write down -- c(1, -1, -1, 1, -1, -1) and c(-1, 1, 1, -1, -1, -1)
+  # agree on all six. The vectors are a few hundred numbers, so keeping them is
+  # both exact and cheaper than any digest base R could build.
+  #
+  # Participants as characters, so a factor and the character vector it came from
+  # are the same analysis.
+  return(list(stimulus = stimulusFingerprint(stored),
+              stimuli = trials$stimuli,
+              responses = trials$responses,
+              participants = pids))
 }
 
 # Length in units of the generator's own per-dimension spread, so the answer

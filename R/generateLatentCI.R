@@ -82,8 +82,10 @@
 #'   the label recorded in the .Rdata file.
 #' @return A list with the classification latent, the direction before and after
 #'   scaling, the rendered classification image, the base latent and its render,
-#'   the per-participant directions when \code{participants} was given, and
-#'   fingerprints of the generator and of the stimulus set it came from.
+#'   the per-participant directions when \code{participants} was given,
+#'   fingerprints of the generator and of the stimulus set it came from, and the
+#'   trials it was computed over, which \code{\link{computeLatentInfoVal2IFC}}
+#'   requires in order to score it against a null built from the same data.
 #' @examples
 #' # This function is part of the experimental latent-space module.
 #' options(rcicr.experimental = TRUE)
@@ -126,6 +128,7 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
   # Length before coding: a caller who passed the wrong number of responses is
   # better told that than told their values are out of range.
   coerceTrialVectors(stimuli, responses, participants)
+  checkParticipants(participants, stimuli, 'generateLatentCI')
   checkResponseCoding(responses, 'generateLatentCI')
 
   estimate <- latentDirection(stored$latent_params, stimuli, responses, participants)
@@ -158,7 +161,7 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
     pid_directions = pid_directions,
     generator_fingerprint = generator$fingerprint,
     stimulus_fingerprint = stimulusFingerprint(stored),
-    analysis_fingerprint = analysisFingerprint(stored, stimuli, responses, participants)
+    analysis_inputs = analysisInputs(stored, stimuli, responses, participants)
   ))
 }
 
@@ -173,6 +176,36 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
 # a scale. That latitude is not carried over here deliberately: this module is
 # new, so nothing depends on it, and a scale can be added as a decision rather
 # than inherited as an accident.
+# One participant identifier per trial, or the NA sentinel meaning "pool
+# everything". coerceTrialVectors() checks stimuli against responses and not this,
+# so a short vector reaches `participants == pid` and recycles: two identifiers
+# for twenty trials silently deal the trials out alternately and give a group
+# classification image over participants nobody ran.
+#
+# The check lives here rather than in coerceTrialVectors(), which the pixel
+# pipeline shares. Tightening it there would turn data that generateCI() has
+# always accepted into an error, which is the one thing this package does not do
+# to an existing script; #294 tracks that side.
+checkParticipants <- function(participants, stimuli, caller) {
+  if (all(is.na(participants))) {
+    return(invisible(TRUE))
+  }
+
+  n_participants <- length(unlist(participants, use.names = FALSE))
+  n_trials <- length(unlist(stimuli, use.names = FALSE))
+
+  if (n_participants != n_trials) {
+    msg <- paste0(
+      caller, '() needs one participant identifier per trial. It was given ',
+      n_participants, ' for ', n_trials, ' trials. Leave participants at its ',
+      'default to pool every trial into one classification image.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  return(invisible(TRUE))
+}
+
 checkResponseCoding <- function(responses, caller) {
   values <- unlist(responses, use.names = FALSE)
 
