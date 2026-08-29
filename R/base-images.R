@@ -42,14 +42,12 @@ readBaseImage <- function(filename, label, img_size, maximize_contrast, caller) 
 
   # Change base face to greyscale if necessary.
   #
-  # Alpha is not a colour, so it is dropped rather than averaged in. Two channels
-  # is grey plus alpha and keeps the first; three or four is RGB or RGBA and
-  # averages the first three. Averaging every channel turned an opaque black
-  # pixel into 0.5 for grey-plus-alpha and 0.25 for RGBA.
+  # This averages alpha in along with the colour channels, which is wrong: #295
+  # fixes it in PR #296, against main, where the bug has been since v1.0.1.
+  # Left alone here so this branch stays a pure extraction and the two changes
+  # do not arrive in one diff.
   if (length(dim(img)) == 3) {
-    channels <- dim(img)[3]
-    keep <- if (channels == 2) 1L else seq_len(min(3, channels))
-    img <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
+    img <- apply(img, c(1, 2), mean)
   }
 
   # Check that the base face matches the requested stimulus size. Automatic

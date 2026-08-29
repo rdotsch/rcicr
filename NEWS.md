@@ -73,37 +73,7 @@
   for a real generative adversarial network follow, and nothing else about the pipeline changes
   when one is supplied.
 
-  No existing function, argument or saved field changes. One number does, for a narrow class
-  of base images -- see "Reproducibility impact" below.
-
-## Reproducibility impact
-
-- **A base face saved with an alpha channel is no longer washed out by it.** Converting a
-  colour base image to greyscale averaged every channel it had, including alpha, which is not
-  a colour. This affects `generateStimuli2IFC()` and everything downstream of the base image
-  it stores, and it is present in every released version, 1.3.0 included.
-
-  **Most projects are unaffected, and it is worth checking which case yours is.** A greyscale
-  or RGB base face never was. A base face with a *constant* alpha -- an ordinary opaque PNG
-  that happens to carry the channel -- comes out identical too, as long as
-  `maximize_baseimage_contrast` is at its default `TRUE`: averaging in a constant and then
-  rescaling to [0, 1] is an affine transform of the same image, so the constant is absorbed.
-
-  Two cases do change. With `maximize_baseimage_contrast = FALSE`, an opaque black pixel was
-  read as 0.25 for RGBA and 0.5 for grey-plus-alpha. And a base face whose alpha *varies* --
-  a face cut out on a transparent background, which is a plausible way to prepare one --
-  was distorted even at the default: on one such image the stored base face correlated 0.973
-  with the intended one, with a mean absolute error of 0.068 per pixel and a maximum of 0.18.
-
-  **If your base faces have a varying alpha channel, the stimuli your participants saw were
-  drawn on a bent version of your base face.** The classification image itself is computed
-  from the noise parameters and the responses, so it is unaffected; what was wrong is the base
-  face stored in the `.Rdata`, the stimuli composed on it, and the CI image rendered on top of
-  it. Re-running `generateCI()` against the same `.Rdata` will not fix it, because the base
-  face is stored there -- the stimuli have to be regenerated from the images.
-
-  The reproducibility gate agrees that nothing else moves: 130 checks identical to v1.0.1, the
-  3 pre-existing expected deviations, 0 unexpected, and no new entry required.
+  No existing function, argument, saved field or number changes.
 
 ## Documentation
 
