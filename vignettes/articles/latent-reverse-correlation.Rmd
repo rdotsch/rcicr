@@ -25,8 +25,11 @@ R cannot run a StyleGAN, so rcicr separates the method from the renderer. A gene
 # built from parts that vary independently, because a set that varies in only
 # one way gives a face space with one direction in it and nothing to search.
 axis <- seq(-1, 1, length.out = 48)
+# Rows of a matrix are rows of the image, and row 1 is the top, so the vertical
+# coordinate runs down while the horizontal one runs across. Building it the
+# other way round renders every face on its side.
 blob <- function(cx, cy, width) {
-  outer(axis, axis, function(x, y) exp(-(((x - cx)^2 + (y - cy)^2) / width)))
+  outer(rev(axis), axis, function(y, x) exp(-(((x - cx)^2 + (y - cy)^2) / width)))
 }
 
 faces <- replicate(30, tempfile(fileext = ".png"))
