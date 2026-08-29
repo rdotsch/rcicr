@@ -228,6 +228,60 @@ step <- searchLatent2IFC(generator, n_generations = 10, n_trials = 30,
                          state = step$state, responses = collected)
 ```
 
+## Starting from photographs
+
+Everything above used synthetic images so the page runs anywhere. `latentGeneratorPCA()` takes photographs just as readily, and an eigenface model over a few hundred aligned faces is a serviceable stimulus space for a pilot, without any generative adversarial network involved.
+
+The R side is one call:
+
+```{r photographs, eval = FALSE}
+generator <- latentGeneratorPCA(
+  list.files("./aligned_faces", pattern = "[.]png$", full.names = TRUE),
+  n_components = 40,
+  img_size = 128
+)
+```
+
+### Getting a set to try it on
+
+rcicr ships no photographs, so the images have to come from somewhere. The quickest starting point needs no download at all: scikit-image bundles a hundred aligned faces from Labeled Faces in the Wild, as `lfw_subset.npy` inside the installed package.
+
+```python
+# pip install scikit-image imageio
+from skimage import data
+from skimage.transform import resize
+import imageio.v3 as iio
+import numpy as np, os
+
+faces = data.lfw_subset()[:100]        # 200 images: the first 100 are the faces
+os.makedirs("aligned_faces", exist_ok=True)
+
+for i, img in enumerate(faces):        # 25x25 originals, upsampled to something usable
+    big = resize(img, (64, 64), order=3, anti_aliasing=True)
+    big = (big - big.min()) / (big.max() - big.min())
+    iio.imwrite(f"aligned_faces/face{i:03d}.png", (big * 255).astype(np.uint8))
+```
+
+Those are 25 by 25 to begin with, so they are a way to see the pipeline work on real faces rather than a basis for a study. For something you could actually run participants on, `sklearn.datasets.fetch_olivetti_faces()` downloads 400 aligned 64 by 64 portraits, and `fetch_lfw_people()` a much larger set at higher resolution. Both fetch over the network, unlike the bundled subset.
+
+### What decides whether it works
+
+**Alignment.** An eigenface model has no notion of correspondence between images, so faces that are not cropped to the same frame with the eyes in the same place spend the leading components on head position and scale. Every set named above is already aligned; a folder of photographs is not.
+
+**What the components turn out to be.** The first ones are usually lighting and background before they are anything about faces. `round(generator$latent_sd, 2)` shows the shape of that, and rendering the components themselves shows it plainly:
+
+```{r components, eval = FALSE}
+# Component k as an image, which is what a latent dimension actually is.
+k <- 1
+matrix(generator$state$components[, k], generator$img_size, generator$img_size)
+```
+
+**Clipping.** A reconstruction leaves `[0, 1]` sooner for photographs than for the smooth synthetic images above, so a large `latent_sigma` or `scaling_constant` gives faces with flat white and black patches rather than plausible ones. `renderLatent()` clamps rather than erroring, so this is something to look at rather than something you will be told about.
+
+### Whose faces
+
+Using a public research dataset to develop a method is ordinary; redistributing one inside a package is a different question, with its own licence terms, and it is why rcicr ships none of these images and builds its own examples from synthetic ones. A face set assembled from photographs of identifiable people carries obligations that a stimulus set generated from noise does not, and those do not disappear because the images went through a decomposition first.
+
 ## Using a real generative model
 
 Nothing above changes when the generator does. `latentGeneratorCommand()` renders by running an external program: rcicr writes the latents to a file, runs the command, and reads back the images it wrote. rcicr never loads the model and gains no dependency from it.
@@ -245,22 +299,6 @@ generator <- latentGeneratorCommand(
   weights     = "ffhq.pkl"
 )
 ```
-
-### Photographs, without a generative adversarial network
-
-`latentGeneratorPCA()` takes photographs as readily as the synthetic images above, and an eigenface model over a few hundred aligned faces is a perfectly serviceable stimulus space for a pilot.
-
-```{r photographs, eval = FALSE}
-generator <- latentGeneratorPCA(
-  list.files("./aligned_faces", pattern = "[.]png$", full.names = TRUE),
-  n_components = 40,
-  img_size = 128
-)
-```
-
-Two things decide whether that works. The faces must be **aligned** — cropped to the same frame with the eyes in the same place — because an eigenface model has no notion of correspondence and will otherwise spend its first components on head position. And the first components will be lighting and background before they are anything about faces, which `round(generator$latent_sd, 2)` makes visible: if one component dwarfs the rest, the stimuli will vary mostly along it.
-
-Clipping is the other thing to watch. An eigenface reconstruction leaves `[0, 1]` sooner for photographs than for the smooth images above, so a large `latent_sigma` or `scaling_constant` produces faces with blown-out highlights rather than plausible ones. `renderLatent()` clamps, so this shows up as flat white and black patches rather than an error.
 
 The shipped script prints values for `latent_mean` and `latent_sd` when run with `--report-stats`. They decide what `latent_sigma = 1` means, so they are worth getting from the network rather than guessing.
 
