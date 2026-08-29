@@ -227,6 +227,11 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
     alpha <- config$alpha
     step_grow <- config$step_grow
     step_shrink <- config$step_shrink
+    # The seed too, which names the stimulus files and the state file. Left on
+    # the current call's default, two searches begun under different seeds and
+    # resumed into one directory would write over each other's generations, and
+    # the files that survived would name a seed that did not produce them.
+    seed <- config$seed
     assign('.Random.seed', previous$rng_state, envir = globalenv()) # nolint: object_name_linter.
   }
 
@@ -271,7 +276,8 @@ searchGenerationStep <- function(generator, n_generations, n_trials, stimulus_pa
       sigma_decay = sigma_decay,
       alpha = alpha,
       step_grow = step_grow,
-      step_shrink = step_shrink
+      step_shrink = step_shrink,
+      seed = seed
     ),
     # Where the random number stream had reached. set.seed(seed) runs only when
     # the first generation is created, so without this a search resumed in a new
@@ -329,18 +335,8 @@ advanceSearchState <- function(generator, state, responses) {
   }
 
   # Checked here as well as in callback mode. Responses collected in another
-  # program arrive as whatever that program wrote, and a 0/1 coding would pass
-  # straight into the weighted mean, changing the estimator and moving the
-  # search to the wrong centre without any error at all.
-  if (anyNA(responses) || !all(responses %in% c(-1, 1))) {
-    offending <- unique(responses[is.na(responses) | !(responses %in% c(-1, 1))])
-    msg <- paste0(
-      'responses must be 1 (the original image was chosen) or -1 (the inverted ',
-      'image was), one per trial. Generation ', stored$generation, ' was given ',
-      paste(utils::head(offending, 3), collapse = ', '), '.'
-    )
-    stop(msg, call. = FALSE)
-  }
+  # program arrive as whatever that program wrote.
+  checkResponseCoding(responses, 'searchLatent2IFC')
 
   config <- stored$config
   direction <- weightedLatentMean(stored$latent_params, responses)

@@ -198,7 +198,9 @@ test_that("mismatched stimuli and responses are rejected", {
   withr::local_options(rcicr.experimental = TRUE)
   fx <- latent_fixture()
 
-  expect_error(generateLatentCI(stimuli = 1:20, responses = 1:5,
+  # Valid codes, wrong count, so this tests the length check rather than
+  # tripping the response-coding one on the way past.
+  expect_error(generateLatentCI(stimuli = 1:20, responses = rep(1, 5),
                                 rdata = fx$stimuli$rdata, save_as_png = FALSE),
                'same length')
 })
@@ -375,4 +377,61 @@ test_that("informational value is tied to the trials and answers analysed", {
   expect_error(computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:10,
                                         rep(c(1, -1), 5), iter = 10),
                'not computed from these inputs')
+})
+
+test_that("the null shuffles within each participant, not across them", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture(n_trials = 40)
+
+  # One participant pressed one key throughout, the other pressed the other.
+  # Every within-participant permutation is the identity, so the observed
+  # direction has to sit exactly at its own null. A global shuffle would mix
+  # their answers into vectors neither of them could have given and report the
+  # difference between their key biases as signal.
+  participants <- c(rep('a', 20), rep('b', 20))
+  responses <- c(rep(1, 20), rep(-1, 20))
+
+  ci <- generateLatentCI(stimuli = 1:40, responses = responses,
+                         participants = participants,
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+  result <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:40, responses,
+                                     participants, iter = 200, response_seed = 1)
+
+  expect_equal(result$p, 1)
+  expect_equal(result$observed_norm, result$reference_median)
+})
+
+test_that("a degenerate null gives a readable informational value", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture(n_trials = 30)
+
+  # One arrangement of the responses means the null has no spread, so the
+  # standardised score is 0 / 0. The limit is reported instead, because NaN in
+  # the headline number is worse than a defined zero for exactly the case the
+  # permutation null was rewritten to handle.
+  biased <- rep(1, 30)
+  ci <- generateLatentCI(stimuli = 1:30, responses = biased,
+                         rdata = fx$stimuli$rdata, save_as_png = FALSE)
+  result <- computeLatentInfoVal2IFC(ci, fx$stimuli$rdata, 1:30, biased,
+                                     iter = 100, response_seed = 1)
+
+  expect_equal(result$reference_mad, 0)
+  expect_false(is.nan(result$infoVal))
+  expect_equal(result$infoVal, 0)
+})
+
+test_that("responses that are not 1 or -1 are refused", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fx <- latent_fixture()
+
+  # 0/1 is what plenty of experiment software writes, and it errors nowhere
+  # downstream: it silently turns the estimator into something meaningless and
+  # still renders a plausible face.
+  expect_error(generateLatentCI(stimuli = 1:20, responses = rep(c(0, 1), 10),
+                                rdata = fx$stimuli$rdata, save_as_png = FALSE),
+               'takes responses coded 1')
+  expect_error(generateLatentCI(stimuli = 1:20,
+                                responses = c(rep(c(1, -1), 9), NA, 1),
+                                rdata = fx$stimuli$rdata, save_as_png = FALSE),
+               'takes responses coded 1')
 })

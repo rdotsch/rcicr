@@ -84,12 +84,20 @@ readBaseImage <- function(filename, label, img_size, maximize_contrast, caller) 
   return(img)
 }
 
+# Indexed by position rather than by name. Looking each image up by its label
+# returns the first entry carrying that label however many share it, and then
+# writes every one of them into the same slot, so a duplicated label silently
+# drops images from the set. generateStimuli2IFC() is protected from that by
+# validateBaseFaceFiles(), which requires unique names; nothing protected the
+# latent pipeline, which builds its labels from file names.
 readBaseImages <- function(base_face_files, img_size, maximize_contrast, caller) {
-  base_faces <- list()
+  labels <- names(base_face_files)
+  base_faces <- vector('list', length(base_face_files))
+  names(base_faces) <- labels
 
-  for (base_face in names(base_face_files)) {
-    base_faces[[base_face]] <- readBaseImage(
-      base_face_files[[base_face]], base_face, img_size, maximize_contrast, caller
+  for (i in seq_along(base_face_files)) {
+    base_faces[[i]] <- readBaseImage(
+      base_face_files[[i]], labels[i], img_size, maximize_contrast, caller
     )
   }
 

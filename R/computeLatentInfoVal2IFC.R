@@ -122,7 +122,8 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, parti
   reference <- numeric(iter)
   for (i in seq_len(iter)) {
     permuted <- latentDirection(stored$latent_params, stimuli,
-                                sample(trial_responses), participants)
+                                permuteResponses(trial_responses, participants),
+                                participants)
     reference[i] <- latentNorm(permuted$direction, latent_sd)
   }
 
@@ -130,7 +131,7 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, parti
   reference_mad <- stats::mad(reference)
 
   return(list(
-    infoVal = (observed - reference_median) / reference_mad,
+    infoVal = standardiseAgainstNull(observed, reference_median, reference_mad),
     observed_norm = observed,
     p = mean(reference >= observed),
     reference_median = reference_median,
@@ -145,6 +146,44 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, parti
 stimulusFingerprint <- function(stored) {
   return(paste0(stored$generator_spec$fingerprint, '|',
                 fingerprintNumeric(stored$latent_params, stored$base_latent)))
+}
+
+# Shuffled within each participant, not across all of them. A global shuffle
+# moves answers between people, so a participant who always pressed one key and
+# one who always pressed the other would produce a null full of mixed answers
+# that neither of them could have given, and the difference between their key
+# biases would be reported as latent signal. Within a participant the multiset
+# each person actually supplied is preserved.
+permuteResponses <- function(responses, participants) {
+  if (all(is.na(participants))) {
+    return(sample(responses))
+  }
+
+  participants <- unlist(participants, use.names = FALSE)
+  permuted <- responses
+  for (pid in unique(participants)) {
+    rows <- participants == pid
+    permuted[rows] <- sample(responses[rows])
+  }
+
+  return(permuted)
+}
+
+# (observed - median) / mad is 0 / 0 when every permutation gives the same
+# norm, which is not a corner case here: it is exactly what a participant who
+# pressed one key throughout produces, since their responses have one
+# arrangement. The limit is what is reported, so the number stays readable in
+# the direction it means, and p is unaffected either way.
+standardiseAgainstNull <- function(observed, reference_median, reference_mad) {
+  if (reference_mad > 0) {
+    return((observed - reference_median) / reference_mad)
+  }
+
+  if (isTRUE(all.equal(observed, reference_median))) {
+    return(0)
+  }
+
+  return(sign(observed - reference_median) * Inf)
 }
 
 # The stimulus set plus which of its trials were analysed and what was answered.

@@ -192,3 +192,29 @@ test_that("a real difference between images is not mistaken for none", {
   generator <- latentGeneratorPCA(files, n_components = 2, img_size = 8)
   expect_gte(generator$latent_dim, 1L)
 })
+
+test_that("images sharing a label are refused rather than silently dropped", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  files <- make_face_set(dir, n = 3)
+
+  # Looking each image up by its label returns the first entry carrying it,
+  # however many share it, and writes them all into one slot. The set would be
+  # built from two of these three images with no indication that one was gone.
+  labelled <- stats::setNames(as.list(files), c('face', 'face', 'other'))
+
+  expect_error(latentGeneratorPCA(labelled, n_components = 2, img_size = 16),
+               'appear more than once')
+})
+
+test_that("every image reaches the decomposition", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+
+  # Distinct labels, so nothing is dropped: the generator has to see all four
+  # images, which n - 1 components of rank confirms.
+  generator <- latentGeneratorPCA(make_face_set(dir, n = 4), n_components = 10,
+                                  img_size = 16)
+  expect_identical(generator$state$n_faces, 4L)
+  expect_identical(generator$latent_dim, 3L)
+})

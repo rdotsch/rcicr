@@ -35,6 +35,11 @@
   and nothing is cached in the stimulus file; it is a different measure from
   `computeInfoVal2IFC()` and the two numbers are not comparable.
 
+  Responses are checked wherever they enter the module: 1 and -1, or an error. A 0/1 coding is
+  what several experiment programs write, and it errors nowhere downstream while turning the
+  estimator into a quantity with no meaning, so it is refused rather than trusted. This is
+  stricter than the pixel-noise pipeline, which documents that a response can be a scale.
+
   `computeLatentInfoVal2IFC()` takes the responses and participants as arguments, because its null
   shuffles the responses rather than drawing fresh ones and rebuilds the direction through the
   same computation the classification image used. It is bound to the analysis that produced that

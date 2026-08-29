@@ -8,11 +8,11 @@ Separate from [`DECISIONS.md`](DECISIONS.md), which was within 80 words of its b
 
 Every function here refuses to run unless `options(rcicr.experimental = TRUE)` is set.
 
-The gate is not there to hide the code, but so a user states that they accept a weaker guarantee than the rest of the package offers: the module's numeric output is not covered by the promise that a stored analysis script reproduces its results, so a classification image computed today may not reproduce under the next development build.
+The gate is not to hide the code but to make a user state that they accept a weaker guarantee: the module's numeric output is not covered by the promise that a stored script reproduces its results, so a classification image computed today may not reproduce under the next development build.
 
 Exported rather than internal, because an unexported function gets no manual page, no pkgdown entry, and no `R CMD check` of its examples, and the checking is the point of having continuous integration on it at all.
 
-The gate comes off once a golden master pins the numbers and a release has shipped them. Until then that carve-out is the reason the module can be changed at all.
+The gate comes off once a golden master pins the numbers and a release ships them.
 
 ## The generator is a contract, not a dependency on torch
 
@@ -28,11 +28,11 @@ A TorchScript backend through the torch package was planned and is not here (#29
 
 ## The stimulus file stores a fingerprint, not the model
 
-A multi-gigabyte generator cannot go in an `.Rdata`, so the file records a string identifying the renderer and `generateLatentCI()` refuses a generator that does not match it. Rendering a classification image through the wrong model produces a face that looks entirely plausible and belongs to nobody, which is why this is an error and not a warning.
+A multi-gigabyte generator cannot go in an `.Rdata`, so the file records a string identifying the renderer and `generateLatentCI()` refuses one that does not match. Rendering through the wrong model gives a face that looks plausible and belongs to nobody, which is why it errors rather than warns.
 
 `latentGeneratorPCA()` is small enough that its components travel inside the file, so it rebuilds from the file alone months later, as `base_faces` makes the pixel-noise pipeline self-contained.
 
-The fingerprint is a set of summary statistics at full precision, not a digest: base R has no hashing function and none of the Imports provides one. It detects a generator that is not the one the stimuli were made with. It is not a cryptographic digest and a determined caller can construct a collision. For an external generator, passing the weights file gives a fingerprint that follows the model, through `tools::md5sum()`.
+It is summary statistics at full precision, not a digest: base R has no hashing function and none of the Imports provides one, and a determined caller can construct a collision. For an external generator, passing the weights file gives a fingerprint that follows the model, via `tools::md5sum()`.
 
 ## The recovered direction is left weighted by the sampling covariance
 
@@ -44,33 +44,41 @@ A sign says which of two faces is preferred and not by how much. The consequence
 
 Two rules for `searchLatent2IFC()` were tried and rejected before the one that is there.
 
-A step proportional to the estimate does not converge, for the reason above: it moved about one standard deviation every generation however close the centre already was, leaving the search circling the answer at a fixed radius while the distance bounced between 0.3 and 1.0.
+A step proportional to the estimate does not converge: it moved about one standard deviation every generation however close the centre already was, circling the answer while the distance bounced between 0.3 and 1.0.
 
 A fixed schedule of `alpha / generation^step_decay` converges only when `alpha` happens to suit the distance, which is exactly what is unknown. Measured against simulated observers, `alpha = 1` ended 0.12 standard deviations from a target 1.6 away and 12.23 from one 15.6 away, while `alpha = 3` reversed the ordering. No default can be right for both.
 
-What does carry the distance is the sequence of estimates rather than any one of them. Generations that agree mean the centre is still short and every step so far pointed the same way; generations that disagree mean it went past. So the step grows while successive directions agree and shrinks when they do not. That settles because `step_grow * step_shrink` is below 1, so a step that grows once and shrinks once ends smaller than it started and an oscillation cannot sustain itself. Against the same observers this reached 0.75 and 3.48 where the fixed schedule reached 2.92 and 12.23, and cost nothing at the near distance.
+The distance is in the sequence of estimates rather than any one of them: generations that agree mean the centre is still short, generations that disagree mean it went past. The step grows while they agree and shrinks when they do not, which settles because `step_grow * step_shrink` is below 1, so an oscillation cannot sustain itself. Against the same observers this reached 0.75 and 3.48 where the fixed schedule reached 2.92 and 12.23, at no cost near the target.
 
 The same sequence is what the `cosine_with_previous` diagnostic reports, so the number that drives the step is also the number a researcher reads to see what the search did.
 
 ## Whitening the search direction was tried and is worse
 
-The recovered direction is weighted by the sampling covariance, as above. For a direction of travel rather than a rendered answer that weighting looked like a liability: on a generator whose components differ in scale by 65 to 1, the search can barely move along the narrow ones. Dividing the covariance back out was the obvious fix and measures worse at every distance tried, ending 1.91, 6.32 and 15.61 standard deviations from targets where leaving it in ended 0.77, 3.89 and 12.93.
+For a direction of travel the covariance weighting looked like a liability: on a generator whose components differ in scale by 65 to 1, the search barely moves along the narrow ones. Dividing it back out measures worse at every distance tried, ending 1.91, 6.32 and 15.61 standard deviations out where leaving it in ended 0.77, 3.89 and 12.93.
 
 An anisotropic face space is genuinely harder to search, and the answer is a better set of images rather than a correction afterwards. `latent_sd` is on the generator so this is visible before a study runs: a first component dwarfing the rest means most variation lies along one direction.
 
 ## Two meanings of "so many standard deviations", and where each belongs
 
-`applyLatentScaling()` measures a displacement as a root mean square across dimensions, so `scaling_constant` means the same thing on generators of different dimensionality. `searchLatent2IFC()` measures its step as a Euclidean length, because a search direction is usually concentrated in a few dimensions and dividing by the number of dimensions would inflate the actual displacement by up to `sqrt(latent_dim)`.
+`applyLatentScaling()` measures a displacement as a root mean square across dimensions, so `scaling_constant` means the same on generators of different dimensionality. `searchLatent2IFC()` uses a Euclidean length, because a search direction is usually concentrated in a few dimensions and dividing by their number would inflate the step by up to `sqrt(latent_dim)`.
 
 Writing both as a root mean square made a search step overshoot by exactly that factor: `cosine_with_previous` was -1 in every generation and the search ended further from its target than it began. `latentNorm()` follows `applyLatentScaling()`; informational value is unaffected either way, being a ratio in which a constant factor cancels.
 
 ## `sigma_decay` defaults to 1, against expectation
 
-Shrinking the perturbations as the search proceeds sounds like it should sharpen the answer. Measured against simulated observers with internal noise, it is worse at every noise level tried, and worse by the largest margin for the noisiest observers: shrinking the perturbations shrinks the difference between the two faces while the participant's own uncertainty stays where it is, so the responses get noisier exactly as the search needs them to get finer.
+Shrinking the perturbations as the search proceeds sounds like it should sharpen the answer. Measured against observers with internal noise it is worse at every level, and worst for the noisiest: it shrinks the difference between the two faces while the participant's uncertainty stays put, so responses get noisier exactly as the search needs them finer.
 
 The argument stays, because a real participant's discriminability is not the simulation's. The default does not.
 
 A noiseless simulated observer cannot inform this at all: its responses depend only on the sign of a projection, which is unchanged by scaling the perturbations, so `sigma_decay` has mathematically no effect on such a run. Any tuning of it needs an observer with internal noise, and anyone re-measuring it should check that first, because a sweep against a noiseless observer returns identical numbers for every value and reads as a bug in the sweep.
+
+## Responses are checked, and the module is stricter than the pixel pipeline
+
+`generateCINoise()` documents that a response "can be changed into a scale", and the pixel pipeline accepts whatever it is given. The latent module does not: 1 and -1 or an error.
+
+The case that decides it is a 0/1 coding, which several experiment programs write. It raises no error anywhere downstream. It turns the response-weighted mean into a quantity with no meaning and still renders a perfectly plausible face, so nothing about the result looks wrong. Nothing in this module depends on the older latitude yet, so a scale can be added later as a decision rather than inherited as an accident.
+
+One check, `checkResponseCoding()`, at every entry point that takes responses. Callback mode had it and the resumable path did not, which is the wrong way round: the resumable path is the one fed by another program.
 
 ## The null shuffles the observed responses rather than drawing fresh ones
 
@@ -80,25 +88,29 @@ The difference is not cosmetic. A participant who pressed one key more often tha
 
 Holding the response multiset fixed and breaking only its pairing with the stimuli is the question being asked, so `computeLatentInfoVal2IFC()` takes the responses as an argument.
 
+Within each participant, when there are participants. A global shuffle moves answers between people, so one who always pressed one key and one who always pressed the other would be compared against a null full of mixed answers neither could have given, and the difference between their key biases would read as signal.
+
+That case also makes the null degenerate: one arrangement means no spread, and the standardised score is 0/0. The limit is reported rather than `NaN`, so the headline number stays readable for exactly the case the permutation null exists to handle.
+
 ## One direction computation, shared by the estimate and its null
 
-`computeLatentInfoVal2IFC()` first built its null with its own copy of the arithmetic, and the copy drifted from `generateLatentCI()` in two ways at once. It pooled where the classification image had averaged per participant, so an image built from unequal trial counts was scored against a null that let the participant with more trials decide it. And it permuted responses that pooling had already collapsed over repeated stimuli, so what it shuffled were means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, and the two arrangements of that pair are not the three arrangements of the answers, collapsed.
+The null was built by its own copy of the arithmetic, and the copy drifted. It pooled where the classification image had averaged per participant, letting the participant with more trials decide the score. And it permuted responses that pooling had already collapsed over repeated stimuli, shuffling means rather than answers: `c(1, 1, 2)` answered `c(1, 1, -1)` collapses to `c(1, -1)`, whose two arrangements are not the three arrangements of the answers, collapsed.
 
-Both are the same mistake, and the fix is the same one: `latentDirection()` holds the whole path from trials to a direction, and the null calls it per iteration on a trial-level permutation. The estimate and its null cannot diverge again without the estimate changing too.
+Both are one mistake with one fix: `latentDirection()` holds the whole path from trials to a direction, and the null calls it per iteration on a trial-level permutation, so the two cannot diverge again without the estimate changing too.
 
-The cost is that each iteration re-aggregates, so the null now scales with trial count as well as with `iter`. A 300-trial study takes a few seconds at the default, which is far below the pixel-noise equivalent, and correctness is not worth trading for it.
+Each iteration re-aggregates, so the null scales with trial count as well as `iter`: a few seconds for 300 trials at the default, far below the pixel-noise equivalent.
 
 ## Informational value is bound to the analysis, not the stimulus set
 
 The first version compared generator fingerprints. Two experiments run through one generator have identical fingerprints by design, which is the whole point of a fingerprint that identifies a renderer, so that check accepted a classification image from one experiment scored against another's perturbations.
 
-Widening it to the stimulus file was still not enough: one file's trials can be analysed many ways, so a classification image built from one subset of trials, or from one set of answers, could be scored against a null built from another. The fingerprint now covers the stimulus file, the trials analysed, the responses and the participant structure, so it identifies the analysis rather than the material. It is derived on demand, so the `.Rdata` contract is unchanged.
+Widening it to the stimulus file was not enough either: one file's trials can be analysed many ways. The fingerprint now covers the file, the trials analysed, the responses and the participant structure, so it identifies the analysis rather than the material. It is derived on demand, so the `.Rdata` contract is unchanged.
 
 ## A resumed search restores its design and its random stream
 
-Resumable mode was written taking its settings from whichever call supplied them. A search begun at `latent_sigma = 0.5, sigma_decay = 0.8` and resumed by the documented call, which names only the state and the responses, silently continued at sigma 1 rather than 0.4, mixing two designs inside one search. `set.seed(seed)` likewise ran only when the first state was written, so a search resumed in another R session drew its later generations from that session's unrelated stream and the seed did not reproduce it.
+Resumable mode took its settings from whichever call supplied them, so a search begun at `latent_sigma = 0.5, sigma_decay = 0.8` and resumed by the documented call, which names only the state and the responses, continued at sigma 1 rather than 0.4. `set.seed(seed)` likewise ran only when the first state was written, so a search resumed in another session drew from that session's unrelated stream.
 
-Both now travel in the state: the seven settings that define the design, and the position of the random stream. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind would revert a resume later. The tests that missed this passed every argument on every call, which no documented usage does.
+Both now travel in the state, along with the seed, which names the files. Every setting is restored, not only those the current generation reads, because they are written back into the next state and one left behind reverts a resume later. The tests that missed this passed every argument on every call, which no documented usage does.
 
 ## Informational value uses a permutation null, not the erratum formula
 

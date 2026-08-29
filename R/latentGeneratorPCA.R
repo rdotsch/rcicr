@@ -179,6 +179,18 @@ normalizeImagePaths <- function(base_face_files) {
     names(base_face_files) <- basename(base_face_files)
   }
 
+  duplicated_labels <- unique(names(base_face_files)[duplicated(names(base_face_files))])
+  if (length(duplicated_labels) > 0) {
+    msg <- paste0(
+      'These image labels appear more than once: ',
+      paste(duplicated_labels, collapse = ', '),
+      '. Every image needs its own, since a repeated one cannot say which file ',
+      'it means. Names taken from file names repeat when two directories hold ',
+      'the same file name.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
   return(base_face_files)
 }
 

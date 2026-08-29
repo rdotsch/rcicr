@@ -419,8 +419,27 @@ test_that("a resumed generation rejects responses that are not 1 or -1", {
   # search to the wrong centre with no error at all.
   expect_error(searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
                                 state = step$state, responses = c(0, 1, 1, 0)),
-               'responses must be 1')
+               'takes responses coded 1')
   expect_error(searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
                                 state = step$state, responses = c(1, -1, NA, 1)),
-               'responses must be 1')
+               'takes responses coded 1')
+})
+
+test_that("a resumed search keeps the seed it was started with", {
+  withr::local_options(rcicr.experimental = TRUE)
+
+  generator <- recovery_generator(n_components = 3, n_faces = 6)
+  out <- withr::local_tempdir()
+
+  # The seed names the stimulus files and the state file. Falling back to the
+  # current call's default, two searches begun under different seeds and resumed
+  # into one directory would overwrite each other's generations, and whichever
+  # files survived would name a seed that did not produce them.
+  step <- searchLatent2IFC(generator, n_generations = 3, n_trials = 4,
+                           stimulus_path = out, save_as_png = FALSE, seed = 77)
+  expect_true(grepl('seed_77', basename(step$state)))
+
+  step <- searchLatent2IFC(generator, stimulus_path = out, save_as_png = FALSE,
+                           state = step$state, responses = rep(c(1, -1), 2))
+  expect_true(grepl('seed_77', basename(step$state)))
 })

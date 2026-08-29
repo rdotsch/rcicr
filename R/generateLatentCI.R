@@ -49,7 +49,11 @@
 #' @param stimuli Vector of stimulus numbers, in the order they were presented.
 #' @param responses Vector of responses, coded 1 when the original image was
 #'   chosen and -1 when the inverted image was. The same coding
-#'   \code{\link{generateCI}} takes.
+#'   \code{\link{generateCI}} takes, but checked here rather than assumed:
+#'   anything else is an error. A 0/1 coding is what several experiment
+#'   programs write and it raises no error further down, so it would otherwise
+#'   turn the estimator into a quantity with no meaning and still render a
+#'   plausible face.
 #' @param rdata String pointing to the .Rdata file written by
 #'   \code{\link{generateStimuliLatent2IFC}}.
 #' @param targetpath String specifying the directory to save the classification
@@ -119,6 +123,11 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
   stored <- loadLatentStimulusParams(rdata)
   generator <- resolveGenerator(generator, stored$generator_spec, 'generateLatentCI')
 
+  # Length before coding: a caller who passed the wrong number of responses is
+  # better told that than told their values are out of range.
+  coerceTrialVectors(stimuli, responses, participants)
+  checkResponseCoding(responses, 'generateLatentCI')
+
   estimate <- latentDirection(stored$latent_params, stimuli, responses, participants)
   direction <- estimate$direction
   pid_directions <- estimate$pid_directions
@@ -151,6 +160,33 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
     stimulus_fingerprint = stimulusFingerprint(stored),
     analysis_fingerprint = analysisFingerprint(stored, stimuli, responses, participants)
   ))
+}
+
+# Responses are 1 and -1 and nothing else, checked wherever a caller supplies
+# them. A 0/1 coding is the one that matters: it is what plenty of experiment
+# software writes, it raises no error anywhere downstream, and it turns the
+# response-weighted mean into a quantity with no meaning while still rendering a
+# perfectly plausible face. NA reaches the render and comes out as a blank
+# image, which is at least visible, but not until much later.
+#
+# Stricter than the pixel-noise pipeline, which documents that responses can be
+# a scale. That latitude is not carried over here deliberately: this module is
+# new, so nothing depends on it, and a scale can be added as a decision rather
+# than inherited as an accident.
+checkResponseCoding <- function(responses, caller) {
+  values <- unlist(responses, use.names = FALSE)
+
+  if (anyNA(values) || !all(values %in% c(-1, 1))) {
+    offending <- unique(values[is.na(values) | !(values %in% c(-1, 1))])
+    msg <- paste0(
+      caller, '() takes responses coded 1 (the original image was chosen) and ',
+      '-1 (the inverted image was), one per trial. It was given ',
+      paste(utils::head(offending, 3), collapse = ', '), '.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  return(invisible(TRUE))
 }
 
 # The whole path from trials to a direction, in one place because

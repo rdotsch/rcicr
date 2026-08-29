@@ -23,7 +23,11 @@ generateLatentCI(
 
 \item{responses}{Vector of responses, coded 1 when the original image was
 chosen and -1 when the inverted image was. The same coding
-\code{\link{generateCI}} takes.}
+\code{\link{generateCI}} takes, but checked here rather than assumed:
+anything else is an error. A 0/1 coding is what several experiment
+programs write and it raises no error further down, so it would otherwise
+turn the estimator into a quantity with no meaning and still render a
+plausible face.}
 
 \item{rdata}{String pointing to the .Rdata file written by
 \code{\link{generateStimuliLatent2IFC}}.}
