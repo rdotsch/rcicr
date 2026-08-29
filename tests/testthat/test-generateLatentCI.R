@@ -601,3 +601,28 @@ test_that("a null whose MAD is zero but which varies gets a scale, not an infini
   expect_gt(info$p, 0)
   expect_lt(info$p, 1)
 })
+
+test_that("a fractional trial number is refused rather than truncated", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 20)
+
+  # A matrix subscript truncates rather than refusing, so 1.5 silently selects
+  # trial 1 and the classification image is built from a perturbation the caller
+  # never named — with the informational value agreeing with it.
+  expect_equal(matrix(1:6, 3)[1.5, ], c(1L, 4L))
+
+  expect_error(
+    generateLatentCI(c(1, 1.5, 3), c(1, -1, 1), fixture$stimuli$rdata,
+                     save_as_png = FALSE),
+    'whole trial numbers'
+  )
+  expect_error(
+    generateLatentCI(c(1, NaN, 3), c(1, -1, 1), fixture$stimuli$rdata,
+                     save_as_png = FALSE),
+    'whole trial numbers'
+  )
+  expect_no_error(
+    generateLatentCI(c(1, 2, 3), c(1, -1, 1), fixture$stimuli$rdata,
+                     save_as_png = FALSE)
+  )
+})

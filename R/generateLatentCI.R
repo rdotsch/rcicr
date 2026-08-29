@@ -129,6 +129,7 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
   # better told that than told their values are out of range.
   coerceTrialVectors(stimuli, responses, participants)
   checkParticipants(participants, stimuli, 'generateLatentCI')
+  checkStimuliAreTrials(stimuli, 'generateLatentCI')
   checkResponseCoding(responses, 'generateLatentCI')
 
   estimate <- latentDirection(stored$latent_params, stimuli, responses, participants)
@@ -194,6 +195,29 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
 # pipeline shares. Tightening it there would turn data that generateCI() has
 # always accepted into an error, which is the one thing this package does not do
 # to an existing script; #294 tracks that side.
+# Whole numbers, because a matrix subscript truncates rather than refuses:
+# latent_params[1.5, ] is trial 1, so a fractional trial id gives a
+# classification image built from a perturbation the caller did not name, with an
+# informational value that agrees with it.
+#
+# Checked here rather than only at the subscript, because pooling aggregates the
+# trials first and a non-finite id does not survive that intact.
+checkStimuliAreTrials <- function(stimuli, caller) {
+  values <- unlist(stimuli, use.names = FALSE)
+
+  if (!is.numeric(values) || !all(is.finite(values)) || any(values != trunc(values))) {
+    offending <- values[!is.finite(values) | values != trunc(values)]
+    msg <- paste0(
+      caller, '() takes whole trial numbers as stimuli, indexing the ',
+      'perturbations in the stimulus file. These are not: ',
+      paste(utils::head(unique(offending), 3), collapse = ', '), '.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  return(invisible(TRUE))
+}
+
 checkParticipants <- function(participants, stimuli, caller) {
   values <- unlist(participants, use.names = FALSE)
 
@@ -308,6 +332,19 @@ computeParticipantDirections <- function(params, responses, participants) {
 # Indexing by stimulus number works for non-consecutive stimuli too, matching
 # selectStimulusParams() on the pixel-noise side.
 selectLatentParams <- function(latent_params, stimuli) {
+  # Whole numbers, because a matrix subscript truncates rather than refuses:
+  # latent_params[1.5, ] is trial 1, so a fractional trial id would give a
+  # classification image built from a perturbation the caller did not name, and
+  # the informational value would agree with it.
+  if (!all(is.finite(stimuli)) || any(stimuli != trunc(stimuli))) {
+    offending <- stimuli[!is.finite(stimuli) | stimuli != trunc(stimuli)]
+    msg <- paste0(
+      'stimuli must be whole trial numbers. These are not: ',
+      paste(utils::head(unique(offending), 3), collapse = ', '), '.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
   if (any(stimuli < 1) || any(stimuli > nrow(latent_params))) {
     msg <- paste0(
       'stimuli must be numbers between 1 and ', nrow(latent_params),

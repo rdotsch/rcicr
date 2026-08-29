@@ -315,3 +315,33 @@ test_that("a second set refuses to overwrite the first's images", {
     generateStimuliLatent2IFC(generator, n_trials = 3, stimulus_path = out, seed = 6)
   )
 })
+
+test_that("a label containing regex characters is still protected", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  generator <- latentGeneratorPCA(make_face_set(dir, n = 6), n_components = 3,
+                                  img_size = 16)
+  out <- withr::local_tempdir()
+
+  # A label is a user's string. Built into a pattern, "face[1]" is a character
+  # class matching none of the files it names, so the guard would wave through
+  # exactly the collision it exists to catch.
+  expect_false(grepl('^face[1]_', 'face[1]_1_00001_ori.png'))
+
+  generateStimuliLatent2IFC(generator, n_trials = 2, stimulus_path = out,
+                            label = 'face[1]', seed = 1)
+  expect_error(
+    generateStimuliLatent2IFC(generator, n_trials = 2, stimulus_path = out,
+                              label = 'face[1]', seed = 1),
+    'would overwrite'
+  )
+
+  # And a label that is a prefix of another is not confused with it.
+  generateStimuliLatent2IFC(generator, n_trials = 2, stimulus_path = out,
+                            label = 'face[1]x', seed = 1)
+  expect_error(
+    generateStimuliLatent2IFC(generator, n_trials = 2, stimulus_path = out,
+                              label = 'face[1]x', seed = 1),
+    'would overwrite 4 stimulus image'
+  )
+})

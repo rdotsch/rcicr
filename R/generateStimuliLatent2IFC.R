@@ -221,8 +221,12 @@ writeStimulusBatch <- function(trials, originals, inverted, stimulus_path, label
 # unpredictable to keep them unique would break the thing they exist for. An
 # error names the collision and the two ways out.
 refuseToOverwriteStimuli <- function(stimulus_path, label, seed, caller) {
-  existing <- list.files(stimulus_path,
-                         pattern = paste0('^', sprintf('%s_%s_', label, seed), '[0-9]{5}_(ori|inv)[.]png$'))
+  # Matched literally rather than as a regex. A label is a user's string, so
+  # "face[1]" is a character class that matches none of the files it names, and
+  # the guard would wave through exactly the collision it exists to catch.
+  prefix <- sprintf('%s_%s_', label, seed)
+  files <- list.files(stimulus_path, pattern = '_[0-9]{5}_(ori|inv)[.]png$')
+  existing <- files[startsWith(files, prefix)]
 
   if (length(existing) > 0) {
     msg <- paste0(

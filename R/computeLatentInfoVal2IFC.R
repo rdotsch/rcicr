@@ -84,6 +84,7 @@ computeLatentInfoVal2IFC <- function(latent_ci, rdata, stimuli, responses, parti
   stored <- loadLatentStimulusParams(rdata)
 
   checkParticipants(participants, stimuli, 'computeLatentInfoVal2IFC')
+  checkStimuliAreTrials(stimuli, 'computeLatentInfoVal2IFC')
 
   # The trials and the answers, not just the stimulus file. Fingerprinting the
   # file alone still accepts a classification image built from a different
