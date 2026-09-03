@@ -30,24 +30,10 @@ enforces them, are in `CONTRIBUTING.md`.
 ## Numerics and the random number stream
 
 ### `purrr::rbernoulli()` was replaced with `runif()`, not `rbinom()`
-`stats::rbinom(n, 1, p)`, which an earlier note recommended, is **wrong**: `rbernoulli(n, p)`
-is internally `runif(n) > (1 - p)`, and `rbinom` draws from the stream differently — verified
-across 150 seed/probability combinations. It would have silently changed every reference
-distribution, and so every InfoVal, computed from a given seed. The `runif` form is
-bit-identical.
-
-**The rule: check the random *stream*, not just the distribution.** Two functions with the
-same marginal distribution are not interchangeable in a seeded pipeline.
+`purrr::rbernoulli(n, p)` uses `runif(n) > (1 - p)`. `rbinom()` consumes the seeded stream differently, verified across 150 seed/probability combinations, and would alter every derived InfoVal. The replacement therefore uses the bit-identical `runif()` expression. Equal marginal distributions are insufficient in a seeded pipeline.
 
 ### A base image's alpha channel is discarded, not composited
-Greyscale conversion keeps the colour channels and drops alpha. Compositing onto a background
-invents a number the file does not contain and makes that background a contract of its own;
-rejecting transparency turns files that have always been accepted into an error.
-
-The cost a researcher meets: the RGB under a transparent pixel need not resemble what a viewer
-shows there, so a cut-out face whose editor kept the photograph underneath renders with the
-crop undone. rcicr never composites — a stimulus is opaque — so the pixels a file stores are
-the honest reading of it.
+Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. `rcicr` renders opaque stimuli, so alpha has no downstream meaning. Hidden RGB values can differ from a viewer's composited image, so a cut-out may reveal pixels stored beneath transparent areas.
 
 ### `rowMeans(x, dims = 2)` was adopted despite not being bit-identical
 The patch-averaging step in `generateNoiseImage()` moved from `apply(..., 1:2, mean)`, about
@@ -454,17 +440,11 @@ names a branch that does not exist. The post stays up for nine years of inbound 
 moves the canonical copy, it is not a takedown.
 
 ### Three vignette figures were wrong in ways only viewing them showed
-The rule this stands behind is in `CONTRIBUTING.md`. What it caught, none of it visible to an
-assertion:
+Visual inspection caught failures assertions missed:
 
-- **`image()` auto-stretches its input across the palette**, so every linear rescaling renders
-  *identically*, making a four-way scaling comparison meaningless until `zlim = c(0, 1)` was
-  pinned.
-- **`zmapmethod = "quick"` z-scores across the pixels of one image**, so its values are
-  relative to that image's own spatial structure, not a null. At small sizes they span only
-  ±1.65 and the **default `threshold = 3` returns a blank map** — which reads as "no signal"
-  but means "wrong ruler".
-- A white-noise base drowned every figure; a Gaussian blob is legible and still synthetic.
+- `image()` auto-stretched each rescaling to look identical until `zlim = c(0, 1)` fixed the palette.
+- The quick z-map's pixel-relative scores spanned only ±1.65 at small sizes, so the default threshold returned a misleading blank map.
+- A white-noise base obscured every figure; a Gaussian blob remains legible and synthetic.
 
 ### When the docs and the code disagreed about `mask`, the code was the contract
 Both `?plotZmap` and `?generateCI` said a *matrix* masks where the cell is `1`/`TRUE` while a
