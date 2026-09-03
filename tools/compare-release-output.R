@@ -72,7 +72,8 @@ relabelled_only <- function(a, b) {
 alpha_bases <- function(filename, maximize) {
   img <- png::readPNG(file.path(basedir, filename))
   old <- apply(img, c(1, 2), mean)
-  current <- apply(img[, , 1:3, drop = FALSE], c(1, 2), mean)
+  keep <- if (dim(img)[3] == 2) 1L else seq_len(3)
+  current <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
   if (maximize) {
     rescale <- function(x) (x - min(x)) / diff(range(x))
     old <- rescale(old)
@@ -147,6 +148,19 @@ alpha_expectations <- function(ref) {
     list(ref = ref, key = "sinusoid-64-alpha-varying/stimulus_pngs",
          reason = "The corrected varying-alpha base face changes every rendered stimulus.",
          check = correct_alpha_stimuli("base_alpha_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref,
+         key = "sinusoid-64-alpha-grey-varying/base_face_base1",
+         reason = "The corrected grey-plus-alpha base is the fixture's grey channel.",
+         check = correct_alpha_base("base_alpha_grey_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-grey-varying/combined",
+         reason = "Removing each side's corrected grey-plus-alpha base must recover the same raw CI.",
+         check = correct_alpha_combined("base_alpha_grey_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-grey-varying/stimulus_pngs",
+         reason = "The corrected grey-plus-alpha base changes every rendered stimulus.",
+         check = correct_alpha_stimuli("base_alpha_grey_varying_64.png", TRUE),
          news = "Reproducibility impact"),
     list(ref = ref,
          key = "sinusoid-64-alpha-opaque-default/base_face_base1",
@@ -378,6 +392,14 @@ make_base_rgba <- function(n, path, varying_alpha) {
   }
   png::writePNG(rgba, path)
 }
+make_base_grey_alpha <- function(n, path) {
+  ax <- seq(-1, 1, length.out = n)
+  g <- outer(ax, ax, function(x, y) exp(-(x^2 + y^2) / 0.5))
+  grey_alpha <- array(0, dim = c(n, n, 2))
+  grey_alpha[, , 1] <- g
+  grey_alpha[, , 2] <- outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6))
+  png::writePNG(grey_alpha, path)
+}
 # A mask has to be exactly 0/1, and 0 (black) is the region masked away.
 mask_disc <- function(n) {
   ax <- seq(-1, 1, length.out = n)
@@ -404,6 +426,7 @@ for (sz in c(64, 128, 512)) {
   make_base(sz, file.path(basedir, sprintf("base2_%d.png", sz)), shift = 0.3)
   make_base_rgba(sz, file.path(basedir, sprintf("base_alpha_varying_%d.png", sz)), TRUE)
   make_base_rgba(sz, file.path(basedir, sprintf("base_alpha_opaque_%d.png", sz)), FALSE)
+  make_base_grey_alpha(sz, file.path(basedir, sprintf("base_alpha_grey_varying_%d.png", sz)))
   make_mask(sz, file.path(basedir, sprintf("mask_%d.png", sz)))
   make_mask_rgba(sz, file.path(basedir, sprintf("mask_rgba_%d.png", sz)))
 }
