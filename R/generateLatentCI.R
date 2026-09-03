@@ -156,7 +156,7 @@ generateLatentCI <- function(stimuli, responses, rdata, targetpath, generator = 
   base_image <- renderUnchecked(generator, stored$base_latent, validate = FALSE)[1, , ]
 
   if (save_as_png) {
-    label <- if (filename == '') latentLabel(stored, rdata) else filename
+    label <- if (filename == '') latentOutputName(stored, rdata) else filename
     saveToImage(label, ci_image, targetpath, filename, antiCI)
   }
 
@@ -357,16 +357,42 @@ selectLatentParams <- function(latent_params, stimuli) {
   return(latent_params[stimuli, , drop = FALSE])
 }
 
+# A single positive finite number, checked where it is applied rather than at the
+# entry, so latent_scaling = 'none' does not reject a constant it never reads.
+#
+# Zero divides the direction by zero under 'constant'. A negative turns the
+# classification image around under either mode, which is what antiCI is for --
+# doing it through the scaling constant leaves the number reading as a size while
+# meaning a size and a reversal, and nothing downstream can tell.
+checkScalingConstant <- function(scaling_constant, latent_scaling) {
+  if (length(scaling_constant) != 1 || !is.finite(scaling_constant) ||
+        scaling_constant <= 0) {
+    msg <- paste0(
+      'scaling_constant must be a single positive number when latent_scaling ',
+      'is "', latent_scaling, '". It is ',
+      paste(format(scaling_constant), collapse = ', '),
+      '. To turn the classification image around, use antiCI = TRUE.'
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  return(invisible(TRUE))
+}
+
 applyLatentScaling <- function(direction, latent_scaling, scaling_constant, latent_sd) {
   if (latent_scaling == 'none') {
     return(direction)
   }
 
   if (latent_scaling == 'constant') {
+    checkScalingConstant(scaling_constant, latent_scaling)
+
     return(direction / scaling_constant)
   }
 
   if (latent_scaling == 'sd') {
+    checkScalingConstant(scaling_constant, latent_scaling)
+
     # The displacement measured in standard deviations of the training faces, so
     # scaling_constant reads as "move the face this many SDs".
     in_sd <- sqrt(mean((direction / latent_sd)^2))
@@ -417,6 +443,24 @@ resolveGenerator <- function(generator, spec, caller) {
 # set, and two sets whose labels shared a first segment wrote the same file.
 # Falling back to the file name for a stimulus file written before `label` was
 # stored, which is the append-only contract working as intended.
+# The default output name for a classification image. The label alone does not
+# identify a stimulus set -- two sets made at different seeds share it, and the
+# default label means most sets share it -- so analysing both into one targetpath
+# wrote ci_rcic_latent.png twice and the second replaced the first.
+#
+# The seed completes the identity: two sets at the same label and seed have the
+# same perturbations, and generateStimuliLatent2IFC() already refuses to write
+# them into one directory.
+latentOutputName <- function(stored, rdata) {
+  label <- latentLabel(stored, rdata)
+
+  if (is.null(stored$seed) || length(stored$seed) != 1 || is.na(stored$seed)) {
+    return(label)
+  }
+
+  return(paste(label, stored$seed, sep = '_'))
+}
+
 latentLabel <- function(stored, rdata) {
   if (!is.null(stored$label) && !is.na(stored$label) && nzchar(stored$label)) {
     return(stored$label)

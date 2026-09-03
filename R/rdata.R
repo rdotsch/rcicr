@@ -158,6 +158,7 @@ loadLatentStimulusParams <- function(rdata) {
     # of the file name: a label containing "_seed_" -- which nothing forbids --
     # truncates at the first occurrence, so the classification image is named
     # after part of its set and two sets can produce the same file name.
-    label = if (has('label')) take('label') else NA_character_
+    label = if (has('label')) take('label') else NA_character_,
+    seed = if (has('seed')) take('seed') else NA
   ))
 }

@@ -646,9 +646,68 @@ test_that("a classification image is named after its whole stimulus set", {
                                        save_as_png = FALSE)
   generateLatentCI(1:4, rep(c(1, -1), 2), stimuli$rdata, targetpath = target)
 
-  # saveToImage() prefixes ci_, so the whole label has to survive after that.
+  # saveToImage() prefixes ci_, and the seed completes the set's identity.
   written <- list.files(target, pattern = '[.]png$')
   expect_length(written, 1)
-  expect_identical(written, 'ci_my_seed_test.png')
-  expect_false(identical(written, 'ci_my.png'))
+  expect_identical(written, 'ci_my_seed_test_1.png')
+  expect_false(startsWith(written, 'ci_my.'))
+})
+
+test_that("scaling_constant must be a single positive finite number", {
+  withr::local_options(rcicr.experimental = TRUE)
+  fixture <- latent_fixture(n_trials = 6)
+  responses <- rep(c(1, -1), 3)
+
+  scaled <- function(value, mode) {
+    generateLatentCI(1:6, responses, fixture$stimuli$rdata, save_as_png = FALSE,
+                     latent_scaling = mode, scaling_constant = value)
+  }
+
+  for (mode in c('constant', 'sd')) {
+    # Zero divides the direction by zero under "constant"; a negative turns the
+    # image around under either, which is what antiCI is for.
+    expect_error(scaled(0, mode), 'single positive number')
+    expect_error(scaled(-2, mode), 'single positive number')
+    expect_error(scaled(NA_real_, mode), 'single positive number')
+    expect_error(scaled(Inf, mode), 'single positive number')
+    expect_error(scaled(c(1, 2), mode), 'single positive number')
+
+    # A constant below 1 is legitimate -- half a standard deviation is a size --
+    # so the check cannot simply require >= 1.
+    expect_no_error(scaled(0.5, mode))
+    expect_no_error(scaled(2, mode))
+  }
+
+  # latent_scaling = "none" never reads the constant, so it is not rejected for
+  # a value it will not use.
+  expect_no_error(scaled(0, 'none'))
+
+  # The reversal antiCI performs is not reachable through the constant.
+  ci <- scaled(2, 'sd')
+  anti <- generateLatentCI(1:6, responses, fixture$stimuli$rdata, save_as_png = FALSE,
+                           latent_scaling = 'sd', scaling_constant = 2, antiCI = TRUE)
+  expect_equal(anti$scaled_direction, -ci$scaled_direction)
+})
+
+test_that("two stimulus sets do not write the same classification image", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  generator <- latentGeneratorPCA(make_face_set(dir, n = 6), n_components = 3,
+                                  img_size = 16)
+  target <- withr::local_tempdir()
+
+  # Same label -- and the default label means most sets share it -- but different
+  # seeds, so these are different perturbations. Analysed into one targetpath
+  # they both used to write ci_rcic_latent.png.
+  first <- generateStimuliLatent2IFC(generator, n_trials = 4, seed = 1,
+                                     stimulus_path = withr::local_tempdir(),
+                                     save_as_png = FALSE)
+  second <- generateStimuliLatent2IFC(generator, n_trials = 4, seed = 2,
+                                      stimulus_path = withr::local_tempdir(),
+                                      save_as_png = FALSE)
+
+  generateLatentCI(1:4, rep(c(1, -1), 2), first$rdata, targetpath = target)
+  generateLatentCI(1:4, rep(c(1, -1), 2), second$rdata, targetpath = target)
+
+  expect_length(list.files(target, pattern = '[.]png$'), 2)
 })
