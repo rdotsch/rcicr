@@ -22,14 +22,18 @@ install.packages('remotes')
 # A specific release, by tag
 remotes::install_github('rdotsch/rcicr@v1.3.0')
 
-# The development version at the tip of main
+# The development version at the tip of main. Record its commit SHA.
 remotes::install_github('rdotsch/rcicr')
+
+# Reinstall that exact development snapshot later
+remotes::install_github('rdotsch/rcicr@<commit-sha>')
 ```
 
 Every release is tagged, and the tags are listed on the
 [releases page](https://github.com/rdotsch/rcicr/releases). Record the version you ran in
-your analysis script, and install it by tag when you come back to that analysis: a
-classification image is only reproducible against the version that computed it, and any
+your analysis script, and install it by tag when you come back to that analysis. For an
+unreleased GitHub install, also record the commit SHA and pin that SHA when you return: a
+classification image is only reproducible against the exact code that computed it, and any
 release that changes numeric output says so in [`NEWS.md`](NEWS.md) under "Reproducibility
 impact".
 
