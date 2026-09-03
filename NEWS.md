@@ -31,8 +31,10 @@
   the original photograph beneath a cut-out will render that base face with the crop undone.
   `DECISIONS.md` records why discarding is the right reading and what the alternatives cost.
 
-  The reproducibility gate agrees that nothing else moves: 130 checks identical to v1.0.1, the
-  3 pre-existing expected deviations, 0 unexpected, and no new entry required.
+  The reproducibility gate exercises both affected cases against released versions: varying
+  alpha at the default contrast setting, and constant alpha with contrast maximization off.
+  Only the stored base face, stimuli and base-dependent renderings change; the noise parameters
+  and raw classification image remain identical.
 
 ## Documentation
 
