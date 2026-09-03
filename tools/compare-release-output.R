@@ -82,7 +82,8 @@ alpha_bases <- function(filename, maximize) {
 }
 
 same_numbers <- function(a, b) {
-  isTRUE(all.equal(a, b, tolerance = 8 * .Machine$double.eps))
+  d <- max(abs(a - b), na.rm = TRUE)
+  d <= 8 * .Machine$double.eps * max(1, abs(a), abs(b), na.rm = TRUE)
 }
 
 correct_alpha_base <- function(filename, maximize) {
@@ -134,6 +135,13 @@ alpha_expectations <- function(ref) {
     list(ref = ref, key = "sinusoid-64-alpha-varying/stimulus_pngs",
          reason = "The corrected varying-alpha base face changes every rendered stimulus.",
          check = correct_alpha_stimuli("base_alpha_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref,
+         key = "sinusoid-64-alpha-opaque-default/base_face_base1",
+         reason = paste("Dropping constant alpha before contrast maximization changes the",
+                        "stored doubles by rounding only; the corrected base must still equal",
+                        "the rescaled RGB channels."),
+         check = correct_alpha_base("base_alpha_opaque_64.png", TRUE),
          news = "Reproducibility impact"),
     list(ref = ref,
          key = "sinusoid-64-alpha-opaque-no-max/base_face_base1",
