@@ -69,7 +69,39 @@ relabelled_only <- function(a, b) {
   identical(names(a), names(b)) && identical(sort(unname(a)), sort(unname(b)))
 }
 
-EXPECTED <- list(
+same_files_changed <- function(a, b) {
+  identical(names(a), names(b)) && length(a) > 0L && all(a != b)
+}
+
+alpha_expectations <- function(ref) {
+  list(
+    list(ref = ref,
+         key = c("sinusoid-64-alpha-varying/base_face_base1",
+                 "sinusoid-64-alpha-varying/combined"),
+         reason = paste("The reference averaged varying alpha into the colour channels.",
+                        "Dropping it changes the stored base face and the CI rendered over it,",
+                        "while the noise parameters and raw CI remain identical."),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-varying/stimulus_pngs",
+         reason = "The corrected varying-alpha base face changes every rendered stimulus.",
+         check = same_files_changed,
+         news = "Reproducibility impact"),
+    list(ref = ref,
+         key = c("sinusoid-64-alpha-opaque-no-max/base_face_base1",
+                 "sinusoid-64-alpha-opaque-no-max/combined",
+                 "sinusoid-64-alpha-opaque-no-max/scaled_matched"),
+         reason = paste("With contrast maximization disabled, the reference averaged constant",
+                        "alpha into the base. The corrected base changes the rendered CI and",
+                        "the matched scaling range, but not the raw CI."),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/stimulus_pngs",
+         reason = "The corrected opaque-alpha base face changes every rendered stimulus.",
+         check = same_files_changed,
+         news = "Reproducibility impact")
+  )
+}
+
+EXPECTED <- c(list(
   list(ref = "v1.0.1", key = "sinusoid-64-nscales3-infoval/infoval",
        reason = paste("v1.0.1 did not save nscales/sigma into the .Rdata, so its",
                       "reference distribution was rebuilt at the default nscales = 5",
@@ -119,7 +151,8 @@ EXPECTED <- list(
                       "zmap_ttest is deliberately absent: that method does not blur, so it",
                       "must still match."),
        news = "Reproducibility impact")
-)
+), alpha_expectations("v1.0.1"), alpha_expectations("v1.1.0"),
+   alpha_expectations("v1.2.3"))
 
 # Entries are matched by position so a vector `key` can be tracked as one
 # expectation: it has fired once any of its keys deviates.
@@ -258,6 +291,18 @@ make_base <- function(n, path, shift = 0) {
   g <- outer(ax, ax, function(x, y) exp(-((x - shift)^2 + y^2) / 0.5))
   png::writePNG(g, path)
 }
+make_base_rgba <- function(n, path, varying_alpha) {
+  ax <- seq(-1, 1, length.out = n)
+  g <- outer(ax, ax, function(x, y) exp(-(x^2 + y^2) / 0.5))
+  rgba <- array(0, dim = c(n, n, 4))
+  for (i in 1:3) rgba[, , i] <- g
+  rgba[, , 4] <- if (varying_alpha) {
+    outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6))
+  } else {
+    1
+  }
+  png::writePNG(rgba, path)
+}
 # A mask has to be exactly 0/1, and 0 (black) is the region masked away.
 mask_disc <- function(n) {
   ax <- seq(-1, 1, length.out = n)
@@ -282,6 +327,8 @@ make_mask_rgba <- function(n, path) {
 for (sz in c(64, 128, 512)) {
   make_base(sz, file.path(basedir, sprintf("base1_%d.png", sz)))
   make_base(sz, file.path(basedir, sprintf("base2_%d.png", sz)), shift = 0.3)
+  make_base_rgba(sz, file.path(basedir, sprintf("base_alpha_varying_%d.png", sz)), TRUE)
+  make_base_rgba(sz, file.path(basedir, sprintf("base_alpha_opaque_%d.png", sz)), FALSE)
   make_mask(sz, file.path(basedir, sprintf("mask_%d.png", sz)))
   make_mask_rgba(sz, file.path(basedir, sprintf("mask_rgba_%d.png", sz)))
 }
