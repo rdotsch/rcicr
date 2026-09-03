@@ -107,7 +107,8 @@ runnable <- function(extras) {
 
 cfg_ <- function(name, img_size, nscales = 5, noise_type = "sinusoid", sigma = 25,
                  n_trials = 20, n_base = 1, anti = FALSE, same_params = TRUE,
-                 infoval_iter = NA, extras = character(), stimulus_pngs = FALSE) {
+                 infoval_iter = NA, extras = character(), stimulus_pngs = FALSE,
+                 base_type = "plain", maximize_baseimage_contrast = TRUE) {
   stopifnot(all(extras %in% ALL_EXTRAS))
   extras <- runnable(extras)
   as.list(environment())
@@ -124,6 +125,15 @@ CONFIGS <- list(
   cfg_("sinusoid-128-nscales3", img_size = 128, nscales = 3,
        extras = setdiff(ALL_EXTRAS, c("zmap_quick", "zmap_ttest"))),
   cfg_("sinusoid-128-nscales6", img_size = 128, nscales = 6, n_trials = 12),
+
+  # Alpha changes the stored base face rather than the noise parameters or CI.
+  # Cover both affected cases: varying alpha at the default contrast setting,
+  # and constant alpha when contrast maximization is disabled.
+  cfg_("sinusoid-64-alpha-varying", img_size = 64,
+       base_type = "alpha_varying", stimulus_pngs = TRUE),
+  cfg_("sinusoid-64-alpha-opaque-no-max", img_size = 64,
+       base_type = "alpha_opaque", maximize_baseimage_contrast = FALSE,
+       stimulus_pngs = TRUE),
 
   # Gabor noise, at two envelope widths.
   cfg_("gabor-128-sigma25", img_size = 128, noise_type = "gabor",
@@ -189,15 +199,21 @@ run_config <- function(cfg) {
   zmap_dir <- file.path(getwd(), paste0("zmap-", cfg$name))
   unlink(c(stim_dir, ci_dir, zmap_dir, file.path(getwd(), "zmaps")), recursive = TRUE)
 
-  bases <- stats::setNames(
-    as.list(file.path(basedir, sprintf("base%d_%d.png", seq_len(cfg$n_base), cfg$img_size))),
-    sprintf("base%d", seq_len(cfg$n_base)))
+  base_files <- if (identical(cfg$base_type, "plain")) {
+    sprintf("base%d_%d.png", seq_len(cfg$n_base), cfg$img_size)
+  } else {
+    stopifnot(cfg$n_base == 1L)
+    sprintf("base_%s_%d.png", cfg$base_type, cfg$img_size)
+  }
+  bases <- stats::setNames(as.list(file.path(basedir, base_files)),
+                           sprintf("base%d", seq_len(cfg$n_base)))
 
   generateStimuli2IFC(base_face_files = bases, n_trials = cfg$n_trials,
                       img_size = cfg$img_size, stimulus_path = stim_dir,
                       label = "cmp", seed = 1, noise_type = cfg$noise_type,
                       nscales = cfg$nscales, sigma = cfg$sigma, ncores = 1,
                       use_same_parameters = cfg$same_params,
+                      maximize_baseimage_contrast = cfg$maximize_baseimage_contrast,
                       save_as_png = cfg$stimulus_pngs, save_rdata = TRUE)
 
   rdata <- list.files(stim_dir, pattern = "[.]Rdata$", full.names = TRUE)
