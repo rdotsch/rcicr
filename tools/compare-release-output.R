@@ -69,10 +69,6 @@ relabelled_only <- function(a, b) {
   identical(names(a), names(b)) && identical(sort(unname(a)), sort(unname(b)))
 }
 
-same_files_changed <- function(a, b) {
-  identical(names(a), names(b)) && length(a) > 0L && all(a != b)
-}
-
 alpha_bases <- function(filename, maximize) {
   img <- png::readPNG(file.path(basedir, filename))
   old <- apply(img, c(1, 2), mean)
@@ -112,6 +108,17 @@ correct_alpha_matched <- function(filename, maximize) {
   }
 }
 
+correct_alpha_stimuli <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    expected_delta <- (bases$current - bases$old) / 2
+    error <- sweep(current - old, c(1, 2), expected_delta, "-")
+    identical(dim(old), dim(current)) &&
+      identical(dimnames(old)[[3]], dimnames(current)[[3]]) &&
+      max(abs(error)) <= (1 / 255) + (8 * .Machine$double.eps)
+  }
+}
+
 alpha_expectations <- function(ref) {
   list(
     list(ref = ref,
@@ -126,7 +133,7 @@ alpha_expectations <- function(ref) {
          news = "Reproducibility impact"),
     list(ref = ref, key = "sinusoid-64-alpha-varying/stimulus_pngs",
          reason = "The corrected varying-alpha base face changes every rendered stimulus.",
-         check = same_files_changed,
+         check = correct_alpha_stimuli("base_alpha_varying_64.png", TRUE),
          news = "Reproducibility impact"),
     list(ref = ref,
          key = "sinusoid-64-alpha-opaque-no-max/base_face_base1",
@@ -144,7 +151,7 @@ alpha_expectations <- function(ref) {
          news = "Reproducibility impact"),
     list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/stimulus_pngs",
          reason = "The corrected opaque-alpha base face changes every rendered stimulus.",
-         check = same_files_changed,
+         check = correct_alpha_stimuli("base_alpha_opaque_64.png", FALSE),
          news = "Reproducibility impact")
   )
 }
