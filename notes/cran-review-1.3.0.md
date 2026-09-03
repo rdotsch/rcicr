@@ -1,13 +1,18 @@
-# CRAN review of the 1.3.0 submission
+# CRAN auto-check of the 1.3.0 submission
 
-**Pretest received** 2026-08-22, from the CRAN teams' auto-check service. This was the automated step before a team member's manual inspection.
+**Received** 2026-08-22, from the CRAN teams' auto-check service. Automated, not a team
+member's review — the manual inspection it announces had not arrived as of 2026-08-27.
 
 **Submission** `rcicr_1.3.0.tar.gz`, the reinstatement submission after the 2021-06-08
 archival, carrying the answers to Konstanze Lauseker's review of 1.2.1
 (`notes/cran-review-1.2.1.md`). The point-by-point response is the body of
 `cran-comments.md` as it stood at the `v1.3.0` tag.
 
-**Outcome: accepted.** CRAN published rcicr 1.3.0 on 2026-09-02. Leonore Hochhauser's confirmation is quoted below. The preceding pretests had one NOTE on each of the two flavours: the incoming feasibility NOTE expected for a reinstatement. Nothing in it was a defect, and `cran-comments.md` already explained all four parts to the reviewer.
+**Outcome: pretests passed.** One NOTE on each of the two flavours, and it is the incoming
+feasibility NOTE that a reinstatement is expected to produce. Nothing in it is a defect and
+nothing in it needs a fix — `cran-comments.md` already explains all four parts to the
+reviewer. What remains is the manual inspection, quoted below as "within the next 10 working
+days", which from 2026-08-22 lands around **2026-09-04**.
 
 **Why this file exists before there is a review to log.** The `incoming_pretest` log
 directory is win-builder scratch space on its own cleanup schedule, and it went early: the
@@ -37,21 +42,12 @@ the submission sits in CRAN's queue.
   means the tarball is not sitting in a publicly listed working directory at that moment;
   the auto-check mail is proof it was accepted into the pipeline, and an item awaiting
   manual inspection need not be visible in that listing.
-- On 2026-08-27 <https://cran.r-project.org/package=rcicr> did not yet resolve to a current package, and the check results still showed the 2021 archival. Both changed when CRAN published 1.3.0 on 2026-09-02.
+- <https://cran.r-project.org/package=rcicr> not resolving, and the check results still
+  showing the 2021 archival, are both expected until a team member publishes the package.
 
 ---
 
-## The acceptance mail, verbatim
-
-Thanks,
-on its way to CRAN.
-
-Best,
-Leonore Hochhauser (she/her)
-
----
-
-## The auto-check mail, verbatim
+## The mail, verbatim
 
 Dear maintainer,
 
@@ -114,4 +110,7 @@ reported the same single NOTE, and R-hub reported `Status: OK` on Linux, macOS a
 R-hub does not run the incoming feasibility check, so that is agreement rather than a
 discrepancy.
 
-No reply to the auto-check was needed. The acceptance mail above closed the manual review, and the package's CRAN page records the published outcome.
+**Do not chase this.** `RELEASING.md` → "Answering a review" is written around the cost of a
+round trip; there is nothing here to answer, and a status enquiry inside the stated window
+would be one. The next action is triggered by a team member's mail, or by that window
+passing without one.
