@@ -58,7 +58,7 @@ Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`
 | 1.2.1 | 2026-07-28 | GitHub release | yes |
 | 1.2.2 | 2026-08-07 | GitHub release | yes |
 | 1.2.3 | 2026-08-08 | GitHub release | yes |
-| **1.3.0** | **2026-09-02** | **GitHub release + CRAN** | **fixed** |
+| **1.3.0** | **2026-08-18 (GitHub); 2026-09-02 (CRAN)** | **GitHub release + CRAN** | **fixed** |
 
 **`0.4.0` is the trap.** That version string sat on the `development` branch from 2016-10-26 to 2021-09-23 (five years) and the bug entered partway through, on 2017-08-15. Someone who reports "I used rcicr 0.4.0" cannot be classified from the version alone; the install date separates clean from affected, and the branch decides whether they could have had it at all.
 
@@ -76,7 +76,7 @@ Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`
 | 2015-07-20 → 2016-02-05 | 0.3.2 | no |
 | 2016-02-05 → 2016-07-13 | 0.3.2.1 | no |
 | 2016-07-13 → 2021-06-08 | 0.3.4.1 | no |
-| 2021-06-08 → now | **nothing** — archived, so `install.packages('rcicr')` fails. The tarball stays downloadable from [CRAN's Archive](https://cran.r-project.org/src/contrib/Archive/rcicr/), and 0.3.4.1 from there is clean | no |
+| 2021-06-08 → 2026-09-01 | **nothing** — archived, so `install.packages('rcicr')` fails. The tarball stays downloadable from [CRAN's Archive](https://cran.r-project.org/src/contrib/Archive/rcicr/), and 0.3.4.1 from there is clean | no |\n| 2026-09-02 → now | 1.3.0 | no |
 
 **No CRAN user has ever received a mislabelled file**, at any point in the package's seven years there. The last CRAN release predates the `save_individual_cis` option by thirteen months.
 
