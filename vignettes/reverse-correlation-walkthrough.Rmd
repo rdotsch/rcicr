@@ -72,10 +72,10 @@ Use GitHub when you need to reproduce an analysis with a specific tagged release
 ```{r install-github, eval = FALSE}
 # install.packages("remotes")
 remotes::install_github("rdotsch/rcicr@v1.3.0") # a specific release
-remotes::install_github("rdotsch/rcicr")         # the development version
+remotes::install_github("rdotsch/rcicr")         # the development version\nremotes::install_github("rdotsch/rcicr@<commit-sha>") # pin an exact development snapshot
 ```
 
-Record the version in your analysis script: a classification image is only reproducible against the version that computed it.
+Record the version in your analysis script; for an unreleased GitHub install, also record the commit SHA and pin that SHA when you return. A classification image is only reproducible against the exact code that computed it.
 
 ## 2. What the method does
 
