@@ -50,8 +50,11 @@
 <h3 id="purrrrbernoulli-was-replaced-with-runif-not-rbinom">
 <code>purrr::rbernoulli()</code> was replaced with <code>runif()</code>, not <code>rbinom()</code>
 <a class="anchor" aria-label="anchor" href="#purrrrbernoulli-was-replaced-with-runif-not-rbinom"></a></h3>
-<p>An earlier note recommended <code>stats::rbinom(n, 1, p)</code>. <strong>That advice was wrong.</strong> <code>rbernoulli(n, p)</code> is internally <code>runif(n) &gt; (1 - p)</code>, and <code>rbinom</code> draws from the stream differently — verified across 150 seed/probability combinations. Swapping it in would have silently changed every reference distribution, and therefore every InfoVal, computed from a given seed. The <code>runif</code> form is bit-identical to the old behaviour.</p>
-<p><strong>The rule this stands for: check the random <em>stream</em>, not just the distribution.</strong> Two functions with the same marginal distribution are not interchangeable in a seeded pipeline.</p>
+<p><code>purrr::rbernoulli(n, p)</code> uses <code>runif(n) &gt; (1 - p)</code>. <code><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom()</a></code> consumes the seeded stream differently, verified across 150 seed/probability combinations, and would alter every derived InfoVal. The replacement therefore uses the bit-identical <code><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif()</a></code> expression. Equal marginal distributions are insufficient in a seeded pipeline.</p>
+</div>
+<div class="section level3">
+<h3 id="a-base-images-alpha-channel-is-discarded-not-composited">A base image’s alpha channel is discarded, not composited<a class="anchor" aria-label="anchor" href="#a-base-images-alpha-channel-is-discarded-not-composited"></a></h3>
+<p>Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. <code>rcicr</code> renders opaque stimuli, so alpha has no downstream meaning. Hidden RGB values can differ from a viewer’s composited image, so a cut-out may reveal pixels stored beneath transparent areas.</p>
 </div>
 <div class="section level3">
 <h3 id="rowmeansx-dims--2-was-adopted-despite-not-being-bit-identical">
@@ -233,16 +236,15 @@
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
 <div class="section level3">
 <h3 id="the-medium-walkthrough-moved-into-a-vignette-and-the-post-stays-up">The Medium walkthrough moved into a vignette, and the post stays up<a class="anchor" aria-label="anchor" href="#the-medium-walkthrough-moved-into-a-vignette-and-the-post-stays-up"></a></h3>
-<p>A tutorial outside the repo cannot execute at build time, so it goes stale silently. The premise proved itself during the port: two of the post’s lines no longer worked — <code><a href="reference/autoscale.html">autoscale()</a></code>’s <code>saveasjpegs</code> argument, now <code>save_as_pngs</code>, and <code>install_github(..., ref = "development")</code>, a branch that does not exist. The post stays published for nine years of inbound links; this moves the canonical copy, it is not a takedown.</p>
+<p>A tutorial outside the repo cannot execute at build time, so it goes stale silently, as this one had: <code>saveasjpegs</code> is now <code>save_as_pngs</code>, and <code>install_github(..., ref = "development")</code> names a branch that does not exist. The post stays up for nine years of inbound links; this moves the canonical copy, it is not a takedown.</p>
 </div>
 <div class="section level3">
 <h3 id="three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed">Three vignette figures were wrong in ways only viewing them showed<a class="anchor" aria-label="anchor" href="#three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed"></a></h3>
-<p>The rule this stands behind is in <code>CONTRIBUTING.md</code>. What it caught, none of it visible to an assertion:</p>
+<p>Visual inspection caught failures assertions missed:</p>
 <ul><li>
-<strong><code><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image()</a></code> auto-stretches its input across the palette</strong>, so every linear rescaling of the same image renders <em>identically</em> — which made a four-way scaling comparison meaningless until <code>zlim = c(0, 1)</code> was pinned.</li>
-<li>
-<strong><code>zmapmethod = "quick"</code> z-scores across the pixels of one image</strong>, so its values are relative to that image’s own spatial structure, not a null distribution. At small sizes they span only ±1.65 and the <strong>default <code>threshold = 3</code> returns a blank map</strong> — which reads as “no signal” but means “wrong ruler”.</li>
-<li>A white-noise synthetic base drowned every figure; a crude Gaussian blob is legible and still obviously synthetic.</li>
+<code><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image()</a></code> auto-stretched each rescaling to look identical until <code>zlim = c(0, 1)</code> fixed the palette.</li>
+<li>The quick z-map’s pixel-relative scores spanned only ±1.65 at small sizes, so the default threshold returned a misleading blank map.</li>
+<li>A white-noise base obscured every figure; a Gaussian blob remains legible and synthetic.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="when-the-docs-and-the-code-disagreed-about-mask-the-code-was-the-contract">When the docs and the code disagreed about <code>mask</code>, the code was the contract<a class="anchor" aria-label="anchor" href="#when-the-docs-and-the-code-disagreed-about-mask-the-code-was-the-contract"></a></h3>
