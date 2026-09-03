@@ -133,7 +133,7 @@ if (!all(step2)) stop("Rename failed for: ", paste(old[!step2], collapse = ", ")
 
 (use the `antici_` prefix instead of `ci_` if you generated anti-CIs).
 
-If you plan to keep using the package, get the fixed version from [GitHub](https://github.com/rdotsch/rcicr) (`remotes::install_github("rdotsch/rcicr@v1.3.0")`; a CRAN submission is in progress but not live yet).
+If you plan to keep using the package, install the fixed release from CRAN (`install.packages("rcicr")`) or pin it from [GitHub](https://github.com/rdotsch/rcicr) (`remotes::install_github("rdotsch/rcicr@v1.3.0")`).
 
 More detail: [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) has the full technical background (every affected version, its dates, and exactly which configurations trigger the bug), and [issue #267](https://github.com/rdotsch/rcicr/issues/267) is the pinned advisory tracking this on the repository.
 
