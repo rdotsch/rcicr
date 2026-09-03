@@ -8,36 +8,38 @@
 
 ## Installation
 
-Install from GitHub:
+Install the current release from CRAN:
+
+``` r
+install.packages('rcicr')
+```
+
+Use GitHub when you need to reproduce an analysis with a specific tagged release or test the unreleased development version:
 
 ``` r
 install.packages('remotes')
 
-# The most recent release -- start here
-remotes::install_github('rdotsch/rcicr@*release')
-
-# A specific release, by tag -- to reproduce an analysis run under that version
+# A specific release, by tag
 remotes::install_github('rdotsch/rcicr@v1.3.0')
 
-# The development version at the tip of main -- unreleased, may change under you
+# The development version at the tip of main. Record its commit SHA.
 remotes::install_github('rdotsch/rcicr')
+
+# Reinstall that exact development snapshot later
+remotes::install_github('rdotsch/rcicr@<commit-sha>')
 ```
 
 Every release is tagged, and the tags are listed on the
 [releases page](https://github.com/rdotsch/rcicr/releases). Record the version you ran in
-your analysis script, and install it by tag when you come back to that analysis: a
-classification image is only reproducible against the version that computed it, and any
+your analysis script, and install it by tag when you come back to that analysis. For an
+unreleased GitHub install, also record the commit SHA and pin that SHA when you return: a
+classification image is only reproducible against the exact code that computed it, and any
 release that changes numeric output says so in [`NEWS.md`](NEWS.md) under "Reproducibility
 impact".
 
 > **If you saved per-participant classification images before 1.3.0, check them.** `generateCI(participants = ..., save_individual_cis = TRUE)` wrote an image under another participant's filename at each position where appearance order and sorted order differed (for text identifiers that means lexical order, which includes the ordinary case of `p1 ... p10` in collection order). The images were correct; only the names were wrong, and correcting them is a rename rather than a re-run. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) is the full version: how to tell whether you are affected, what it did to an analysis, and the recovery. A shorter form is in [`NEWS.md`](NEWS.md) under "Reproducibility impact", and [which version you had](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) if you need to work out what a stored analysis actually ran. `batchGenerateCI()`, `batchGenerateCI2IFC()` and `generateCI2IFC()` were never affected.
 
-> **`install.packages('rcicr')` does not currently work.** The package was archived on
-> CRAN on 2021-06-08 because email to the maintainer had become undeliverable — an old
-> university address that stopped working. The code was never the problem, and the
-> maintainer address has since been updated. Returning to CRAN is being worked on; until
-> then, GitHub is the only source. The last CRAN release was 0.3.4.1, which is several
-> years behind.
+Version 1.3.0 returned `rcicr` to CRAN after the package was archived in 2021 because email to an old maintainer address was undeliverable. The archival was administrative, not caused by a problem with the package.
 
 ## Quick example
 
@@ -207,6 +209,10 @@ devtools::load_all()   # load the package for interactive development
 devtools::test()       # run the test suite
 devtools::check()      # full CRAN-style check
 ```
+
+## Maintenance
+
+`rcicr` is no longer actively maintained. If you use the package and would be interested in helping with maintenance, please email [Ron Dotsch](mailto:rdotsch@gmail.com).
 
 ## Contributing
 
