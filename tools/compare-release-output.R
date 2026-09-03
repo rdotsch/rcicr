@@ -82,8 +82,20 @@ alpha_bases <- function(filename, maximize) {
 }
 
 same_numbers <- function(a, b) {
-  d <- max(abs(a - b), na.rm = TRUE)
-  d <= 8 * .Machine$double.eps * max(1, abs(a), abs(b), na.rm = TRUE)
+  if (!identical(dim(a), dim(b)) || !identical(is.na(a), is.na(b))) {
+    return(FALSE)
+  }
+  keep <- !is.na(a)
+  if (!any(keep)) {
+    return(TRUE)
+  }
+  a <- a[keep]
+  b <- b[keep]
+  if (any(!is.finite(a)) || any(!is.finite(b))) {
+    return(identical(a, b))
+  }
+  d <- max(abs(a - b))
+  d <= 8 * .Machine$double.eps * max(1, abs(a), abs(b))
 }
 
 correct_alpha_base <- function(filename, maximize) {
