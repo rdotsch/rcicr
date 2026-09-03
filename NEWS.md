@@ -8,10 +8,10 @@
   it stores, and it is present in every released version, 1.3.0 included.
 
   **Most projects are unaffected, and it is worth checking which case yours is.** A greyscale
-  or RGB base face never was. A base face with a *constant* alpha -- an ordinary opaque PNG
-  that happens to carry the channel -- comes out identical too, as long as
-  `maximize_baseimage_contrast` is at its default `TRUE`: averaging in a constant and then
-  rescaling to [0, 1] is an affine transform of the same image, so the constant is absorbed.
+  or RGB base face never was. With the default `maximize_baseimage_contrast = TRUE`, a base
+  face with *constant* alpha -- an ordinary opaque PNG that happens to carry the channel --
+  differs only in floating-point rounding after rescaling: the stored doubles are not
+  bit-identical, but the participant-facing 8-bit stimuli and the rendered CI are unchanged.
 
   Two cases do change. With `maximize_baseimage_contrast = FALSE`, an opaque black pixel was
   read as 0.25 for RGBA and 0.5 for grey-plus-alpha. And a base face whose alpha *varies* --
@@ -31,10 +31,11 @@
   the original photograph beneath a cut-out will render that base face with the crop undone.
   `DECISIONS.md` records why discarding is the right reading and what the alternatives cost.
 
-  The reproducibility gate exercises both affected cases against released versions: varying
-  alpha at the default contrast setting, and constant alpha with contrast maximization off.
-  Only the stored base face, stimuli and base-dependent renderings change; the noise parameters
-  and raw classification image remain identical.
+  The reproducibility gate exercises all three alpha cases against released versions: varying
+  alpha at the default contrast setting, and constant alpha both with contrast maximization on
+  and off. The stored base is checked against the fixture's RGB channels, and decoded stimulus
+  pixels and base-dependent renderings are checked against the corresponding transform. Noise
+  parameters and raw classification images remain identical.
 
 ## Documentation
 
