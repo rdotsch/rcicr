@@ -152,7 +152,7 @@ EXPECTED <- c(list(
                       "must still match."),
        news = "Reproducibility impact")
 ), alpha_expectations("v1.0.1"), alpha_expectations("v1.1.0"),
-   alpha_expectations("v1.2.3"))
+   alpha_expectations("v1.2.3"), alpha_expectations("v1.3.0"))
 
 # Entries are matched by position so a vector `key` can be tracked as one
 # expectation: it has fired once any of its keys deviates.
