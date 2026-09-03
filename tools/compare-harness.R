@@ -131,6 +131,8 @@ CONFIGS <- list(
   # and constant alpha when contrast maximization is disabled.
   cfg_("sinusoid-64-alpha-varying", img_size = 64,
        base_type = "alpha_varying", stimulus_pngs = TRUE),
+  cfg_("sinusoid-64-alpha-opaque-default", img_size = 64,
+       base_type = "alpha_opaque", stimulus_pngs = TRUE),
   cfg_("sinusoid-64-alpha-opaque-no-max", img_size = 64,
        base_type = "alpha_opaque", maximize_baseimage_contrast = FALSE,
        stimulus_pngs = TRUE),
@@ -229,7 +231,12 @@ run_config <- function(cfg) {
   if (cfg$stimulus_pngs) {
     pngs <- sort(list.files(stim_dir, pattern = "[.]png$", full.names = TRUE))
     if (!length(pngs)) stop("no stimulus PNGs written in ", stim_dir)
-    out$stimulus_pngs <- stats::setNames(unname(tools::md5sum(pngs)), basename(pngs))
+    if (identical(cfg$base_type, "plain")) {
+      out$stimulus_pngs <- stats::setNames(unname(tools::md5sum(pngs)), basename(pngs))
+    } else {
+      out$stimulus_pngs <- simplify2array(lapply(pngs, png::readPNG))
+      dimnames(out$stimulus_pngs)[[3]] <- basename(pngs)
+    }
   }
 
   # 4. Classification images, one per scaling method.
