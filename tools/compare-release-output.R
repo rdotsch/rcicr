@@ -73,26 +73,74 @@ same_files_changed <- function(a, b) {
   identical(names(a), names(b)) && length(a) > 0L && all(a != b)
 }
 
+alpha_bases <- function(filename, maximize) {
+  img <- png::readPNG(file.path(basedir, filename))
+  old <- apply(img, c(1, 2), mean)
+  current <- apply(img[, , 1:3, drop = FALSE], c(1, 2), mean)
+  if (maximize) {
+    rescale <- function(x) (x - min(x)) / diff(range(x))
+    old <- rescale(old)
+    current <- rescale(current)
+  }
+  list(old = old, current = current)
+}
+
+same_numbers <- function(a, b) {
+  isTRUE(all.equal(a, b, tolerance = 8 * .Machine$double.eps))
+}
+
+correct_alpha_base <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    same_numbers(old, bases$old) && same_numbers(current, bases$current)
+  }
+}
+
+correct_alpha_combined <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    same_numbers((2 * old) - bases$old, (2 * current) - bases$current)
+  }
+}
+
+correct_alpha_matched <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    unit_ci <- (old - min(bases$old)) / diff(range(bases$old))
+    expected <- min(bases$current) + diff(range(bases$current)) * unit_ci
+    same_numbers(current, expected)
+  }
+}
+
 alpha_expectations <- function(ref) {
   list(
     list(ref = ref,
-         key = c("sinusoid-64-alpha-varying/base_face_base1",
-                 "sinusoid-64-alpha-varying/combined"),
-         reason = paste("The reference averaged varying alpha into the colour channels.",
-                        "Dropping it changes the stored base face and the CI rendered over it,",
-                        "while the noise parameters and raw CI remain identical."),
+         key = "sinusoid-64-alpha-varying/base_face_base1",
+         reason = "The corrected base is the rescaled mean of the fixture's RGB channels.",
+         check = correct_alpha_base("base_alpha_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-varying/combined",
+         reason = paste("Removing each side's base from its combined CI must recover the",
+                        "same raw CI; only the base-face contribution may differ."),
+         check = correct_alpha_combined("base_alpha_varying_64.png", TRUE),
          news = "Reproducibility impact"),
     list(ref = ref, key = "sinusoid-64-alpha-varying/stimulus_pngs",
          reason = "The corrected varying-alpha base face changes every rendered stimulus.",
          check = same_files_changed,
          news = "Reproducibility impact"),
     list(ref = ref,
-         key = c("sinusoid-64-alpha-opaque-no-max/base_face_base1",
-                 "sinusoid-64-alpha-opaque-no-max/combined",
-                 "sinusoid-64-alpha-opaque-no-max/scaled_matched"),
-         reason = paste("With contrast maximization disabled, the reference averaged constant",
-                        "alpha into the base. The corrected base changes the rendered CI and",
-                        "the matched scaling range, but not the raw CI."),
+         key = "sinusoid-64-alpha-opaque-no-max/base_face_base1",
+         reason = "The corrected base is the unscaled mean of the fixture's RGB channels.",
+         check = correct_alpha_base("base_alpha_opaque_64.png", FALSE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/combined",
+         reason = paste("Removing each side's base from its combined CI must recover the",
+                        "same raw CI; only the base-face contribution may differ."),
+         check = correct_alpha_combined("base_alpha_opaque_64.png", FALSE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/scaled_matched",
+         reason = "Matched scaling must move only by the corrected base image's range.",
+         check = correct_alpha_matched("base_alpha_opaque_64.png", FALSE),
          news = "Reproducibility impact"),
     list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/stimulus_pngs",
          reason = "The corrected opaque-alpha base face changes every rendered stimulus.",
