@@ -73,10 +73,10 @@ affected output.</p>
 GitHub-only, and is fixed in <a href="https://github.com/rdotsch/rcicr/releases/tag/v1.3.0" class="external-link">1.3.0</a>.
 (0.4.0 is affected only if you installed it on or after 2017-08-15; see
 “Which versions were affected” below.) This bug never reached CRAN: the
-last CRAN release, 0.3.4.1, predates the
-<code>save_individual_cis</code> option by thirteen months, so nothing
-installed with <code>install.packages('rcicr')</code> was ever
-affected.</strong></p>
+last CRAN release before the 2021 archival, 0.3.4.1, predates the
+<code>save_individual_cis</code> option by thirteen months, and CRAN’s
+restored 1.3.0 release is fixed. Nothing installed with
+<code>install.packages('rcicr')</code> was ever affected.</strong></p>
 <div class="section level2">
 <h2 id="are-you-affected">Are you affected?<a class="anchor" aria-label="anchor" href="#are-you-affected"></a>
 </h2>
@@ -410,9 +410,9 @@ depends on: the original <code>participants</code> rather than a copy
 converted to text, under the same language and region settings.)</p>
 <p>(use the <code>antici_</code> prefix instead of <code>ci_</code> if
 you generated anti-CIs).</p>
-<p>If you plan to keep using the package, get the fixed version from <a href="https://github.com/rdotsch/rcicr" class="external-link">GitHub</a>
-(<code>remotes::install_github("rdotsch/rcicr@v1.3.0")</code>; a CRAN
-submission is in progress but not live yet).</p>
+<p>If you plan to keep using the package, install the fixed release from
+CRAN (<code>install.packages("rcicr")</code>) or pin it from <a href="https://github.com/rdotsch/rcicr" class="external-link">GitHub</a>
+(<code>remotes::install_github("rdotsch/rcicr@v1.3.0")</code>).</p>
 <p>More detail: <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link"><code>individual-ci-mislabelling.md</code></a>
 has the full technical background (every affected version, its dates,
 and exactly which configurations trigger the bug), and <a href="https://github.com/rdotsch/rcicr/issues/267" class="external-link">issue #267</a> is the

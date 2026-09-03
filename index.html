@@ -63,31 +63,32 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Install from GitHub:</p>
+<p>Install the current release from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'rcicr'</span><span class="op">)</span></span></code></pre></div>
+<p>Use GitHub when you need to reproduce an analysis with a specific tagged release or test the unreleased development version:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'remotes'</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># The most recent release -- start here</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@*release'</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># A specific release, by tag -- to reproduce an analysis run under that version</span></span>
+<span><span class="co"># A specific release, by tag</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@v1.3.0'</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># The development version at the tip of main -- unreleased, may change under you</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr'</span><span class="op">)</span></span></code></pre></div>
-<p>Every release is tagged, and the tags are listed on the <a href="https://github.com/rdotsch/rcicr/releases" class="external-link">releases page</a>. Record the version you ran in your analysis script, and install it by tag when you come back to that analysis: a classification image is only reproducible against the version that computed it, and any release that changes numeric output says so in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”.</p>
+<span><span class="co"># The development version at the tip of main. Record its commit SHA.</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr'</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Reinstall that exact development snapshot later</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@&lt;commit-sha&gt;'</span><span class="op">)</span></span></code></pre></div>
+<p>Every release is tagged, and the tags are listed on the <a href="https://github.com/rdotsch/rcicr/releases" class="external-link">releases page</a>. Record the version you ran in your analysis script, and install it by tag when you come back to that analysis. For an unreleased GitHub install, also record the commit SHA and pin that SHA when you return: a classification image is only reproducible against the exact code that computed it, and any release that changes numeric output says so in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”.</p>
 <blockquote>
 <p><strong>If you saved per-participant classification images before 1.3.0, check them.</strong> <code>generateCI(participants = ..., save_individual_cis = TRUE)</code> wrote an image under another participant’s filename at each position where appearance order and sorted order differed (for text identifiers that means lexical order, which includes the ordinary case of <code>p1 ... p10</code> in collection order). The images were correct; only the names were wrong, and correcting them is a rename rather than a re-run. The <a href="https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html">individual-CI filename advisory</a> is the full version: how to tell whether you are affected, what it did to an analysis, and the recovery. A shorter form is in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”, and <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link">which version you had</a> if you need to work out what a stored analysis actually ran. <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> and <code><a href="reference/generateCI2IFC.html">generateCI2IFC()</a></code> were never affected.</p>
 </blockquote>
-<blockquote>
-<p><strong><code>install.packages('rcicr')</code> does not currently work.</strong> The package was archived on CRAN on 2021-06-08 because email to the maintainer had become undeliverable — an old university address that stopped working. The code was never the problem, and the maintainer address has since been updated. Returning to CRAN is being worked on; until then, GitHub is the only source. The last CRAN release was 0.3.4.1, which is several years behind.</p>
-</blockquote>
+<p>Version 1.3.0 returned <code>rcicr</code> to CRAN after the package was archived in 2021 because email to an old maintainer address was undeliverable. The archival was administrative, not caused by a problem with the package.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-example">Quick example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
 </h2>
 <p>A minimal 2IFC workflow: generate stimuli from a base face, then turn collected responses into a classification image.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rdotsch.github.io/rcicr/">rcicr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Generate stimuli: writes an original + inverted noise-blended PNG per</span></span>
@@ -116,7 +117,7 @@
 </h2>
 <p>Everything below is also on the web at <strong><a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a></strong> — the function reference, both vignettes and the changelog — if you would rather read it before installing.</p>
 <p>Two vignettes ship with the package:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># shortest working example</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"reverse-correlation-walkthrough"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># the full method</span></span></code></pre></div>
 <p>The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs when the package is built, so it cannot drift out of date.</p>
@@ -282,10 +283,15 @@
 <h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
 </h2>
 <p>On a fresh Ubuntu machine with no compiler or R package library yet, <code>tools/dev-setup.sh</code> builds one — see CONTRIBUTING.md → “Getting set up” for details.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span>   <span class="co"># load the package for interactive development</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span>       <span class="co"># run the test suite</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span>      <span class="co"># full CRAN-style check</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="maintenance">Maintenance<a class="anchor" aria-label="anchor" href="#maintenance"></a>
+</h2>
+<p><code>rcicr</code> is no longer actively maintained. If you use the package and would be interested in helping with maintenance, please email <a href="mailto:rdotsch@gmail.com">Ron Dotsch</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>

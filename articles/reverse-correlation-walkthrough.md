@@ -50,18 +50,28 @@ show <- function(m, title, zlim = range(m, na.rm = TRUE)) {
 
 ## 1. Installing
 
-`rcicr` was archived on CRAN in 2021 (an undeliverable maintainer email
-address, not a problem with the package), so install it from GitHub:
+Install the current release from CRAN:
+
+``` r
+
+install.packages("rcicr")
+```
+
+Use GitHub when you need to reproduce an analysis with a specific tagged
+release or test the unreleased development version:
 
 ``` r
 
 # install.packages("remotes")
-remotes::install_github("rdotsch/rcicr@*release")   # or @v1.3.0 for one specific release
+remotes::install_github("rdotsch/rcicr@v1.3.0") # a specific release
+remotes::install_github("rdotsch/rcicr")         # the development version
+remotes::install_github("rdotsch/rcicr@<commit-sha>") # pin an exact development snapshot
 ```
 
-Install a tagged release rather than the tip of `main`, and note the
-version in your analysis script: a classification image is only
-reproducible against the version that computed it.
+Record the version in your analysis script; for an unreleased GitHub
+install, also record the commit SHA and pin that SHA when you return. A
+classification image is only reproducible against the exact code that
+computed it.
 
 ## 2. What the method does
 

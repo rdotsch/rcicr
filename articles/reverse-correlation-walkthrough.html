@@ -103,15 +103,20 @@ instruction pointed at a branch that no longer exists.</p>
 <div class="section level2">
 <h2 id="installing">1. Installing<a class="anchor" aria-label="anchor" href="#installing"></a>
 </h2>
-<p><code>rcicr</code> was archived on CRAN in 2021 (an undeliverable
-maintainer email address, not a problem with the package), so install it
-from GitHub:</p>
+<p>Install the current release from CRAN:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"rcicr"</span><span class="op">)</span></span></code></pre></div>
+<p>Use GitHub when you need to reproduce an analysis with a specific
+tagged release or test the unreleased development version:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@*release"</span><span class="op">)</span>   <span class="co"># or @v1.3.0 for one specific release</span></span></code></pre></div>
-<p>Install a tagged release rather than the tip of <code>main</code>,
-and note the version in your analysis script: a classification image is
-only reproducible against the version that computed it.</p>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@v1.3.0"</span><span class="op">)</span> <span class="co"># a specific release</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr"</span><span class="op">)</span>         <span class="co"># the development version</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@&lt;commit-sha&gt;"</span><span class="op">)</span> <span class="co"># pin an exact development snapshot</span></span></code></pre></div>
+<p>Record the version in your analysis script; for an unreleased GitHub
+install, also record the commit SHA and pin that SHA when you return. A
+classification image is only reproducible against the exact code that
+computed it.</p>
 </div>
 <div class="section level2">
 <h2 id="what-the-method-does">2. What the method does<a class="anchor" aria-label="anchor" href="#what-the-method-does"></a>
@@ -134,7 +139,7 @@ visible. That average is the <strong>classification image</strong>.</p>
 <strong>square</strong> base images. Here we draw a crude synthetic face
 so the vignette is self-contained and needs no image licence; in a real
 study you would pass paths to your face photos.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">64</span></span>
 <span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="va">n</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">n</span><span class="op">)</span></span>
 <span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="va">n</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">n</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -155,7 +160,7 @@ study you would pass paths to your face photos.</p>
 <p>The base image must be <strong>square and already the size you
 want</strong>: <code>rcicr</code> does not resize it, and will stop with
 an error if <code>img_size</code> disagrees.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stimulus_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"stimuli"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">stimulus_path</span><span class="op">)</span></span>
 <span></span>
@@ -206,7 +211,7 @@ chose the original, <code>-1</code> if they chose the inverted one.</li>
 smudge, we simulate three participants who genuinely have an internal
 template and respond according to it, with different amounts of
 inconsistency.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">e</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="va">rdata_file</span>, envir <span class="op">=</span> <span class="va">e</span><span class="op">)</span></span>
 <span><span class="va">params</span> <span class="op">&lt;-</span> <span class="va">e</span><span class="op">$</span><span class="va">stimuli_params</span><span class="op">[[</span><span class="st">"face"</span><span class="op">]</span><span class="op">]</span></span>
@@ -250,7 +255,7 @@ participant.</p>
 <div class="section level2">
 <h2 id="computing-one-classification-image">5. Computing one classification image<a class="anchor" aria-label="anchor" href="#computing-one-classification-image"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ci_p01</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generateCI.html">generateCI</a></span><span class="op">(</span></span>
 <span>  stimuli     <span class="op">=</span> <span class="va">responses</span><span class="op">$</span><span class="va">stimulus</span><span class="op">[</span><span class="va">responses</span><span class="op">$</span><span class="va">participant</span> <span class="op">==</span> <span class="st">"p01"</span><span class="op">]</span>,</span>
 <span>  responses   <span class="op">=</span> <span class="va">responses</span><span class="op">$</span><span class="va">response</span><span class="op">[</span><span class="va">responses</span><span class="op">$</span><span class="va">participant</span> <span class="op">==</span> <span class="st">"p01"</span><span class="op">]</span>,</span>
@@ -279,11 +284,11 @@ it means.</li>
 overlaid on <code>base</code>. This is what gets written to disk.</li>
 </ul>
 <p>Did we recover the template the simulated observer was using?</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">show</span><span class="op">(</span><span class="va">template</span>, <span class="st">"true template"</span><span class="op">)</span></span>
 <span><span class="fu">show</span><span class="op">(</span><span class="va">ci_p01</span><span class="op">$</span><span class="va">ci</span>, <span class="st">"recovered CI"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reverse-correlation-walkthrough_files/figure-html/show-recovery-1.png" class="r-plt" alt="" width="249.6"><img src="reverse-correlation-walkthrough_files/figure-html/show-recovery-2.png" class="r-plt" alt="" width="249.6"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">ci_p01</span><span class="op">$</span><span class="va">ci</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.5453478</span></span></code></pre></div>
 <p>With real participants you have no template to compare against — that
@@ -299,7 +304,7 @@ run. New code should use <code><a href="../reference/generateCI.html">generateCI
 <p>Scaling decides what the image looks like. <code><a href="../reference/generateCI.html">generateCI()</a></code>
 offers four methods, and the choice is a reporting decision, not a
 cosmetic one.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">method</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"constant"</span>, <span class="st">"matched"</span>, <span class="st">"independent"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generateCI.html">generateCI</a></span><span class="op">(</span></span>
 <span>    stimuli     <span class="op">=</span> <span class="va">responses</span><span class="op">$</span><span class="va">stimulus</span><span class="op">[</span><span class="va">responses</span><span class="op">$</span><span class="va">participant</span> <span class="op">==</span> <span class="st">"p01"</span><span class="op">]</span>,</span>
@@ -357,7 +362,7 @@ computed from it are unaffected by the display choice.</p>
 </h2>
 <p><code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> splits a data frame by a grouping
 column and computes one CI per group.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cis</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/batchGenerateCI.html">batchGenerateCI</a></span><span class="op">(</span></span>
 <span>  data        <span class="op">=</span> <span class="va">responses</span>,</span>
 <span>  by          <span class="op">=</span> <span class="st">"participant"</span>,</span>
@@ -367,7 +372,7 @@ column and computes one CI per group.</p>
 <span>  rdata       <span class="op">=</span> <span class="va">rdata_file</span>,</span>
 <span>  save_as_png <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">cis</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "face_participant_p01" "face_participant_p02" "face_participant_p03"</span></span></code></pre></div>
 <p>Use the same <code>by</code> mechanism for conditions rather than
@@ -375,7 +380,7 @@ participants when that is the comparison you care about.</p>
 <p>Because each of those was scaled independently, they cannot be
 compared by eye yet. <code><a href="../reference/autoscale.html">autoscale()</a></code> finds one constant that
 works for all of them without clipping any:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scaled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/autoscale.html">autoscale</a></span><span class="op">(</span><span class="va">cis</span>, save_as_pngs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Using scaling factor constant:0.0384382346907274</span></span>
 <span></span>
@@ -400,7 +405,7 @@ because that function scales with <code>'none'</code> before handing
 over — so its <code>$combined</code> is an overlay of the
 <em>unscaled</em> noise and looks almost blank. If you want the
 autoscaled noise over the base image, build it yourself:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p01</span> <span class="op">&lt;-</span> <span class="va">scaled</span><span class="op">[[</span><span class="st">"face_participant_p01"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu">show</span><span class="op">(</span><span class="op">(</span><span class="va">p01</span><span class="op">$</span><span class="va">scaled</span> <span class="op">+</span> <span class="va">p01</span><span class="op">$</span><span class="va">base</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>, <span class="st">"p01 over base"</span>, zlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reverse-correlation-walkthrough_files/figure-html/autoscale-combined-1.png" class="r-plt" alt="" width="230.4"></p>
@@ -422,7 +427,7 @@ random responding. Values above about 1.96 indicate reliable signal.</p>
 <p>It needs a reference distribution simulated under the same task
 parameters, which takes a long time to build — so it is shown but not
 run here:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Slow: simulates `iter` classification images from random responses. Do this once</span></span>
 <span><span class="co"># per stimulus set; the result is cached back into the .Rdata file.</span></span>
 <span><span class="fu"><a href="../reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC</a></span><span class="op">(</span><span class="va">rdata_file</span>, iter <span class="op">=</span> <span class="fl">10000</span><span class="op">)</span></span>
@@ -431,7 +436,7 @@ run here:</p>
 <p><strong><code><a href="../reference/plotZmap.html">plotZmap()</a></code></strong>, or
 <code>generateCI(zmap = TRUE)</code>, answers the spatial question
 instead: <em>which regions</em> of the image carry reliable signal.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zmap_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"zmaps"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ci_z</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generateCI.html">generateCI</a></span><span class="op">(</span></span>
@@ -441,7 +446,7 @@ instead: <em>which regions</em> of the image carry reliable signal.</p>
 <span>  zmap <span class="op">=</span> <span class="cn">TRUE</span>, zmapmethod <span class="op">=</span> <span class="st">"quick"</span>, threshold <span class="op">=</span> <span class="fl">1.5</span>,</span>
 <span>  zmaptargetpath <span class="op">=</span> <span class="va">zmap_dir</span>, zmapdecoration <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Pixels that did not clear the threshold are set to NA.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">ci_z</span><span class="op">$</span><span class="va">zmap</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] -2.208394  3.442531</span></span>
@@ -485,7 +490,7 @@ representation of the opposite trait.</li>
 <div class="section level2">
 <h2 id="citing">10. Citing<a class="anchor" aria-label="anchor" href="#citing"></a>
 </h2>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"rcicr"</span><span class="op">)</span></span></code></pre></div>
 <p>If you use the technique, cite the method papers as well as the
 software — see the package’s <code>CITATION</code> file and the README

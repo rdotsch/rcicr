@@ -11,9 +11,10 @@ and is fixed in
 [1.3.0](https://github.com/rdotsch/rcicr/releases/tag/v1.3.0). (0.4.0 is
 affected only if you installed it on or after 2017-08-15; see “Which
 versions were affected” below.) This bug never reached CRAN: the last
-CRAN release, 0.3.4.1, predates the `save_individual_cis` option by
-thirteen months, so nothing installed with `install.packages('rcicr')`
-was ever affected.**
+CRAN release before the 2021 archival, 0.3.4.1, predates the
+`save_individual_cis` option by thirteen months, and CRAN’s restored
+1.3.0 release is fixed. Nothing installed with
+`install.packages('rcicr')` was ever affected.**
 
 ## Are you affected?
 
@@ -352,10 +353,10 @@ converted to text, under the same language and region settings.)
 
 (use the `antici_` prefix instead of `ci_` if you generated anti-CIs).
 
-If you plan to keep using the package, get the fixed version from
+If you plan to keep using the package, install the fixed release from
+CRAN (`install.packages("rcicr")`) or pin it from
 [GitHub](https://github.com/rdotsch/rcicr)
-(`remotes::install_github("rdotsch/rcicr@v1.3.0")`; a CRAN submission is
-in progress but not live yet).
+(`remotes::install_github("rdotsch/rcicr@v1.3.0")`).
 
 More detail:
 [`individual-ci-mislabelling.md`](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
