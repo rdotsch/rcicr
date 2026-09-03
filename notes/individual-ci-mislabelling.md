@@ -76,7 +76,8 @@ Introduced 2017-08-15 (`8a74974`, merged in PR #88). Fixed 2026-08-17 (`706882e`
 | 2015-07-20 → 2016-02-05 | 0.3.2 | no |
 | 2016-02-05 → 2016-07-13 | 0.3.2.1 | no |
 | 2016-07-13 → 2021-06-08 | 0.3.4.1 | no |
-| 2021-06-08 → 2026-09-01 | **nothing** — archived, so `install.packages('rcicr')` fails. The tarball stays downloadable from [CRAN's Archive](https://cran.r-project.org/src/contrib/Archive/rcicr/), and 0.3.4.1 from there is clean | no |\n| 2026-09-02 → now | 1.3.0 | no |
+| 2021-06-08 → 2026-09-01 | **nothing** — archived, so `install.packages('rcicr')` fails. The tarball stays downloadable from [CRAN's Archive](https://cran.r-project.org/src/contrib/Archive/rcicr/), and 0.3.4.1 from there is clean | no |
+| 2026-09-02 → now | 1.3.0 | no |
 
 **No CRAN user has ever received a mislabelled file**, at any point in the package's seven years there. The last CRAN release predates the `save_individual_cis` option by thirteen months.
 
