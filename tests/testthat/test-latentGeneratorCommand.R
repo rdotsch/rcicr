@@ -250,3 +250,60 @@ test_that("a grey-plus-alpha image keeps its grey and drops its alpha", {
   # and averaging it in would pull both values towards 0.5.
   expect_false(isTRUE(all.equal(rendered[1, 1, 1], 0.5, tolerance = 1 / 255)))
 })
+
+test_that("editing the renderer script changes the generator's fingerprint", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  script <- write_renderer(dir, faithful_renderer)
+
+  before <- latentGeneratorCommand(command = rscript(), args = script,
+                                   latent_dim = 2, img_size = 8, latent_sd = 1)
+  rendered_before <- renderLatent(before, matrix(c(1, 0), nrow = 1))
+
+  # A path names a renderer; it does not identify one. Editing the script in
+  # place changes every stimulus and leaves the argument string untouched, so a
+  # classification image could be rendered through logic the stimuli never saw.
+  inverted <- c(
+    'for (i in seq_len(nrow(latents))) {',
+    '  value <- 1 - (latents[i, 1] + 1) / 2',
+    '  png::writePNG(matrix(max(0, min(1, value)), 8, 8),',
+    '                file.path(outdir, sprintf("%05d.png", i)))',
+    '}'
+  )
+  write_renderer(dir, inverted)
+
+  after <- latentGeneratorCommand(command = rscript(), args = script,
+                                  latent_dim = 2, img_size = 8, latent_sd = 1)
+
+  expect_false(identical(before$fingerprint, after$fingerprint))
+
+  # The edit really does change what is rendered, so the fingerprint had to move.
+  # Compared against the pixels captured before the edit, not against `before`:
+  # both objects read the script at render time, so both now draw the new one --
+  # which is exactly why the stored path could not be trusted to identify it.
+  expect_false(isTRUE(all.equal(rendered_before,
+                                renderLatent(after, matrix(c(1, 0), nrow = 1)))))
+})
+
+test_that("command parts that are not files pass through as themselves", {
+  withr::local_options(rcicr.experimental = TRUE)
+  dir <- withr::local_tempdir()
+  script <- write_renderer(dir, faithful_renderer)
+
+  # Exercised directly rather than through a generator: the harness renderer
+  # takes its latents and output directory positionally, so extra arguments
+  # would shift them. What matters here is only what the fingerprint is built
+  # from.
+  fingerprint <- function(args) {
+    commandFingerprint('python', args, 512, 1024, 'w', NULL)
+  }
+
+  # "--space" and "w" are not paths and are not required to exist.
+  expect_identical(fingerprint(c(script, '--space', 'w')),
+                   fingerprint(c(script, '--space', 'w')))
+  expect_false(identical(fingerprint(c(script, '--space', 'w')),
+                         fingerprint(c(script, '--space', 'z'))))
+
+  # A directory is named, not hashed: md5sum() cannot read one.
+  expect_no_error(fingerprint(c(script, dir)))
+})

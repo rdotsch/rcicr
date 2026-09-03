@@ -194,7 +194,26 @@ readRenderedImages <- function(outdir, n_latents, img_size, log_file) {
 # does, so the fingerprint catches a different script or different dimensions
 # and not a different set of weights behind the same script.
 commandFingerprint <- function(command, args, latent_dim, img_size, space, weights) {
-  parts <- c(command, args, latent_dim, img_size, space)
+  # A path names a renderer; it does not identify one. Editing the script the
+  # args point at changes what every stimulus looks like and leaves the string
+  # untouched, so a classification image could be rendered through different
+  # logic than the stimuli were. Anything in the command or the args that is a
+  # file on disk is hashed as well as named, which is what `weights` already did
+  # for the model.
+  #
+  # A name that is not a file passes through as itself: "python", "--space",
+  # "w". Nothing is required to exist.
+  identify <- function(value) {
+    if (is.character(value) && length(value) == 1 && file.exists(value) &&
+          !dir.exists(value)) {
+      return(paste0(value, '@', unname(tools::md5sum(value))))
+    }
+
+    return(value)
+  }
+
+  parts <- c(identify(command), vapply(args, identify, character(1)),
+             latent_dim, img_size, space)
 
   if (!is.null(weights)) {
     if (!file.exists(weights)) {
