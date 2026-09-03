@@ -1,5 +1,80 @@
 # rcicr (development version)
 
+## Experimental
+
+- **Reverse correlation can now run in the latent space of a generative face model, behind an
+  opt-in switch.** The sinusoid basis is unconstrained, so most of its parameter space is not a
+  face and a classification image comes out as a greyscale field. In a generative model's latent
+  space every point is a face, so the estimate stays on the face manifold. The arithmetic is
+  unchanged: the classification image is still a response-weighted mean of the perturbations a
+  participant chose, in a different basis. Albohn, Uddenberg and Todorov (2022) showed the idea
+  works on StyleGAN2 faces, in Frontiers in Psychology, <https://doi.org/10.3389/fpsyg.2022.997498>;
+  the task here is rcicr's own 2IFC rather than their three-way categorisation, and the article
+  sets the two designs side by side.
+
+  Nothing in this module runs unless you set `options(rcicr.experimental = TRUE)`, and setting it
+  means accepting a weaker guarantee than the rest of the package gives: **while the module is
+  experimental its numeric output is not covered by the promise that a stored analysis script
+  reproduces its results.** A latent classification image computed today may not reproduce under a
+  later version. Record the rcicr version alongside anything you keep. The switch is removed once
+  the numbers are pinned by a golden master and a release has shipped them.
+
+  `generateStimuliLatent2IFC()` writes the stimuli. Each trial draws one perturbation of a base
+  latent and renders two faces from it, the base plus the perturbation and the base minus it, so
+  the response coding is the one an existing task script already uses: `1` for the original, `-1`
+  for the inverted image. Perturbation size is given in units of how far the generator's own
+  training faces vary, so `latent_sigma = 1` moves a face about as much as real faces differ.
+  As in the pixel-noise pipeline the accompanying .Rdata file is the only link to the analysis
+  half, and nothing about the stimuli is recoverable without it.
+
+  `generateLatentCI()` turns the responses into a direction in latent space and renders the face
+  at the end of it. Its `latent_scaling` argument is the same trade-off the pixel pipeline's
+  `scaling` makes: the default `sd` moves the face a stated number of standard deviations, which
+  makes every classification image equally visible and none comparable with another, while
+  `constant` keeps magnitudes comparable across participants. `computeLatentInfoVal2IFC()` is
+  what tells a consistent participant from one answering at random, since under `sd` scaling the
+  picture cannot. Its null comes from permuting the observed responses, so it needs no rendering
+  and nothing is cached in the stimulus file; it is a different measure from
+  `computeInfoVal2IFC()` and the two numbers are not comparable.
+
+  Responses are checked wherever they enter the module: 1 and -1, or an error. A 0/1 coding is
+  what several experiment programs write, and it errors nowhere downstream while turning the
+  estimator into a quantity with no meaning, so it is refused rather than trusted. This is
+  stricter than the pixel-noise pipeline, which documents that a response can be a scale.
+
+  `computeLatentInfoVal2IFC()` takes the responses and participants as arguments, because its null
+  shuffles the responses rather than drawing fresh ones and rebuilds the direction through the
+  same computation the classification image used. It is bound to the analysis that produced that
+  image, so it will not score one against a null built from other trials or other answers.
+
+  `searchLatent2IFC()` runs the task across generations, moving the point the stimuli vary around
+  towards whatever the participant is choosing instead of sampling once around a fixed point. A
+  single round of trials cannot say how far along the estimated direction to go, because a 2IFC
+  response is a sign and a sign carries no magnitude; the scaling constant that turns a direction
+  into a face is the researcher's choice. Re-centring supplies the distance. Against simulated
+  observers given 300 trials each, the search landed 0.46 standard deviations from the target
+  where a single round at the default scaling landed 1.83, and it beat the best distance any
+  scaling constant could have given that single round, in all 12 runs. It can be run in one call
+  with a response callback, or one generation per call for a task that happens in another program.
+
+  Generators are pluggable, and the module never loads a model itself.
+  `latentGeneratorCommand()` renders by running an external program: rcicr writes the latents to
+  a file, runs the command, and reads back the images it wrote, so a StyleGAN under Python works
+  as the renderer while rcicr gains no dependency. A helper script for StyleGAN2 and StyleGAN3
+  ships with the package at `system.file("python", "rcicr_stylegan.py", package = "rcicr")`.
+  Because such a generator is too large to store, the stimulus file records a fingerprint of it,
+  and the analysis half refuses a generator that does not match: a classification image rendered
+  through the wrong model is a face that looks entirely plausible and belongs to nobody.
+
+  `latentGeneratorPCA()` is the generator that needs nothing: an eigenface model built in base R
+  from a set of aligned face images. It is a much weaker face model than a generative adversarial network and
+  renders blurred averages rather than photographs, and it is what lets the rest of the module be
+  run, tested and checked with no GPU, no Python, no network and no additional package. Backends
+  for a real generative adversarial network follow, and nothing else about the pipeline changes
+  when one is supplied.
+
+  No existing function, argument, saved field or number changes.
+
 ## Documentation
 
 - **`ChangeLog` is frozen at 1.0.1 and is no longer updated.** It keeps the record of

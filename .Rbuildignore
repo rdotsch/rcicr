@@ -6,6 +6,7 @@
 ^AGENTS\.md$
 ^CLAUDE\.md$
 ^DECISIONS\.md$
+^DECISIONS-latent\.md$
 ^\.pre-commit-config\.yaml$
 ^\.lintr$
 ^codecov\.yml$

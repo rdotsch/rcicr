@@ -24,6 +24,9 @@ articles:
     contents:
       - getting-started
       - reverse-correlation-walkthrough
+  - title: Experimental
+    contents:
+      - articles/latent-reverse-correlation
   - title: Advisories
     contents:
       - articles/rcicr-individual-ci-advisory
@@ -70,6 +73,21 @@ reference:
       - generateSinusoid
       - generateGabor
       - deg2rad
+
+  - title: Latent-space reverse correlation (experimental)
+    desc: >
+      Reverse correlation in the latent space of a generative face model rather
+      than in the sinusoid basis. Switched off unless
+      options(rcicr.experimental = TRUE) is set, because the numeric output is
+      not yet stable.
+    contents:
+      - generateStimuliLatent2IFC
+      - generateLatentCI
+      - searchLatent2IFC
+      - computeLatentInfoVal2IFC
+      - latentGeneratorPCA
+      - latentGeneratorCommand
+      - renderLatent
 
   - title: Package
     contents:
