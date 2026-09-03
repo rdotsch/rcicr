@@ -131,6 +131,8 @@ CONFIGS <- list(
   # and constant alpha when contrast maximization is disabled.
   cfg_("sinusoid-64-alpha-varying", img_size = 64,
        base_type = "alpha_varying", stimulus_pngs = TRUE),
+  cfg_("sinusoid-64-alpha-grey-varying", img_size = 64,
+       base_type = "alpha_grey_varying", stimulus_pngs = TRUE),
   cfg_("sinusoid-64-alpha-opaque-default", img_size = 64,
        base_type = "alpha_opaque", stimulus_pngs = TRUE),
   cfg_("sinusoid-64-alpha-opaque-no-max", img_size = 64,
