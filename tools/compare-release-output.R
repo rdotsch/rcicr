@@ -69,7 +69,128 @@ relabelled_only <- function(a, b) {
   identical(names(a), names(b)) && identical(sort(unname(a)), sort(unname(b)))
 }
 
-EXPECTED <- list(
+alpha_bases <- function(filename, maximize) {
+  img <- png::readPNG(file.path(basedir, filename))
+  old <- apply(img, c(1, 2), mean)
+  keep <- if (dim(img)[3] == 2) 1L else seq_len(3)
+  current <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
+  if (maximize) {
+    rescale <- function(x) (x - min(x)) / diff(range(x))
+    old <- rescale(old)
+    current <- rescale(current)
+  }
+  list(old = old, current = current)
+}
+
+same_numbers <- function(a, b) {
+  if (!identical(dim(a), dim(b)) || !identical(is.na(a), is.na(b))) {
+    return(FALSE)
+  }
+  keep <- !is.na(a)
+  if (!any(keep)) {
+    return(TRUE)
+  }
+  a <- a[keep]
+  b <- b[keep]
+  if (any(!is.finite(a)) || any(!is.finite(b))) {
+    return(identical(a, b))
+  }
+  d <- max(abs(a - b))
+  d <= 8 * .Machine$double.eps * max(1, abs(a), abs(b))
+}
+
+correct_alpha_base <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    same_numbers(old, bases$old) && same_numbers(current, bases$current)
+  }
+}
+
+correct_alpha_combined <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    same_numbers((2 * old) - bases$old, (2 * current) - bases$current)
+  }
+}
+
+correct_alpha_matched <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    unit_ci <- (old - min(bases$old)) / diff(range(bases$old))
+    expected <- min(bases$current) + diff(range(bases$current)) * unit_ci
+    same_numbers(current, expected)
+  }
+}
+
+correct_alpha_stimuli <- function(filename, maximize) {
+  function(old, current) {
+    bases <- alpha_bases(filename, maximize)
+    expected_delta <- (bases$current - bases$old) / 2
+    error <- sweep(current - old, c(1, 2), expected_delta, "-")
+    identical(dim(old), dim(current)) &&
+      identical(dimnames(old)[[3]], dimnames(current)[[3]]) &&
+      max(abs(error)) <= (1 / 255) + (8 * .Machine$double.eps)
+  }
+}
+
+alpha_expectations <- function(ref) {
+  list(
+    list(ref = ref,
+         key = "sinusoid-64-alpha-varying/base_face_base1",
+         reason = "The corrected base is the rescaled mean of the fixture's RGB channels.",
+         check = correct_alpha_base("base_alpha_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-varying/combined",
+         reason = paste("Removing each side's base from its combined CI must recover the",
+                        "same raw CI; only the base-face contribution may differ."),
+         check = correct_alpha_combined("base_alpha_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-varying/stimulus_pngs",
+         reason = "The corrected varying-alpha base face changes every rendered stimulus.",
+         check = correct_alpha_stimuli("base_alpha_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref,
+         key = "sinusoid-64-alpha-grey-varying/base_face_base1",
+         reason = "The corrected grey-plus-alpha base is the fixture's grey channel.",
+         check = correct_alpha_base("base_alpha_grey_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-grey-varying/combined",
+         reason = "Removing each side's corrected grey-plus-alpha base must recover the same raw CI.",
+         check = correct_alpha_combined("base_alpha_grey_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-grey-varying/stimulus_pngs",
+         reason = "The corrected grey-plus-alpha base changes every rendered stimulus.",
+         check = correct_alpha_stimuli("base_alpha_grey_varying_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref,
+         key = "sinusoid-64-alpha-opaque-default/base_face_base1",
+         reason = paste("Dropping constant alpha before contrast maximization changes the",
+                        "stored doubles by rounding only; the corrected base must still equal",
+                        "the rescaled RGB channels."),
+         check = correct_alpha_base("base_alpha_opaque_64.png", TRUE),
+         news = "Reproducibility impact"),
+    list(ref = ref,
+         key = "sinusoid-64-alpha-opaque-no-max/base_face_base1",
+         reason = "The corrected base is the unscaled mean of the fixture's RGB channels.",
+         check = correct_alpha_base("base_alpha_opaque_64.png", FALSE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/combined",
+         reason = paste("Removing each side's base from its combined CI must recover the",
+                        "same raw CI; only the base-face contribution may differ."),
+         check = correct_alpha_combined("base_alpha_opaque_64.png", FALSE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/scaled_matched",
+         reason = "Matched scaling must move only by the corrected base image's range.",
+         check = correct_alpha_matched("base_alpha_opaque_64.png", FALSE),
+         news = "Reproducibility impact"),
+    list(ref = ref, key = "sinusoid-64-alpha-opaque-no-max/stimulus_pngs",
+         reason = "The corrected opaque-alpha base face changes every rendered stimulus.",
+         check = correct_alpha_stimuli("base_alpha_opaque_64.png", FALSE),
+         news = "Reproducibility impact")
+  )
+}
+
+EXPECTED <- c(list(
   list(ref = "v1.0.1", key = "sinusoid-64-nscales3-infoval/infoval",
        reason = paste("v1.0.1 did not save nscales/sigma into the .Rdata, so its",
                       "reference distribution was rebuilt at the default nscales = 5",
@@ -119,7 +240,8 @@ EXPECTED <- list(
                       "zmap_ttest is deliberately absent: that method does not blur, so it",
                       "must still match."),
        news = "Reproducibility impact")
-)
+), alpha_expectations("v1.0.1"), alpha_expectations("v1.1.0"),
+   alpha_expectations("v1.2.3"), alpha_expectations("v1.3.0"))
 
 # Entries are matched by position so a vector `key` can be tracked as one
 # expectation: it has fired once any of its keys deviates.
@@ -258,6 +380,26 @@ make_base <- function(n, path, shift = 0) {
   g <- outer(ax, ax, function(x, y) exp(-((x - shift)^2 + y^2) / 0.5))
   png::writePNG(g, path)
 }
+make_base_rgba <- function(n, path, varying_alpha) {
+  ax <- seq(-1, 1, length.out = n)
+  g <- outer(ax, ax, function(x, y) exp(-(x^2 + y^2) / 0.5))
+  rgba <- array(0, dim = c(n, n, 4))
+  for (i in 1:3) rgba[, , i] <- g
+  rgba[, , 4] <- if (varying_alpha) {
+    outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6))
+  } else {
+    1
+  }
+  png::writePNG(rgba, path)
+}
+make_base_grey_alpha <- function(n, path) {
+  ax <- seq(-1, 1, length.out = n)
+  g <- outer(ax, ax, function(x, y) exp(-(x^2 + y^2) / 0.5))
+  grey_alpha <- array(0, dim = c(n, n, 2))
+  grey_alpha[, , 1] <- g
+  grey_alpha[, , 2] <- outer(ax, ax, function(x, y) as.numeric(x^2 + y^2 <= 0.6))
+  png::writePNG(grey_alpha, path)
+}
 # A mask has to be exactly 0/1, and 0 (black) is the region masked away.
 mask_disc <- function(n) {
   ax <- seq(-1, 1, length.out = n)
@@ -282,6 +424,9 @@ make_mask_rgba <- function(n, path) {
 for (sz in c(64, 128, 512)) {
   make_base(sz, file.path(basedir, sprintf("base1_%d.png", sz)))
   make_base(sz, file.path(basedir, sprintf("base2_%d.png", sz)), shift = 0.3)
+  make_base_rgba(sz, file.path(basedir, sprintf("base_alpha_varying_%d.png", sz)), TRUE)
+  make_base_rgba(sz, file.path(basedir, sprintf("base_alpha_opaque_%d.png", sz)), FALSE)
+  make_base_grey_alpha(sz, file.path(basedir, sprintf("base_alpha_grey_varying_%d.png", sz)))
   make_mask(sz, file.path(basedir, sprintf("mask_%d.png", sz)))
   make_mask_rgba(sz, file.path(basedir, sprintf("mask_rgba_%d.png", sz)))
 }

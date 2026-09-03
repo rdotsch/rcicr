@@ -33,3 +33,7 @@ contact:
 - family-names: Dotsch
   given-names: Ron
   email: rdotsch@gmail.com
+identifiers:
+- type: doi
+  value: 10.32614/CRAN.package.rcicr
+repository: https://CRAN.R-project.org/package=rcicr
