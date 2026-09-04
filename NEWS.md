@@ -1,17 +1,15 @@
-Warning: truncated output (original token count: 16422)
-Total output lines: 994
-
 # rcicr (development version)
 
 ## Reproducibility impact
 
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
-  Greyscale and RGB images, and the usual opaque PNG with constant alpha at the default contrast
-  setting, are unaffected. A base face with varying transparency could previously look visibly
-  distorted in the stored base, stimuli and rendered CI; the noise parameters and raw
-  classification image are unchanged. The problem is apparent on visual inspection, so no
-  results are known to be invalidated. If it matters for a past study, regenerate the stimuli
-  from the original base image rather than rerunning `generateCI()` from its existing `.Rdata`.
+  Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
+  differ only in rounding in the stored base-face doubles; its participant-facing 8-bit stimuli
+  and rendered CI are unchanged. A base with varying transparency, or any alpha image with
+  contrast maximization disabled, could previously look visibly distorted in the stored base,
+  stimuli and rendered CI. The CI calculation remains correct for the stimuli shown. If a base
+  needs correcting, inspect and flatten or composite the source image as intended, regenerate
+  the stimuli and collect new responses; do not rerun `generateCI()` from the existing `.Rdata`.
 
 ## Documentation
 
@@ -281,7 +279,408 @@ Total output lines: 994
 
 - **A base image with no contrast no longer becomes an all-`NaN` base image.** Under
   `maximize_baseimage_contrast = TRUE`, the default, `generateStimuli2IFC()` rescales
-  with `…6422 tokens truncated…the value is `1`/`TRUE`
+  with `(img - min(img)) / (max(img) - min(img))` — which is 0/0 when every pixel is the
+  same value. The resulting `NaN` base face was written into the `.Rdata` with no error
+  and no warning, every classification image computed from that stimulus set inherited
+  it, and the stimuli themselves came out uniformly black, `png::writePNG()` clamping
+  `NaN` to zero. It now stops with an error naming the file.
+
+  A photograph is never uniform, so this bit synthetic and accidentally-blank base
+  images — but it failed silently, and the symptom appeared a long way from the cause.
+  The error fires only under `maximize_baseimage_contrast = TRUE`: a flat base image is
+  perfectly usable with the rescale switched off, and the message says so.
+
+- **`computeCumulativeCICorrelation()` reads pre-0.3.0 stimulus files again.** Files written
+  before rcicr 0.3.0 (January 2015) store 4096 contrast parameters per trial where only 4092
+  patches exist, and `generateCI()` has truncated the four unused columns for years.
+  `computeCumulativeCICorrelation()` did not, so on such a file the extra columns reached
+  `generateNoiseImage()` as a length mismatch and it aborted with "number of parameters
+  doesn't equal number of patches" — the cumulative-correlation curve could not be computed at
+  all. It now applies the same truncation. Files from 0.3.0 onward already have 4092 parameters
+  and are unaffected. The same fix keeps a single presented stimulus two-dimensional, so a
+  one-stimulus call — which aborted with "incorrect number of dimensions" on any file — now
+  returns its (single-point) curve.
+
+- **`generateCI()` with `participants` works again on more than one core.** Supplying
+  `participants` without `targetpath` — the normal thing to do when you are not saving
+  individual CIs — stopped with `argument "targetpath" is missing, with no default` as soon as
+  `n_cores` was greater than 1, which is the default on any multi-core machine. `foreach`
+  inspects the loop body and fetches every variable it mentions, including one used only in
+  the branch that saves individual CIs, and that branch is precisely the one that cannot run
+  when you have not asked for those files. Single-core calls were unaffected, as was saving
+  individual CIs with a `targetpath`.
+
+- **The progress bar moves again during parallel runs.** `generateStimuli2IFC()` and
+  `generateCI()` build their progress bar in your session but were advancing it from inside
+  the parallel loop, where each worker holds a private copy — so under the default
+  (`ncores`/`n_cores` greater than 1) the bar sat at 0% for the whole job and jumped to 100%
+  at the end. On a 770-trial 512px set that is a long time with nothing to watch. Affects
+  stimulus generation, per-participant CIs, and `t.test` z-maps. Serial runs were never
+  affected and are unchanged.
+
+  This required swapping the `foreach` backend from `doParallel` to `doSNOW`, which is the
+  one that can report task completions back to the parent session. `doParallel` is no longer
+  a dependency; `doSNOW` and `snow` take its place, for slightly less installed than it took.
+  Nothing about how the loops compute changes, and no numeric output changes.
+
+- **The `base_face_files` type check raises an error you can actually read.** It wrote
+  its explanation to `stderr()` and then called `stop()` with no arguments, so the
+  condition it raised carried an empty message: `conditionMessage()` returned `""`, and
+  anything wrapping the call — a Shiny app, a batch script, knitr — caught an error it
+  could not report. Under `sink()` or `capture.output(type = "message")` the explanation
+  could be separated from the failure entirely. The text now travels with the condition.
+
+- **A base image that cannot be read is reported with the file it came from.** The
+  reader's own complaint (`file is not in PNG format`, and the like) is kept and
+  prefixed with the entry's name and path, and a file that does not exist is now
+  reported as missing rather than as unopenable.
+
+- **Base images are validated before the noise basis is built and before the output
+  directory is created.** A mistyped path used to cost the full noise-pattern
+  computation — appreciable at the default 512px — and left an empty stimulus directory
+  behind before reporting the problem.
+
+  No numeric output changes. Every check here either replaces an error with a clearer
+  error, or rejects input that could not have produced correct stimuli; a call that
+  succeeds today produces exactly what it did before.
+
+- **A multi-channel PNG mask one pixel wide or tall is now rejected instead of silently
+  masking everything.** Dropping the colour channel from such a mask also dropped its
+  singleton spatial dimension, leaving a plain vector whose absent dimensions made the
+  size check pass vacuously; the mask was then recycled by linear indexing. A 1-by-8 RGB
+  mask against an 8-by-8 stimulus set returned an entirely `NA` classification image with
+  no error or warning. It now fails the size check and says so. Masks of any other shape
+  are unaffected.
+
+- **`generateCI(mask = ...)` no longer crashes on a greyscale-plus-alpha PNG mask.** The
+  internal mask importer hardcoded three colour channels, so any 2-channel PNG (the form
+  `png::readPNG()` produces for 8-bit greyscale-plus-alpha) failed with `subscript out of
+  bounds` rather than a clean error — `plotZmap(mask = ...)`'s separate, now-removed mask code
+  already accepted the same file. Mask import is now shared between the two functions (#185),
+  so both accept a 2-channel mask, and a 4-channel (RGBA) mask continues to work exactly as
+  before. The mask-size-mismatch message now names what the mask is being checked against
+  ("stimuli" from `generateCI()`, "z-map" from `plotZmap()`) instead of always saying
+  "stimuli", and reports the mask's dimensions in the same row-by-column order as the
+  target's rather than transposed.
+
+## Documentation
+
+- **`?computeCumulativeCICorrelation` explains what its curve ending at 1 does and does not
+  mean.** With no `targetci`, the final CI it compares against is built from the same
+  un-aggregated trials as the curve, so wherever the evaluated trials reach the last one the curve
+  ends at 1 — self-consistency, not convergence. That is every call at the default `step = 1`,
+  though a larger `step` can stop short of the final trial and end below 1, and responses that
+  cancel exactly give a constant CI and an all-`NA` curve. That final CI is
+  identical to `generateCI()`'s where every stimulus was
+  presented the same number of times, and differs where repeat counts vary, because this
+  function weights each trial equally while `generateCI()` weights each unique stimulus equally.
+  Measured on an 8-trial set with counts 4/2/1/1, the two correlate at 0.77. Pass
+  `targetci = generateCI(...)` when you want the curve to describe the CI you will report.
+  Nothing changed in what the function computes.
+
+- **`?generateCI` documents the weighting of repeated stimulus presentations.** When
+  `participants` is `NA`, repeated presentations are collapsed before building the CI: each
+  unique stimulus gets equal weight, regardless of how many times it was presented. With equal
+  repeat counts this changes nothing; with unequal counts it is a different estimand from
+  weighting each trial equally, and the difference can be substantial. Previously this was
+  described only as a performance optimisation in a code comment.
+
+- **There is now a documentation website: <https://rdotsch.github.io/rcicr/>.** The
+  function reference, both vignettes and this changelog are readable without installing
+  the package first. It is generated from the same sources — `README.md` is the home page,
+  so "How it works" and "Anatomy of the `.Rdata` file" are not maintained twice — and
+  rebuilt by GitHub Actions on every push, so it cannot drift from the code.
+
+- **The repository now carries a `CITATION.cff`, so GitHub offers a "Cite this repository"
+  button.** `citation("rcicr")` is unchanged and still reads `inst/CITATION`, which remains the
+  citation of record; the new file is generated from it and `DESCRIPTION` by `cffr`, and
+  carries it as `preferred-citation`. The two cannot drift apart: CI regenerates the file,
+  compares every field, and validates the result against the CFF schema.
+
+- **The install instructions now install a release rather than the development version.**
+  `remotes::install_github('rdotsch/rcicr')` takes the tip of `main`, which carries unreleased
+  changes; the `README.md` and walkthrough-vignette instructions now lead with
+  `@*release`, and show `@v1.2.3` for installing one specific version — worth recording in an
+  analysis script, since a classification image is only reproducible against the version that
+  computed it.
+
+- **`?generateGabor` now documents `generateGabor()`.** Its example called
+  `generateSinusoid()`, so the help page and the reference site demonstrated a call that never
+  reached the function being documented; `@return` described a sinusoid rather than a gabor
+  patch, and `@param sigma` was an unfinished sentence that did not say what the value means.
+  `sigma` is the standard deviation of the Gaussian mask **in pixels** — measured, not
+  inferred: the mask falls to `exp(-1/2)` at 24.5 px from centre for `sigma = 25`. The
+  function itself is unchanged.
+
+## Internal
+
+- **The pre-0.3.0 0-indexed noise path is now pinned against an independent oracle.** Reading a
+  `.Rdata` file whose patch indices start at 0 takes a backward-compatibility branch in
+  `generateNoiseImage()` that drops the 0-indexed cells and recycles a too-short weight vector —
+  which looks like it could misalign the whole image. It does not: the last patch layer is
+  all-zero, so the recycled values land only where the patch is zero and are multiplied away.
+  A test confirms the output equals the honest "one patch not shown" result exactly, so no
+  change to the indexing can silently reintroduce a misalignment. No behaviour changes.
+
+- **Stimulus sets generated by 1.0.1 and 1.1.0 are now covered by tests.** The suite carries
+  `.Rdata` files those releases actually wrote — generated by installing each tag, not
+  reconstructed — and checks that the current `generateCI()` still reads them and produces a
+  classification image. A 1.0.1 file predates `nscales`, so
+  `generateReferenceDistribution2IFC()` has to assume it: the test asserts the null it builds is
+  bit-identical to one from a file that states `nscales` outright, because a null built on the
+  wrong noise basis finishes just as happily and is wrong. (The parallel `sigma` fallback only
+  affects Gabor noise, which these sinusoidal fixtures do not exercise — tracked separately.)
+  Every other
+  fixture is built by the current generator, so nothing before this could catch a field this
+  version expects and an older one never saved. It runs on every platform with no network: the
+  fixtures are 205 KB (1.0.1) and 45 KB (1.1.0).
+
+# rcicr 1.2.3 (2026-08-08)
+
+**Documentation only. Nothing this package computes has changed** — no function,
+argument, return value or number differs from 1.2.2, and no analysis script needs
+revisiting.
+
+The release exists because the package-level help page, `?rcicr`, had gone stale enough
+to contradict the release before it. It was a hand-maintained `.Rd` file that roxygen
+never touched, so the sweeps behind 1.2.2 — which all worked from `R/` — went straight
+past it. Every code snippet on it was wrong:
+
+* Two of the three example calls, `generateStimuli2IFC(base_face_files, n_trials = 770)`
+  and `generateCI2IFC(stimuli, responses, baseimage, rdata)`, would now **error**: they
+  omit the write paths that 1.2.2 made required.
+* The third, `autoscale(cis, saveasjpegs = TRUE)`, named an argument that has never
+  existed under that spelling. It is `save_as_pngs`.
+* The page twice promised output "saved as jpegs to a folder called stimuli in your
+  current working directory" — the writing-by-default behaviour that 1.2.2 removed, and
+  in a format the package does not write.
+* Its `\examples` section was a single commented-out line, `#simple examples will be
+  added soon.`, left over from 2016.
+* It carried a hand-typed `Version: 0.4.0` and `Date: 2017-07-25`, five releases and
+  nine years out of date.
+
+**The page is now generated by roxygen from `R/rcicr-package.R`**, so its title,
+description, author and URLs come from `DESCRIPTION` and cannot drift from it again. The
+version and date table is gone rather than corrected — the way to keep a fact current is
+to stop writing it down twice. What remains is a short pointer to
+`vignette("reverse-correlation-walkthrough")` and to the three functions a new user
+starts with; the walkthrough itself lives in the vignette and `README.md`, which are
+tested on every build.
+
+The page also now lists all three key references — Dotsch & Todorov (2012), Brinkman,
+Todorov & Dotsch (2017), and Dotsch, Wigboldus, Langner & Van Knippenberg (2008) — each
+with a DOI. The 2008 paper had been on the old page and was the only one not carried
+anywhere else.
+
+`?rcicr` and `package?rcicr` both still work.
+
+# rcicr 1.2.2 (2026-08-07)
+
+This release exists to answer the changes CRAN asked for when reviewing the previous
+submission. Nothing it changes affects a number this package computes: classification
+images, scaling, z-maps and informational value are identical to 1.2.1, and the release
+gate confirms that against both 1.2.1 and 1.0.1.
+
+## Breaking changes
+
+- **Functions that write files now require you to say where.** `stimulus_path`
+  (`generateStimuli2IFC()`), `targetpath` (`generateCI()`, `generateCI2IFC()`,
+  `batchGenerateCI()`, `batchGenerateCI2IFC()`, `autoscale()`, `plotZmap()`) and
+  `zmaptargetpath` (`generateCI()`) have lost their defaults. They used to be `./stimuli`,
+  `./cis` and `./zmaps`, which meant a default call created directories in whatever your
+  working directory happened to be — writing to your filespace without being asked, which
+  CRAN policy does not permit.
+
+  **What to change in your scripts.** If you relied on the old defaults, name them:
+
+  ``` r
+  # before
+  generateCI(stimuli, responses, "face", rdata)
+
+  # after
+  generateCI(stimuli, responses, "face", rdata, targetpath = "./cis")
+  ```
+
+  You will not silently get files somewhere new — a call that would have written to a
+  default path now stops with an error naming the argument to supply. If you do not want
+  files at all, `save_as_png = FALSE` (or `save_as_pngs = FALSE` for `autoscale()`) needs
+  no path.
+
+## Bug fixes
+
+- **`batchGenerateCI()` no longer produces a spurious CI for rows with no group.** Rows
+  whose `by` column was `NA` were kept and collapsed into an extra group named after `NA`,
+  so a data frame with any missing grouping value returned one more classification image
+  than it had groups — computed from whatever rows happened to be missing that value.
+  `batchGenerateCI2IFC()` has always dropped those rows; the two now agree.
+
+- **`generateCI(mask = )` accepts a logical matrix.** The matrix branch tested
+  `typeof(mask) == 'double'`, so a mask built the obvious way — as `TRUE`/`FALSE` rather
+  than `1`/`0` — fell through to `The mask argument is neither a string nor a matrix!`,
+  despite the documentation describing exactly that form. It is now tested with
+  `is.matrix()`.
+
+- **`generateCI()` and `computeCumulativeCICorrelation()` no longer print the entire base
+  image when they cannot find stimulus parameters.** The "No parameters found for base image"
+  error named the base image *matrix* where its label was meant. Because `paste0()` is
+  vectorized, this did not paste one matrix into one message — it built one complete message
+  per pixel, so the error came back as 1,024 concatenated copies at a 32x32 base image (8,190
+  characters) and roughly 7 MB at the 512x512 size researchers actually use, with the reason
+  for the failure buried inside it. The message now reads, in full, `No parameters found for
+  base image: <label>`.
+
+  Only the text of an error changed. No function's return value, arguments or numeric output
+  are affected, and the condition that triggers the error is unchanged — if your analysis
+  script runs today, it behaves identically.
+
+- **`generateReferenceDistribution2IFC()` no longer leaves a stray `stimuli` directory
+  behind.** It re-derives the noise basis by calling `generateStimuli2IFC()` with both save
+  options off, purely to work in memory — but the directory was created before either
+  option was consulted, so every call to it, and to `computeInfoVal2IFC()` when no
+  reference distribution was cached, created an empty `./stimuli` wherever you happened to
+  be working.
+
+- **`plotZmap()` restores the graphics parameters it changes.** The undecorated branch set
+  `par(mar = ...)` and left it set. It also now closes its PNG device through `on.exit()`,
+  so a failure part-way through plotting can no longer leak the device or leave a
+  half-written file.
+
+## Documentation
+
+- The `DESCRIPTION` description no longer opens with the redundant "Functions to", and
+  cites the two method references: Dotsch and Todorov (2012)
+  <doi:10.1177/1948550611430272> and Brinkman, Todorov and Dotsch (2017)
+  <doi:10.1080/10463283.2017.1381469>.
+
+- **Every example runs.** The `\donttest{}` wrappers are gone from all eight examples that
+  carried them, `simulateNoiseIntensities()`'s `\dontrun{}` is gone, and
+  `generateNoiseImage()`'s example is real code rather than three commented-out lines that
+  would not have worked (`p` was never defined, and `params` was the wrong length for the
+  pattern). The whole example set now runs in about nine seconds.
+
+- `simulateNoiseIntensities()`'s note claiming the function always errors is removed. It
+  described two bugs that were fixed in 1.1.0; the note was left behind.
+
+## Internal
+
+- Bare `T` and `F` are replaced by `TRUE` and `FALSE` throughout `R/`. Two of these were
+  public API defaults visible in the documentation (`generateCI(zmap =, zmapdecoration =)`
+  and `plotZmap(decoration =)`); the values are unchanged.
+
+- The guard that keeps a function's arguments across `load()` is now a shared helper,
+  `captureArgs()`. It skips required arguments that were not supplied — necessary once
+  paths became required, since `mget()` forces the promise and a wrapper forwarding its own
+  missing argument would abort there. Defaulted arguments are still captured: `missing()`
+  reports those missing too, and their default is exactly as vulnerable to being replaced
+  by a field in the `.Rdata` file as a value passed explicitly.
+
+- **The failure paths are tested.** The suite had 9 assertions covering 33 `stop()` and
+  `warning()` calls, so most of the package's error messages had never been run. They now
+  are: the stimuli/responses length mismatch, every "this `.Rdata` file did not contain X"
+  guard in `generateCI()` and `computeCumulativeCICorrelation()`, all four mask-import
+  failures, and base images that are unreadable or not square. No behaviour changed — this
+  is coverage of messages that were already there. It matters because an unexercised guard
+  is indistinguishable from one that works, which is how three separate bugs in this package
+  stayed live for years, the most recent being the one fixed just above.
+
+- **Every function that reads a stimulus set now keeps its arguments across the
+  `load()`.** `load()` assigns straight into the calling function's frame, so an object
+  stored in an `.Rdata` file silently replaces an argument of the same name. `generateCI()`
+  and `generateReferenceDistribution2IFC()` already guarded against this; `computeInfoVal2IFC()`
+  guarded three of its five arguments, and `computeCumulativeCICorrelation()` none.
+
+  **No file this package has ever written triggers the problem**, so no result changes and
+  no analysis needs revisiting — the guard is preventive. It is worth having because the one
+  collision that did occur (the z-map `sigma`, fixed in 1.2.0) was created by *adding a field
+  to the file*, not by adding an argument, so an argument that is safe today stops being safe
+  without anything in the function changing. The case now closed in `computeInfoVal2IFC()` is
+  the one that would have mattered most: `target_ci` is read at the very end to compute the
+  CI norm, and after a second `load()`, so a file carrying that name would have scored a
+  different classification image and returned a plausible number rather than an error.
+
+# rcicr 1.2.1 (2026-07-28)
+
+**No user-facing changes.** Nothing this package computes differs from 1.2.0 — no function,
+argument, return value or number has changed, and no analysis script needs revisiting.
+
+The release exists because the 1.2.0 source tree does not pass `R CMD check` on macOS. The
+fault was in the package's own test suite, not in the package: a test asserted properties of
+a rendered PNG that belong to the graphics device rather than to what was drawn, and those
+properties differ between macOS and Linux. No released function was ever affected. A package
+still has to pass its own checks on the platforms CRAN builds for, which is what this
+release restores.
+
+## Documentation
+
+- **`?plotZmap` and the README now describe what is and is not reproducible across operating
+  systems.** Classification images, scaling, informational value and the z-scores themselves
+  are ordinary R arithmetic and do not depend on your platform — as of this release that is
+  verified on Linux, macOS and Windows on every change, rather than assumed. The PNG written
+  by `plotZmap()` is the one exception: it is drawn through a graphics device, and devices
+  differ by platform in colour management and in whether they write an alpha channel, so the
+  same z-map produces visibly identical figures whose files are not byte-identical.
+
+  The practical advice, now stated in both places: **compare numbers, not rendered figures**,
+  when checking that an analysis reproduces. A z-map image that differs pixel-for-pixel on a
+  colleague's machine is not a different result. Every other PNG the package writes —
+  stimuli, classification images, autoscaled classification images — is written directly
+  from the pixel array and carries no such dependence.
+
+## Internal
+
+- `R CMD check` now runs on macOS and Windows as well as Linux, on every change. It
+  previously varied only the R version against a single platform, which is how the macOS
+  failure above went unnoticed.
+- The test suite pins z-map values as well as classification images, scaling and
+  informational value, so cross-platform agreement of the numbers is checked rather than
+  assumed.
+
+# rcicr 1.2.0 (2026-07-28)
+
+*Upgrading from the CRAN version?* The last release on CRAN was 0.3.4.1, before the package
+was archived in 2021. 1.0.1 and 1.1.0 were GitHub-only releases made in the meantime, so the
+1.1.0 section below applies to you too — it is where the bulk of the bug fixes are.
+
+## Reproducibility impact
+
+- **`generateCI(zmap = TRUE)` blurred z-maps with the wrong sigma, for stimulus sets
+  generated with 1.1.0 only.** `generateCI()` reads the stimulus set with `load()`, which
+  assigns into the function's own frame, and 1.1.0 began storing the *noise* `sigma` there —
+  the same name as the z-map blur argument. The saved value replaced the argument, so z-maps
+  were blurred with 25 rather than the documented 3, and passing `sigma` did nothing.
+
+  **In practice this affects nobody.** 1.1.0 was a GitHub tag that stood for about a day and
+  was never on CRAN, so almost no stimulus set carries the field that triggers it. Files from
+  1.0.1 and earlier have no `sigma` at all and were never affected. Only z-maps are involved
+  — classification images, scaling, InfoVal and every saved number are untouched. It is
+  recorded here because it did change a number, and because if you are the one person who
+  generated stimuli that day, regenerating the z-map is a one-line rerun.
+
+  Every argument is now kept across the `load()`, so a field added to the `.Rdata` later
+  cannot quietly capture another one. Found by `tools/compare-release-output.R`, the release
+  gate introduced in this version — the first bug it caught.
+
+## Behaviour change
+
+- **`plotZmap(mask = ...)` now actually masks the z-map.** The argument has been documented
+  since 2016 — "if a cell evaluates to TRUE, the corresponding zmap pixel will be masked" —
+  and until now it did nothing at all: the mask was read from its PNG or matrix, checked
+  against the z-map's dimensions, validated as binary, converted to boolean, and then
+  discarded before plotting. A correct mask produced an unmasked z-map, with no error and no
+  warning. Masked cells are now dropped from the z-map exactly as sub-threshold cells are.
+
+  **Who is affected.** Only direct calls to `plotZmap(mask = ...)`. `generateCI()` does not
+  pass `mask` to `plotZmap()` — it masks the classification image itself, via a separate and
+  working code path — so z-maps produced through the normal pipeline are unchanged, and no
+  stored numbers change anywhere. If you have been passing a mask and your z-maps looked
+  unmasked, that is why; they will now come out masked, and the earlier images were wrong
+  about which regions carry signal.
+
+  A second bug is fixed alongside: the conversion to boolean set every cell to `FALSE`
+  whatever you passed, so even once applied the mask would have masked nothing.
+
+- **The `mask` convention is documented correctly for the first time**, in both
+  `?plotZmap` and `?generateCI`. Both said a *matrix* masks where the value is `1`/`TRUE`
   while a *PNG* masks where it is black (`0`) — two opposite conventions in one sentence.
   `generateCI()`'s implementation has always masked where the value is `0`, for a matrix and
   a PNG alike, so the matrix half of the documentation was simply wrong. **The code is
