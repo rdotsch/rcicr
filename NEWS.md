@@ -2,40 +2,13 @@
 
 ## Reproducibility impact
 
-- **A base face saved with an alpha channel is no longer washed out by it.** Converting a
-  colour base image to greyscale averaged every channel it had, including alpha, which is not
-  a colour. This affects `generateStimuli2IFC()` and everything downstream of the base image
-  it stores, and it is present in every released version, 1.3.0 included.
-
-  **Most projects are unaffected, and it is worth checking which case yours is.** A greyscale
-  or RGB base face never was. With the default `maximize_baseimage_contrast = TRUE`, a base
-  face with *constant* alpha -- an ordinary opaque PNG that happens to carry the channel --
-  differs only in floating-point rounding after rescaling: the stored doubles are not
-  bit-identical, but the participant-facing 8-bit stimuli and the rendered CI are unchanged.
-
-  Two cases do change. With `maximize_baseimage_contrast = FALSE`, an opaque black pixel was
-  read as 0.25 for RGBA and 0.5 for grey-plus-alpha. And a base face whose alpha *varies* --
-  a face cut out on a transparent background, which is a plausible way to prepare one -- was
-  distorted even at the default: on one such image the stored base face correlated 0.973 with
-  the intended one, with a mean absolute error of 0.068 per pixel and a maximum of 0.18.
-
-  **If your base faces have a varying alpha channel, the stimuli your participants saw were
-  drawn on a bent version of your base face.** The classification image itself is computed
-  from the noise parameters and the responses, so it is unaffected; what was wrong is the base
-  face stored in the `.Rdata`, the stimuli composed on it, and the CI image rendered on top of
-  it. Re-running `generateCI()` against the same `.Rdata` will not fix it, because the base
-  face is stored there -- the stimuli have to be regenerated from the images.
-
-  One thing to know if you do have transparent base faces: alpha is discarded, not composited,
-  so the colour values stored *under* a transparent pixel are what you get. An editor that kept
-  the original photograph beneath a cut-out will render that base face with the crop undone.
-  `DECISIONS.md` records why discarding is the right reading and what the alternatives cost.
-
-  The reproducibility gate exercises all three alpha cases against released versions: varying
-  alpha at the default contrast setting, and constant alpha both with contrast maximization on
-  and off. The stored base is checked against the fixture's RGB channels, and decoded stimulus
-  pixels and base-dependent renderings are checked against the corresponding transform. Noise
-  parameters and raw classification images remain identical.
+- **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
+  Greyscale and RGB images, and the usual opaque PNG with constant alpha at the default contrast
+  setting, are unaffected. A base face with varying transparency could previously look visibly
+  distorted in the stored base, stimuli and rendered CI; the noise parameters and raw
+  classification image are unchanged. The problem is apparent on visual inspection, so no
+  results are known to be invalidated. If it matters for a past study, regenerate the stimuli
+  from the original base image rather than rerunning `generateCI()` from its existing `.Rdata`.
 
 ## Documentation
 
