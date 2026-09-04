@@ -1,6 +1,6 @@
 # rcicr <img src="man/figures/logo.png" align="right" width="120" alt="" />
 
-[![CRAN status](https://www.r-pkg.org/badges/version/rcicr)](https://CRAN.R-project.org/package=rcicr)
+[![CRAN status](https://img.shields.io/cran/v/rcicr.svg)](https://CRAN.R-project.org/package=rcicr)
 [![R-CMD-check](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml)
 [![Documentation](https://img.shields.io/badge/docs-rdotsch.github.io%2Frcicr-blue)](https://rdotsch.github.io/rcicr/)
 
