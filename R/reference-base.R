@@ -83,7 +83,7 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
   if (!is.null(response_seed) || force_gen_ref_dist || is.null(entry)) {
     norms <- generateReferenceDistribution2IFC(rdata, iter = iter,
                                                response_seed = response_seed, save_rdata = is.null(response_seed),
-      baseimage = selection$baseimage)
+                                               baseimage = selection$baseimage)
   } else {
     norms <- entry$norms
     if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
@@ -95,6 +95,6 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
   info_val <- (cinorm - median(norms)) / mad(norms)
   write(paste0('Informational value: z = ', info_val, ' (baseimage = ', selection$baseimage,
                '; ci norm = ', cinorm, '; reference median = ', median(norms),
-    '; MAD = ', mad(norms), '; iterations = ', length(norms), ')'), stdout())
+               '; MAD = ', mad(norms), '; iterations = ', length(norms), ')'), stdout())
   return(info_val)
 }

@@ -55,8 +55,8 @@ test_that("independent defaults retain the old shared-rebuild response stream", 
   saved <- read_reference_fixture(path)
   suppressWarnings(generateStimuli2IFC(saved$base_face_files, saved$n_trials,
                                        saved$img_size, seed = saved$seed, noise_type = saved$noise_type,
-    nscales = saved$nscales, sigma = saved$sigma, ncores = 1,
-    return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE))
+                                       nscales = saved$nscales, sigma = saved$sigma, ncores = 1,
+                                       return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE))
   responses <- replicate(24, ((runif(saved$n_trials) > 0.5) * 2) - 1)
   for (key in c("first", "second")) {
     expected <- reference_oracle(saved, key, responses = responses)
@@ -137,7 +137,7 @@ test_that("seeded InfoVal is read-only and loaded collisions cannot replace argu
   decoy <- file.path(dirname(path), "absent.Rdata")
   mutate_rdata(path, baseimage = "first", rdata = decoy, iter = 2,
                response_seed = 2, save_rdata = TRUE, ncores = 99,
-    target_ci = list(ci = matrix(100, 32, 32)), force_gen_ref_dist = FALSE)
+               target_ci = list(ci = matrix(100, 32, 32)), force_gen_ref_dist = FALSE)
   expected <- reference_oracle(read_reference_fixture(path), "second")
   before <- tools::md5sum(path)
   expect_equal(selected_reference(path, "second"), expected, tolerance = 1e-12)
