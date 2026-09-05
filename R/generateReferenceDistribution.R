@@ -11,10 +11,10 @@
 #' who compute InfoVal from the same stimulus file therefore get the same number, and the
 #' same reference distribution, on different machines and in different sessions.
 #'
-#' This is a guarantee, not a coincidence, and it is relied upon: the function re-generates
-#' the stimuli through \code{\link{generateStimuli2IFC}}, whose internal \code{set.seed()}
-#' call uses the seed stored in the \code{.Rdata} file and lands before the random responses
-#' below are drawn.
+#' Shared-parameter files re-generate the stimuli through \code{\link{generateStimuli2IFC}}.
+#' Independent bases use their saved noise basis and parameters directly. Both paths seed
+#' responses from the state following one shared parameter matrix's draws at the saved
+#' stimulus seed, preserving the historical default response stream.
 #'
 #' Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
 #' for instance to check how much Monte Carlo error a given \code{iter} leaves in your
@@ -36,11 +36,22 @@
 #' distribution without changing what later calls to \code{\link{computeInfoVal2IFC}} will
 #' use -- worth doing whenever \code{response_seed} is set, so a one-off null does not become
 #' the file's permanent reference.
+#' @param baseimage Saved base-image label, using the same key as \code{generateCI()}.
+#' Required when the saved base images have different noise parameters. With a single base
+#' or identical parameter matrices, \code{NULL} retains the shared reference behavior.
+#' @section Independent base images:
+#' When saved parameter matrices differ, supply \code{baseimage} explicitly. The selected
+#' base's noise is reconstructed from the saved basis and parameters, without reading the
+#' original images. Cached distributions are stored in \code{reference_norms_by_base},
+#' keyed by base label, with \code{norms} and \code{response_seed} in each entry. Old unscoped
+#' \code{reference_norms} are neither reused nor overwritten for independent bases.
+#' Existing shared-parameter files continue using their unscoped cache and reconstruction.
 #' @return The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
 #' Unless \code{save_rdata = FALSE}, it is also added to the supplied \code{rdata} file as
 #' \code{reference_norms} (alongside \code{reference_norms_seed}, recording the
 #' \code{response_seed} it was generated with), so a later call to
 #' \code{\link{computeInfoVal2IFC}} using the same file can reuse it instead of re-simulating.
+#' Independent-base references instead use \code{reference_norms_by_base}, as described above.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
@@ -61,7 +72,13 @@
 #'
 #' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 #' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE) { # nolint: object_length_linter.
+generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL) { # nolint: object_length_linter.
+
+  reference_selection <- selectReferenceBase(rdata, baseimage)
+  if (reference_selection$independent) {
+    return(invisible(generateBaseReference(reference_selection, rdata, iter,
+                                           ncores, response_seed, save_rdata)))
+  }
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name. This
@@ -76,7 +93,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # would overwrite it here and then be written back, corrupting the record of
   # how the stimuli were generated.
   .args <- list(rdata = rdata, iter = iter, ncores = ncores,
-    response_seed = response_seed, save_rdata = save_rdata
+    response_seed = response_seed, save_rdata = save_rdata, baseimage = baseimage
   )
 
   # Load parameter file (created when generating stimuli)
@@ -87,6 +104,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   ncores <- .args$ncores
   response_seed <- .args$response_seed
   save_rdata <- .args$save_rdata
+  baseimage <- .args$baseimage
 
   # Recover the noise-basis parameters used for the real stimuli. These were
   # not saved before this version, so .Rdata files written by older rcicr lack
@@ -213,7 +231,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
     outfile <- rdata
     internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
       "rdata", "iter", "ncores", "response_seed", "save_rdata",
-      "outfile", "internals"
+      "outfile", "internals", "reference_selection", "baseimage"
     )
     save(list = setdiff(ls(all.names = TRUE), internals), file = outfile,
       envir = environment()

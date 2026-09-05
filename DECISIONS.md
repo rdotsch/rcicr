@@ -179,11 +179,7 @@ base images it fires on the first and the rest never run. Under the default
 the returned frame has one column per trial, so it could not represent the alternative anyway.
 Documented on `@param return_as_dataframe` rather than changed.
 
-InfoVal is unaffected, checked rather than assumed: `generateReferenceDistribution2IFC()` is the
-only in-package caller, never passes `use_same_parameters`, and the first base image's parameters
-come from the same leading block of the RNG stream either way — measured identical, max absolute
-difference 0. Widening the frame would change the return shape, so it needs a **new argument**,
-never a redefinition.
+The first base image's parameters come from the same leading RNG block whether shared or independent. That equality does not protect InfoVal for later independent bases: the audit measured 2.85336 using the first base's reference versus 2.92047 with the selected base's noise. Independent references now require an explicit base label, use saved noise, and cache norms per base. Their default response draws retain the old shared-rebuild RNG offset. Shared reconstruction and caches remain unchanged. Widening the returned frame would change its shape and still needs a new argument.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI

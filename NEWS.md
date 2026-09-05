@@ -2,6 +2,8 @@
 
 ## Reproducibility impact
 
+- **InfoVal references for independent base images now use the selected base's saved noise.** When base images have different saved parameter matrices, pass the same `baseimage` label to `computeInfoVal2IFC()` or `generateReferenceDistribution2IFC()` that you used for `generateCI()`. Omitting it now reports an error instead of silently using the first base's reference. References are cached separately by base; old unscoped norms are ignored for these files. Recompute affected InfoVal values from the existing stimulus `.Rdata` and CIs; stimuli, responses and raw CIs do not need changing. Shared-parameter results and the default simulated-response stream are preserved.
+
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
   differ only in rounding in the stored base-face doubles; its participant-facing 8-bit stimuli

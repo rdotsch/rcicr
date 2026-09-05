@@ -9,7 +9,8 @@ computeInfoVal2IFC(
   rdata,
   iter = 10000,
   force_gen_ref_dist = FALSE,
-  response_seed = NULL
+  response_seed = NULL,
+  baseimage = NULL
 )
 }
 \arguments{
@@ -29,6 +30,12 @@ forces a fresh reference distribution to be simulated from an independent draw, 
 how you check how much Monte Carlo error \code{iter} leaves in this Informational Value.
 The result is deliberately \emph{not} written back to the \code{rdata} file, so a one-off
 check cannot change the number every later analysis of that stimulus set reports.}
+
+\item{baseimage}{Saved base-image label used to generate \code{target_ci}. Required when
+saved base images have different noise parameters; use the same label passed to
+\code{generateCI()}. With a single base or identical parameter matrices, the default
+\code{NULL} retains the shared reference behavior. Independent-base caches are separate
+for each label; old unscoped reference norms are ignored for those files.}
 }
 \value{
 Informational value (z-score)
