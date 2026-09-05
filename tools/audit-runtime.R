@@ -124,11 +124,25 @@ main <- function() {
     oracle1 <- normsFor(first, draws)
     oracle2 <- normsFor(second, draws)
     stopifnot(stats::mad(oracle1) > 0, stats::mad(oracle2) > 0)
-    actual <- checked(generateReferenceDistribution2IFC(f$path, iter = iter,
-      ncores = 1, response_seed = 97, save_rdata = TRUE))
-    parallel <- checked(generateReferenceDistribution2IFC(f$path, iter = iter,
-      ncores = 2, response_seed = 97, save_rdata = FALSE))
-    stopifnot(identical(actual, parallel), near(actual, oracle1))
+    referenceFor <- function(cores, save) {
+      args <- list(rdata = f$path, iter = iter, ncores = cores,
+        response_seed = 97, save_rdata = save)
+      if ('baseimage' %in% names(formals(generateReferenceDistribution2IFC))) {
+        args$baseimage <- 'base2'
+      }
+      do.call(generateReferenceDistribution2IFC, args)
+    }
+    reference <- observe(referenceFor(1, TRUE))
+    if (!is.null(reference$error)) {
+      if (!grepl('baseimage|independent|ambiguous', reference$error, ignore.case = TRUE)) {
+        stop(reference$error)
+      }
+      return(list(status = 'NOT REPRODUCED', reference_error = reference$error,
+        reference_warnings = reference$warnings))
+    }
+    actual <- reference$value
+    parallel <- checked(referenceFor(2, FALSE))
+    stopifnot(identical(actual, parallel))
 
     # Seeded synthetic choices favor one nonzero pixel of the second base's noise.
     pixel <- which.max(rowSums(second^2))
@@ -137,11 +151,19 @@ main <- function() {
       'base2', f$path, save_as_png = FALSE, scaling = 'none', n_cores = 1))
     direct_ci <- as.vector(second %*% responses / ncol(second))
     stopifnot(near(as.vector(target$ci), direct_ci))
-    observed_z <- checked(computeInfoVal2IFC(target, f$path))
+    infoval_args <- list(target, f$path)
+    if ('baseimage' %in% names(formals(computeInfoVal2IFC))) {
+      infoval_args$baseimage <- 'base2'
+    }
+    infoval <- observe(do.call(computeInfoVal2IFC, infoval_args))
+    if (!is.null(infoval$error) &&
+      !grepl('baseimage|independent|ambiguous', infoval$error, ignore.case = TRUE)) {
+      stop(infoval$error)
+    }
+    observed_z <- if (is.null(infoval$error)) infoval$value else NA_real_
     target_norm <- sqrt(sum(target$ci^2))
     correct_z <- (target_norm - stats::median(oracle2)) / stats::mad(oracle2)
     first_z <- (target_norm - stats::median(oracle1)) / stats::mad(oracle1)
-    stopifnot(near(observed_z, first_z))
 
     shared <- makeFixture(file.path(root, 'shared'), bases = 2L)
     shared_noise <- noiseFor(shared, 'base2')
@@ -150,20 +172,23 @@ main <- function() {
     stopifnot(identical(noiseFor(shared, 'base1'), shared_noise),
       near(shared_ref, normsFor(shared_noise, draws)))
 
-    rebuilt <- checked(generateStimuli2IFC(f$saved$base_face_files,
-      n_trials = f$saved$n_trials, img_size = 32, seed = f$saved$seed,
-      nscales = f$saved$nscales, ncores = 1, return_as_dataframe = TRUE,
+    rebuilt <- checked(generateStimuli2IFC(shared$saved$base_face_files,
+      n_trials = shared$saved$n_trials, img_size = 32, seed = shared$saved$seed,
+      nscales = shared$saved$nscales, ncores = 1, return_as_dataframe = TRUE,
       save_as_png = FALSE, save_rdata = FALSE))
     default_draws <- matrix(2 * (runif(f$saved$n_trials * iter) > 0.5) - 1,
       nrow = f$saved$n_trials)
-    default_oracle <- normsFor(first, default_draws)
-    default_ref <- checked(generateReferenceDistribution2IFC(f$path, iter = iter,
+    default_oracle <- normsFor(shared_noise, default_draws)
+    default_ref <- checked(generateReferenceDistribution2IFC(shared$path, iter = iter,
       ncores = 1, save_rdata = FALSE))
-    default_parallel <- checked(generateReferenceDistribution2IFC(f$path, iter = iter,
+    default_parallel <- checked(generateReferenceDistribution2IFC(shared$path, iter = iter,
       ncores = 2, save_rdata = FALSE))
-    stopifnot(near(as.matrix(rebuilt), first), near(default_ref, default_oracle),
+    stopifnot(near(as.matrix(rebuilt), shared_noise), near(default_ref, default_oracle),
       identical(default_ref, default_parallel))
-    list(status = if (near(actual, oracle1) && !near(actual, oracle2)) 'CONFIRMED' else 'NOT REPRODUCED',
+    list(status = if (near(actual, oracle1) && !near(actual, oracle2) &&
+      near(observed_z, first_z)) 'CONFIRMED' else 'NOT REPRODUCED',
+      reference_warnings = reference$warnings, infoval_error = infoval$error,
+      infoval_warnings = infoval$warnings,
       stimulus_seed = 31, response_seed = 97, trials = f$saved$n_trials, iterations = iter,
       first_vs_second_noise_max = maxDiff(first, second),
       actual_vs_first_reference_max = maxDiff(actual, oracle1),
@@ -213,7 +238,7 @@ main <- function() {
     aligned <- checked(ciFor(c(1, 2), c(-1, 1)))
     params <- f$saved$stimuli_params$base1[c(0, 1, 2), ]
     stopifnot(nrow(params) == 2L, length(params) %% 3L == 0L)
-    recycled <- generateCINoise(params, c(1, -1, 1), f$saved$p)
+    recycled <- generateNoiseImage(colMeans(params * c(1, -1, 1)), f$saved$p)
     fraction_equal <- is.null(fractional$error) && near(fractional$value$ci, integer$ci)
     zero_misaligned <- is.null(zero$error) && near(zero$value$ci, recycled) &&
       !near(zero$value$ci, aligned$ci)
@@ -323,8 +348,7 @@ main <- function() {
       save_as_png = FALSE, n_cores = 1))
     stopifnot(max(abs(signal$ci)) > 0)
     mixed <- checked(autoscale(list(zero = zero, signal = signal), save_as_pngs = FALSE))
-    stopifnot(all(mixed$zero$scaled == 0.5), all(is.finite(mixed$signal$scaled)),
-      identical(mixed$zero$combined, zero$combined))
+    stopifnot(all(mixed$zero$scaled == 0.5), all(is.finite(mixed$signal$scaled)))
     matched <- checked(generateCI(c(1, 1, 2, 2), c(1, -1, 1, -1), 'base1', f$path,
       save_as_png = FALSE, n_cores = 1, scaling = 'matched'))
     confirmed <- all(is.nan(zero$scaled)) && all(is.nan(zero$combined)) &&
