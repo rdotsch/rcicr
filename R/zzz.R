@@ -7,6 +7,6 @@ if (getRversion() >= "2.15.1")
       "p", "s", "base_faces", "stimuli_params", "img_size", "base_face_files", "n_trials", "seed", "noise_type", "reference_norms", "reference_norms_seed",
 
       # Suppress checking notes for variables in foreach loop (parallel runs)
-      "obs"
+      "obs", "trial"
     )
   )

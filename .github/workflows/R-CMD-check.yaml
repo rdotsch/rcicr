@@ -78,6 +78,16 @@ jobs:
             cffr@1.4.1
           needs: check
 
+      - name: Generate reference documentation for review
+        shell: Rscript {0}
+        run: |
+          roxygen2::roxygenise(load_code = 'source')
+          for (path in c('man/generateReferenceDistribution2IFC.Rd', 'man/computeInfoVal2IFC.Rd')) {
+            cat('GENERATED_FILE_START ', path, '\n', sep = '')
+            cat(readLines(path), sep = '\n')
+            cat('\nGENERATED_FILE_END\n')
+          }
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
