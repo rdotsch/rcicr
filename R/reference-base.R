@@ -4,7 +4,7 @@ selectReferenceBase <- function(rdata, baseimage) {
   params <- source$stimuli_params
   labels <- names(params)
   if (!is.null(baseimage) && (!is.character(baseimage) || length(baseimage) != 1L ||
-      is.na(baseimage) || !baseimage %in% labels)) {
+                                is.na(baseimage) || !baseimage %in% labels)) {
     stop('baseimage must be one saved base label: ', paste(labels, collapse = ', '), '.')
   }
   independent <- length(params) > 1L &&
@@ -12,7 +12,7 @@ selectReferenceBase <- function(rdata, baseimage) {
   if (!independent) return(list(independent = FALSE))
   if (is.null(baseimage)) {
     stop('Saved base images have different noise parameters. Supply baseimage = <label> ',
-      'for the CI being scored. Available labels: ', paste(labels, collapse = ', '), '.')
+         'for the CI being scored. Available labels: ', paste(labels, collapse = ', '), '.')
   }
   list(independent = TRUE, baseimage = baseimage, source = source)
 }
@@ -82,19 +82,19 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
   entry <- cache[[selection$baseimage]]
   if (!is.null(response_seed) || force_gen_ref_dist || is.null(entry)) {
     norms <- generateReferenceDistribution2IFC(rdata, iter = iter,
-      response_seed = response_seed, save_rdata = is.null(response_seed),
+                                               response_seed = response_seed, save_rdata = is.null(response_seed),
       baseimage = selection$baseimage)
   } else {
     norms <- entry$norms
     if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
       stop('Invalid cached reference for baseimage ', selection$baseimage,
-        '. Use force_gen_ref_dist = TRUE to regenerate it.')
+           '. Use force_gen_ref_dist = TRUE to regenerate it.')
     }
   }
   cinorm <- norm(matrix(target_ci[['ci']]), 'f')
   info_val <- (cinorm - median(norms)) / mad(norms)
   write(paste0('Informational value: z = ', info_val, ' (baseimage = ', selection$baseimage,
-    '; ci norm = ', cinorm, '; reference median = ', median(norms),
+               '; ci norm = ', cinorm, '; reference median = ', median(norms),
     '; MAD = ', mad(norms), '; iterations = ', length(norms), ')'), stdout())
   return(info_val)
 }

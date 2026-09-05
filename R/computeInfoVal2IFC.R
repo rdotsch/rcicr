@@ -74,7 +74,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   reference_selection <- selectReferenceBase(rdata, baseimage)
   if (reference_selection$independent) {
     return(computeBaseInfoVal(target_ci, rdata, iter, force_gen_ref_dist,
-      response_seed, reference_selection))
+                              response_seed, reference_selection))
   }
 
   # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug

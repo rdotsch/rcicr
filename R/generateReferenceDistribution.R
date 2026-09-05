@@ -77,7 +77,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   reference_selection <- selectReferenceBase(rdata, baseimage)
   if (reference_selection$independent) {
     return(invisible(generateBaseReference(reference_selection, rdata, iter,
-      ncores, response_seed, save_rdata)))
+                                           ncores, response_seed, save_rdata)))
   }
 
   # load() assigns straight into this function's frame, so any object stored in
