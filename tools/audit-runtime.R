@@ -191,11 +191,14 @@ main <- function() {
     stopifnot(all(is.finite(noiseFor(grey, 'base1'))), all(file.exists(grey$images)))
     uniform <- observe(generateReferenceDistribution2IFC(grey$path,
       iter = 8, ncores = 1, save_rdata = FALSE))
-    confirmed <- !is.null(missing$error) && grepl('could not be read', missing$error) &&
-      !is.null(uniform$error) && grepl('has no contrast', uniform$error)
+    missing_confirmed <- !is.null(missing$error) &&
+      grepl('does not exist|could not be read', missing$error)
+    uniform_confirmed <- !is.null(uniform$error) && grepl('has no contrast', uniform$error)
+    confirmed <- missing_confirmed && uniform_confirmed
     list(status = if (confirmed) 'CONFIRMED' else 'NOT REPRODUCED',
       original_path_control_finite = all(is.finite(baseline)),
       saved_noise_finite_in_both_cases = TRUE,
+      missing_source_reproduced = missing_confirmed, uniform_source_reproduced = uniform_confirmed,
       missing_source_error = missing$error, uniform_source_error = uniform$error)
   })
 
