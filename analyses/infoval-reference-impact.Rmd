@@ -192,29 +192,48 @@ results <- rbind(
 max(results$agreement, na.rm = TRUE)
 ```
 
+```{r shift-definitions}
+# An InfoVal that should read z is reported as z + shift(). The Monte Carlo
+# yardstick has to carry the same scale term, or it is not the same quantity.
+shift <- function(rows, z) rows$d0 + z * rows$rho
+monte_carlo <- function(rows, z) rows$mc_shift + z * rows$mc_rho
+
+centre <- function(x) {
+  se <- sd(x) / sqrt(length(x))
+  c(mean = mean(x), se = se, ses_from_zero = abs(mean(x)) / se)
+}
+```
+
 ## The error is unbiased
 
 ```{r unbiased}
 at_default <- subset(results, n_trials == 770)
-c(mean = mean(at_default$d0), sd = sd(at_default$d0),
-  se = sd(at_default$d0) / sqrt(nrow(at_default)))
+
+knitr::kable(round(rbind(
+  "reference median only (d0)" = centre(at_default$d0),
+  "scale only (rho)" = centre(at_default$rho),
+  "full shift at the cut-off" = centre(shift(at_default, cutoff)),
+  "full shift at z = 10" = centre(shift(at_default, 10))
+), 4))
 ```
 
 Base 2's parameters are an independent draw from the same generator as base 1's, so the null it
 receives is a legitimate one — just built on another realization of the noise. Across
-`r nrow(at_default)` base image pairs at the package defaults the mean shift is
-`r sprintf("%+.3f", mean(at_default$d0))` with a standard error of
-`r sprintf("%.3f", sd(at_default$d0) / sqrt(nrow(at_default)))` —
-`r sprintf("%.1f", abs(mean(at_default$d0)) / (sd(at_default$d0) / sqrt(nrow(at_default))))` standard
-errors from zero, against a scatter
-`r sprintf("%.0f", sd(at_default$d0) / abs(mean(at_default$d0)))` times the size of that mean. The bug
-cannot have moved a set of published InfoVals one way; it scattered them.
+`r nrow(at_default)` base image pairs at the package defaults the full shift at the cut-off averages
+`r sprintf("%+.3f", mean(shift(at_default, cutoff)))`, which is
+`r sprintf("%.1f", centre(shift(at_default, cutoff))[["ses_from_zero"]])` standard errors from zero
+against a scatter `r sprintf("%.0f", sd(shift(at_default, cutoff)) / abs(mean(shift(at_default, cutoff))))`
+times the size of that mean. The bug cannot have moved a set of published InfoVals one way; it
+scattered them.
+
+The scale term is tested alongside the median shift because a ratio of two MADs need not average to
+one even when both are drawn from the same distribution. Here it does not detectably depart from it
+(`r sprintf("%+.4f", mean(at_default$rho))`, `r sprintf("%.1f", centre(at_default$rho)[["ses_from_zero"]])`
+standard errors from zero), so the conclusion holds at every InfoVal, not only near the cut-off.
 
 ## How large the scatter is
 
 ```{r shift-table}
-shift <- function(rows, z) rows$d0 + z * rows$rho
-
 summary_row <- function(rows) {
   dz <- shift(rows, cutoff)
   data.frame(
@@ -223,7 +242,7 @@ summary_row <- function(rows) {
     mean_abs_dz = round(mean(abs(dz)), 4),
     q90_abs_dz = round(unname(quantile(abs(dz), 0.9)), 4),
     max_abs_dz = round(max(abs(dz)), 4),
-    monte_carlo = round(mean(abs(rows$mc_shift)), 4)
+    monte_carlo = round(mean(abs(monte_carlo(rows, cutoff))), 4)
   )
 }
 
@@ -231,12 +250,13 @@ by_config <- split(results, list(results$n_trials, results$img_size), drop = TRU
 knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
 ```
 
-`monte_carlo` is the same quantity for a reference built from the same base with a different draw of
-the simulated responses: the wobble any InfoVal already carries at `iter` =
-`r formatC(iter, format = "d", big.mark = ",")`. At the default
+`monte_carlo` is the same quantity, computed the same way down to the scale term, for a reference
+built from the same base image with a different draw of the simulated responses: the wobble any
+InfoVal already carries at `iter` = `r formatC(iter, format = "d", big.mark = ",")`. At the default
 `r max(results$n_trials)` trials the bug is worth
-`r sprintf("%.1f", mean(abs(shift(at_default, cutoff))) / mean(abs(at_default$mc_shift)))` times that
-wobble — the same order of magnitude, not a different kind of error.
+`r sprintf("%.1f", mean(abs(shift(at_default, cutoff))) / mean(abs(monte_carlo(at_default, cutoff))))`
+times that wobble. It is the same kind of error as the one the method already tolerates, and not far
+from the same size.
 
 The scale error `rho` barely exceeds its own Monte Carlo control
 (`r sprintf("%.4f", mean(abs(at_default$rho)))` against
@@ -244,13 +264,21 @@ The scale error `rho` barely exceeds its own Monte Carlo control
 median, and the `z * rho` term stays small until the InfoVal itself is large.
 
 ```{r large-z}
+at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_default, zz))), numeric(1))
+
+z <- c(2, 5, 10)
 knitr::kable(data.frame(
-  z = c(2, 5, 10),
-  mean_abs_dz = round(vapply(c(2, 5, 10), function(z) mean(abs(shift(at_default, z))), numeric(1)), 4),
-  as_share_of_z = round(vapply(c(2, 5, 10),
-                               function(z) mean(abs(shift(at_default, z))) / z, numeric(1)), 4)
+  z = z,
+  mean_abs_dz = round(at_z(z, shift), 4),
+  as_share_of_z = round(at_z(z, shift) / z, 4),
+  monte_carlo = round(at_z(z, monte_carlo), 4),
+  ratio = round(at_z(z, shift) / at_z(z, monte_carlo), 2)
 ))
 ```
+
+The margin over the Monte Carlo wobble narrows as the InfoVal grows, because both quantities pick up
+the same scale term. At a large InfoVal the bug is barely distinguishable in size from re-running the
+reference simulation with different random responses.
 
 ## It is set by trials, not by pixels
 

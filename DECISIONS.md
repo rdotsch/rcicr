@@ -179,11 +179,14 @@ base images it fires on the first and the rest never run. Under the default
 the returned frame has one column per trial, so it could not represent the alternative anyway.
 Documented on `@param return_as_dataframe` rather than changed.
 
-InfoVal is unaffected, checked rather than assumed: `generateReferenceDistribution2IFC()` is the
-only in-package caller, never passes `use_same_parameters`, and the first base image's parameters
-come from the same leading block of the RNG stream either way — measured identical, max absolute
-difference 0. Widening the frame would change the return shape, so it needs a **new argument**,
-never a redefinition.
+InfoVal is unaffected **for the first base image**, checked rather than assumed:
+`generateReferenceDistribution2IFC()` is the only in-package caller, never passes
+`use_same_parameters`, and the first base image's parameters come from the same leading block of the
+RNG stream either way — measured identical, max absolute difference 0. That same omission is why
+every *later* base image is scored against the first one's null
+([#299](https://github.com/rdotsch/rcicr/issues/299)); what that costs is measured in
+[`analyses/infoval-reference-impact.md`](analyses/infoval-reference-impact.md). Widening the frame
+would change the return shape, so it needs a **new argument**, never a redefinition.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI
