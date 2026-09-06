@@ -193,7 +193,8 @@ sweep <- function(n_trials, seeds, size = img_size) {
 
 `d0` is the shift in the reference median, expressed in the units InfoVal is reported in, and `rho`
 is the error in its scale. An InfoVal that should have been `z` is reported as `z + d0 + z * rho`,
-so `d0` is what a threshold call sees and `rho` matters only for large values.
+so both terms reach a threshold call — `rho` multiplied by the threshold — and the scale term grows
+in weight as the InfoVal does.
 
 ```{r sweep, results = "hide"}
 results <- rbind(
@@ -302,12 +303,14 @@ knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
 ```
 
 `monte_carlo` is the same quantity, computed the same way down to the scale term, for a reference
-built from the same base image with a different draw of the simulated responses: the wobble any
-InfoVal already carries at `iter` = `r formatC(iter, format = "d", big.mark = ",")`. At 770 trials
-and 64 pixels the bug is worth
+built from the same base image with a different draw of the simulated responses. It is
+rerun-to-rerun variability: the difference between two references of `iter` =
+`r formatC(iter, format = "d", big.mark = ",")` draws each, so it carries the sampling error of both
+and runs about a factor of the square root of two above what a single published InfoVal carries
+against a reference of unlimited size. At 770 trials and 64 pixels the bug is worth
 `r sprintf("%.1f", mean(abs(shift(at_770, cutoff))) / mean(abs(monte_carlo(at_770, cutoff))))`
-times that wobble. It is the same kind of error as the one the method already tolerates, and not far
-from the same size.
+times that variability — a like-for-like comparison of one difference against another, and a floor
+for how the bug compares with the noise in any one InfoVal.
 
 The two terms contribute about equally at the cut-off: the median term averages
 `r sprintf("%.4f", mean(abs(at_770$d0)))` and the scale term
@@ -524,8 +527,8 @@ all.
 Everything reported under "the error is scatter" and "what it takes to reach a different conclusion"
 is measured at 770 trials and 64 pixels. If the rise with resolution is real — and at under one
 standard error this measurement neither shows it nor rules it out — those shifts and the flip rates
-with them would be larger at 512 pixels; more trials would shrink the median term but not the scale
-term, so the two would not simply cancel.
+with them would be larger at 512 pixels; more trials would shrink the median term and the scale term
+far more slowly, so the two would not simply cancel.
 
 The shift measured here is the correction a fix applies, so it is also the size to quote in a
 `NEWS.md` "Reproducibility impact" entry: around 0.05 in z at 64 pixels and 770 trials, an estimated
