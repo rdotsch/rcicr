@@ -27,8 +27,9 @@ in a narrow window around the cut-off.
 
 Knitting this runs the whole measurement, so it is a batch job rather than an interactive one:
 `r 30 + 20 + 20 + 12 + 8 + 10` base image pairs, each needing two stimulus sets and three reference
-distributions of 10,000 iterations. Ten of those pairs are at the 512 pixels a real study uses, and
-they cost more than the other ninety together.
+distributions of 10,000 iterations, with fifty of them building two further references of ten times
+that size. Those tenfold references and the ten pairs at the 512 pixels a real study uses dominate
+the arithmetic in roughly equal measure, and everything else together comes to a fraction of either.
 
 ```{r constants}
 library(rcicr)
@@ -354,11 +355,11 @@ number wants; the second compares one difference with another.
 
 The two terms contribute about equally at the cut-off: the median term averages
 `r sprintf("%.4f", mean(abs(at_770$d0)))` and the scale term
-`r sprintf("%.4f", cutoff * mean(abs(at_770$rho)))` once multiplied by 1.96. What the scale term's
-closeness to its own Monte Carlo control
+`r sprintf("%.4f", cutoff * mean(abs(at_770$rho)))` once multiplied by 1.96. The scale term's closeness to its own Monte Carlo control
 (`r sprintf("%.4f", mean(abs(at_770$rho)))` against `r sprintf("%.4f", mean(abs(at_770$mc_rho)))`)
-says is where it comes from — the error in estimating a MAD from `iter` draws, which a correctly
-computed InfoVal carries too — not that it is small or absent from the correction.
+suggests that much of it is the error of estimating a MAD from `iter` draws, which a correctly
+computed InfoVal carries too. Similar magnitudes do not establish that, and the decomposition below
+measures it; either way the term is in the correction rather than absent from it.
 
 ```{r large-z}
 at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_770, zz))), numeric(1))
@@ -522,8 +523,8 @@ them; the largest single pair among them reaches `r sprintf("%.2f", max(per_pair
 
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the square-root
 law to 24 trials gives a median term of about `r sprintf("%.2f", reference * sqrt(100 / 24))`, and
-the full shift there is not that number: the scale term is larger at 24 trials than anywhere in this
-series, and being signed it can add to the median term or cancel against it. What the comparison
+the full shift there is not that number: no scale term is measured at 24 trials, and being signed it
+can add to the median term or cancel against it. What the comparison
 supports is narrow — the −0.067 observed in the issue falls below the median term alone, so it is one
 draw rather than a measure of the distribution it came from, and a real study with hundreds of trials
 sits well below that median term.
