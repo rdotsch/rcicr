@@ -350,9 +350,12 @@ already carries at `iter` = 10,000. At 770 trials and 64 pixels the bug
 is worth 1.6 times that wobble. It is the same kind of error as the one
 the method already tolerates, and not far from the same size.
 
-The scale error `rho` barely exceeds its own Monte Carlo control (0.0149
-against 0.0134), so almost all of the damage is the shift in the median,
-and the `z * rho` term stays small until the InfoVal itself is large.
+The two terms contribute about equally at the cut-off: the median term
+averages 0.0299 and the scale term 0.0292 once multiplied by 1.96. What
+the scale term’s closeness to its own Monte Carlo control (0.0149
+against 0.0134) says is where it comes from — the error in estimating a
+MAD from `iter` draws, which a correctly computed InfoVal carries too —
+not that it is small or absent from the correction.
 
 ``` r
 at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_770, zz))), numeric(1))
@@ -447,9 +450,11 @@ knitr::kable(signif(rbind(
 
 At the default resolution the shift at the cut-off is 1.41 times its
 value at 64px — but on 10 pairs that is 0.9 standard errors, so it is
-neither established nor dismissed. The pair-to-pair spread at 512px is
-wide enough that separating a ratio this size at three standard errors
-would take some forty pairs, which is hours of reference distributions.
+neither established nor dismissed. Separating a ratio this size at three
+standard errors means shrinking that ratio’s standard error by a factor
+of three and a half, which at these variances takes about twelve times
+the pairs in both groups — some 120 at 512 pixels and 240 at 64, an
+order of magnitude beyond what this document runs.
 
 Read the trial-count rows above as measured at 64px, then, and this
 512px row as the one that applies to a study at the package’s own
@@ -611,9 +616,11 @@ conclusions above.
 Resolution is measured at 300 trials, trial count at 64 and 128 pixels,
 and the corner a real study occupies — 512 pixels with several hundred
 trials — in neither. The estimate for it is a product of the two series.
-Its median term is scaled by a law measured to hold; its scale term is
-held flat, which the trial series shows to be conservative rather than
-exact. The resolution factor itself is not resolved at all.
+Its median term is scaled by a law measured to hold and its scale term
+is held flat, which is a modelling choice in neither direction: the
+terms are signed, so holding the scale term up can cancel the median
+term as easily as add to it. The resolution factor itself is not
+resolved at all.
 
 Everything reported under “the error is scatter” and “what it takes to
 reach a different conclusion” is measured at 770 trials and 64 pixels.
