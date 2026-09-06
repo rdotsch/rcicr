@@ -177,6 +177,13 @@ measure_pair <- function(n_trials, seed, size, validate) {
   # Same base, an independent draw of the simulated responses: the Monte Carlo
   # wobble InfoVal already carries at this iter, as a yardstick for the shift.
   monte_carlo <- reference_norms(noise_a, iter, response_seed + 1L)
+  # A reference ten times the size stands in for the population one, so the error
+  # a single published InfoVal carries can be measured rather than inferred from
+  # the rerun difference, which carries the sampling error of two references. Only
+  # for the configuration the ratio is quoted at: elsewhere it would cost billions
+  # of operations per pair and reach no table.
+  precise <- if (size == 64 && n_trials == 770)
+    reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
 
   agreement <- NA_real_
   if (validate) {
@@ -193,7 +200,13 @@ measure_pair <- function(n_trials, seed, size, validate) {
     d0 = (median(own) - median(scored_against)) / mad(scored_against),
     rho = mad(own) / mad(scored_against) - 1,
     mc_shift = (median(monte_carlo) - median(scored_against)) / mad(scored_against),
-    mc_rho = mad(monte_carlo) / mad(scored_against) - 1
+    mc_rho = mad(monte_carlo) / mad(scored_against) - 1,
+    # Oriented like d0 and rho above: the reference that defines the InfoVal on
+    # top, the one actually used underneath, so the two are comparable at a z
+    # meaning the same thing.
+    single_shift = if (is.null(precise)) NA_real_ else
+      (median(precise) - median(scored_against)) / mad(scored_against),
+    single_rho = if (is.null(precise)) NA_real_ else mad(precise) / mad(scored_against) - 1
   )
 }
 
@@ -345,16 +358,35 @@ knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
 |      770 |      128 |     8 |      0.0268 |      0.0553 |     0.0936 |     0.1007 |      0.0285 |
 |      300 |      512 |    10 |      0.0530 |      0.0812 |     0.1523 |     0.2825 |      0.0261 |
 
-`monte_carlo` is the same quantity, computed the same way down to the
-scale term, for a reference built from the same base image with a
-different draw of the simulated responses. It is rerun-to-rerun
-variability: the difference between two references of `iter` = 10,000
-draws each, so it carries the sampling error of both and runs about a
-factor of the square root of two above what a single published InfoVal
-carries against a reference of unlimited size. At 770 trials and 64
-pixels the bug is worth 1.6 times that variability — a like-for-like
-comparison of one difference against another, and a floor for how the
-bug compares with the noise in any one InfoVal.
+`monte_carlo` is the same quantity for a reference built from the same
+base image with a different draw of the simulated responses. It is
+rerun-to-rerun variability, the difference between two references of
+`iter` = 10,000 draws each, so it carries the sampling error of both.
+What a published InfoVal carries is the error of *one* reference against
+the population, which is smaller. That is measurable rather than
+assumable: scoring each 10,000-draw reference against one of ten times
+the size, which stands in for the population.
+
+``` r
+single_error <- function(rows, z) rows$single_shift + z * rows$single_rho
+
+knitr::kable(signif(rbind(
+  `the bug` = c(mean = mean(abs(shift(at_770, cutoff)))),
+  `rerun to rerun` = c(mean = mean(abs(monte_carlo(at_770, cutoff)))),
+  `one reference against the population` = c(mean = mean(abs(single_error(at_770, cutoff))))
+), 3))
+```
+
+|                                      |   mean |
+|:-------------------------------------|-------:|
+| the bug                              | 0.0531 |
+| rerun to rerun                       | 0.0332 |
+| one reference against the population | 0.0283 |
+
+So at 770 trials and 64 pixels the bug moves an InfoVal about 1.9 times
+as far as the sampling error already in one, and about 1.6 times a rerun
+of the same reference. The first is the comparison a reader interpreting
+a single number wants; the second compares one difference with another.
 
 The two terms contribute about equally at the cut-off: the median term
 averages 0.0299 and the scale term 0.0292 once multiplied by 1.96. What
@@ -515,9 +547,18 @@ knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), comp
 at_512 <- subset(results, img_size == 512)
 trial_law <- sqrt(300 / 770)
 estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
-c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_770_trials = estimate)
- measured_512px_300_trials estimated_512px_770_trials 
-                0.08117167                 0.06123524 
+# Signed terms can cancel, so the estimate is not one-sided. Adding the two
+# magnitudes instead cannot: per pair it bounds that pair, and averaged it bounds
+# the mean rather than any individual study.
+per_pair_bound <- abs(at_512$d0) * trial_law + cutoff * abs(at_512$rho)
+bound <- mean(per_pair_bound)
+c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))),
+  estimated_512px_770_trials = estimate, mean_bound = bound,
+  largest_pair_bound = max(per_pair_bound))
+ measured_512px_300_trials estimated_512px_770_trials                 mean_bound 
+                0.08117167                 0.06123524                 0.06616231 
+        largest_pair_bound 
+                0.22161474 
 ```
 
 The median term falls by the square-root law and the scale term declines
@@ -527,7 +568,10 @@ cancel, so holding the scale term at its 300-trial value can as easily
 lower the result as raise it. On that model a study at 512 pixels and
 770 trials carries roughly 0.06 in z, against 0.08 measured at 512
 pixels and 300 trials — a figure assembled from two measured components
-rather than measured in place.
+rather than measured in place. Adding the two magnitudes rather than the
+signed terms removes the cancellation and gives 0.07, which bounds the
+mean of these modelled shifts rather than any one of them; the largest
+single pair among them reaches 0.22.
 
 This also puts the 24-trial reproduction in the issue in proportion.
 Extrapolating the square-root law to 24 trials gives a median term of
