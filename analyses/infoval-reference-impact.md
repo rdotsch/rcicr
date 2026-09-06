@@ -32,10 +32,11 @@ orders of magnitude below it — that shrinks with the number of trials
 until it meets the Monte Carlo floor any InfoVal already sits on, and a
 significance call flips only in a narrow window around the cut-off.
 
-Knitting this runs the whole measurement, which takes upwards of an
-hour: 100 base image pairs, each needing two stimulus sets and three
-reference distributions of 10,000 iterations, ten of those pairs at the
-512 pixels a real study uses.
+Knitting this runs the whole measurement, so it is a batch job rather
+than an interactive one: 100 base image pairs, each needing two stimulus
+sets and three reference distributions of 10,000 iterations. Ten of
+those pairs are at the 512 pixels a real study uses, and they cost more
+than the other ninety together.
 
 ``` r
 library(rcicr)
@@ -525,10 +526,13 @@ rather than measured in place.
 
 This also puts the 24-trial reproduction in the issue in proportion.
 Extrapolating the square-root law to 24 trials gives a median term of
-about 0.16, and the full shift there is larger still, since the scale
-term grows as trials fall. The −0.067 observed in the issue is one draw
-from that distribution rather than its size, and a real study with
-hundreds of trials sits several times below it.
+about 0.16, and the full shift there is not that number: the scale term
+is larger at 24 trials than anywhere in this series, and being signed it
+can add to the median term or cancel against it. What the comparison
+supports is narrow — the −0.067 observed in the issue falls below the
+median term alone, so it is one draw rather than a measure of the
+distribution it came from, and a real study with hundreds of trials sits
+well below that median term.
 
 ## What it takes to reach a different conclusion
 
@@ -636,5 +640,5 @@ the size to quote in a `NEWS.md` “Reproducibility impact” entry: around
 default-sized study, with individual classification images in these
 samples moving by as much as 0.35; scatter rather than a correction in a
 direction; a median term falling as one over the square root of the
-trial count and a scale term that does not; and no base image affected
-but the second and later.
+trial count and a scale term that declines far more slowly; and no base
+image affected but the second and later.
