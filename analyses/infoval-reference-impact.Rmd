@@ -172,7 +172,10 @@ measure_pair <- function(n_trials, seed, size, validate) {
   # references shows the between-base component with most of the MAD estimation
   # error taken out, and what is left of `rho` can be attributed rather than
   # assumed.
-  precise_b <- if (decompose) reference_norms(noise_b, 10L * iter, response_seed + 3L) else NULL
+  # Same response draws as `precise`: differencing two independently simulated
+  # references would put back the estimation error this comparison exists to
+  # remove.
+  precise_b <- if (decompose) reference_norms(noise_b, 10L * iter, response_seed + 2L) else NULL
 
   agreement <- NA_real_
   if (validate) {
@@ -464,10 +467,29 @@ tenfold references against each other.
 
 ```{r scale-decomposition}
 decomposed <- subset(results, !is.na(between_rho))
+component <- function(x) c(mean = mean(abs(x)), se = sd(abs(x)) / sqrt(length(x)))
+
 knitr::kable(signif(do.call(rbind, lapply(split(decomposed, decomposed$n_trials), function(rows)
   c(pairs = nrow(rows),
-    median_term = mean(abs(rows$d0)), between_base_median = mean(abs(rows$between_d0)),
-    scale_term = mean(abs(rows$rho)), between_base_scale = mean(abs(rows$between_rho))))), 3))
+    median_term = component(rows$d0), between_base_median = component(rows$between_d0),
+    scale_term = component(rows$rho), between_base_scale = component(rows$between_rho)))), 3))
+```
+
+Whether either between-base component falls with trials is what the combined estimate turns on, and
+twenty and thirty pairs do not settle it from point estimates alone.
+
+```{r decomposition-trend}
+trend <- function(field) {
+  x <- abs(decomposed[[field]][decomposed$n_trials == 300])
+  y <- abs(decomposed[[field]][decomposed$n_trials == 770])
+  difference <- mean(y) - mean(x)
+  se <- sqrt(var(x) / length(x) + var(y) / length(y))
+  c(at_300 = mean(x), at_770 = mean(y), difference = difference, se = se,
+    ses_from_zero = abs(difference) / se)
+}
+
+knitr::kable(signif(rbind(`between-base median` = trend("between_d0"),
+                          `between-base scale` = trend("between_rho")), 3))
 ```
 
 ```{r default-corner}
