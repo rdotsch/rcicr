@@ -357,9 +357,9 @@ The two terms contribute about equally at the cut-off: the median term averages
 `r sprintf("%.4f", mean(abs(at_770$d0)))` and the scale term
 `r sprintf("%.4f", cutoff * mean(abs(at_770$rho)))` once multiplied by 1.96. The scale term's closeness to its own Monte Carlo control
 (`r sprintf("%.4f", mean(abs(at_770$rho)))` against `r sprintf("%.4f", mean(abs(at_770$mc_rho)))`)
-suggests that much of it is the error of estimating a MAD from `iter` draws, which a correctly
-computed InfoVal carries too. Similar magnitudes do not establish that, and the decomposition below
-measures it; either way the term is in the correction rather than absent from it.
+invites reading it as mostly the error of estimating a MAD from `iter` draws, which a correctly
+computed InfoVal carries too. The decomposition below measures that and finds otherwise; either way
+the term is in the correction rather than absent from it.
 
 ```{r large-z}
 at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_770, zz))), numeric(1))
@@ -492,6 +492,33 @@ trend <- function(field) {
 knitr::kable(signif(rbind(`between-base median` = trend("between_d0"),
                           `between-base scale` = trend("between_rho")), 3))
 ```
+
+```{r decomposition-shares}
+share <- function(n) {
+  rows <- decomposed[decomposed$n_trials == n, ]
+  c(median = mean(abs(rows$between_d0)) / mean(abs(rows$d0)),
+    scale = mean(abs(rows$between_rho)) / mean(abs(rows$rho)))
+}
+knitr::kable(signif(rbind(`300 trials` = share(300), `770 trials` = share(770)), 2))
+```
+
+So the scale term is not mostly the error of estimating a MAD: about
+`r sprintf("%.0f%%", 100 * share(770)[["scale"]])` of it at 770 trials is a real difference between
+the two bases' spreads, and the median term is
+`r sprintf("%.0f%%", 100 * share(770)[["median"]])` real on the same reckoning. The suggestion drawn
+earlier from `rho` resembling its Monte Carlo control was wrong in that direction, and this is what
+settles it.
+
+Both genuine components fall as trials rise, and they fall differently. The median one drops by
+`r sprintf("%.1f", trend("between_d0")[["ses_from_zero"]])` standard errors, close to what the
+square-root law predicts — `r sprintf("%.4f", trend("between_d0")[["at_300"]] * sqrt(300 / 770))`
+against `r sprintf("%.4f", trend("between_d0")[["at_770"]])` observed. The scale one drops by
+`r sprintf("%.1f", trend("between_rho")[["ses_from_zero"]])`, which these samples do not separate
+from no change at all, and by proportionally less than the law would give.
+
+Holding the scale term fixed while scaling the median one is therefore the right shape for the
+combination, and it errs towards a larger estimate: the part of the scale term that is real may
+shrink with trials, and this treats none of it as shrinking.
 
 ```{r default-corner}
 components <- function(rows) c(median_term = mean(abs(rows$d0)), scale_term = mean(abs(rows$rho)))

@@ -182,8 +182,16 @@ measure_pair <- function(n_trials, seed, size, validate) {
   # the rerun difference, which carries the sampling error of two references. Only
   # for the configuration the ratio is quoted at: elsewhere it would cost billions
   # of operations per pair and reach no table.
-  precise <- if (size == 64 && n_trials == 770)
-    reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
+  decompose <- size == 64 && n_trials %in% c(300, 770)
+  precise <- if (decompose) reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
+  # The same for base 2, so that the difference between the two precise
+  # references shows the between-base component with most of the MAD estimation
+  # error taken out, and what is left of `rho` can be attributed rather than
+  # assumed.
+  # Same response draws as `precise`: differencing two independently simulated
+  # references would put back the estimation error this comparison exists to
+  # remove.
+  precise_b <- if (decompose) reference_norms(noise_b, 10L * iter, response_seed + 2L) else NULL
 
   agreement <- NA_real_
   if (validate) {
@@ -206,7 +214,10 @@ measure_pair <- function(n_trials, seed, size, validate) {
     # meaning the same thing.
     single_shift = if (is.null(precise)) NA_real_ else
       (median(precise) - median(scored_against)) / mad(scored_against),
-    single_rho = if (is.null(precise)) NA_real_ else mad(precise) / mad(scored_against) - 1
+    single_rho = if (is.null(precise)) NA_real_ else mad(precise) / mad(scored_against) - 1,
+    between_d0 = if (is.null(precise_b)) NA_real_ else
+      (median(precise_b) - median(precise)) / mad(precise),
+    between_rho = if (is.null(precise_b)) NA_real_ else mad(precise_b) / mad(precise) - 1
   )
 }
 
@@ -528,10 +539,49 @@ knitr::kable(signif(rbind(`64px` = trial_ratio(64), `128px` = trial_ratio(128),
 The trial ratios come out above the square-root law at both resolutions,
 and the reason is visible in the `monte_carlo` column of the earlier
 table, which does not fall with trials either. Only the median term is
-an average over trials; the scale term is dominated by the error in
-estimating a MAD from `iter` draws, which trials barely touch. So the
-two parts of the shift behave differently, and combining the series has
-to respect that.
+an average over trials. Whether the scale term is mostly the error of
+estimating a MAD from `iter` draws, or a real difference between the two
+bases’ spreads, decides whether it can be held fixed when combining the
+series — so it is separated rather than assumed, by differencing the
+tenfold references against each other.
+
+``` r
+decomposed <- subset(results, !is.na(between_rho))
+component <- function(x) c(mean = mean(abs(x)), se = sd(abs(x)) / sqrt(length(x)))
+
+knitr::kable(signif(do.call(rbind, lapply(split(decomposed, decomposed$n_trials), function(rows)
+  c(pairs = nrow(rows),
+    median_term = component(rows$d0), between_base_median = component(rows$between_d0),
+    scale_term = component(rows$rho), between_base_scale = component(rows$between_rho)))), 3))
+```
+
+|     | pairs | median_term.mean | median_term.se | between_base_median.mean | between_base_median.se | scale_term.mean | scale_term.se | between_base_scale.mean | between_base_scale.se |
+|:----|------:|-----------------:|---------------:|-------------------------:|-----------------------:|----------------:|--------------:|------------------------:|----------------------:|
+| 300 |    20 |           0.0449 |        0.00499 |                   0.0380 |                0.00485 |          0.0171 |       0.00253 |                 0.01030 |               0.00209 |
+| 770 |    30 |           0.0299 |        0.00367 |                   0.0254 |                0.00436 |          0.0149 |       0.00257 |                 0.00828 |               0.00112 |
+
+Whether either between-base component falls with trials is what the
+combined estimate turns on, and twenty and thirty pairs do not settle it
+from point estimates alone.
+
+``` r
+trend <- function(field) {
+  x <- abs(decomposed[[field]][decomposed$n_trials == 300])
+  y <- abs(decomposed[[field]][decomposed$n_trials == 770])
+  difference <- mean(y) - mean(x)
+  se <- sqrt(var(x) / length(x) + var(y) / length(y))
+  c(at_300 = mean(x), at_770 = mean(y), difference = difference, se = se,
+    ses_from_zero = abs(difference) / se)
+}
+
+knitr::kable(signif(rbind(`between-base median` = trend("between_d0"),
+                          `between-base scale` = trend("between_rho")), 3))
+```
+
+|                     | at_300 |  at_770 | difference |      se | ses_from_zero |
+|:--------------------|-------:|--------:|-----------:|--------:|--------------:|
+| between-base median | 0.0380 | 0.02540 |   -0.01270 | 0.00653 |         1.940 |
+| between-base scale  | 0.0103 | 0.00828 |   -0.00197 | 0.00237 |         0.831 |
 
 ``` r
 components <- function(rows) c(median_term = mean(abs(rows$d0)), scale_term = mean(abs(rows$rho)))
@@ -688,11 +738,17 @@ the flip rates with them would be larger at 512 pixels; more trials
 would shrink the median term and the scale term far more slowly, so the
 two would not simply cancel.
 
-The shift measured here is the correction a fix applies, so it is also
-the size to quote in a `NEWS.md` “Reproducibility impact” entry: around
-0.05 in z at 64 pixels and 770 trials, an estimated 0.06 for a
-default-sized study, with individual classification images in these
-samples moving by as much as 0.35; scatter rather than a correction in a
-direction; a median term falling as one over the square root of the
-trial count and a scale term that declines far more slowly; and no base
-image affected but the second and later.
+The shift measured here is the noise-realization component of what a fix
+corrects, measured with the response draws held still across the two
+references. The package draws its responses from the state left after
+stimulus regeneration, and a fix forwarding `use_same_parameters`
+consumes the later bases’ parameter draws first, so an old-versus-fixed
+comparison also moves the response sample, by something of the order of
+the rerun column. With that said, this is the size to quote in a
+`NEWS.md` “Reproducibility impact” entry: around 0.05 in z at 64 pixels
+and 770 trials, an estimated 0.06 for a default-sized study, with
+individual classification images in these samples moving by as much as
+0.35; scatter rather than a correction in a direction; a median term
+falling as one over the square root of the trial count and a scale term
+that declines far more slowly; and no base image affected but the second
+and later.
