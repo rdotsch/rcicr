@@ -619,7 +619,10 @@ left after stimulus regeneration, and a fix forwarding `use_same_parameters` con
 bases' parameter draws first, so an old-versus-fixed comparison also moves the response sample, by
 something of the order of the rerun column. With that said, this is the size to quote in a `NEWS.md`
 "Reproducibility impact" entry: around 0.05 in z at 64 pixels and 770 trials, an estimated
-0.06 for a default-sized study, with individual classification images in these samples moving by as
-much as 0.35; scatter rather than a correction in a direction; a median term falling as one over the
-square root of the trial count and a scale term that declines far more slowly; and no base image
-affected but the second and later.
+0.06 for a default-sized study, and at the far end of the sampled pairs
+`r sprintf("%.2f", max(abs(shift(results, cutoff))))` in the
+`r results$n_trials[which.max(abs(shift(results, cutoff)))]`-trial configuration — all of them
+shifts modelled for an InfoVal sitting at the cut-off, since this document generates no
+classification images and so observes no movement of one. Scatter rather than a correction in a
+direction; a median term falling as one over the square root of the trial count and a scale term
+that declines far more slowly; and no base image affected but the second and later.
