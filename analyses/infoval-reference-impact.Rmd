@@ -524,10 +524,11 @@ them; the largest single pair among them reaches `r sprintf("%.2f", max(per_pair
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the square-root
 law to 24 trials gives a median term of about `r sprintf("%.2f", reference * sqrt(100 / 24))`, and
 the full shift there is not that number: no scale term is measured at 24 trials, and being signed it
-can add to the median term or cancel against it. What the comparison
-supports is narrow — the −0.067 observed in the issue falls below the median term alone, so it is one
-draw rather than a measure of the distribution it came from, and a real study with hundreds of trials
-sits well below that median term.
+can add to the median term or cancel against it. What the comparison supports is narrow: the −0.067
+observed in the issue falls below the median term alone, so it is one draw rather than a measure of
+the distribution it came from. The same law puts the median term for hundreds of trials well below
+its 24-trial value — a statement about that component at 64 pixels, not about the full shift a real
+study carries, which also holds an unmeasured scale term and whatever resolution does.
 
 ## What it takes to reach a different conclusion
 
