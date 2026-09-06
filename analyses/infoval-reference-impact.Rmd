@@ -21,8 +21,9 @@ This document measures what that costs. It exists because the two obvious readin
 "the reference is from the wrong base, so the InfoVal is invalid" overstates it, and "it is only
 noise, so it does not matter" understates it. The answer is that the wrong reference is a *valid*
 null built on a different realization of the same noise process, so the error is scatter — with a
-directional part some two orders of magnitude below it — whose size falls with the number of trials,
-and a significance call flips only in a narrow window around the cut-off.
+directional part some two orders of magnitude below it — that shrinks with the number of trials
+until it meets the Monte Carlo floor any InfoVal already sits on, and a significance call flips only
+in a narrow window around the cut-off.
 
 Knitting this runs the whole measurement, which takes upwards of an hour: `r 30 + 20 + 20 + 12 + 8 + 10`
 base image pairs, each needing two stimulus sets and three reference distributions of 10,000
@@ -340,7 +341,7 @@ knitr::kable(data.frame(
 ), row.names = FALSE)
 ```
 
-The shift falls as one over the square root of the number of trials, which is what a reference
+The median term of the shift falls as one over the square root of the number of trials, which is what a reference
 median built from an average over trials should do.
 
 Pixels are a different story, and the answer is not the one a dimensional argument suggests. The
@@ -408,12 +409,28 @@ knitr::kable(signif(rbind(`64px` = trial_ratio(64), `128px` = trial_ratio(128),
                           `sqrt(300/770)` = c(NA, NA, sqrt(300 / 770), NA)), 3))
 ```
 
-Both resolutions shrink by about the square root of the trial ratio, so the two effects separate to
-the accuracy these samples can see. On that footing a study at 512 pixels and 770 trials would carry
-a shift of roughly
-`r sprintf("%.2f", mean(abs(shift(subset(results, n_trials == 300 & img_size == 512), cutoff))) * sqrt(300 / 770))`
-in z — the 512px row scaled by the trial-count law — which is the single number to carry away for a
-default-sized study, and still a product of two measurements rather than one.
+The trial ratios come out above the square-root law at both resolutions, and the reason is visible in
+the `monte_carlo` column of the earlier table, which does not fall with trials either. Only the
+median term is an average over trials; the scale term is dominated by the error in estimating a MAD
+from `iter` draws, which trials do not touch. So the two parts of the shift behave differently, and
+combining the series has to respect that.
+
+```{r default-corner}
+components <- function(rows) c(median_term = mean(abs(rows$d0)), scale_term = mean(abs(rows$rho)))
+knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), components)), 3))
+
+at_512 <- subset(results, img_size == 512)
+trial_law <- sqrt(300 / 770)
+estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
+c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_770_trials = estimate)
+```
+
+The median term falls by the square-root law while the scale term stays flat, so scaling only the
+first gives roughly `r sprintf("%.2f", estimate)` in z for a study at 512 pixels and 770 trials,
+against `r sprintf("%.2f", mean(abs(shift(at_512, cutoff))))` measured at 512 pixels and 300 trials.
+That is the figure to carry away for a default-sized study — assembled from two measured components
+under a scaling law that holds for one of them and demonstrably not the other, rather than measured
+in place.
 
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the fitted
 scaling to 24 trials gives a typical shift of
@@ -489,14 +506,16 @@ stream adds roughly the `monte_carlo` column on top, which changes none of the c
 
 Resolution is measured at 300 trials, trial count at 64 and 128 pixels, and the corner a real study
 occupies — 512 pixels with several hundred trials — in neither. The estimate for it is a product of
-the two series, resting on a separability that is tested only to the accuracy of eight to twelve
-pairs per cell, and the resolution factor itself is not resolved.
+the two series. Its median term is scaled by a law measured to hold; its scale term is held flat on
+the evidence that trials do not move it. The resolution factor itself is not resolved at all.
 
 Everything reported under "the error is scatter" and "what it takes to reach a different conclusion"
 is measured at 770 trials and 64 pixels. The resolution effect would enlarge those shifts and the
-flip rates with them; the trial-count law would shrink them for a study running more than 300 trials.
+flip rates with them; more trials would shrink the median term but not the scale term, so the two do
+not simply cancel.
 
 The shift measured here is the correction a fix applies, so it is also the size to quote in a
 `NEWS.md` "Reproducibility impact" entry: a tenth of a z or less, scatter rather than a correction in
-a direction, falling as one over the square root of the trial count, larger at higher resolution by
-an amount these samples do not pin down, and affecting no base image but the second and later.
+a direction, with a median term falling as one over the square root of the trial count and a scale
+term that does not, larger at higher resolution by an amount these samples do not pin down, and
+affecting no base image but the second and later.
