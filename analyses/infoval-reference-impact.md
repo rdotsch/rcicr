@@ -61,8 +61,9 @@ base_image <- function(name, seed, size) {
 # capture.output() here and below only keeps progress bars out of the rendered
 # document; the package's functions are called exactly as a user would call them.
 # ?generateReferenceDistribution2IFC guarantees the stimuli, and so everything
-# measured here, do not depend on ncores.
-cores <- max(1L, parallel::detectCores() - 1L)
+# measured here, do not depend on ncores. mclapply() below rejects more than one
+# core on Windows, which knits there serially rather than not at all.
+cores <- if (.Platform$OS.type == "windows") 1L else max(1L, parallel::detectCores() - 1L)
 
 generate <- function(bases, n_trials, seed, size, same_parameters) {
   path <- tempfile("stim", tmpdir = scratch)
@@ -613,14 +614,17 @@ exact. The resolution factor itself is not resolved at all.
 
 Everything reported under “the error is scatter” and “what it takes to
 reach a different conclusion” is measured at 770 trials and 64 pixels.
-The resolution effect would enlarge those shifts and the flip rates with
-them; more trials would shrink the median term but not the scale term,
-so the two do not simply cancel.
+If the rise with resolution is real — and at under one standard error
+this measurement neither shows it nor rules it out — those shifts and
+the flip rates with them would be larger at 512 pixels; more trials
+would shrink the median term but not the scale term, so the two would
+not simply cancel.
 
 The shift measured here is the correction a fix applies, so it is also
-the size to quote in a `NEWS.md` “Reproducibility impact” entry: a tenth
-of a z or less, scatter rather than a correction in a direction, with a
-median term falling as one over the square root of the trial count and a
-scale term that does not, larger at higher resolution by an amount these
-samples do not pin down, and affecting no base image but the second and
-later.
+the size to quote in a `NEWS.md` “Reproducibility impact” entry: around
+0.05 in z at 64 pixels and 770 trials, an estimated 0.06 for a
+default-sized study, with individual classification images in these
+samples moving by as much as 0.35; scatter rather than a correction in a
+direction; a median term falling as one over the square root of the
+trial count and a scale term that does not; and no base image affected
+but the second and later.
