@@ -162,6 +162,8 @@ measure_pair <- function(n_trials, seed, size, validate) {
 
   data.frame(
     n_trials = n_trials, img_size = size, seed = seed, agreement = agreement,
+    med_own = median(own), mad_own = mad(own),
+    med_scored = median(scored_against), mad_scored = mad(scored_against),
     d0 = (median(own) - median(scored_against)) / mad(scored_against),
     rho = mad(own) / mad(scored_against) - 1,
     mc_shift = (median(monte_carlo) - median(scored_against)) / mad(scored_against),
@@ -227,32 +229,40 @@ receives is a legitimate one — just built on another realization of the noise.
 against a scatter `r sprintf("%.0f", sd(shift(at_default, cutoff)) / abs(mean(shift(at_default, cutoff))))`
 times the size of that mean.
 
-The median term `d0` is symmetric: the two base images are exchangeable, so it is as likely to raise
-the reported InfoVal as to lower it. The scale term is not. `rho` is the ratio `mad(own) /
-mad(scored_against)` less one, and for exchangeable positive scales `B/A + A/B >= 2` forces
-`E[B/A] >= 1`, strictly whenever the two differ at all. So the shift carries a genuine upward
-component at any nonzero InfoVal, and the question is its size rather than its existence.
+Neither term is exactly centred, though, and the sign of each is decided by the same structure.
+`rho` is the ratio `mad(own) / mad(scored_against)` less one, and for exchangeable positive scales
+`B/A + A/B >= 2` forces `E[B/A] >= 1`, strictly whenever the two differ at all. `d0` divides by the
+MAD of one member of the pair only, so its mean is `-Cov(median, 1 / mad)` rather than zero: a noise
+realization with more energy has both a larger median norm and a wider spread. Both terms therefore
+carry a directional component, and the question is its size rather than its existence.
 
-The mean of `rho` cannot answer that: the bias sits far below its standard error. Averaging
-`(B/A + A/B) / 2 - 1` instead gives the same expectation with a fraction of the variance, and is
-non-negative for every pair by construction.
+Neither mean can measure it — both sit far below their own standard errors. Averaging a pair's two
+labellings can: had the second base image been listed first, the bug would have scored the first
+against *its* null, and the two orderings share the bulk of the variation, which cancels.
 
-```{r scale-bias}
-scale_bias <- function(rows) {
+```{r directional}
+directional <- function(rows, z) {
+  d0 <- ((rows$med_own - rows$med_scored) / rows$mad_scored +
+         (rows$med_scored - rows$med_own) / rows$mad_own) / 2
   ratio <- 1 + rows$rho
-  centre((ratio + 1 / ratio) / 2 - 1)
+  d0 + z * ((ratio + 1 / ratio) / 2 - 1)
 }
 
-knitr::kable(signif(do.call(rbind, lapply(
-  split(at_64px, at_64px$n_trials), scale_bias)), 3))
+knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), function(rows)
+  c("median term" = centre(directional(rows, 0))[c("mean", "se")],
+    "at the cut-off" = centre(directional(rows, cutoff))[c("mean", "se")],
+    "at z = 10" = centre(directional(rows, 10))[c("mean", "se")]))), 3))
 ```
 
-At the defaults that is `r sprintf("%.1e", scale_bias(at_default)[["mean"]])`, so a reported InfoVal
-of 10 sits `r sprintf("%.3f", 10 * scale_bias(at_default)[["mean"]])` high on average — about
-`r sprintf("%.0f%%", 100 * 10 * scale_bias(at_default)[["mean"]] / mean(abs(shift(at_default, 10))))`
-of the scatter at that value, a proportion that does not grow with the InfoVal because both terms
-scale with it. A set of published InfoVals was therefore scattered rather than moved, to a precision
-far finer than anyone reads these numbers to.
+The estimates come out positive wherever they resolve against their own standard error, which is
+what the argument above requires of the expectations, and all of them are minute. At the defaults the
+directional part of the shift is
+`r sprintf("%.1e", mean(directional(at_default, cutoff)))` at the cut-off and
+`r sprintf("%.3f", mean(directional(at_default, 10)))` at an InfoVal of 10 — around
+`r sprintf("%.0f%%", 100 * mean(directional(at_default, 10)) / mean(abs(shift(at_default, 10))))`
+of the scatter at that value, a proportion that does not grow with the InfoVal because both scale
+with it. A set of published InfoVals was therefore scattered rather than moved, to a precision far
+finer than anyone reads these numbers to.
 
 ## How large the scatter is
 
@@ -316,14 +326,22 @@ knitr::kable(data.frame(
 ```
 
 The shift falls as one over the square root of the number of trials, which is what a reference
-median built from an average over trials should do. Image size does not enter: at 300 trials the
-shift is `r sprintf("%.4f", summary_row(subset(results, n_trials == 300 & img_size == 128))$mean_abs_d0)`
-at 128px against
-`r sprintf("%.4f", summary_row(subset(results, n_trials == 300 & img_size == 64))$mean_abs_d0)` at
-64px, equal within the sampling error of
-`r nrow(subset(results, n_trials == 300 & img_size == 128))` and
-`r nrow(subset(results, n_trials == 300 & img_size == 64))` pairs. So the 770-trial row above stands
-for a study run at the default 512px, which is far too slow to measure directly.
+median built from an average over trials should do.
+
+```{r image-size}
+sizes <- lapply(c(64, 128), function(s) abs(subset(results, n_trials == 300 & img_size == s)$d0))
+gap <- diff(vapply(sizes, mean, numeric(1)))
+gap_se <- sqrt(sum(vapply(sizes, function(x) var(x) / length(x), numeric(1))))
+
+c(`64px` = mean(sizes[[1]]), `128px` = mean(sizes[[2]]),
+  difference = gap, se = gap_se, ses_from_zero = abs(gap) / gap_se)
+```
+
+Image size does not enter, then: at 300 trials the two differ by
+`r sprintf("%.1f", abs(gap) / gap_se)` standard errors, so the 770-trial row above stands for a study
+run at the default 512px, which is far too slow to measure directly. Sixteen times the pixels leaves
+the shift where it was because both the reference median and its spread scale together, and the ratio
+of the two is what InfoVal reports.
 
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the fitted
 scaling to 24 trials gives a typical shift of
@@ -337,25 +355,32 @@ cut-off *and* the shift points across it. Applying the measured shifts to a stan
 true InfoVals:
 
 ```{r flip-rate}
-flip_rate <- function(dz, true_z) {
-  outcomes <- outer(true_z, dz, `+`)
-  mean((true_z > cutoff) != (outcomes > cutoff))
+# Each observation is reported as true_z + d0 + true_z * rho, so the scale term
+# is evaluated at its own InfoVal rather than at the cut-off.
+flip_rate <- function(rows, true_z) {
+  reported <- outer(true_z, rows$d0, `+`) + outer(true_z, rows$rho)
+  mean((true_z > cutoff) != (reported > cutoff))
 }
 
 set.seed(20260906)
 spreads <- list("uniform 0-4" = runif(20000, 0, 4),
                 "uniform 0-10" = runif(20000, 0, 10),
-                "uniform 1.5-2.5" = runif(20000, 1.5, 2.5))
-flipped <- vapply(spreads, function(z) flip_rate(shift(at_default, cutoff), z), numeric(1))
+                "uniform 1.5-2.5" = runif(20000, 1.5, 2.5),
+                "uniform 1.94-1.98" = runif(20000, 1.94, 1.98))
+flipped <- vapply(spreads, function(z) flip_rate(at_default, z), numeric(1))
 knitr::kable(data.frame(true_infoval_spread = names(spreads), flipped = round(flipped, 4)),
              row.names = FALSE)
 ```
 
 Those spreads are stand-ins, not measurements: what InfoVals look like across real studies is not
-something this package records. They bracket the answer rather than settle it —
-`r sprintf("%.1f%%", 100 * flipped[["uniform 0-4"]])` of exposed classification images under a broad
-spread, and `r sprintf("%.1f%%", 100 * flipped[["uniform 1.5-2.5"]])` even in the worst case where
-every InfoVal in the study is crowded against the cut-off.
+something this package records, and none of them bounds the answer. The rate is set by how much of a
+study's InfoVal distribution sits within the shift of the cut-off, so it falls as the distribution
+broadens — `r sprintf("%.1f%%", 100 * flipped[["uniform 0-4"]])` over a four-unit spread,
+`r sprintf("%.1f%%", 100 * flipped[["uniform 0-10"]])` over ten — and rises without a useful bound as
+it narrows. The last row makes that concrete: concentrate every InfoVal within a few hundredths of
+1.96 and `r sprintf("%.0f%%", 100 * flipped[["uniform 1.94-1.98"]])` of the calls change, approaching
+the probability that the shift points across the threshold at all. The reassurance is that real
+InfoVals are not distributed that way, not that the bug's effect is bounded.
 
 And a classification image is only exposed if all of these hold:
 
