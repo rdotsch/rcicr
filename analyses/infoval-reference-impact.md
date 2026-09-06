@@ -7,8 +7,8 @@ What the wrong-base InfoVal reference does to a conclusion
 - [The error is scatter, with a directional part too small to
   matter](#the-error-is-scatter-with-a-directional-part-too-small-to-matter)
 - [How large the scatter is](#how-large-the-scatter-is)
-- [Trials set the size; pixels are not seen
-  to](#trials-set-the-size-pixels-are-not-seen-to)
+- [Trials shrink it; resolution may enlarge
+  it](#trials-shrink-it-resolution-may-enlarge-it)
 - [What it takes to reach a different
   conclusion](#what-it-takes-to-reach-a-different-conclusion)
 - [What is not affected](#what-is-not-affected)
@@ -28,13 +28,14 @@ so the InfoVal is invalid” overstates it, and “it is only noise, so it
 does not matter” understates it. The answer is that the wrong reference
 is a *valid* null built on a different realization of the same noise
 process, so the error is scatter — with a directional part some two
-orders of magnitude below it — whose size is set by the number of
-trials, and a significance call flips only in a narrow window around the
-cut-off.
+orders of magnitude below it — that shrinks with the number of trials
+until it meets the Monte Carlo floor any InfoVal already sits on, and a
+significance call flips only in a narrow window around the cut-off.
 
-Knitting this runs the whole measurement, which takes tens of minutes:
-82 base image pairs, each needing two stimulus sets and three reference
-distributions of 10,000 iterations.
+Knitting this runs the whole measurement, which takes upwards of an
+hour: 100 base image pairs, each needing two stimulus sets and three
+reference distributions of 10,000 iterations, ten of those pairs at the
+512 pixels a real study uses.
 
 ``` r
 library(rcicr)
@@ -59,13 +60,17 @@ base_image <- function(name, seed, size) {
 
 # capture.output() here and below only keeps progress bars out of the rendered
 # document; the package's functions are called exactly as a user would call them.
+# ?generateReferenceDistribution2IFC guarantees the stimuli, and so everything
+# measured here, do not depend on ncores.
+cores <- max(1L, parallel::detectCores() - 1L)
+
 generate <- function(bases, n_trials, seed, size, same_parameters) {
   path <- tempfile("stim", tmpdir = scratch)
   dir.create(path)
   invisible(capture.output(
     generateStimuli2IFC(bases, n_trials = n_trials, img_size = size, stimulus_path = path,
                         seed = seed, use_same_parameters = same_parameters, nscales = nscales,
-                        ncores = 1, save_as_png = FALSE)
+                        ncores = cores, save_as_png = FALSE)
   ))
   list.files(path, pattern = "\\.Rdata$", full.names = TRUE)[1]
 }
@@ -126,12 +131,14 @@ the response draws are consumed in the same order.
 
 ``` r
 noise_matrix <- function(params, p, size) {
-  vapply(seq_len(nrow(params)),
-         function(trial) as.vector(generateNoiseImage(params[trial, ], p)),
-         numeric(size^2))
+  matrix(unlist(parallel::mclapply(seq_len(nrow(params)), mc.cores = cores,
+                function(trial) as.vector(generateNoiseImage(params[trial, ], p)))),
+         nrow = size^2)
 }
 
-reference_norms <- function(noise, iter, seed, block = 500L) {
+# A block holds one column per iteration, so its width comes from the image size,
+# keeping the intermediate near 200 MB at any resolution.
+reference_norms <- function(noise, iter, seed, block = max(50L, as.integer(2.5e7 / nrow(noise)))) {
   set.seed(seed)
   n_trials <- ncol(noise)
   out <- numeric(iter)
@@ -188,9 +195,13 @@ measure_pair <- function(n_trials, seed, size, validate) {
   )
 }
 
+# Validated on the first pair of each configuration, except at 512px, where
+# generateReferenceDistribution2IFC() rebuilds a matrix from its stimulus frame on
+# every one of the 10,000 iterations (#306) and the check would take hours. The
+# reimplementation does not vary with resolution.
 sweep <- function(n_trials, seeds, size = img_size) {
   do.call(rbind, Map(function(seed, validate) measure_pair(n_trials, seed, size, validate),
-                     seeds, seq_along(seeds) == 1))
+                     seeds, seq_along(seeds) == 1 & size < 512))
 }
 ```
 
@@ -204,7 +215,9 @@ results <- rbind(
   sweep(770, 1:30),
   sweep(300, 101:120),
   sweep(100, 201:220),
-  sweep(300, 301:312, size = 128)
+  sweep(300, 301:312, size = 128),
+  sweep(770, 501:508, size = 128),
+  sweep(300, 401:410, size = 512)
 )
 ```
 
@@ -230,13 +243,15 @@ at_64px <- subset(results, img_size == 64)
 ## The error is scatter, with a directional part too small to matter
 
 ``` r
-at_default <- subset(results, n_trials == 770)
+# 770 trials at 64 pixels. Not the package's default configuration, whose
+# 512 pixels are measured separately below and at fewer trials.
+at_770 <- subset(results, n_trials == 770 & img_size == 64)
 
 knitr::kable(round(rbind(
-  "reference median only (d0)" = centre(at_default$d0),
-  "scale only (rho)" = centre(at_default$rho),
-  "full shift at the cut-off" = centre(shift(at_default, cutoff)),
-  "full shift at z = 10" = centre(shift(at_default, 10))
+  "reference median only (d0)" = centre(at_770$d0),
+  "scale only (rho)" = centre(at_770$rho),
+  "full shift at the cut-off" = centre(shift(at_770, cutoff)),
+  "full shift at z = 10" = centre(shift(at_770, 10))
 ), 4))
 ```
 
@@ -249,10 +264,10 @@ knitr::kable(round(rbind(
 
 Base 2’s parameters are an independent draw from the same generator as
 base 1’s, so the null it receives is a legitimate one — just built on
-another realization of the noise. Across 30 base image pairs at the
-package defaults the full shift at the cut-off averages -0.011, which is
-0.9 standard errors from zero against a scatter 6 times the size of that
-mean.
+another realization of the noise. Across 30 base image pairs at 770
+trials and 64 pixels the full shift at the cut-off averages -0.011,
+which is 0.9 standard errors from zero against a scatter 6 times the
+size of that mean.
 
 Neither term is exactly centred, though, and the sign of each is decided
 by the same structure. `rho` is the ratio
@@ -292,9 +307,9 @@ knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), func
 
 The estimates come out positive wherever they resolve against their own
 standard error, which is what the argument above requires of the
-expectations, and all of them are minute. At the defaults the
-directional part of the shift is 5.3e-04 at the cut-off and 0.002 at an
-InfoVal of 10 — around 1% of the scatter at that value, a proportion
+expectations, and all of them are minute. At 770 trials and 64 pixels
+the directional part of the shift is 5.3e-04 at the cut-off and 0.002 at
+an InfoVal of 10 — around 1% of the scatter at that value, a proportion
 that does not grow with the InfoVal because both scale with it. A set of
 published InfoVals was therefore scattered rather than moved, to a
 precision far finer than anyone reads these numbers to.
@@ -324,20 +339,22 @@ knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
 |      300 |       64 |    20 |      0.0449 |      0.0577 |     0.1033 |     0.1197 |      0.0265 |
 |      770 |       64 |    30 |      0.0299 |      0.0531 |     0.1003 |     0.1216 |      0.0332 |
 |      300 |      128 |    12 |      0.0512 |      0.0729 |     0.1263 |     0.1318 |      0.0211 |
+|      770 |      128 |     8 |      0.0268 |      0.0553 |     0.0936 |     0.1007 |      0.0285 |
+|      300 |      512 |    10 |      0.0530 |      0.0812 |     0.1523 |     0.2825 |      0.0261 |
 
 `monte_carlo` is the same quantity, computed the same way down to the
 scale term, for a reference built from the same base image with a
 different draw of the simulated responses: the wobble any InfoVal
-already carries at `iter` = 10,000. At the default 770 trials the bug is
-worth 1.6 times that wobble. It is the same kind of error as the one the
-method already tolerates, and not far from the same size.
+already carries at `iter` = 10,000. At 770 trials and 64 pixels the bug
+is worth 1.6 times that wobble. It is the same kind of error as the one
+the method already tolerates, and not far from the same size.
 
 The scale error `rho` barely exceeds its own Monte Carlo control (0.0149
 against 0.0134), so almost all of the damage is the shift in the median,
 and the `z * rho` term stays small until the InfoVal itself is large.
 
 ``` r
-at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_default, zz))), numeric(1))
+at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_770, zz))), numeric(1))
 
 z <- c(2, 5, 10)
 knitr::kable(data.frame(
@@ -360,7 +377,7 @@ because both quantities pick up the same scale term. At a large InfoVal
 the bug is barely distinguishable in size from re-running the reference
 simulation with different random responses.
 
-## Trials set the size; pixels are not seen to
+## Trials shrink it; resolution may enlarge it
 
 ``` r
 by_trials <- do.call(rbind, lapply(split(at_64px, at_64px$n_trials), summary_row))
@@ -378,41 +395,126 @@ knitr::kable(data.frame(
 |      300 |   0.0449 |             0.0455 |
 |      770 |   0.0299 |             0.0284 |
 
-The shift falls as one over the square root of the number of trials,
-which is what a reference median built from an average over trials
-should do.
+The median term of the shift falls as one over the square root of the
+number of trials, which is what a reference median built from an average
+over trials should do.
+
+Pixels are a different story, and the answer is not the one a
+dimensional argument suggests. The shift is a ratio of two quantities
+that both grow with resolution, so it might have been expected to hold
+constant; measured at three sizes with the trial count fixed, its point
+estimate climbs.
 
 ``` r
-compare_sizes <- function(f) {
-  sides <- lapply(c(64, 128), function(s) abs(f(subset(results, n_trials == 300 & img_size == s))))
-  gap <- diff(vapply(sides, mean, numeric(1)))
-  se <- sqrt(sum(vapply(sides, function(x) var(x) / length(x), numeric(1))))
-  c(`64px` = mean(sides[[1]]), `128px` = mean(sides[[2]]), difference = gap, se = se,
-    ses_from_zero = abs(gap) / se,
-    largest_rise_consistent = (gap + 1.96 * se) / mean(sides[[1]]))
+by_size <- function(rows) {
+  d0 <- abs(rows$d0); dz <- abs(shift(rows, cutoff))
+  c(pairs = nrow(rows),
+    mean_abs_d0 = mean(d0), se_d0 = sd(d0) / sqrt(nrow(rows)),
+    mean_abs_dz = mean(dz), se_dz = sd(dz) / sqrt(nrow(rows)))
+}
+
+at_300 <- subset(results, n_trials == 300)
+sizes <- do.call(rbind, lapply(split(at_300, at_300$img_size), by_size))
+knitr::kable(signif(sizes, 3))
+```
+
+|     | pairs | mean_abs_d0 |   se_d0 | mean_abs_dz |  se_dz |
+|:----|------:|------------:|--------:|------------:|-------:|
+| 64  |    20 |      0.0449 | 0.00499 |      0.0577 | 0.0074 |
+| 128 |    12 |      0.0512 | 0.00943 |      0.0729 | 0.0122 |
+| 512 |    10 |      0.0530 | 0.01540 |      0.0812 | 0.0262 |
+
+``` r
+gap <- function(small, large, f) {
+  x <- abs(f(subset(results, n_trials == 300 & img_size == small)))
+  y <- abs(f(subset(results, n_trials == 300 & img_size == large)))
+  se <- sqrt(var(x) / length(x) + var(y) / length(y))
+  c(ratio = mean(y) / mean(x), difference = mean(y) - mean(x), se = se,
+    ses_from_zero = abs(mean(y) - mean(x)) / se)
 }
 
 knitr::kable(signif(rbind(
-  d0 = compare_sizes(function(rows) rows$d0),
-  `shift at the cut-off` = compare_sizes(function(rows) shift(rows, cutoff))
+  `d0, 512px vs 64px` = gap(64, 512, function(rows) rows$d0),
+  `shift at the cut-off, 512px vs 64px` = gap(64, 512, function(rows) shift(rows, cutoff))
 ), 3))
 ```
 
-|                      |   64px |  128px | difference |     se | ses_from_zero | largest_rise_consistent |
-|:---------------------|-------:|-------:|-----------:|-------:|--------------:|------------------------:|
-| d0                   | 0.0449 | 0.0512 |     0.0063 | 0.0107 |          0.59 |                   0.607 |
-| shift at the cut-off | 0.0577 | 0.0729 |     0.0152 | 0.0143 |          1.06 |                   0.749 |
+|                                     | ratio | difference |     se | ses_from_zero |
+|:------------------------------------|------:|-----------:|-------:|--------------:|
+| d0, 512px vs 64px                   |  1.18 |    0.00819 | 0.0162 |         0.506 |
+| shift at the cut-off, 512px vs 64px |  1.41 |    0.02350 | 0.0273 |         0.861 |
 
-Quadrupling the pixels moves neither quantity detectably. That is a weak
-constraint rather than a demonstration of independence: with 20 and 12
-pairs, the comparison is consistent with the shift at the cut-off being
-up to 75% larger at the higher resolution, and the default 512px is a
-further factor of four away and not measured here at all.
+At the default resolution the shift at the cut-off is 1.41 times its
+value at 64px — but on 10 pairs that is 0.9 standard errors, so it is
+neither established nor dismissed. The pair-to-pair spread at 512px is
+wide enough that separating a ratio this size at three standard errors
+would take some forty pairs, which is hours of reference distributions.
 
-What makes the extrapolation reasonable rather than established is that
-the quantity is dimensionless: adding pixels raises the reference median
-and its spread together, and InfoVal reports their ratio. Treat the
-trial-count rows as the finding and 512px as an inference from them.
+Read the trial-count rows above as measured at 64px, then, and this
+512px row as the one that applies to a study at the package’s own
+resolution: around 0.08 in z at 300 trials, against 0.06 at 64px.
+
+The configuration a real study actually runs — 512 pixels *and* several
+hundred trials — is measured in neither series. Combining them requires
+the two effects to be separable, which is testable: the trial-count
+ratio should be the same at either resolution.
+
+``` r
+trial_ratio <- function(size) {
+  at <- function(n) abs(shift(subset(results, n_trials == n & img_size == size), cutoff))
+  x <- at(300); y <- at(770)
+  c(pairs_300 = length(x), pairs_770 = length(y),
+    ratio_770_over_300 = mean(y) / mean(x),
+    se = (mean(y) / mean(x)) * sqrt(var(x) / (length(x) * mean(x)^2) +
+                                    var(y) / (length(y) * mean(y)^2)))
+}
+
+knitr::kable(signif(rbind(`64px` = trial_ratio(64), `128px` = trial_ratio(128),
+                          `sqrt(300/770)` = c(NA, NA, sqrt(300 / 770), NA)), 3))
+```
+
+|               | pairs_300 | pairs_770 | ratio_770_over_300 |    se |
+|:--------------|----------:|----------:|-------------------:|------:|
+| 64px          |        20 |        30 |              0.921 | 0.158 |
+| 128px         |        12 |         8 |              0.758 | 0.226 |
+| sqrt(300/770) |        NA |        NA |              0.624 |    NA |
+
+The trial ratios come out above the square-root law at both resolutions,
+and the reason is visible in the `monte_carlo` column of the earlier
+table, which does not fall with trials either. Only the median term is
+an average over trials; the scale term is dominated by the error in
+estimating a MAD from `iter` draws, which trials barely touch. So the
+two parts of the shift behave differently, and combining the series has
+to respect that.
+
+``` r
+components <- function(rows) c(median_term = mean(abs(rows$d0)), scale_term = mean(abs(rows$rho)))
+knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), components)), 3))
+```
+
+|     | median_term | scale_term |
+|:----|------------:|-----------:|
+| 100 |      0.0788 |     0.0240 |
+| 300 |      0.0449 |     0.0171 |
+| 770 |      0.0299 |     0.0149 |
+
+``` r
+
+at_512 <- subset(results, img_size == 512)
+trial_law <- sqrt(300 / 770)
+estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
+c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_770_trials = estimate)
+ measured_512px_300_trials estimated_512px_770_trials 
+                0.08117167                 0.06123524 
+```
+
+The median term falls by the square-root law; the scale term declines
+far more slowly, and holding it flat is the conservative choice. On that
+basis a study at 512 pixels and 770 trials carries roughly 0.06 in z,
+against 0.08 measured at 512 pixels and 300 trials. That is the figure
+to carry away for a default-sized study — assembled from two measured
+components under a scaling law that holds for one of them and
+demonstrably not the other, rather than measured in place.
 
 This also puts the 24-trial reproduction in the issue in proportion.
 Extrapolating the fitted scaling to 24 trials gives a typical shift of
@@ -438,7 +540,7 @@ spreads <- list("uniform 0-4" = runif(20000, 0, 4),
                 "uniform 0-10" = runif(20000, 0, 10),
                 "uniform 1.5-2.5" = runif(20000, 1.5, 2.5),
                 "uniform 1.94-1.98" = runif(20000, 1.94, 1.98))
-flipped <- vapply(spreads, function(z) flip_rate(at_default, z), numeric(1))
+flipped <- vapply(spreads, function(z) flip_rate(at_770, z), numeric(1))
 knitr::kable(data.frame(true_infoval_spread = names(spreads), flipped = round(flipped, 4)),
              row.names = FALSE)
 ```
@@ -502,8 +604,23 @@ draws base 2’s responses from its own position in the stream adds
 roughly the `monte_carlo` column on top, which changes none of the
 conclusions above.
 
+Resolution is measured at 300 trials, trial count at 64 and 128 pixels,
+and the corner a real study occupies — 512 pixels with several hundred
+trials — in neither. The estimate for it is a product of the two series.
+Its median term is scaled by a law measured to hold; its scale term is
+held flat, which the trial series shows to be conservative rather than
+exact. The resolution factor itself is not resolved at all.
+
+Everything reported under “the error is scatter” and “what it takes to
+reach a different conclusion” is measured at 770 trials and 64 pixels.
+The resolution effect would enlarge those shifts and the flip rates with
+them; more trials would shrink the median term but not the scale term,
+so the two do not simply cancel.
+
 The shift measured here is the correction a fix applies, so it is also
-the size to quote in a `NEWS.md` “Reproducibility impact” entry: about
-0.05 in z at the defaults, scaling as one over the square root of the
-trial count, scatter rather than a correction in a direction, and
-affecting no base image but the second and later.
+the size to quote in a `NEWS.md` “Reproducibility impact” entry: a tenth
+of a z or less, scatter rather than a correction in a direction, with a
+median term falling as one over the square root of the trial count and a
+scale term that does not, larger at higher resolution by an amount these
+samples do not pin down, and affecting no base image but the second and
+later.

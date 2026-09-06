@@ -412,7 +412,7 @@ knitr::kable(signif(rbind(`64px` = trial_ratio(64), `128px` = trial_ratio(128),
 The trial ratios come out above the square-root law at both resolutions, and the reason is visible in
 the `monte_carlo` column of the earlier table, which does not fall with trials either. Only the
 median term is an average over trials; the scale term is dominated by the error in estimating a MAD
-from `iter` draws, which trials do not touch. So the two parts of the shift behave differently, and
+from `iter` draws, which trials barely touch. So the two parts of the shift behave differently, and
 combining the series has to respect that.
 
 ```{r default-corner}
@@ -425,9 +425,10 @@ estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
 c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_770_trials = estimate)
 ```
 
-The median term falls by the square-root law while the scale term stays flat, so scaling only the
-first gives roughly `r sprintf("%.2f", estimate)` in z for a study at 512 pixels and 770 trials,
-against `r sprintf("%.2f", mean(abs(shift(at_512, cutoff))))` measured at 512 pixels and 300 trials.
+The median term falls by the square-root law; the scale term declines far more slowly, and holding it
+flat is the conservative choice. On that basis a study at 512 pixels and 770 trials carries roughly
+`r sprintf("%.2f", estimate)` in z, against
+`r sprintf("%.2f", mean(abs(shift(at_512, cutoff))))` measured at 512 pixels and 300 trials.
 That is the figure to carry away for a default-sized study — assembled from two measured components
 under a scaling law that holds for one of them and demonstrably not the other, rather than measured
 in place.
@@ -506,8 +507,9 @@ stream adds roughly the `monte_carlo` column on top, which changes none of the c
 
 Resolution is measured at 300 trials, trial count at 64 and 128 pixels, and the corner a real study
 occupies — 512 pixels with several hundred trials — in neither. The estimate for it is a product of
-the two series. Its median term is scaled by a law measured to hold; its scale term is held flat on
-the evidence that trials do not move it. The resolution factor itself is not resolved at all.
+the two series. Its median term is scaled by a law measured to hold; its scale term is held flat,
+which the trial series shows to be conservative rather than exact. The resolution factor itself is
+not resolved at all.
 
 Everything reported under "the error is scatter" and "what it takes to reach a different conclusion"
 is measured at 770 trials and 64 pixels. The resolution effect would enlarge those shifts and the
