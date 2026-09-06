@@ -493,21 +493,19 @@ knitr::kable(signif(rbind(`between-base median` = trend("between_d0"),
                           `between-base scale` = trend("between_rho")), 3))
 ```
 
-```{r decomposition-shares}
-share <- function(n) {
-  rows <- decomposed[decomposed$n_trials == n, ]
-  c(median = mean(abs(rows$between_d0)) / mean(abs(rows$d0)),
-    scale = mean(abs(rows$between_rho)) / mean(abs(rows$rho)))
-}
-knitr::kable(signif(rbind(`300 trials` = share(300), `770 trials` = share(770)), 2))
-```
+What this settles is the question of existence, not of proportion. The between-base scale component
+is `r sprintf("%.4f", mean(abs(decomposed$between_rho[decomposed$n_trials == 770])))` at 770 trials
+with a standard error of
+`r sprintf("%.4f", sd(abs(decomposed$between_rho[decomposed$n_trials == 770])) / sqrt(sum(decomposed$n_trials == 770)))`,
+so the two bases really do differ in spread and the scale term is not purely the error of estimating
+a MAD. Reading `rho`'s resemblance to its Monte Carlo control as evidence that it mostly was, which
+this document did earlier, went the wrong way.
 
-So the scale term is not mostly the error of estimating a MAD: about
-`r sprintf("%.0f%%", 100 * share(770)[["scale"]])` of it at 770 trials is a real difference between
-the two bases' spreads, and the median term is
-`r sprintf("%.0f%%", 100 * share(770)[["median"]])` real on the same reckoning. The suggestion drawn
-earlier from `rho` resembling its Monte Carlo control was wrong in that direction, and this is what
-settles it.
+How much of the term is real is a further question this cannot answer. The 10,000-draw quantity is
+the larger of the two, which is what estimation error on top of a real difference would produce, but
+dividing one mean absolute value by the other does not give the share: taking absolute values
+inflates whichever quantity carries more noise, and signed errors can cancel a real difference as
+easily as add to it. That needs a variance model or repeated response seeds, and neither is here.
 
 Both genuine components fall as trials rise, and they fall differently. The median one drops by
 `r sprintf("%.1f", trend("between_d0")[["ses_from_zero"]])` standard errors, close to what the
@@ -517,8 +515,9 @@ against `r sprintf("%.4f", trend("between_d0")[["at_770"]])` observed. The scale
 from no change at all, and by proportionally less than the law would give.
 
 Holding the scale term fixed while scaling the median one is therefore the right shape for the
-combination, and it errs towards a larger estimate: the part of the scale term that is real may
-shrink with trials, and this treats none of it as shrinking.
+combination. Which way it errs is not determined: the real part of the scale term may shrink with
+trials and this treats none of it as shrinking, but the two terms are signed, so carrying a larger
+scale term can cancel against the median one as easily as add to it.
 
 ```{r default-corner}
 components <- function(rows) c(median_term = mean(abs(rows$d0)), scale_term = mean(abs(rows$rho)))
