@@ -163,9 +163,11 @@ measure_pair <- function(n_trials, seed, size, validate) {
   monte_carlo <- reference_norms(noise_a, iter, response_seed + 1L)
   # A reference ten times the size stands in for the population one, so the error
   # a single published InfoVal carries can be measured rather than inferred from
-  # the rerun difference, which carries the sampling error of two references.
-  # Only at 64 pixels, where it is cheap and where the ratio below is quoted.
-  precise <- if (size == 64) reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
+  # the rerun difference, which carries the sampling error of two references. Only
+  # for the configuration the ratio is quoted at: elsewhere it would cost billions
+  # of operations per pair and reach no table.
+  precise <- if (size == 64 && n_trials == 770)
+    reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
 
   agreement <- NA_real_
   if (validate) {
@@ -454,10 +456,13 @@ at_512 <- subset(results, img_size == 512)
 trial_law <- sqrt(300 / 770)
 estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
 # Signed terms can cancel, so the estimate is not one-sided. Adding the two
-# magnitudes instead cannot, which bounds it from above.
-bound <- mean(abs(at_512$d0) * trial_law + cutoff * abs(at_512$rho))
+# magnitudes instead cannot: per pair it bounds that pair, and averaged it bounds
+# the mean rather than any individual study.
+per_pair_bound <- abs(at_512$d0) * trial_law + cutoff * abs(at_512$rho)
+bound <- mean(per_pair_bound)
 c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))),
-  estimated_512px_770_trials = estimate, upper_bound = bound)
+  estimated_512px_770_trials = estimate, mean_bound = bound,
+  largest_pair_bound = max(per_pair_bound))
 ```
 
 The median term falls by the square-root law and the scale term declines far more slowly, so the
@@ -468,7 +473,8 @@ result as raise it. On that model a study at 512 pixels and 770 trials carries r
 `r sprintf("%.2f", mean(abs(shift(at_512, cutoff))))` measured at 512 pixels and 300 trials — a
 figure assembled from two measured components rather than measured in place. Adding the two
 magnitudes rather than the signed terms removes the cancellation and gives
-`r sprintf("%.2f", bound)`, which the same study cannot exceed under this scaling.
+`r sprintf("%.2f", bound)`, which bounds the mean of these modelled shifts rather than any one of
+them; the largest single pair among them reaches `r sprintf("%.2f", max(per_pair_bound))`.
 
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the square-root
 law to 24 trials gives a median term of about `r sprintf("%.2f", reference * sqrt(100 / 24))`, and
