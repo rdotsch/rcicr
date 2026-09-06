@@ -161,6 +161,11 @@ measure_pair <- function(n_trials, seed, size, validate) {
   # Same base, an independent draw of the simulated responses: the Monte Carlo
   # wobble InfoVal already carries at this iter, as a yardstick for the shift.
   monte_carlo <- reference_norms(noise_a, iter, response_seed + 1L)
+  # A reference ten times the size stands in for the population one, so the error
+  # a single published InfoVal carries can be measured rather than inferred from
+  # the rerun difference, which carries the sampling error of two references.
+  # Only at 64 pixels, where it is cheap and where the ratio below is quoted.
+  precise <- if (size == 64) reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
 
   agreement <- NA_real_
   if (validate) {
@@ -177,7 +182,10 @@ measure_pair <- function(n_trials, seed, size, validate) {
     d0 = (median(own) - median(scored_against)) / mad(scored_against),
     rho = mad(own) / mad(scored_against) - 1,
     mc_shift = (median(monte_carlo) - median(scored_against)) / mad(scored_against),
-    mc_rho = mad(monte_carlo) / mad(scored_against) - 1
+    mc_rho = mad(monte_carlo) / mad(scored_against) - 1,
+    single_shift = if (is.null(precise)) NA_real_ else
+      (median(scored_against) - median(precise)) / mad(precise),
+    single_rho = if (is.null(precise)) NA_real_ else mad(scored_against) / mad(precise) - 1
   )
 }
 
@@ -302,15 +310,29 @@ by_config <- split(results, list(results$n_trials, results$img_size), drop = TRU
 knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
 ```
 
-`monte_carlo` is the same quantity, computed the same way down to the scale term, for a reference
-built from the same base image with a different draw of the simulated responses. It is
-rerun-to-rerun variability: the difference between two references of `iter` =
-`r formatC(iter, format = "d", big.mark = ",")` draws each, so it carries the sampling error of both
-and runs about a factor of the square root of two above what a single published InfoVal carries
-against a reference of unlimited size. At 770 trials and 64 pixels the bug is worth
+`monte_carlo` is the same quantity for a reference built from the same base image with a different
+draw of the simulated responses. It is rerun-to-rerun variability, the difference between two
+references of `iter` = `r formatC(iter, format = "d", big.mark = ",")` draws each, so it carries the
+sampling error of both. What a published InfoVal carries is the error of *one* reference against the
+population, which is smaller. That is measurable rather than assumable: scoring each 10,000-draw
+reference against one of ten times the size, which stands in for the population.
+
+```{r noise-yardsticks}
+single_error <- function(rows, z) rows$single_shift + z * rows$single_rho
+
+knitr::kable(signif(rbind(
+  `the bug` = c(mean = mean(abs(shift(at_770, cutoff)))),
+  `rerun to rerun` = c(mean = mean(abs(monte_carlo(at_770, cutoff)))),
+  `one reference against the population` = c(mean = mean(abs(single_error(at_770, cutoff))))
+), 3))
+```
+
+So at 770 trials and 64 pixels the bug moves an InfoVal about
+`r sprintf("%.1f", mean(abs(shift(at_770, cutoff))) / mean(abs(single_error(at_770, cutoff))))`
+times as far as the sampling error already in one, and about
 `r sprintf("%.1f", mean(abs(shift(at_770, cutoff))) / mean(abs(monte_carlo(at_770, cutoff))))`
-times that variability — a like-for-like comparison of one difference against another, and a floor
-for how the bug compares with the noise in any one InfoVal.
+times a rerun of the same reference. The first is the comparison a reader interpreting a single
+number wants; the second compares one difference with another.
 
 The two terms contribute about equally at the cut-off: the median term averages
 `r sprintf("%.4f", mean(abs(at_770$d0)))` and the scale term
@@ -431,7 +453,11 @@ knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), comp
 at_512 <- subset(results, img_size == 512)
 trial_law <- sqrt(300 / 770)
 estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
-c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_770_trials = estimate)
+# Signed terms can cancel, so the estimate is not one-sided. Adding the two
+# magnitudes instead cannot, which bounds it from above.
+bound <- mean(abs(at_512$d0) * trial_law + cutoff * abs(at_512$rho))
+c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))),
+  estimated_512px_770_trials = estimate, upper_bound = bound)
 ```
 
 The median term falls by the square-root law and the scale term declines far more slowly, so the
@@ -440,7 +466,9 @@ signed and can cancel, so holding the scale term at its 300-trial value can as e
 result as raise it. On that model a study at 512 pixels and 770 trials carries roughly
 `r sprintf("%.2f", estimate)` in z, against
 `r sprintf("%.2f", mean(abs(shift(at_512, cutoff))))` measured at 512 pixels and 300 trials — a
-figure assembled from two measured components rather than measured in place.
+figure assembled from two measured components rather than measured in place. Adding the two
+magnitudes rather than the signed terms removes the cancellation and gives
+`r sprintf("%.2f", bound)`, which the same study cannot exceed under this scaling.
 
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the square-root
 law to 24 trials gives a median term of about `r sprintf("%.2f", reference * sqrt(100 / 24))`, and
