@@ -196,8 +196,10 @@ measure_pair <- function(n_trials, seed, size, validate) {
 
 # Validated on the first pair of each configuration, except at 512px, where
 # generateReferenceDistribution2IFC() rebuilds a matrix from its stimulus frame on
-# every one of the 10,000 iterations (#306) and the check would take hours. The
-# reimplementation does not vary with resolution.
+# every one of the 10,000 iterations (#306). That frame carries 64 times the pixels
+# it does at 64px, where the check is already the slowest thing in this document,
+# so the cost there is prohibitive. The reimplementation does not vary with
+# resolution.
 sweep <- function(n_trials, seeds, size = img_size) {
   do.call(rbind, Map(function(seed, validate) measure_pair(n_trials, seed, size, validate),
                      seeds, seq_along(seeds) == 1 & size < 512))
@@ -550,9 +552,12 @@ reporting it from their own work — which is an absence of reports, not evidenc
 Condition 3 above is therefore unquantified rather than measured to be rare, and this document bounds
 the damage per affected classification image, not the number of affected studies.
 
-The two references compared here share their simulated response draws, which isolates the noise
-realization from Monte Carlo error. A fix that draws base 2's responses from its own position in the
-stream adds roughly the `monte_carlo` column on top, which changes none of the conclusions above.
+The two references compared here share their simulated response draws, which reduces the Monte Carlo
+error in their difference without removing it: 10,000 draws leave both medians and both MADs with
+sampling error of their own, so `d0` and `rho` mix the noise realization with what remains of it.
+That residual is not measured here. It is of the order of the single-reference error above, which
+is smaller than the shift, and a fix drawing base 2's responses independently would add error of
+that order again rather than leaving these numbers as they stand.
 
 Resolution is measured at 300 trials, trial count at 64 and 128 pixels, and the corner a real study
 occupies — 512 pixels with several hundred trials — in neither. The estimate for it is a product of
