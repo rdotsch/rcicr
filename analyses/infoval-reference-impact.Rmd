@@ -313,7 +313,7 @@ The margin over the Monte Carlo wobble narrows as the InfoVal grows, because bot
 the same scale term. At a large InfoVal the bug is barely distinguishable in size from re-running the
 reference simulation with different random responses.
 
-## It is set by trials, not by pixels
+## Trials set the size; pixels are not seen to
 
 ```{r scaling}
 by_trials <- do.call(rbind, lapply(split(at_64px, at_64px$n_trials), summary_row))
@@ -329,19 +329,32 @@ The shift falls as one over the square root of the number of trials, which is wh
 median built from an average over trials should do.
 
 ```{r image-size}
-sizes <- lapply(c(64, 128), function(s) abs(subset(results, n_trials == 300 & img_size == s)$d0))
-gap <- diff(vapply(sizes, mean, numeric(1)))
-gap_se <- sqrt(sum(vapply(sizes, function(x) var(x) / length(x), numeric(1))))
+compare_sizes <- function(f) {
+  sides <- lapply(c(64, 128), function(s) abs(f(subset(results, n_trials == 300 & img_size == s))))
+  gap <- diff(vapply(sides, mean, numeric(1)))
+  se <- sqrt(sum(vapply(sides, function(x) var(x) / length(x), numeric(1))))
+  c(`64px` = mean(sides[[1]]), `128px` = mean(sides[[2]]), difference = gap, se = se,
+    ses_from_zero = abs(gap) / se,
+    largest_rise_consistent = (gap + 1.96 * se) / mean(sides[[1]]))
+}
 
-c(`64px` = mean(sizes[[1]]), `128px` = mean(sizes[[2]]),
-  difference = gap, se = gap_se, ses_from_zero = abs(gap) / gap_se)
+knitr::kable(signif(rbind(
+  d0 = compare_sizes(function(rows) rows$d0),
+  `shift at the cut-off` = compare_sizes(function(rows) shift(rows, cutoff))
+), 3))
 ```
 
-Image size does not enter, then: at 300 trials the two differ by
-`r sprintf("%.1f", abs(gap) / gap_se)` standard errors, so the 770-trial row above stands for a study
-run at the default 512px, which is far too slow to measure directly. Sixteen times the pixels leaves
-the shift where it was because both the reference median and its spread scale together, and the ratio
-of the two is what InfoVal reports.
+Quadrupling the pixels moves neither quantity detectably. That is a weak constraint rather than a
+demonstration of independence: with `r nrow(subset(results, n_trials == 300 & img_size == 64))` and
+`r nrow(subset(results, n_trials == 300 & img_size == 128))` pairs, the comparison is consistent with
+the shift at the cut-off being up to
+`r sprintf("%.0f%%", 100 * compare_sizes(function(rows) shift(rows, cutoff))[["largest_rise_consistent"]])`
+larger at the higher resolution, and the default 512px is a further factor of four away and not
+measured here at all.
+
+What makes the extrapolation reasonable rather than established is that the quantity is
+dimensionless: adding pixels raises the reference median and its spread together, and InfoVal reports
+their ratio. Treat the trial-count rows as the finding and 512px as an inference from them.
 
 This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the fitted
 scaling to 24 trials gives a typical shift of
@@ -379,8 +392,13 @@ broadens — `r sprintf("%.1f%%", 100 * flipped[["uniform 0-4"]])` over a four-u
 `r sprintf("%.1f%%", 100 * flipped[["uniform 0-10"]])` over ten — and rises without a useful bound as
 it narrows. The last row makes that concrete: concentrate every InfoVal within a few hundredths of
 1.96 and `r sprintf("%.0f%%", 100 * flipped[["uniform 1.94-1.98"]])` of the calls change, approaching
-the probability that the shift points across the threshold at all. The reassurance is that real
-InfoVals are not distributed that way, not that the bug's effect is bounded.
+the probability that the shift points across the threshold at all.
+
+Which row a given study resembles is the whole question, and it is not one this package can answer:
+nothing records what InfoVals look like in practice. A study whose classification images mostly carry
+strong signal sits near the top rows; one that reports values hovering at the threshold sits near the
+bottom one, and for it the rate is high. The effect of the bug is bounded only by where a study's
+InfoVals actually fall.
 
 And a classification image is only exposed if all of these hold:
 
