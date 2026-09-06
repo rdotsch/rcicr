@@ -509,18 +509,21 @@ c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_
                 0.08117167                 0.06123524 
 ```
 
-The median term falls by the square-root law; the scale term declines
-far more slowly, and holding it flat is the conservative choice. On that
-basis a study at 512 pixels and 770 trials carries roughly 0.06 in z,
-against 0.08 measured at 512 pixels and 300 trials. That is the figure
-to carry away for a default-sized study — assembled from two measured
-components under a scaling law that holds for one of them and
-demonstrably not the other, rather than measured in place.
+The median term falls by the square-root law and the scale term declines
+far more slowly, so the estimate scales the first and holds the second.
+That is a model rather than a bound: both terms are signed and can
+cancel, so holding the scale term at its 300-trial value can as easily
+lower the result as raise it. On that model a study at 512 pixels and
+770 trials carries roughly 0.06 in z, against 0.08 measured at 512
+pixels and 300 trials — a figure assembled from two measured components
+rather than measured in place.
 
 This also puts the 24-trial reproduction in the issue in proportion.
-Extrapolating the fitted scaling to 24 trials gives a typical shift of
-0.16, so the −0.067 observed there is one unremarkable draw, and a real
-study with hundreds of trials sits several times below it.
+Extrapolating the square-root law to 24 trials gives a median term of
+about 0.16, and the full shift there is larger still, since the scale
+term grows as trials fall. The −0.067 observed in the issue is one draw
+from that distribution rather than its size, and a real study with
+hundreds of trials sits several times below it.
 
 ## What it takes to reach a different conclusion
 
