@@ -14,15 +14,18 @@ because a line budget is defeated by longer lines and this file has been the wor
 ## Check, don't assume
 
 **Verify a claim against the thing itself before writing it down or acting on it.** Several
-rules below are scar tissue from not doing that — the branch-protection API, answering CRAN
-from a summary, quoting this machine's clock — and each keeps its detail where someone doing
-that task will hit it. The general form:
+rules below are scar tissue from not doing that. The general form:
 
 - **Run the command, read the file, query the API.** No "should be" or "as expected"; if a
   check was not run, say so rather than predicting its result.
 - **An empty result may mean you asked the wrong question** — wrong endpoint, branch, path or
   scope. Rule that out before reporting nothing found.
 - **Put the evidence next to the claim**: the command, the file and line, the actual output.
+- **Numbers in prose come from the run that made the tables**, comparisons included: hand-typed
+  figures drift.
+- **Claim only what the estimate carries**: a non-significant difference is not an absence, a mean
+  is not a bound, a magnitude ratio is not a decomposition. *Conservative* and *worst case* need
+  evidence beside them. Having fixed such a claim, grep for it elsewhere.
 
 ## Common commands
 
@@ -67,9 +70,8 @@ duplicated rule drifts, and the copy a reader hits first is then wrong.
 | `DECISIONS.md` | why the **package** behaves as it does | 5200 |
 | `NEWS.md` | what changed for users | none — trimmed at each release |
 
-Budgets are in **words, not lines**: a line budget is defeated by writing longer lines, which
-is exactly how this file grew to hold more words than `CONTRIBUTING.md` in two-thirds the lines.
-`wc -w` is the check.
+Budgets are in **words, not lines**: a line budget is defeated by writing longer lines. `wc -w`
+is the check.
 
 `DECISIONS.md` is the one most often misfiled into. Its subject is what `generateCI()` returns
 and why a number cannot change — **not** how CI is wired or how a release is cut. The test:
