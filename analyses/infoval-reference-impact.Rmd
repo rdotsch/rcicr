@@ -185,9 +185,12 @@ measure_pair <- function(n_trials, seed, size, validate) {
     rho = mad(own) / mad(scored_against) - 1,
     mc_shift = (median(monte_carlo) - median(scored_against)) / mad(scored_against),
     mc_rho = mad(monte_carlo) / mad(scored_against) - 1,
+    # Oriented like d0 and rho above: the reference that defines the InfoVal on
+    # top, the one actually used underneath, so the two are comparable at a z
+    # meaning the same thing.
     single_shift = if (is.null(precise)) NA_real_ else
-      (median(scored_against) - median(precise)) / mad(precise),
-    single_rho = if (is.null(precise)) NA_real_ else mad(scored_against) / mad(precise) - 1
+      (median(precise) - median(scored_against)) / mad(scored_against),
+    single_rho = if (is.null(precise)) NA_real_ else mad(precise) / mad(scored_against) - 1
   )
 }
 
