@@ -504,8 +504,8 @@ at_512 <- subset(results, img_size == 512)
 trial_law <- sqrt(300 / 770)
 estimate <- mean(abs(at_512$d0 * trial_law + cutoff * at_512$rho))
 c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))), estimated_512px_770_trials = estimate)
- measured_512px_300_trials estimated_512px_770_trials 
-                0.08117167                 0.06123524 
+ measured_512px_300_trials estimated_512px_770_trials
+                0.08117167                 0.06123524
 ```
 
 The median term falls by the square-root law; the scale term declines
