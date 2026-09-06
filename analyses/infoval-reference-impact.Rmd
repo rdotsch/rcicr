@@ -1,0 +1,332 @@
+---
+title: "What the wrong-base InfoVal reference does to a conclusion"
+output:
+  github_document:
+    toc: true
+    html_preview: false
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE, comment = "")
+options(width = 100)
+```
+
+When stimuli are generated for several base images with `use_same_parameters = FALSE`, each base
+gets its own parameter matrix, but `generateReferenceDistribution2IFC()` reconstructs the stimuli
+without forwarding that setting. The null it builds is therefore always the first base image's
+([issue #299](https://github.com/rdotsch/rcicr/issues/299)), and every base after the first is
+scored against another base's noise.
+
+This document measures what that costs. It exists because the two obvious readings are both wrong:
+"the reference is from the wrong base, so the InfoVal is invalid" overstates it, and "it is only
+noise, so it does not matter" understates it. The answer is that the wrong reference is a *valid*
+null built on a different realization of the same noise process, so the error is unbiased jitter
+whose size is set by the number of trials — and that a significance call flips only in a narrow
+window around the cut-off.
+
+Knitting this runs the whole measurement, which takes tens of minutes: `r 30 + 20 + 20 + 12` base
+image pairs, each needing two stimulus sets and three reference distributions of 10,000 iterations.
+
+```{r constants}
+library(rcicr)
+
+img_size <- 64
+nscales <- 5
+iter <- 10000
+response_seed <- 97
+cutoff <- 1.96
+```
+
+```{r fixtures}
+scratch <- tempfile("infoval-impact")
+dir.create(scratch)
+
+base_image <- function(name, seed, size) {
+  f <- file.path(scratch, sprintf("%s-%d.png", name, size))
+  set.seed(seed)
+  png::writePNG(matrix(runif(size^2), size, size), f)
+  f
+}
+
+generate <- function(bases, n_trials, seed, size, same_parameters) {
+  path <- tempfile("stim", tmpdir = scratch)
+  dir.create(path)
+  generateStimuli2IFC(bases, n_trials = n_trials, img_size = size, stimulus_path = path,
+                      seed = seed, use_same_parameters = same_parameters, nscales = nscales,
+                      ncores = 1, save_as_png = FALSE)
+  list.files(path, pattern = "\\.Rdata$", full.names = TRUE)[1]
+}
+```
+
+The base images are synthetic noise rather than faces. Nothing here depends on their content: the
+classification image and the reference norms are built from the noise alone, and the base image is
+added only for display.
+
+## The reference distribution ignores which base you score
+
+Two base images, independent parameters, against the same stimulus set containing only the first of
+them. If the reference carried any information about which base is being scored, these two runs
+would differ.
+
+```{r mechanism}
+a <- base_image("a", 11, img_size)
+b <- base_image("b", 12, img_size)
+
+two_bases <- generate(list(a = a, b = b), n_trials = 24, seed = 31, size = img_size,
+                      same_parameters = FALSE)
+first_only <- generate(list(a = a), n_trials = 24, seed = 31, size = img_size,
+                       same_parameters = TRUE)
+
+# iter far below the recommended 10,000 here: this compares two runs against each
+# other, not against a cut-off, and the warning is the function's own.
+demo_reference <- function(rdata) suppressWarnings(generateReferenceDistribution2IFC(
+  rdata, iter = 200, ncores = 1, response_seed = response_seed, save_rdata = FALSE))
+
+reference_two <- demo_reference(two_bases)
+reference_one <- demo_reference(first_only)
+
+saved <- new.env()
+load(two_bases, envir = saved)
+
+max(abs(saved$stimuli_params[["a"]] - saved$stimuli_params[["b"]]))
+max(abs(reference_two - reference_one))
+```
+
+The two bases hold genuinely different parameters, and the reference distribution is bit-identical
+to the one for a file that does not contain the second base at all.
+
+## Base 2's own reference
+
+The correction requires the null the second base should have had: its noise built from the
+parameters actually saved for it. `generateNoiseImage()` does the reconstruction, and the loop below
+is the arithmetic of `generateReferenceDistribution2IFC()`, batched so that the response draws are
+consumed in the same order.
+
+```{r glue}
+noise_matrix <- function(params, p, size) {
+  vapply(seq_len(nrow(params)),
+         function(trial) as.vector(generateNoiseImage(params[trial, ], p)),
+         numeric(size^2))
+}
+
+reference_norms <- function(noise, iter, seed, block = 500L) {
+  set.seed(seed)
+  n_trials <- ncol(noise)
+  out <- numeric(iter)
+  done <- 0L
+  while (done < iter) {
+    k <- min(block, iter - done)
+    responses <- matrix(((runif(n_trials * k) > 0.5) * 2) - 1, nrow = n_trials, ncol = k)
+    out[(done + 1):(done + k)] <- sqrt(colSums(((noise %*% responses) / n_trials)^2))
+    done <- done + k
+  }
+  out
+}
+```
+
+That reimplementation is only trustworthy if it reproduces the package's own output, so every
+configuration below checks it against `generateReferenceDistribution2IFC()` on the first base before
+using it on the second. The same check is what establishes that the *first* base is scored
+correctly: the package's reference matches a null rebuilt from base 1's saved parameters.
+
+```{r measure}
+measure_pair <- function(n_trials, seed, size, validate) {
+  rdata <- generate(list(a = base_image("a", 11, size), b = base_image("b", 12, size)),
+                    n_trials = n_trials, seed = seed, size = size, same_parameters = FALSE)
+  saved <- new.env()
+  load(rdata, envir = saved)
+
+  noise_a <- noise_matrix(saved$stimuli_params[["a"]], saved$p, size)
+  noise_b <- noise_matrix(saved$stimuli_params[["b"]], saved$p, size)
+
+  scored_against <- reference_norms(noise_a, iter, response_seed)   # what the bug uses
+  own <- reference_norms(noise_b, iter, response_seed)              # what base 2 should have
+  # Same base, an independent draw of the simulated responses: the Monte Carlo
+  # wobble InfoVal already carries at this iter, as a yardstick for the shift.
+  monte_carlo <- reference_norms(noise_a, iter, response_seed + 1L)
+
+  agreement <- NA_real_
+  if (validate) {
+    package_reference <- generateReferenceDistribution2IFC(
+      rdata, iter = iter, ncores = 1, response_seed = response_seed, save_rdata = FALSE)
+    agreement <- max(abs(scored_against - package_reference))
+    stopifnot(agreement < 1e-12)
+  }
+
+  data.frame(
+    n_trials = n_trials, img_size = size, seed = seed, agreement = agreement,
+    d0 = (median(own) - median(scored_against)) / mad(scored_against),
+    rho = mad(own) / mad(scored_against) - 1,
+    mc_shift = (median(monte_carlo) - median(scored_against)) / mad(scored_against),
+    mc_rho = mad(monte_carlo) / mad(scored_against) - 1
+  )
+}
+
+sweep <- function(n_trials, seeds, size = img_size) {
+  do.call(rbind, Map(function(seed, validate) measure_pair(n_trials, seed, size, validate),
+                     seeds, seq_along(seeds) == 1))
+}
+```
+
+`d0` is the shift in the reference median, expressed in the units InfoVal is reported in, and `rho`
+is the error in its scale. An InfoVal that should have been `z` is reported as `z + d0 + z * rho`,
+so `d0` is what a threshold call sees and `rho` matters only for large values.
+
+```{r sweep, results = "hide"}
+results <- rbind(
+  sweep(770, 1:30),
+  sweep(300, 101:120),
+  sweep(100, 201:220),
+  sweep(300, 301:312, size = 128)
+)
+```
+
+```{r agreement}
+max(results$agreement, na.rm = TRUE)
+```
+
+## The error is unbiased
+
+```{r unbiased}
+at_default <- subset(results, n_trials == 770)
+c(mean = mean(at_default$d0), sd = sd(at_default$d0),
+  se = sd(at_default$d0) / sqrt(nrow(at_default)))
+```
+
+Base 2's parameters are an independent draw from the same generator as base 1's, so the null it
+receives is a legitimate one — just built on another realization of the noise. Across
+`r nrow(at_default)` base image pairs at the package defaults the mean shift is
+`r sprintf("%+.3f", mean(at_default$d0))` with a standard error of
+`r sprintf("%.3f", sd(at_default$d0) / sqrt(nrow(at_default)))` —
+`r sprintf("%.1f", abs(mean(at_default$d0)) / (sd(at_default$d0) / sqrt(nrow(at_default))))` standard
+errors from zero, against a scatter
+`r sprintf("%.0f", sd(at_default$d0) / abs(mean(at_default$d0)))` times the size of that mean. The bug
+cannot have moved a set of published InfoVals one way; it scattered them.
+
+## How large the scatter is
+
+```{r shift-table}
+shift <- function(rows, z) rows$d0 + z * rows$rho
+
+summary_row <- function(rows) {
+  dz <- shift(rows, cutoff)
+  data.frame(
+    n_trials = rows$n_trials[1], img_size = rows$img_size[1], pairs = nrow(rows),
+    mean_abs_d0 = round(mean(abs(rows$d0)), 4),
+    mean_abs_dz = round(mean(abs(dz)), 4),
+    q90_abs_dz = round(unname(quantile(abs(dz), 0.9)), 4),
+    max_abs_dz = round(max(abs(dz)), 4),
+    monte_carlo = round(mean(abs(rows$mc_shift)), 4)
+  )
+}
+
+by_config <- split(results, list(results$n_trials, results$img_size), drop = TRUE)
+knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
+```
+
+`monte_carlo` is the same quantity for a reference built from the same base with a different draw of
+the simulated responses: the wobble any InfoVal already carries at `iter` = `r iter`. At the default
+`r max(results$n_trials)` trials the bug is worth
+`r sprintf("%.1f", mean(abs(shift(at_default, cutoff))) / mean(abs(at_default$mc_shift)))` times that
+wobble — the same order of magnitude, not a different kind of error.
+
+The scale error `rho` barely exceeds its own Monte Carlo control
+(`r sprintf("%.4f", mean(abs(at_default$rho)))` against
+`r sprintf("%.4f", mean(abs(at_default$mc_rho)))`), so almost all of the damage is the shift in the
+median, and the `z * rho` term stays small until the InfoVal itself is large.
+
+```{r large-z}
+knitr::kable(data.frame(
+  z = c(2, 5, 10),
+  mean_abs_dz = round(vapply(c(2, 5, 10), function(z) mean(abs(shift(at_default, z))), numeric(1)), 4),
+  as_share_of_z = round(vapply(c(2, 5, 10),
+                               function(z) mean(abs(shift(at_default, z))) / z, numeric(1)), 4)
+))
+```
+
+## It is set by trials, not by pixels
+
+```{r scaling}
+at_64px <- subset(results, img_size == 64)
+by_trials <- do.call(rbind, lapply(split(at_64px, at_64px$n_trials), summary_row))
+reference <- by_trials[by_trials$n_trials == 100, "mean_abs_d0"]
+knitr::kable(data.frame(
+  n_trials = by_trials$n_trials,
+  observed = by_trials$mean_abs_d0,
+  predicted_from_100 = round(reference * sqrt(100 / by_trials$n_trials), 4)
+), row.names = FALSE)
+```
+
+The shift falls as one over the square root of the number of trials, which is what a reference
+median built from an average over trials should do. Image size does not enter: at 300 trials the
+shift is `r sprintf("%.4f", summary_row(subset(results, n_trials == 300 & img_size == 128))$mean_abs_d0)`
+at 128px against
+`r sprintf("%.4f", summary_row(subset(results, n_trials == 300 & img_size == 64))$mean_abs_d0)` at
+64px, equal within the sampling error of
+`r nrow(subset(results, n_trials == 300 & img_size == 128))` and
+`r nrow(subset(results, n_trials == 300 & img_size == 64))` pairs. So the 770-trial row above stands
+for a study run at the default 512px, which is far too slow to measure directly.
+
+This also puts the 24-trial reproduction in the issue in proportion. Extrapolating the fitted
+scaling to 24 trials gives a typical shift of
+`r sprintf("%.2f", reference * sqrt(100 / 24))`, so the −0.067 observed there is one unremarkable
+draw, and a real study with hundreds of trials sits several times below it.
+
+## What it takes to reach a different conclusion
+
+A significance call at `z = 1.96` changes only when the correct InfoVal lies within the shift of the
+cut-off *and* the shift points across it. Applying the measured shifts to a stand-in population of
+true InfoVals:
+
+```{r flip-rate}
+flip_rate <- function(dz, true_z) {
+  outcomes <- outer(true_z, dz, `+`)
+  mean((true_z > cutoff) != (outcomes > cutoff))
+}
+
+set.seed(20260906)
+spreads <- list("uniform 0-4" = runif(20000, 0, 4),
+                "uniform 0-10" = runif(20000, 0, 10),
+                "uniform 1.5-2.5" = runif(20000, 1.5, 2.5))
+flipped <- vapply(spreads, function(z) flip_rate(shift(at_default, cutoff), z), numeric(1))
+knitr::kable(data.frame(true_infoval_spread = names(spreads), flipped = round(flipped, 4)),
+             row.names = FALSE)
+```
+
+Those spreads are stand-ins, not measurements: what InfoVals look like across real studies is not
+something this package records. They bracket the answer rather than settle it —
+`r sprintf("%.1f%%", 100 * flipped[["uniform 0-4"]])` of exposed classification images under a broad
+spread, and `r sprintf("%.1f%%", 100 * flipped[["uniform 1.5-2.5"]])` even in the worst case where
+every InfoVal in the study is crowded against the cut-off.
+
+And a classification image is only exposed if all of these hold:
+
+1. InfoVal was computed at all — a feature from 0.4.0 onward, while CRAN carried 0.3.4.1 until the
+   2021 archival.
+2. The stimulus set has two or more base images.
+3. It was generated with `use_same_parameters = FALSE`, which is not the default and appears in no
+   vignette, example, test, or InfoVal configuration of the release gate.
+4. The classification image comes from a base image other than the first — `(k-1)/k` of the images
+   in such a study.
+
+## What is not affected
+
+`generateCI()` selects `stimuli_params[[baseimage]]`, so the classification images and z-maps
+themselves are built from the right noise. The bug moves one number, the InfoVal, and only for base
+images after the first.
+
+## Limits
+
+How often anyone sets `use_same_parameters = FALSE` is unknown. There is no telemetry, and no issue
+in the tracker has ever mentioned the setting, so condition 3 above is unquantified rather than
+measured to be rare — this document bounds the damage per affected classification image, not the
+number of affected studies.
+
+The two references compared here share their simulated response draws, which isolates the noise
+realization from Monte Carlo error. A fix that draws base 2's responses from its own position in the
+stream adds roughly the `monte_carlo` column on top, which changes none of the conclusions above.
+
+The shift measured here is the correction a fix applies, so it is also the size to quote in a
+`NEWS.md` "Reproducibility impact" entry: about
+`r sprintf("%.2f", mean(abs(shift(at_default, cutoff))))` in z at the defaults, scaling as one over
+the square root of the trial count, unbiased, and affecting no base image but the second and later.
