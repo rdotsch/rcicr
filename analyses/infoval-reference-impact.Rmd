@@ -418,10 +418,11 @@ images after the first.
 
 ## Limits
 
-How often anyone sets `use_same_parameters = FALSE` is unknown. There is no telemetry, and no issue
-in the tracker has ever mentioned the setting, so condition 3 above is unquantified rather than
-measured to be rare — this document bounds the damage per affected classification image, not the
-number of affected studies.
+How often anyone sets `use_same_parameters = FALSE` is unknown. There is no telemetry, and the only
+issue naming the setting is #299 itself, raised by an audit of the code rather than by anyone
+reporting it from their own work — which is an absence of reports, not evidence of an absence of use.
+Condition 3 above is therefore unquantified rather than measured to be rare, and this document bounds
+the damage per affected classification image, not the number of affected studies.
 
 The two references compared here share their simulated response draws, which isolates the noise
 realization from Monte Carlo error. A fix that draws base 2's responses from its own position in the
