@@ -20,9 +20,9 @@ scored against another base's noise.
 This document measures what that costs. It exists because the two obvious readings are both wrong:
 "the reference is from the wrong base, so the InfoVal is invalid" overstates it, and "it is only
 noise, so it does not matter" understates it. The answer is that the wrong reference is a *valid*
-null built on a different realization of the same noise process, so the error is unbiased jitter
-whose size is set by the number of trials — and that a significance call flips only in a narrow
-window around the cut-off.
+null built on a different realization of the same noise process, so the error is scatter — with a
+directional part some two orders of magnitude below it — whose size is set by the number of trials,
+and a significance call flips only in a narrow window around the cut-off.
 
 Knitting this runs the whole measurement, which takes tens of minutes: `r 30 + 20 + 20 + 12` base
 image pairs, each needing two stimulus sets and three reference distributions of 10,000 iterations.
@@ -202,9 +202,11 @@ centre <- function(x) {
   se <- sd(x) / sqrt(length(x))
   c(mean = mean(x), se = se, ses_from_zero = abs(mean(x)) / se)
 }
+
+at_64px <- subset(results, img_size == 64)
 ```
 
-## The error is unbiased
+## The error is scatter, with a directional part too small to matter
 
 ```{r unbiased}
 at_default <- subset(results, n_trials == 770)
@@ -223,13 +225,34 @@ receives is a legitimate one — just built on another realization of the noise.
 `r sprintf("%+.3f", mean(shift(at_default, cutoff)))`, which is
 `r sprintf("%.1f", centre(shift(at_default, cutoff))[["ses_from_zero"]])` standard errors from zero
 against a scatter `r sprintf("%.0f", sd(shift(at_default, cutoff)) / abs(mean(shift(at_default, cutoff))))`
-times the size of that mean. The bug cannot have moved a set of published InfoVals one way; it
-scattered them.
+times the size of that mean.
 
-The scale term is tested alongside the median shift because a ratio of two MADs need not average to
-one even when both are drawn from the same distribution. Here it does not detectably depart from it
-(`r sprintf("%+.4f", mean(at_default$rho))`, `r sprintf("%.1f", centre(at_default$rho)[["ses_from_zero"]])`
-standard errors from zero), so the conclusion holds at every InfoVal, not only near the cut-off.
+The median term `d0` is symmetric: the two base images are exchangeable, so it is as likely to raise
+the reported InfoVal as to lower it. The scale term is not. `rho` is the ratio `mad(own) /
+mad(scored_against)` less one, and for exchangeable positive scales `B/A + A/B >= 2` forces
+`E[B/A] >= 1`, strictly whenever the two differ at all. So the shift carries a genuine upward
+component at any nonzero InfoVal, and the question is its size rather than its existence.
+
+The mean of `rho` cannot answer that: the bias sits far below its standard error. Averaging
+`(B/A + A/B) / 2 - 1` instead gives the same expectation with a fraction of the variance, and is
+non-negative for every pair by construction.
+
+```{r scale-bias}
+scale_bias <- function(rows) {
+  ratio <- 1 + rows$rho
+  centre((ratio + 1 / ratio) / 2 - 1)
+}
+
+knitr::kable(signif(do.call(rbind, lapply(
+  split(at_64px, at_64px$n_trials), scale_bias)), 3))
+```
+
+At the defaults that is `r sprintf("%.1e", scale_bias(at_default)[["mean"]])`, so a reported InfoVal
+of 10 sits `r sprintf("%.3f", 10 * scale_bias(at_default)[["mean"]])` high on average — about
+`r sprintf("%.0f%%", 100 * 10 * scale_bias(at_default)[["mean"]] / mean(abs(shift(at_default, 10))))`
+of the scatter at that value, a proportion that does not grow with the InfoVal because both terms
+scale with it. A set of published InfoVals was therefore scattered rather than moved, to a precision
+far finer than anyone reads these numbers to.
 
 ## How large the scatter is
 
@@ -283,7 +306,6 @@ reference simulation with different random responses.
 ## It is set by trials, not by pixels
 
 ```{r scaling}
-at_64px <- subset(results, img_size == 64)
 by_trials <- do.call(rbind, lapply(split(at_64px, at_64px$n_trials), summary_row))
 reference <- by_trials[by_trials$n_trials == 100, "mean_abs_d0"]
 knitr::kable(data.frame(
@@ -365,4 +387,5 @@ stream adds roughly the `monte_carlo` column on top, which changes none of the c
 The shift measured here is the correction a fix applies, so it is also the size to quote in a
 `NEWS.md` "Reproducibility impact" entry: about
 `r sprintf("%.2f", mean(abs(shift(at_default, cutoff))))` in z at the defaults, scaling as one over
-the square root of the trial count, unbiased, and affecting no base image but the second and later.
+the square root of the trial count, scatter rather than a correction in a direction, and affecting
+no base image but the second and later.
