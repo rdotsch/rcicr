@@ -24,7 +24,7 @@ null built on a different realization of the same noise process, so the error is
 directional part some two orders of magnitude below it — whose size falls with the number of trials,
 and a significance call flips only in a narrow window around the cut-off.
 
-Knitting this runs the whole measurement, which takes a couple of hours: `r 30 + 20 + 20 + 12 + 8 + 10`
+Knitting this runs the whole measurement, which takes upwards of an hour: `r 30 + 20 + 20 + 12 + 8 + 10`
 base image pairs, each needing two stimulus sets and three reference distributions of 10,000
 iterations, ten of those pairs at the 512 pixels a real study uses.
 
@@ -51,13 +51,17 @@ base_image <- function(name, seed, size) {
 
 # capture.output() here and below only keeps progress bars out of the rendered
 # document; the package's functions are called exactly as a user would call them.
+# ?generateReferenceDistribution2IFC guarantees the stimuli, and so everything
+# measured here, do not depend on ncores.
+cores <- max(1L, parallel::detectCores() - 1L)
+
 generate <- function(bases, n_trials, seed, size, same_parameters) {
   path <- tempfile("stim", tmpdir = scratch)
   dir.create(path)
   invisible(capture.output(
     generateStimuli2IFC(bases, n_trials = n_trials, img_size = size, stimulus_path = path,
                         seed = seed, use_same_parameters = same_parameters, nscales = nscales,
-                        ncores = 1, save_as_png = FALSE)
+                        ncores = cores, save_as_png = FALSE)
   ))
   list.files(path, pattern = "\\.Rdata$", full.names = TRUE)[1]
 }
@@ -112,9 +116,9 @@ consumed in the same order.
 
 ```{r glue}
 noise_matrix <- function(params, p, size) {
-  vapply(seq_len(nrow(params)),
-         function(trial) as.vector(generateNoiseImage(params[trial, ], p)),
-         numeric(size^2))
+  matrix(unlist(parallel::mclapply(seq_len(nrow(params)), mc.cores = cores,
+                function(trial) as.vector(generateNoiseImage(params[trial, ], p)))),
+         nrow = size^2)
 }
 
 # A block holds one column per iteration, so its width comes from the image size,
