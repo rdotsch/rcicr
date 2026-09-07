@@ -2,45 +2,17 @@
 
 ## Reproducibility impact
 
-- **InfoVal references for independent base images now use the selected base's saved noise.**
-  When a stimulus file's base images carry different saved parameter matrices — what
-  `generateStimuli2IFC(use_same_parameters = FALSE)` writes — `computeInfoVal2IFC()` and
-  `generateReferenceDistribution2IFC()` take a new **`baseimage`** argument and build the null
-  from that base's own saved noise. On such a file, omitting it is now an error rather than a
-  silent fall back to the first base's reference. References are cached per base in
-  `reference_norms_by_base`; an unscoped `reference_norms` already in the file is neither read
-  nor overwritten for these files.
+- **InfoVal references for independent base images now use the selected base's saved noise.** Previously, with multiple bases and `use_same_parameters = FALSE`, bases after the first were scored against the first base's reference. Shared-parameter results and the default simulated-response stream are unchanged. This defect did not affect classification images, z-maps, stimuli or responses.
 
-  **What moves, and what does not.** InfoVal, for base images after the first in a file with
-  independent parameters. Unchanged: every shared-parameter file, and the default
-  simulated-response stream, which stays bit-identical. Classification images, z-maps, stimuli
-  and responses were never affected — they always used the selected base's saved parameters.
+  The first base's InfoVal is also unchanged for files written from rcicr 0.3.0 onward. For older independent-base files, even the first base can change: their stored noise cannot be reconstructed by the newer generator from the seed alone. Recompute InfoVal for all bases in those files.
 
-  The first base image's InfoVal is unchanged as well, with one exception: a file written
-  before rcicr 0.3.0 whose base images carry independent parameters. The old reference rebuilt
-  the stimuli from the saved seed, and a pre-0.3.0 set cannot be rebuilt that way — it drew
-  4096 contrasts per trial where 0.3.0 onward draws 4092, so every trial after the first is
-  offset. The reference now comes from that file's stored noise, which is what participants
-  actually saw; on a synthetic 64px, 24-trial file the first base's InfoVal moves from -0.19 to
-  -0.32. Recompute such files rather than keeping the old number.
-
-  **Recomputing is a re-score, not a re-run.** The noise each base was shown with is already in
-  the `.Rdata` file, so nothing needs regenerating and no data needs recollecting. Pass
-  `computeInfoVal2IFC()` the label already passed to `generateCI()`:
+  When saved parameter matrices differ, both `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` now require the `baseimage` label used for `generateCI()`; omitting it reports an error. References are cached separately by base, preserving but ignoring old unscoped norms. Recompute affected InfoVal values from the existing CI object and stimulus `.Rdata`, using the same base label (here, `"second"`):
 
   ```r
-  ci <- generateCI(stimuli, responses, baseimage = "second", rdata = "rcic_..._.Rdata")
   computeInfoVal2IFC(ci, "rcic_..._.Rdata", baseimage = "second")
   ```
 
-  A file whose base images share one parameter matrix needs no change: `baseimage` is accepted
-  there and makes no difference to the result.
-
-  **How far the old number was out** is measured over 100 synthetic base-image pairs in
-  [`analyses/infoval-reference-impact.md`](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md)
-  ([#307](https://github.com/rdotsch/rcicr/pull/307)). It reports shifts, not a prevalence or an
-  affected-study rate: how much a given study's InfoVal moves depends on its own bases, and only
-  recomputing it says.
+  No stimuli need regenerating or responses recollecting. The [synthetic analysis in #307](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md) characterizes the reference mismatch through modeled shifts across 100 base-image pairs. It does not estimate affected-study rates or bound an individual study's change; recomputing its InfoVal gives that change.
 
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
