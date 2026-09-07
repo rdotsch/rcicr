@@ -2,7 +2,38 @@
 
 ## Reproducibility impact
 
-- **InfoVal references for independent base images now use the selected base's saved noise.** When base images have different saved parameter matrices, pass the same `baseimage` label to `computeInfoVal2IFC()` or `generateReferenceDistribution2IFC()` that you used for `generateCI()`. Omitting it now reports an error instead of silently using the first base's reference. References are cached separately by base; old unscoped norms are ignored for these files. Recompute affected InfoVal values from the existing stimulus `.Rdata` and CIs; stimuli, responses and raw CIs do not need changing. Shared-parameter results and the default simulated-response stream are preserved.
+- **InfoVal references for independent base images now use the selected base's saved noise.**
+  When a stimulus file's base images carry different saved parameter matrices — what
+  `generateStimuli2IFC(use_same_parameters = FALSE)` writes — `computeInfoVal2IFC()` and
+  `generateReferenceDistribution2IFC()` take a new **`baseimage`** argument and build the null
+  from that base's own saved noise. On such a file, omitting it is now an error rather than a
+  silent fall back to the first base's reference. References are cached per base in
+  `reference_norms_by_base`; an unscoped `reference_norms` already in the file is neither read
+  nor overwritten for these files.
+
+  **What moves, and what does not.** InfoVal, for base images after the first in a file with
+  independent parameters. Unchanged: the first base image's InfoVal, every shared-parameter
+  file, and the default simulated-response stream, which stays bit-identical. Classification
+  images, z-maps, stimuli and responses were never affected — they always used the selected
+  base's saved parameters.
+
+  **Recomputing is a re-score, not a re-run.** The noise each base was shown with is already in
+  the `.Rdata` file, so nothing needs regenerating and no data needs recollecting. Pass
+  `computeInfoVal2IFC()` the label already passed to `generateCI()`:
+
+  ```r
+  ci <- generateCI(stimuli, responses, baseimage = "second", rdata = "rcic_..._.Rdata")
+  computeInfoVal2IFC(ci, "rcic_..._.Rdata", baseimage = "second")
+  ```
+
+  A file whose base images share one parameter matrix needs no change: `baseimage` is accepted
+  there and makes no difference to the result.
+
+  **How far the old number was out** is measured over 100 synthetic base-image pairs in
+  [`analyses/infoval-reference-impact.md`](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md)
+  ([#307](https://github.com/rdotsch/rcicr/pull/307)). It reports shifts, not a prevalence or an
+  affected-study rate: how much a given study's InfoVal moves depends on its own bases, and only
+  recomputing it says.
 
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
