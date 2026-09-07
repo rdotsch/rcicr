@@ -9,7 +9,7 @@ test_that("participant IDs must align with every trial before PNG output", {
                      participants = container(rep(c("a", "b"), length.out = n)),
                      save_as_png = TRUE, save_individual_cis = TRUE,
                      targetpath = target, n_cores = 1
-      ), "participants must have one ID per trial")
+                   ), "participants must have one ID per trial")
       expect_false(dir.exists(target))
     }
   }
