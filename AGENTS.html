@@ -34,21 +34,25 @@
 
 <div id="agentsmd" class="section level1">
 
-<p>This file provides guidance to AI coding agents when working with code in this repository. It is the single source of truth for them; put conventions here.</p>
-<p><strong>Do not delete <code>CLAUDE.md</code></strong> — it is a stub that <code>@</code>-imports this file, and Claude Code loads only <code>CLAUDE.md</code>. <strong>Keep this file under 2800 words</strong> — counted in words, not lines, because a line budget is defeated by longer lines and this file has been the worst offender.</p>
+<p>This is the single source of conventions for AI coding agents in this repository.</p>
+<p><strong>Do not delete <code>CLAUDE.md</code></strong> — it is a stub that <code>@</code>-imports this file, and Claude Code loads only <code>CLAUDE.md</code>. <strong>Keep this file under 2800 words.</strong></p>
 <div class="section level2">
 <h2 id="what-this-is">What this is<a class="anchor" aria-label="anchor" href="#what-this-is"></a></h2>
-<p><code>rcicr</code> is an R package (CRAN-style) implementing the <strong>reverse correlation image classification</strong> technique from psychophysics: generating noise-based stimuli for 2-image-forced-choice (2IFC) perceptual tasks and computing “classification images” (CIs) from participant response data to visualize internal mental representations (e.g., of faces).</p>
+<p><code>rcicr</code> is an R package implementing <strong>reverse correlation image classification</strong>: generating noise-based stimuli for 2-image-forced-choice (2IFC) tasks and computing classification images (CIs) from responses to visualize internal mental representations.</p>
 </div>
 <div class="section level2">
 <h2 id="check-dont-assume">Check, don’t assume<a class="anchor" aria-label="anchor" href="#check-dont-assume"></a></h2>
-<p><strong>Verify a claim against the thing itself before writing it down or acting on it.</strong> Several rules below are scar tissue from not doing that — the branch-protection API, answering CRAN from a summary, quoting this machine’s clock — and each keeps its detail where someone doing that task will hit it. The general form:</p>
+<p><strong>Verify claims against the thing itself before writing them down or acting on them.</strong></p>
 <ul><li>
 <strong>Run the command, read the file, query the API.</strong> No “should be” or “as expected”; if a check was not run, say so rather than predicting its result.</li>
 <li>
 <strong>An empty result may mean you asked the wrong question</strong> — wrong endpoint, branch, path or scope. Rule that out before reporting nothing found.</li>
 <li>
 <strong>Put the evidence next to the claim</strong>: the command, the file and line, the actual output.</li>
+<li>
+<strong>Numbers in prose come from the run that made the tables</strong>, comparisons included: hand-typed figures drift.</li>
+<li>
+<strong>Claim only what the estimate carries</strong>: a non-significant difference is not an absence, a mean is not a bound, a magnitude ratio is not a decomposition. <em>Conservative</em> and <em>worst case</em> need evidence beside them. Having fixed such a claim, grep for it elsewhere.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="common-commands">Common commands<a class="anchor" aria-label="anchor" href="#common-commands"></a></h2>
@@ -112,7 +116,7 @@
 </tr><tr><td><code>NEWS.md</code></td>
 <td>what changed for users</td>
 <td>none — trimmed at each release</td>
-</tr></tbody></table><p>Budgets are in <strong>words, not lines</strong>: a line budget is defeated by writing longer lines, which is exactly how this file grew to hold more words than <code>CONTRIBUTING.md</code> in two-thirds the lines. <code>wc -w</code> is the check.</p>
+</tr></tbody></table><p>Check word budgets with <code>LC_ALL=C.UTF-8 wc -w</code> (Unicode whitespace counts as separators).</p>
 <p><code>DECISIONS.md</code> is the one most often misfiled into. Its subject is what <code><a href="reference/generateCI.html">generateCI()</a></code> returns and why a number cannot change — <strong>not</strong> how CI is wired or how a release is cut. The test: would this still matter if the package were maintained somewhere else entirely?</p>
 <ul><li>
 <strong>Update it as decisions are made</strong>, not in a sweep at the end — the reasoning and the numbers are only cheap to write down while they are still to hand.</li>

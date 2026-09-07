@@ -1,30 +1,23 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code
-in this repository. It is the single source of truth for them; put
-conventions here.
+This is the single source of conventions for AI coding agents in this
+repository.
 
 **Do not delete `CLAUDE.md`** — it is a stub that `@`-imports this file,
 and Claude Code loads only `CLAUDE.md`. **Keep this file under 2800
-words** — counted in words, not lines, because a line budget is defeated
-by longer lines and this file has been the worst offender.
+words.**
 
 ## What this is
 
-`rcicr` is an R package (CRAN-style) implementing the **reverse
-correlation image classification** technique from psychophysics:
-generating noise-based stimuli for 2-image-forced-choice (2IFC)
-perceptual tasks and computing “classification images” (CIs) from
-participant response data to visualize internal mental representations
-(e.g., of faces).
+`rcicr` is an R package implementing **reverse correlation image
+classification**: generating noise-based stimuli for
+2-image-forced-choice (2IFC) tasks and computing classification images
+(CIs) from responses to visualize internal mental representations.
 
 ## Check, don’t assume
 
-**Verify a claim against the thing itself before writing it down or
-acting on it.** Several rules below are scar tissue from not doing that
-— the branch-protection API, answering CRAN from a summary, quoting this
-machine’s clock — and each keeps its detail where someone doing that
-task will hit it. The general form:
+**Verify claims against the thing itself before writing them down or
+acting on them.**
 
 - **Run the command, read the file, query the API.** No “should be” or
   “as expected”; if a check was not run, say so rather than predicting
@@ -34,6 +27,12 @@ task will hit it. The general form:
   nothing found.
 - **Put the evidence next to the claim**: the command, the file and
   line, the actual output.
+- **Numbers in prose come from the run that made the tables**,
+  comparisons included: hand-typed figures drift.
+- **Claim only what the estimate carries**: a non-significant difference
+  is not an absence, a mean is not a bound, a magnitude ratio is not a
+  decomposition. *Conservative* and *worst case* need evidence beside
+  them. Having fixed such a claim, grep for it elsewhere.
 
 ## Common commands
 
@@ -152,10 +151,8 @@ the copy a reader hits first is then wrong.
 | `DECISIONS.md` | why the **package** behaves as it does | 5200 |
 | `NEWS.md` | what changed for users | none — trimmed at each release |
 
-Budgets are in **words, not lines**: a line budget is defeated by
-writing longer lines, which is exactly how this file grew to hold more
-words than `CONTRIBUTING.md` in two-thirds the lines. `wc -w` is the
-check.
+Check word budgets with `LC_ALL=C.UTF-8 wc -w` (Unicode whitespace
+counts as separators).
 
 `DECISIONS.md` is the one most often misfiled into. Its subject is what
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
