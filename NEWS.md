@@ -12,10 +12,17 @@
   nor overwritten for these files.
 
   **What moves, and what does not.** InfoVal, for base images after the first in a file with
-  independent parameters. Unchanged: the first base image's InfoVal, every shared-parameter
-  file, and the default simulated-response stream, which stays bit-identical. Classification
-  images, z-maps, stimuli and responses were never affected — they always used the selected
-  base's saved parameters.
+  independent parameters. Unchanged: every shared-parameter file, and the default
+  simulated-response stream, which stays bit-identical. Classification images, z-maps, stimuli
+  and responses were never affected — they always used the selected base's saved parameters.
+
+  The first base image's InfoVal is unchanged as well, with one exception: a file written
+  before rcicr 0.3.0 whose base images carry independent parameters. The old reference rebuilt
+  the stimuli from the saved seed, and a pre-0.3.0 set cannot be rebuilt that way — it drew
+  4096 contrasts per trial where 0.3.0 onward draws 4092, so every trial after the first is
+  offset. The reference now comes from that file's stored noise, which is what participants
+  actually saw; on a synthetic 64px, 24-trial file the first base's InfoVal moves from -0.19 to
+  -0.32. Recompute such files rather than keeping the old number.
 
   **Recomputing is a re-score, not a re-run.** The noise each base was shown with is already in
   the `.Rdata` file, so nothing needs regenerating and no data needs recollecting. Pass
