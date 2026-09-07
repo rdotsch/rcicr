@@ -179,8 +179,9 @@ measure_pair <- function(n_trials, seed, size, validate) {
   precise_b <- if (decompose) reference_norms(noise_b, 10L * iter, response_seed + 2L) else NULL
   # The null the between-base comparison has to beat: two references of the same
   # base, so their population medians and MADs are identical by construction and
-  # anything left is estimation error. Independent draws make it an over-estimate
-  # of the error in `between_rho`, which shares its draws across the two bases.
+  # anything left is estimation error. Its draws are independent where
+  # `between_rho` shares them; sharing is expected to reduce the error rather than
+  # add to it, but by how much is not measured here.
   precise_null <- if (decompose) reference_norms(noise_a, 10L * iter, response_seed + 4L) else NULL
 
   agreement <- NA_real_
@@ -506,8 +507,9 @@ A standard error against zero would not settle this: two references of ten thous
 even when the thing they estimate is identical, so `abs(between_rho)` has a positive expectation
 under the null of equal spreads. `same_base_null` is that null, measured — two tenfold references of
 the *same* base, whose population MADs are equal by construction, with independent draws where
-`between_rho` shares them, which makes it an over-estimate of the error in the quantity it is
-compared against.
+`between_rho` shares them. Sharing draws is expected to reduce the error in a difference rather than
+add to it, which would make this control the larger of the two, but that direction is argued here
+rather than measured.
 
 ```{r scale-against-null}
 precise_770 <- decomposed[decomposed$n_trials == 770, ]
@@ -561,8 +563,8 @@ c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))),
   largest_pair_bound = max(per_pair_bound))
 ```
 
-The median term falls by the square-root law and the scale term declines far more slowly, so the
-estimate scales the first and holds the second. That is a model rather than a bound: both terms are
+The median term falls by the square-root law; the scale term's own trend is not resolved above, so
+the estimate scales the first and holds the second. That is a model rather than a bound: both terms are
 signed and can cancel, so holding the scale term at its 300-trial value can as easily lower the
 result as raise it. On that model a study at 512 pixels and 770 trials carries roughly
 `r sprintf("%.2f", estimate)` in z, against
@@ -676,4 +678,5 @@ something of the order of the rerun column. With that said, this is the size to 
 shifts modelled for an InfoVal sitting at the cut-off, since this document generates no
 classification images and so observes no movement of one. Scatter rather than a correction in a
 direction; a median term falling as one over the square root of the trial count and a scale term
-that declines far more slowly; and no base image affected but the second and later.
+whose trend across trial counts these samples do not resolve; and no base image affected but the
+second and later.
