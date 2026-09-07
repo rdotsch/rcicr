@@ -9,7 +9,8 @@ generateReferenceDistribution2IFC(
   iter = 10000,
   ncores = default_ncores(),
   response_seed = NULL,
-  save_rdata = TRUE
+  save_rdata = TRUE,
+  baseimage = NULL
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ back into the \code{rdata} file (default \code{TRUE}). Set to \code{FALSE} to co
 distribution without changing what later calls to \code{\link{computeInfoVal2IFC}} will
 use -- worth doing whenever \code{response_seed} is set, so a one-off null does not become
 the file's permanent reference.}
+
+\item{baseimage}{Saved base-image label, using the same key as \code{generateCI()}.
+Required when the saved base images have different noise parameters. With a single base
+or identical parameter matrices, \code{NULL} retains the shared reference behavior.}
 }
 \value{
 The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
@@ -36,6 +41,7 @@ Unless \code{save_rdata = FALSE}, it is also added to the supplied \code{rdata} 
 \code{reference_norms} (alongside \code{reference_norms_seed}, recording the
 \code{response_seed} it was generated with), so a later call to
 \code{\link{computeInfoVal2IFC}} using the same file can reuse it instead of re-simulating.
+Independent-base references instead use \code{reference_norms_by_base}, as described above.
 }
 \description{
 Generates reference distribution of norms for a particular set of task parameters.
@@ -51,15 +57,25 @@ state of the calling session, and it does not depend on \code{ncores}. Two resea
 who compute InfoVal from the same stimulus file therefore get the same number, and the
 same reference distribution, on different machines and in different sessions.
 
-This is a guarantee, not a coincidence, and it is relied upon: the function re-generates
-the stimuli through \code{\link{generateStimuli2IFC}}, whose internal \code{set.seed()}
-call uses the seed stored in the \code{.Rdata} file and lands before the random responses
-below are drawn.
+Shared-parameter files re-generate the stimuli through \code{\link{generateStimuli2IFC}}.
+Independent bases use their saved noise basis and parameters directly. Both paths seed
+responses from the state following one shared parameter matrix's draws at the saved
+stimulus seed, preserving the historical default response stream.
 
 Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
 for instance to check how much Monte Carlo error a given \code{iter} leaves in your
 InfoVal. This changes only the simulated responses; the stimuli themselves, and so the
 noise basis the null is built on, are unaffected.
+}
+
+\section{Independent base images}{
+
+When saved parameter matrices differ, supply \code{baseimage} explicitly. The selected
+base's noise is reconstructed from the saved basis and parameters, without reading the
+original images. Cached distributions are stored in \code{reference_norms_by_base},
+keyed by base label, with \code{norms} and \code{response_seed} in each entry. Old unscoped
+\code{reference_norms} are neither reused nor overwritten for independent bases.
+Existing shared-parameter files continue using their unscoped cache and reconstruction.
 }
 
 \examples{

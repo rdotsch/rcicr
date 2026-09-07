@@ -158,7 +158,13 @@ CONFIGS <- list(
   cfg_("sinusoid-64-infoval", img_size = 64, infoval_iter = 200),
   cfg_("sinusoid-64-nscales3-infoval", img_size = 64, nscales = 3, infoval_iter = 200),
   cfg_("gabor-64-sigma10-infoval", img_size = 64, noise_type = "gabor", sigma = 10,
-       infoval_iter = 200)
+       infoval_iter = 200),
+
+  # The path #299 changed: two base images drawing independent parameters, with
+  # InfoVal taken on the second. Every other InfoVal config above has one base,
+  # so none of them reaches the reference selection at all.
+  cfg_("sinusoid-64-twobase-indep-infoval", img_size = 64, n_base = 2,
+       same_params = FALSE, infoval_iter = 200)
 )
 
 # --quick (RCICR_COMPARE_QUICK=1) drops the 512px config for local iteration.
@@ -364,11 +370,21 @@ run_config <- function(cfg) {
 
   # 6. InfoVal, where it is cheap enough. Deterministic given the .Rdata: the
   #    reference distribution inherits the stimulus seed (see DECISIONS.md).
+  #    Independent base images are scored on the second base, whose reference
+  #    older versions took from the first base's noise. The `baseimage` argument
+  #    that selects it does not exist on every version this harness runs, so it
+  #    is passed only where the function has it -- which is also what makes the
+  #    two sides differ, and is why the deviation is listed in EXPECTED.
   if (!is.na(cfg$infoval_iter)) {
+    key <- if (cfg$n_base > 1L && !cfg$same_params) "base2" else "base1"
     ci <- generateCI(stimuli = stimuli, responses = responses,
-                     baseimage = "base1", rdata = rdata, scaling = "none",
+                     baseimage = key, rdata = rdata, scaling = "none",
                      save_as_png = FALSE, targetpath = ci_dir)
-    out$infoval <- computeInfoVal2IFC(ci, rdata, iter = cfg$infoval_iter)
+    infoval_args <- list(ci, rdata, iter = cfg$infoval_iter)
+    if (!identical(key, "base1") && "baseimage" %in% names(formals(computeInfoVal2IFC))) {
+      infoval_args$baseimage <- key
+    }
+    out$infoval <- do.call(computeInfoVal2IFC, infoval_args)
   }
 
   unlink(c(stim_dir, ci_dir, zmap_dir, file.path(getwd(), "zmaps")), recursive = TRUE)

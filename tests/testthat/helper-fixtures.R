@@ -63,3 +63,14 @@ mutate_rdata <- function(.path, ..., .remove = character()) {
   save(list = ls(e), file = .path, envir = e)
   invisible(.path)
 }
+
+make_independent_fixture <- function(dir, nscales = 1) {
+  png_path <- make_square_png(file.path(dir, "base.png"), size = 32)
+  suppressWarnings(generateStimuli2IFC(
+    base_face_files = list(first = png_path, second = png_path),
+    n_trials = 12, img_size = 32, stimulus_path = dir, seed = 17,
+    use_same_parameters = FALSE, nscales = nscales, ncores = 1,
+    save_as_png = FALSE
+  ))
+  list.files(dir, pattern = "\\.Rdata$", full.names = TRUE)[1]
+}

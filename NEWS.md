@@ -2,6 +2,18 @@
 
 ## Reproducibility impact
 
+- **InfoVal references for independent base images now use the selected base's saved noise.** Previously, with multiple bases and `use_same_parameters = FALSE`, bases after the first were scored against the first base's reference. Shared-parameter results and the default simulated-response stream are unchanged. This defect did not affect classification images, z-maps, stimuli or responses.
+
+  The first base's InfoVal is also unchanged for files written from rcicr 0.3.0 onward. For older independent-base files, even the first base can change: their stored noise cannot be reconstructed by the newer generator from the seed alone. Recompute InfoVal for all bases in those files.
+
+  When saved parameter matrices differ, both `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` now require the `baseimage` label used for `generateCI()`; omitting it reports an error. References are cached separately by base, preserving but ignoring old unscoped norms. Recompute affected InfoVal values from the existing CI object and stimulus `.Rdata`, using the same base label (here, `"second"`):
+
+  ```r
+  computeInfoVal2IFC(ci, "rcic_..._.Rdata", baseimage = "second")
+  ```
+
+  No stimuli need regenerating or responses recollecting. The [synthetic analysis in #307](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md) characterizes the reference mismatch through modeled shifts across 100 base-image pairs. It does not estimate affected-study rates or bound an individual study's change; recomputing its InfoVal gives that change.
+
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
   differ only in rounding in the stored base-face doubles; its participant-facing 8-bit stimuli
