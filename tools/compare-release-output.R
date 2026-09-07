@@ -197,12 +197,20 @@ EXPECTED <- c(list(
                       "regardless of how the stimuli were made. At nscales != 5 the old",
                       "InfoVal was computed against the wrong null and is simply wrong."),
        news = "Reproducibility impact"),
+  # Listed for both references, because every tagged release carries the defect:
+  # the reference selection is new here, so the previous-release run reports the
+  # same difference and neither run can report this as stale.
   list(ref = "v1.0.1", key = "sinusoid-64-twobase-indep-infoval/infoval",
        reason = paste("v1.0.1 built one reference distribution per stimulus file and always",
                       "took it from the first base image's noise, so a CI from a later base",
                       "with independent parameters was scored against a null belonging to a",
                       "different base (#299). The reference is now built from the scored",
                       "base's own saved noise."),
+       news = "Reproducibility impact"),
+  list(ref = "v1.3.0", key = "sinusoid-64-twobase-indep-infoval/infoval",
+       reason = paste("Same defect as the v1.0.1 entry above: v1.3.0 has no way to name the",
+                      "base a classification image came from, so it scored a later",
+                      "independent base against the first base's null too."),
        news = "Reproducibility impact"),
   list(ref = "v1.0.1", key = "gabor-64-sigma10-infoval/infoval",
        reason = paste("Same cause as the nscales case: v1.0.1's reference distribution",
