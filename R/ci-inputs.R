@@ -53,8 +53,8 @@ coerceStimulusIds <- function(stimuli) {
 # Used before aggregation and again with the selected base's saved trial count.
 validateStimulusIds <- function(stimuli, n_trials = Inf) {
   if (is.factor(stimuli) || !typeof(stimuli) %in% c('integer', 'double') ||
-      length(stimuli) == 0L || any(!is.finite(stimuli)) ||
-      any(stimuli < 1 | stimuli != floor(stimuli))) {
+        length(stimuli) == 0L || any(!is.finite(stimuli)) ||
+        any(stimuli < 1 | stimuli != floor(stimuli))) {
     stop('stimuli must contain at least one finite, positive, whole-number stimulus ID.')
   }
   if (any(stimuli > n_trials)) {

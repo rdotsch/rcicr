@@ -19,7 +19,7 @@ generateCINoise <- function(stimuli, responses, p) {
 
   n_trials <- if (is.null(dim(stimuli))) 1L else nrow(stimuli)
   if ((!is.null(dim(stimuli)) && !is.matrix(stimuli)) ||
-      length(stimuli) == 0L || length(responses) != n_trials) {
+        length(stimuli) == 0L || length(responses) != n_trials) {
     stop('stimuli must have one parameter row per response, or be a single-trial vector with one response.')
   }
 
