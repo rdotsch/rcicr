@@ -31,7 +31,7 @@ generateCI(
 )
 }
 \arguments{
-\item{stimuli}{Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.}
+\item{stimuli}{Numeric vector of stimulus numbers in response order, with one finite, positive whole number per response, within the trials saved for the selected base image. Repeated and nonconsecutive numbers are allowed. Factors, characters and logicals are rejected; verify imported labels against the generated stimulus filenames before converting them to numeric IDs.}
 
 \item{responses}{Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.}
 
@@ -39,7 +39,7 @@ generateCI(
 
 \item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
 
-\item{participants}{Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.}
+\item{participants}{Optional vector specifying one participant ID per trial, with the same length as stimuli and responses. An all-NA input retains the no-grouping behavior. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.}
 
 \item{save_individual_cis}{Optional boolean specifying whether individual CIs should be save as PNG images when the \code{participants} parameter is used.}
 

@@ -49,12 +49,12 @@
 #' @importFrom stats aggregate t.test qnorm
 #' @importFrom spatstat.geom as.im
 #' @importFrom spatstat.explore blur
-#' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
+#' @param stimuli Numeric vector of stimulus numbers in response order, with one finite, positive whole number per response, within the trials saved for the selected base image. Repeated and nonconsecutive numbers are allowed. Factors, characters and logicals are rejected; verify imported labels against the generated stimulus filenames before converting them to numeric IDs.
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param save_as_png Optional boolean stating whether to additionally save the CI as PNG image.
-#' @param participants Optional vector specifying participant IDs. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.
+#' @param participants Optional vector specifying one participant ID per trial, with the same length as stimuli and responses. An all-NA input retains the no-grouping behavior. If specified, will compute the requested CIs in two steps: step 1, compute CI for each participant. Step 2, compute final CI by averaging participant CIs. If unspecified, the function defaults to averaging all data in the stimuli and responses vector.
 #' @param save_individual_cis Optional boolean specifying whether individual CIs should be save as PNG images when the \code{participants} parameter is used.
 #' @param targetpath String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE} or \code{save_individual_cis = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
 #' @param filename Optional string to specify a file name for the PNG image.
@@ -158,6 +158,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   img_size <- loaded$img_size
 
   base <- selectBaseImage(base_faces, baseimage)
+
+  validateStimulusIds(stimuli, nrow(stimuli_params[[baseimage]]))
 
   if (all(is.na(participants))) {
     aggregated <- aggregateResponses(stimuli, responses)

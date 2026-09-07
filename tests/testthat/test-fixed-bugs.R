@@ -362,12 +362,11 @@ test_that("the 'no parameters' error names the base image label, not the matrix"
   dir <- withr::local_tempdir()
   rdata <- make_fixture_rdata(dir)
 
-  # An empty stimulus set selects no rows, which is the reachable route here:
-  # computeCumulativeCICorrelation() hits the length-0 guard directly, whereas
-  # in generateCI() aggregate() fails on empty input before the guard is reached.
+  # Keep trial IDs valid so the missing-parameter diagnostic is reached.
+  mutate_rdata(rdata, stimuli_params = list(base = matrix(numeric(), 6, 0)))
   err <- expect_error(
     computeCumulativeCICorrelation(
-      stimuli = integer(0), responses = integer(0),
+      stimuli = 1, responses = 1,
       baseimage = "base", rdata = rdata
     )
   )

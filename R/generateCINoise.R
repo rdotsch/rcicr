@@ -1,7 +1,7 @@
 #' Generate classification image noise pattern based on set of stimuli (matrix: trials, parameters), responses (vector), and sinusoid
 #'
 #' @export
-#' @param stimuli Matrix with one row per trial, each row containing the 4092 parameters for the original stimulus.
+#' @param stimuli Matrix with one parameter row per response. A parameter vector is also accepted for a single trial with exactly one response.
 #' @param responses Vector containing the response to each trial (1 if participant selected original, -1 if participant selected inverted;
 #' this can be changed into a scale).
 #' @param p 3D patch matrix (generated using \code{generateNoisePattern()}).
@@ -16,6 +16,12 @@
 #'
 #' ci <- generateCINoise(stimuli, responses, p)
 generateCINoise <- function(stimuli, responses, p) {
+
+  n_trials <- if (is.null(dim(stimuli))) 1L else nrow(stimuli)
+  if ((!is.null(dim(stimuli)) && !is.matrix(stimuli)) ||
+      length(stimuli) == 0L || length(responses) != n_trials) {
+    stop('stimuli must have one parameter row per response, or be a single-trial vector with one response.')
+  }
 
   weighted <- stimuli * responses
 

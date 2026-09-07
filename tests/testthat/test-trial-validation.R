@@ -46,6 +46,18 @@ test_that("parameter selection rejects IDs even when called directly", {
   }
 })
 
+test_that("numeric tibbles survive coercion but mixed factor and logical lists do not", {
+  good <- rcicr:::coerceTrialVectors(tibble::tibble(id = c(3, 1, 3)),
+    tibble::tibble(response = c(1, -1, 1)), tibble::tibble(pid = c("b", "a", "b")))
+  expect_identical(good$stimuli, c(3, 1, 3))
+  expect_identical(good$responses, c(1, -1, 1))
+  expect_identical(good$participants, c("b", "a", "b"))
+  for (ids in list(list(1, factor("2")), list(1, TRUE),
+      tibble::tibble(id = factor(c("1", "2"))))) {
+    expect_error(rcicr:::coerceTrialVectors(ids, c(1, -1), NA), "stimuli")
+  }
+})
+
 test_that("direct CI noise calls reject response recycling", {
   p <- generateNoisePattern(img_size = 32, nscales = 1)
   params <- matrix(seq_len(2 * max(p$patchIdx)) / 100, nrow = 2)
@@ -130,5 +142,20 @@ test_that("unequal participant groups retain individual PNGs and group values", 
     expect_error(generateCI(1:20, responses, "base", rdata,
       participants = c("a", "b"), save_as_png = FALSE, n_cores = cores),
       "participants must have one ID per trial")
+  }
+})
+
+test_that("valid trial selection still reads released stimulus files", {
+  for (version in c("1.0.1", "1.0.1-gabor", "1.1.0")) {
+    path <- test_path("fixtures", paste0("legacy-rdata-", version, ".Rdata"))
+    e <- new.env()
+    load(path, envir = e)
+    expected <- generateNoiseImage(
+      (e$stimuli_params$base[1, ] - e$stimuli_params$base[2, ]) / 3, e$p)
+    actual <- generateCI(c(6, 2, 6, 1), c(1, -1, -1, 1), "base", path,
+      save_as_png = FALSE, scaling = "none")
+    expect_equal(actual$ci, expected, tolerance = 1e-14, info = version)
+    single <- generateCI(2, -1, "base", path, save_as_png = FALSE, scaling = "none")
+    expect_identical(single$ci, generateNoiseImage(-e$stimuli_params$base[2, ], e$p))
   }
 })

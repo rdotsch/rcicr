@@ -14,7 +14,7 @@
 # Input: stimuli, responses, participants (NA when not used)
 # Output: list of the three, coerced
 coerceTrialVectors <- function(stimuli, responses, participants) {
-  stimuli <- unlist(stimuli, use.names = FALSE)
+  stimuli <- coerceStimulusIds(stimuli)
   responses <- unlist(responses, use.names = FALSE)
   if (!all(is.na(participants))) {
     participants <- unlist(participants, use.names = FALSE)
@@ -26,9 +26,43 @@ coerceTrialVectors <- function(stimuli, responses, participants) {
     ))
   }
 
+  if (!all(is.na(participants)) && length(participants) != length(stimuli)) {
+    stop(paste0('participants must have one ID per trial (participants: ',
+      length(participants), ', trials: ', length(stimuli), ').'
+    ))
+  }
+
+  validateStimulusIds(stimuli)
+
   return(list(stimuli = stimuli, responses = responses,
     participants = participants
   ))
+}
+
+# Check before unlist() can turn factor codes or logicals into numeric indices.
+coerceStimulusIds <- function(stimuli) {
+  if (is.list(stimuli)) {
+    return(unlist(lapply(stimuli, coerceStimulusIds), use.names = FALSE))
+  }
+  if (is.factor(stimuli) || !typeof(stimuli) %in% c('integer', 'double')) {
+    stop('stimuli must contain numeric stimulus numbers, not factors, characters or logicals.')
+  }
+  return(unlist(stimuli, use.names = FALSE))
+}
+
+# Used before aggregation and again with the selected base's saved trial count.
+validateStimulusIds <- function(stimuli, n_trials = Inf) {
+  if (is.factor(stimuli) || !typeof(stimuli) %in% c('integer', 'double') ||
+      length(stimuli) == 0L || any(!is.finite(stimuli)) ||
+      any(stimuli < 1 | stimuli != floor(stimuli))) {
+    stop('stimuli must contain at least one finite, positive, whole-number stimulus ID.')
+  }
+  if (any(stimuli > n_trials)) {
+    stop(paste0('stimuli contains an ID beyond the ', n_trials,
+      ' trials saved for the selected base image.'
+    ))
+  }
+  return(invisible(NULL))
 }
 
 # Look up the base image the CI is built on.
@@ -68,6 +102,10 @@ aggregateResponses <- function(stimuli, responses) {
 # Input: stimuli_params list from the .Rdata, base image label, stimulus numbers
 # Output: parameter matrix (or vector, for a single trial)
 selectStimulusParams <- function(stimuli_params, baseimage, stimuli) {
+  if (length(stimuli_params[[baseimage]]) == 0L) {
+    stop(paste0('No parameters found for base image: ', baseimage))
+  }
+  validateStimulusIds(stimuli, nrow(stimuli_params[[baseimage]]))
   params <- stimuli_params[[baseimage]][stimuli, ]
 
   if (length(params) == 0) {
