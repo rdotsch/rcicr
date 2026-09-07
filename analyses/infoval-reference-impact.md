@@ -1,21 +1,13 @@
 What the wrong-base InfoVal reference does to a conclusion
 ================
 
-> **Historical render; regeneration pending.** This file predates the current
-> [analysis source](infoval-reference-impact.Rmd). Its interpretations are superseded:
-> the scale diagnostic does not establish a population spread difference, the 512px/
-> 770-trial result is an extrapolation, and these simulations do not measure the
-> correction from a package fix. The saved output is retained for comparison. Re-knit
-> the current source before treating this report as the PR's final result.
-
 - [The reference distribution ignores which base you
   score](#the-reference-distribution-ignores-which-base-you-score)
 - [Base 2’s own reference](#base-2s-own-reference)
-- [The error is scatter, with a directional part too small to
-  matter](#the-error-is-scatter-with-a-directional-part-too-small-to-matter)
+- [Scatter and the estimated directional
+  component](#scatter-and-the-estimated-directional-component)
 - [How large the scatter is](#how-large-the-scatter-is)
-- [Trials shrink it; resolution may enlarge
-  it](#trials-shrink-it-resolution-may-enlarge-it)
+- [Trial count and resolution](#trial-count-and-resolution)
 - [What it takes to reach a different
   conclusion](#what-it-takes-to-reach-a-different-conclusion)
 - [What is not affected](#what-is-not-affected)
@@ -29,21 +21,19 @@ the first base image’s ([issue
 \#299](https://github.com/rdotsch/rcicr/issues/299)), and every base
 after the first is scored against another base’s noise.
 
-This document measures what that costs. It exists because the two
-obvious readings are both wrong: “the reference is from the wrong base,
-so the InfoVal is invalid” overstates it, and “it is only noise, so it
-does not matter” understates it. The answer is that the wrong reference
-is a *valid* null built on a different realization of the same noise
-process, so the error is scatter — with a directional part some two
-orders of magnitude below it — that shrinks with the number of trials
-until it meets the Monte Carlo floor any InfoVal already sits on, and a
-significance call flips only in a narrow window around the cut-off.
+This document characterizes the discrepancy using synthetic stimulus
+sets. A reference from the same generator is not necessarily calibrated
+for another base’s saved noise. The measured shifts vary across pairs,
+with a small estimated directional component in the configurations
+examined. The median component decreases across the sampled trial
+counts; the scale component’s trend is unresolved. Neither the
+prevalence of affected studies nor their changes in significance calls
+is measured here.
 
-Knitting this runs the whole measurement, so it is a batch job rather
-than an interactive one: 100 base image pairs, each needing two stimulus
-sets and three reference distributions of 10,000 iterations. Ten of
-those pairs are at the 512 pixels a real study uses, and they cost more
-than the other ninety together.
+Knitting runs the full sweep of 100 base image pairs, including ten at
+512 pixels. Every pair uses three 10,000-draw references; the fifty 64px
+pairs at 300 or 770 trials also use four 100,000-draw references.
+Runtime depends on the available hardware.
 
 ``` r
 library(rcicr)
@@ -162,12 +152,12 @@ reference_norms <- function(noise, iter, seed, block = max(50L, as.integer(2.5e7
 }
 ```
 
-That reimplementation is only trustworthy if it reproduces the package’s
-own output, so every configuration below checks it against
-`generateReferenceDistribution2IFC()` on the first base before using it
-on the second. The same check is what establishes that the *first* base
-is scored correctly: the package’s reference matches a null rebuilt from
-base 1’s saved parameters.
+The first pair of each configuration below 512px checks this
+reimplementation against `generateReferenceDistribution2IFC()` on the
+first base. At 512px that comparison is skipped because of the repeated
+matrix conversion in \#306. Agreement in the checked configurations
+supports the reimplementation and the first-base reconstruction; it is
+not a direct validation at 512px.
 
 ``` r
 measure_pair <- function(n_trials, seed, size, validate) {
@@ -184,21 +174,17 @@ measure_pair <- function(n_trials, seed, size, validate) {
   # Same base, an independent draw of the simulated responses: the Monte Carlo
   # wobble InfoVal already carries at this iter, as a yardstick for the shift.
   monte_carlo <- reference_norms(noise_a, iter, response_seed + 1L)
-  # A reference ten times the size stands in for the population one, so the error
-  # a single published InfoVal carries can be measured rather than inferred from
-  # the rerun difference, which carries the sampling error of two references. Only
-  # for the configuration the ratio is quoted at: elsewhere it would cost billions
-  # of operations per pair and reach no table.
+  # Finite-reference proxy for the population, restricted to the configurations
+  # used by the comparison and trend diagnostics below.
   decompose <- size == 64 && n_trials %in% c(300, 770)
   precise <- if (decompose) reference_norms(noise_a, 10L * iter, response_seed + 2L) else NULL
-  # The same for base 2, so that the difference between the two precise
-  # references shows the between-base component with most of the MAD estimation
-  # error taken out, and what is left of `rho` can be attributed rather than
-  # assumed.
-  # Same response draws as `precise`: differencing two independently simulated
-  # references would put back the estimation error this comparison exists to
-  # remove.
+  # Match response draws across bases to retain the main comparison's coupling.
+  # Finite-reference error remains at this larger iteration count.
   precise_b <- if (decompose) reference_norms(noise_b, 10L * iter, response_seed + 2L) else NULL
+  # Replicate the same between-base estimator with a second shared response draw.
+  # Differencing removes its common target and bias, not just its population target.
+  precise_alt <- if (decompose) reference_norms(noise_a, 10L * iter, response_seed + 5L) else NULL
+  precise_b_alt <- if (decompose) reference_norms(noise_b, 10L * iter, response_seed + 5L) else NULL
 
   agreement <- NA_real_
   if (validate) {
@@ -224,7 +210,11 @@ measure_pair <- function(n_trials, seed, size, validate) {
     single_rho = if (is.null(precise)) NA_real_ else mad(precise) / mad(scored_against) - 1,
     between_d0 = if (is.null(precise_b)) NA_real_ else
       (median(precise_b) - median(precise)) / mad(precise),
-    between_rho = if (is.null(precise_b)) NA_real_ else mad(precise_b) / mad(precise) - 1
+    between_rho = if (is.null(precise_b)) NA_real_ else mad(precise_b) / mad(precise) - 1,
+    between_d0_alt = if (is.null(precise_alt)) NA_real_ else
+      (median(precise_b_alt) - median(precise_alt)) / mad(precise_alt),
+    between_rho_alt = if (is.null(precise_alt)) NA_real_ else
+      mad(precise_b_alt) / mad(precise_alt) - 1
   )
 }
 
@@ -276,7 +266,13 @@ centre <- function(x) {
 at_64px <- subset(results, img_size == 64)
 ```
 
-## The error is scatter, with a directional part too small to matter
+Standard errors across base pairs describe variation conditional on the
+selected response streams. The same response seeds are reused across
+pairs, and response seeds are not independently resampled for each row.
+These standard errors do not include all uncertainty over response
+simulations.
+
+## Scatter and the estimated directional component
 
 ``` r
 # 770 trials at 64 pixels. Not the package's default configuration, whose
@@ -298,28 +294,26 @@ knitr::kable(round(rbind(
 | full shift at the cut-off  | -0.0106 | 0.0114 |        0.9282 |
 | full shift at z = 10       | -0.0269 | 0.0403 |        0.6684 |
 
-Base 2’s parameters are an independent draw from the same generator as
-base 1’s, so the null it receives is a legitimate one — just built on
-another realization of the noise. Across 30 base image pairs at 770
-trials and 64 pixels the full shift at the cut-off averages -0.011,
-which is 0.9 standard errors from zero against a scatter 6 times the
-size of that mean.
+Base 2’s parameters come from the same generator as base 1’s, but its
+reference should be conditional on its own saved noise. Across 30 base
+image pairs at 770 trials and 64 pixels the full shift at the cut-off
+averages -0.011, which is 0.9 standard errors from zero against a
+scatter 6 times the size of that mean.
 
-Neither term is exactly centred, though, and the sign of each is decided
-by the same structure. `rho` is the ratio
+The scale ratio need not be centred at zero. `rho` is the ratio
 `mad(own) / mad(scored_against)` less one, and for exchangeable positive
-scales `B/A + A/B >= 2` forces `E[B/A] >= 1`, strictly whenever the two
-differ at all. `d0` divides by the MAD of one member of the pair only,
-so its mean is `-Cov(median, 1 / mad)` rather than zero: a noise
-realization with more energy has both a larger median norm and a wider
-spread. Both terms therefore carry a directional component, and the
-question is its size rather than its existence.
+scales `B/A + A/B >= 2` forces `E[B/A] >= 1`, strictly when they differ
+with positive probability (assuming finite expectations). This
+inequality does not determine the sign of the median term: `d0` also
+depends on how the two medians relate to the denominator MAD. Shared
+response draws can couple the two reference estimates, so cross-base
+dependence cannot simply be dropped.
 
-Neither mean can measure it — both sit far below their own standard
-errors. Averaging a pair’s two labellings can: had the second base image
-been listed first, the bug would have scored the first against *its*
-null, and the two orderings share the bulk of the variation, which
-cancels.
+Averaging each pair’s two labellings gives a symmetric estimator of the
+directional component under exchangeability. It uses both possible
+orderings of the same pair, with the standard error computed across
+pairs rather than treating the two orderings as independent
+observations.
 
 ``` r
 directional <- function(rows, z) {
@@ -341,14 +335,12 @@ knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), func
 | 300 |         4.03e-05 |       1.04e-04 |            0.000452 |          0.000131 |        0.00214 |     0.000475 |
 | 770 |         1.29e-04 |       4.55e-05 |            0.000531 |          0.000142 |        0.00218 |     0.000705 |
 
-The estimates come out positive wherever they resolve against their own
-standard error, which is what the argument above requires of the
-expectations, and all of them are minute. At 770 trials and 64 pixels
-the directional part of the shift is 5.3e-04 at the cut-off and 0.002 at
-an InfoVal of 10 — around 1% of the scatter at that value, a proportion
-that does not grow with the InfoVal because both scale with it. A set of
-published InfoVals was therefore scattered rather than moved, to a
-precision far finer than anyone reads these numbers to.
+At 770 trials and 64 pixels the estimated directional part of the shift
+is 5.3e-04 at the cut-off and 0.002 at an InfoVal of 10 — around 1% of
+the mean absolute shift at that value. These are estimates for the
+sampled configurations and the specified InfoVals, not evidence that
+directional effects are absent or irrelevant in every study. The tables
+show their uncertainty alongside their magnitude.
 
 ## How large the scatter is
 
@@ -382,10 +374,10 @@ knitr::kable(do.call(rbind, lapply(by_config, summary_row)), row.names = FALSE)
 base image with a different draw of the simulated responses. It is
 rerun-to-rerun variability, the difference between two references of
 `iter` = 10,000 draws each, so it carries the sampling error of both.
-What a published InfoVal carries is the error of *one* reference against
-the population, which is smaller. That is measurable rather than
-assumable: scoring each 10,000-draw reference against one of ten times
-the size, which stands in for the population.
+Error against an exact population reference is a different quantity. The
+next comparison approximates it with a 100,000-draw reference, which
+still has estimation error; the table’s population label denotes this
+finite-reference proxy.
 
 ``` r
 single_error <- function(rows, z) rows$single_shift + z * rows$single_rho
@@ -404,16 +396,16 @@ knitr::kable(signif(rbind(
 | one reference against the population | 0.0283 |
 
 So at 770 trials and 64 pixels the bug moves an InfoVal about 1.9 times
-as far as the sampling error already in one, and about 1.6 times a rerun
-of the same reference. The first is the comparison a reader interpreting
-a single number wants; the second compares one difference with another.
+as far as the discrepancy against that finite-reference proxy, and about
+1.6 times the rerun-to-rerun discrepancy. Neither comparison measures
+the exact population error.
 
 The two terms contribute about equally at the cut-off: the median term
-averages 0.0299 and the scale term 0.0292 once multiplied by 1.96. What
-the scale term’s closeness to its own Monte Carlo control (0.0149
-against 0.0134) says is where it comes from — the error in estimating a
-MAD from `iter` draws, which a correctly computed InfoVal carries too —
-not that it is small or absent from the correction.
+averages 0.0299 and the scale term 0.0292 once multiplied by 1.96. The
+scale term’s closeness to its own Monte Carlo control (0.0149 against
+0.0134) does not establish how much comes from estimation error and how
+much from a difference in the underlying reference spreads. The
+diagnostics below explore this without assigning component shares.
 
 ``` r
 at_z <- function(z, f) vapply(z, function(zz) mean(abs(f(at_770, zz))), numeric(1))
@@ -434,12 +426,12 @@ knitr::kable(data.frame(
 |   5 |      0.0963 |        0.0193 |      0.0736 |  1.31 |
 |  10 |      0.1694 |        0.0169 |      0.1407 |  1.20 |
 
-The margin over the Monte Carlo wobble narrows as the InfoVal grows,
-because both quantities pick up the same scale term. At a large InfoVal
-the bug is barely distinguishable in size from re-running the reference
-simulation with different random responses.
+In these sampled rows the ratio narrows at the displayed larger
+InfoVals. Both discrepancies include a scale component multiplied by z,
+but those components are different random quantities. Similarity of
+their mean magnitudes is not an equivalence test.
 
-## Trials shrink it; resolution may enlarge it
+## Trial count and resolution
 
 ``` r
 by_trials <- do.call(rbind, lapply(split(at_64px, at_64px$n_trials), summary_row))
@@ -457,15 +449,13 @@ knitr::kable(data.frame(
 |      300 |   0.0449 |             0.0455 |
 |      770 |   0.0299 |             0.0284 |
 
-The median term of the shift falls as one over the square root of the
-number of trials, which is what a reference median built from an average
-over trials should do.
+The sampled mean absolute median component is close to the displayed
+inverse-square-root curve. This is a descriptive comparison at 64px, not
+an established law for every trial count or resolution.
 
-Pixels are a different story, and the answer is not the one a
-dimensional argument suggests. The shift is a ratio of two quantities
-that both grow with resolution, so it might have been expected to hold
-constant; measured at three sizes with the trial count fixed, its point
-estimate climbs.
+At 300 trials, the sampled mean absolute shift increases across the
+three resolutions. The uncertainty below does not establish a resolution
+effect.
 
 ``` r
 by_size <- function(rows) {
@@ -507,21 +497,19 @@ knitr::kable(signif(rbind(
 | shift at the cut-off, 512px vs 64px |  1.41 |    0.02350 | 0.0273 |         0.861 |
 
 At the default resolution the shift at the cut-off is 1.41 times its
-value at 64px — but on 10 pairs that is 0.9 standard errors, so it is
-neither established nor dismissed. Separating a ratio this size at three
-standard errors means shrinking that ratio’s standard error by a factor
-of three and a half, which at these variances takes about twelve times
-the pairs in both groups — some 120 at 512 pixels and 240 at 64, an
-order of magnitude beyond what this document runs.
+value at 64px — but on 10 pairs that is 0.9 standard errors for the
+difference of means, so a resolution effect remains unresolved. The
+ratio is a point estimate, not a measured resolution multiplier that can
+be applied to other configurations.
 
 Read the trial-count rows above as measured at 64px, then, and this
 512px row as the one that applies to a study at the package’s own
 resolution: around 0.08 in z at 300 trials, against 0.06 at 64px.
 
-The configuration a real study actually runs — 512 pixels *and* several
-hundred trials — is measured in neither series. Combining them requires
-the two effects to be separable, which is testable: the trial-count
-ratio should be the same at either resolution.
+The specific combination of 512 pixels and 770 trials is not measured. A
+separable model would predict the same trial-count ratio at each
+resolution; the next table describes those ratios at 64px and 128px but
+does not establish separability at 512px.
 
 ``` r
 trial_ratio <- function(size) {
@@ -543,14 +531,11 @@ knitr::kable(signif(rbind(`64px` = trial_ratio(64), `128px` = trial_ratio(128),
 | 128px         |        12 |         8 |              0.758 | 0.226 |
 | sqrt(300/770) |        NA |        NA |              0.624 |    NA |
 
-The trial ratios come out above the square-root law at both resolutions,
-and the reason is visible in the `monte_carlo` column of the earlier
-table, which does not fall with trials either. Only the median term is
-an average over trials. Whether the scale term is mostly the error of
-estimating a MAD from `iter` draws, or a real difference between the two
-bases’ spreads, decides whether it can be held fixed when combining the
-series — so it is separated rather than assumed, by differencing the
-tenfold references against each other.
+The point estimates for the full shift differ from the
+inverse-square-root prediction. The shift contains both median and scale
+components, each with finite-reference estimation error. Comparing the
+tenfold references gives further diagnostics, but neither establishes a
+scale trend nor justifies holding it fixed when extrapolating.
 
 ``` r
 decomposed <- subset(results, !is.na(between_rho))
@@ -590,6 +575,53 @@ knitr::kable(signif(rbind(`between-base median` = trend("between_d0"),
 | between-base median | 0.0380 | 0.02540 |   -0.01270 | 0.00653 |         1.940 |
 | between-base scale  | 0.0103 | 0.00828 |   -0.00197 | 0.00237 |         0.831 |
 
+A positive mean absolute difference alone cannot establish unequal
+population spreads: finite references differ even under equality. Each
+pair therefore repeats the between-base estimate with a second response
+seed. Conditional on the saved bases, differencing the replicates
+removes their common target and any common bias. It probes
+response-sampling variability, not bias relative to the population MAD
+ratio.
+
+``` r
+precise_770 <- decomposed[decomposed$n_trials == 770, ]
+
+# Two shared-draw replicates of the same between-base quantity. Their difference
+# carries response-sampling error alone; common finite-sample bias survives it,
+# so these are magnitudes to report rather than terms of a test.
+estimate <- (precise_770$between_rho + precise_770$between_rho_alt) / 2
+error <- precise_770$between_rho - precise_770$between_rho_alt
+
+c(between_base = mean(abs(estimate)), replicate_error_sd = sd(error) / sqrt(2),
+  se_of_mean = sd(abs(estimate)) / sqrt(nrow(precise_770)))
+      between_base replicate_error_sd         se_of_mean 
+       0.007990065        0.004425206        0.001126322 
+```
+
+The replicate spread is response-sampling variability at this iteration
+count, not a calibration of the magnitude beside it: mean absolute
+values and standard deviations are different summaries, and the common
+finite-sample bias in a MAD ratio is invisible to a difference of
+replicates. Sharing response seeds across base pairs also means these
+across-pair summaries do not capture all response-seed uncertainty.
+
+Whether the two bases’ population MAD ratios differ at all, and how much
+of the scale term is estimation error, are therefore left open here.
+Both need an inferential model for the replicate error rather than a
+comparison of summary magnitudes. No conclusion below rests on either.
+
+In these samples the median component’s mean absolute value drops by 1.9
+standard errors, close to what the inverse-square-root model predicts —
+0.0237 against 0.0254 observed. The scale one has a lower point estimate
+at the higher count, but at 0.8 standard errors these samples do not
+separate that from no change, so whether it falls at all is open here.
+
+The following extrapolation assumes inverse-square-root scaling for the
+median component and no change in the scale component of each sampled
+512px pair. Both are modelling assumptions at the unmeasured trial
+count. An unresolved scale trend does not support a zero trend, and the
+direction of error is unknown because signed components can cancel.
+
 ``` r
 components <- function(rows) c(median_term = mean(abs(rows$d0)), scale_term = mean(abs(rows$rho)))
 knitr::kable(signif(do.call(rbind, lapply(split(at_64px, at_64px$n_trials), components)), 3))
@@ -620,27 +652,24 @@ c(measured_512px_300_trials = mean(abs(shift(at_512, cutoff))),
                 0.22161474 
 ```
 
-The median term falls by the square-root law and the scale term declines
-far more slowly, so the estimate scales the first and holds the second.
-That is a model rather than a bound: both terms are signed and can
-cancel, so holding the scale term at its 300-trial value can as easily
-lower the result as raise it. On that model a study at 512 pixels and
-770 trials carries roughly 0.06 in z, against 0.08 measured at 512
-pixels and 300 trials — a figure assembled from two measured components
-rather than measured in place. Adding the two magnitudes rather than the
-signed terms removes the cancellation and gives 0.07, which bounds the
-mean of these modelled shifts rather than any one of them; the largest
-single pair among them reaches 0.22.
+Under these assumptions the estimate scales the median term and holds
+the scale term fixed. That is a model rather than a bound on real
+studies: both terms are signed and can cancel, so holding the scale term
+at its 300-trial value can as easily lower the result as raise it. On
+that model a study at 512 pixels and 770 trials carries roughly 0.06 in
+z, against 0.08 measured at 512 pixels and 300 trials — a modelled
+sample mean rather than a measurement at that configuration. Adding the
+two magnitudes rather than the signed terms removes the cancellation and
+gives 0.07, which bounds the mean of these modelled shifts rather than
+any one of them; the largest single pair among them reaches 0.22.
 
-This also puts the 24-trial reproduction in the issue in proportion.
-Extrapolating the square-root law to 24 trials gives a median term of
-about 0.16, and the full shift there is not that number: the scale term
-is larger at 24 trials than anywhere in this series, and being signed it
-can add to the median term or cancel against it. What the comparison
-supports is narrow — the −0.067 observed in the issue falls below the
-median term alone, so it is one draw rather than a measure of the
-distribution it came from, and a real study with hundreds of trials sits
-well below that median term.
+Extrapolating the 64px inverse-square-root model to 24 trials gives a
+mean absolute median component of about 0.16. That is not an estimate of
+the full shift in \#299: the issue used 512 reference draws and a
+particular synthetic CI, whereas the sweep uses 10,000 draws and models
+shifts at the cut-off. No 24-trial scale component is measured here. The
+issue’s single reproduction demonstrates the bug, not its typical
+impact.
 
 ## What it takes to reach a different conclusion
 
@@ -673,34 +702,28 @@ knitr::kable(data.frame(true_infoval_spread = names(spreads), flipped = round(fl
 | uniform 1.5-2.5     |  0.0525 |
 | uniform 1.94-1.98   |  0.4611 |
 
-Those spreads are stand-ins, not measurements: what InfoVals look like
-across real studies is not something this package records, and none of
-them bounds the answer. The rate is set by how much of a study’s InfoVal
-distribution sits within the shift of the cut-off, so it falls as the
-distribution broadens — 1.4% over a four-unit spread, 0.5% over ten —
-and rises without a useful bound as it narrows. The last row makes that
-concrete: concentrate every InfoVal within a few hundredths of 1.96 and
-46% of the calls change, approaching the probability that the shift
-points across the threshold at all.
-
-Which row a given study resembles is the whole question, and it is not
-one this package can answer: nothing records what InfoVals look like in
-practice. A study whose classification images mostly carry strong signal
-sits near the top rows; one that reports values hovering at the
-threshold sits near the bottom one, and for it the rate is high. The
-effect of the bug is bounded only by where a study’s InfoVals actually
-fall.
+These are artificial populations crossed independently with every
+sampled reference pair. In these examples the flip rate is 1.4% for the
+four-unit uniform spread and 0.5% for the ten-unit spread, rising to 46%
+in the near-threshold example. This is not a general monotonic
+relationship with distribution width: location, shift direction, and
+dependence between InfoVals and reference pairs also matter. None of
+these examples estimates an affected-study rate or bounds one beyond the
+trivial 0–100%.
 
 And a classification image is only exposed if all of these hold:
 
 1.  InfoVal was computed at all — a feature from 0.4.0 onward, while
     CRAN carried 0.3.4.1 until the 2021 archival.
 2.  The stimulus set has two or more base images.
-3.  It was generated with `use_same_parameters = FALSE`, which is not
-    the default and appears in no vignette, example, test, or InfoVal
-    configuration of the release gate.
+3.  It was generated with the non-default `use_same_parameters = FALSE`.
+    In the repository revision examined, this setting appears in no
+    vignette, example, test, or InfoVal configuration of the release
+    gate — evidence about documented and tested coverage, not about
+    researchers’ usage.
 4.  The classification image comes from a base image other than the
-    first — `(k-1)/k` of the images in such a study.
+    first. For k bases, k-1 bases are exposed; the fraction of analyzed
+    CIs depends on how many are computed for each base.
 
 ## What is not affected
 
@@ -711,51 +734,43 @@ after the first.
 
 ## Limits
 
-How often anyone sets `use_same_parameters = FALSE` is unknown. There is
-no telemetry, and the only issue naming the setting is \#299 itself,
-raised by an audit of the code rather than by anyone reporting it from
-their own work — which is an absence of reports, not evidence of an
-absence of use. Condition 3 above is therefore unquantified rather than
-measured to be rare, and this document bounds the damage per affected
-classification image, not the number of affected studies.
+How often anyone sets `use_same_parameters = FALSE` is unknown. Issue
+\#299 was raised by a code audit and does not provide usage data from
+researchers’ studies. Condition 3 above is therefore unquantified rather
+than measured to be rare. What this document characterizes is the size
+of the damage to an affected classification image, in sampled means and
+the largest value among the pairs it drew; it bounds neither that damage
+for an individual image nor the number of affected studies.
 
-The two references compared here share their simulated response draws,
-which reduces the Monte Carlo error in their difference without removing
-it: 10,000 draws leave both medians and both MADs with sampling error of
-their own, so `d0` and `rho` mix the noise realization with what remains
-of it. That residual is not measured here. It is of the order of the
-single-reference error above, which is smaller than the shift, and a fix
-drawing base 2’s responses independently would add error of that order
-again rather than leaving these numbers as they stand.
+The references share simulated response draws. Their medians and MADs
+retain sampling error, so the measured shift combines differences
+between saved noise realizations with finite-reference error under that
+coupling. Sharing draws can change the variance of the difference; its
+direction and size cannot be inferred from the single-reference control.
+The repeated tenfold references diagnose variability at their own
+iteration count, not the residual error in the 10,000-draw shift.
 
-Resolution is measured at 300 trials, trial count at 64 and 128 pixels,
-and the corner a real study occupies — 512 pixels with several hundred
-trials — in neither. The estimate for it is a product of the two series.
-Its median term is scaled by a law measured to hold and its scale term
-is held flat, which is a modelling choice in neither direction: the
-terms are signed, so holding the scale term up can cancel the median
-term as easily as add to it. The resolution factor itself is not
-resolved at all.
+Resolution comparisons use 300 trials; trial-count comparisons use 64px
+and 128px. The 512px, 770-trial result is an extrapolation with
+unresolved resolution dependence and scale trend. The threshold
+illustrations use 770 trials at 64px and cannot be transferred to 512px
+merely by multiplying by a mean shift ratio. Flip rates depend on the
+joint distribution of InfoVals and shifts, not only on mean absolute
+shift. The artificial populations assume independence from the sampled
+reference pairs; actual study responses need not satisfy that
+assumption.
 
-Everything reported under “the error is scatter” and “what it takes to
-reach a different conclusion” is measured at 770 trials and 64 pixels.
-If the rise with resolution is real — and at under one standard error
-this measurement neither shows it nor rules it out — those shifts and
-the flip rates with them would be larger at 512 pixels; more trials
-would shrink the median term and the scale term far more slowly, so the
-two would not simply cancel.
+This is not an old-versus-fixed package comparison. A fix must select
+the requested base and separate cached references; forwarding
+`use_same_parameters` alone is insufficient (#299). Its RNG behavior
+depends on the implementation and whether `response_seed` is supplied.
+The eventual fix needs its own reproducibility measurement before
+quoting a correction in `NEWS.md`.
 
-The shift measured here is the noise-realization component of what a fix
-corrects, measured with the response draws held still across the two
-references. The package draws its responses from the state left after
-stimulus regeneration, and a fix forwarding `use_same_parameters`
-consumes the later bases’ parameter draws first, so an old-versus-fixed
-comparison also moves the response sample, by something of the order of
-the rerun column. With that said, this is the size to quote in a
-`NEWS.md` “Reproducibility impact” entry: around 0.05 in z at 64 pixels
-and 770 trials, an estimated 0.06 for a default-sized study, with
-individual classification images in these samples moving by as much as
-0.35; scatter rather than a correction in a direction; a median term
-falling as one over the square root of the trial count and a scale term
-that declines far more slowly; and no base image affected but the second
-and later.
+For orientation, the shared-response mean absolute shift at the cut-off
+is 0.05 at 64px and 770 trials, with 0.06 under the 512px, 770-trial
+extrapolation. The largest sampled value is 0.35 in the 100-trial
+configuration — all of them shifts modelled for an InfoVal sitting at
+the cut-off, since this document generates no classification images and
+so observes no movement of one. Sample means and maxima bound neither
+individual studies nor the population distribution of shifts.
