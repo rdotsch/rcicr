@@ -1,6 +1,13 @@
 What the wrong-base InfoVal reference does to a conclusion
 ================
 
+> **Historical render; regeneration pending.** This file predates the current
+> [analysis source](infoval-reference-impact.Rmd). Its interpretations are superseded:
+> the scale diagnostic does not establish a population spread difference, the 512px/
+> 770-trial result is an extrapolation, and these simulations do not measure the
+> correction from a package fix. The saved output is retained for comparison. Re-knit
+> the current source before treating this report as the PR's final result.
+
 - [The reference distribution ignores which base you
   score](#the-reference-distribution-ignores-which-base-you-score)
 - [Base 2’s own reference](#base-2s-own-reference)
