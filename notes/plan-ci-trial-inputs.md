@@ -2,9 +2,16 @@
 
 ## Verified evidence
 
-At main 2b1313a, R/ci-inputs.R coerces trial vectors and checks only stimulus/response lengths. selectStimulusParams() indexes the saved matrix without validating IDs. R/generateCINoise.R multiplies stimuli by responses without checking row alignment. R/computeCumulativeCICorrelation.R separately indexes stimuli and has no trial-length check. These statements were checked against the current files through GitHub.
+Source inspection at plan commit a2d82b206bc73696043f351720c27e4d3cea8aa4 (production files unchanged from its main parent 2b1313a75f889df96e3f3963bde76bae7e144a4b):
 
-The runtime evidence in #294 and #300 records reproductions on Linux release/devel, macOS and Windows: two participant IDs recycle across twenty trials, fractional IDs truncate, and zero IDs drop rows while responses recycle. This plan adds no new runtime measurements.
+- [coerceTrialVectors(), R/ci-inputs.R lines 16–32](https://github.com/rdotsch/rcicr/blob/a2d82b206bc73696043f351720c27e4d3cea8aa4/R/ci-inputs.R#L16-L32): lines 17–20 unlist the vectors, lines 23–27 check only stimulus/response lengths, and lines 29–32 return without checking participant length.
+- [selectStimulusParams(), R/ci-inputs.R lines 70–75](https://github.com/rdotsch/rcicr/blob/a2d82b206bc73696043f351720c27e4d3cea8aa4/R/ci-inputs.R#L70-L75): line 71 directly indexes the saved parameter matrix with stimuli; the following check only rejects an empty selection.
+- [generateCINoise(), R/generateCINoise.R lines 18–30](https://github.com/rdotsch/rcicr/blob/a2d82b206bc73696043f351720c27e4d3cea8aa4/R/generateCINoise.R#L18-L30): line 20 multiplies stimuli by responses immediately; the dimension branch at lines 23–27 runs after multiplication and does not check alignment.
+- [computeCumulativeCICorrelation(), R/computeCumulativeCICorrelation.R lines 74–135](https://github.com/rdotsch/rcicr/blob/a2d82b206bc73696043f351720c27e4d3cea8aa4/R/computeCumulativeCICorrelation.R#L74-L135): lines 78–79 unlist the two trial vectors, and line 130 indexes directly with stimuli after loading and checking the saved fields and base label. There is no trial-length or ID validation between function entry and this selection.
+
+Each linked file was fetched at the full commit SHA through github_fetch_file and its returned contents numbered from line 1 to verify these locations. These are source observations, not new runtime measurements.
+
+The runtime evidence in [#294](https://github.com/rdotsch/rcicr/issues/294) and [#300](https://github.com/rdotsch/rcicr/issues/300) records reproductions on Linux release/devel, macOS and Windows: two participant IDs recycle across twenty trials, fractional IDs truncate, and zero IDs drop rows while responses recycle. This plan adds no new runtime measurements.
 
 ## Proposed contract
 
