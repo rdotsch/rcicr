@@ -179,16 +179,14 @@ base images it fires on the first and the rest never run. Under the default
 the returned frame has one column per trial, so it could not represent the alternative anyway.
 Documented on `@param return_as_dataframe` rather than changed.
 
-InfoVal was unaffected **for the first base image**, checked not assumed:
-`generateReferenceDistribution2IFC()` is the only in-package caller, never passes
-`use_same_parameters`, and the first base image's parameters come from the same leading RNG block
-either way — measured identical, max absolute difference 0. The same omission scored *later* base
-images against the first one's null ([#299](https://github.com/rdotsch/rcicr/issues/299)); its
-cost is measured in [`analyses/infoval-reference-impact.md`](analyses/infoval-reference-impact.md).
-Independent-base references now take an explicit `baseimage` label, rebuild that base's saved
-noise, and cache per base; their default response draws keep the old RNG offset, so shared and first-base numbers hold.
-Widening the frame would change the return shape, so it needs a **new argument**, never a
-redefinition.
+*Later* base images were scored against the first one's null
+([#299](https://github.com/rdotsch/rcicr/issues/299)), at a cost measured in
+[`analyses/infoval-reference-impact.md`](analyses/infoval-reference-impact.md). Independent-base
+references now take a `baseimage` label, use that base's saved noise, and cache per base.
+Default draws keep the old RNG offset, and on a post-0.3.0 file the first base's parameters come
+from the same leading RNG block — max absolute difference 0 — so shared and post-0.3.0
+first-base numbers hold. A *pre-0.3.0* independent file is the exception (see above): its trials cannot be rebuilt from the seed, so its first base moves too. Widening the
+frame would change the return shape, so it needs a **new argument**, never a redefinition.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI
