@@ -515,9 +515,12 @@ rather than measured.
 precise_770 <- decomposed[decomposed$n_trials == 770, ]
 observed <- mean(abs(precise_770$between_rho))
 null <- mean(abs(precise_770$null_rho))
+# Paired: the two share a denominator and a base pair, so the standard error
+# comes from the per-pair differences rather than from adding marginal variances.
+excess <- abs(precise_770$between_rho) - abs(precise_770$null_rho)
 c(between_base = observed, same_base_null = null, ratio = observed / null,
-  ses_apart = (observed - null) / sqrt(var(abs(precise_770$between_rho)) / nrow(precise_770) +
-                                       var(abs(precise_770$null_rho)) / nrow(precise_770)))
+  excess = mean(excess), paired_se = sd(excess) / sqrt(length(excess)),
+  ses_apart = mean(excess) / (sd(excess) / sqrt(length(excess))))
 ```
 
 Read that ratio before reading anything below it. Where the between-base component stands clear of
@@ -663,8 +666,8 @@ all.
 Everything reported under "the error is scatter" and "what it takes to reach a different conclusion"
 is measured at 770 trials and 64 pixels. If the rise with resolution is real — and at under one
 standard error this measurement neither shows it nor rules it out — those shifts and the flip rates
-with them would be larger at 512 pixels; more trials would shrink the median term and the scale term
-far more slowly, so the two would not simply cancel.
+with them would be larger at 512 pixels; more trials would shrink the median term, while what they do
+to the scale term is unresolved above, so the two do not simply cancel.
 
 The shift measured here is the noise-realization component of what a fix corrects, measured with the
 response draws held still across the two references. The package draws its responses from the state
