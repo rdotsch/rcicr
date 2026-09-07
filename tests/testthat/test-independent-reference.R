@@ -54,8 +54,9 @@ test_that("each independent base uses its saved trial noise for reference and In
 # rebuild advanced the stream before the responses. Both settings, or the offset
 # is only right at the one it was written against.
 for (scales in c(1, 3)) {
-  test_that(paste0("independent defaults retain the old shared-rebuild response stream (nscales = ",
-                   scales, ")"), {
+  title <- paste0("independent defaults retain the old shared-rebuild response stream (nscales = ",
+                  scales, ")")
+  test_that(title, {
     path <- make_independent_fixture(withr::local_tempdir(), nscales = scales)
     saved <- read_reference_fixture(path)
     suppressWarnings(generateStimuli2IFC(saved$base_face_files, saved$n_trials,
