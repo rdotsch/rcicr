@@ -50,22 +50,28 @@ test_that("each independent base uses its saved trial noise for reference and In
   }
 })
 
-test_that("independent defaults retain the old shared-rebuild response stream", {
-  path <- make_independent_fixture(withr::local_tempdir())
-  saved <- read_reference_fixture(path)
-  suppressWarnings(generateStimuli2IFC(saved$base_face_files, saved$n_trials,
-                                       saved$img_size, seed = saved$seed, noise_type = saved$noise_type,
-                                       nscales = saved$nscales, sigma = saved$sigma, ncores = 1,
-                                       return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE))
-  responses <- replicate(24, ((runif(saved$n_trials) > 0.5) * 2) - 1)
-  for (key in c("first", "second")) {
-    expected <- reference_oracle(saved, key, responses = responses)
-    expect_equal(selected_reference(path, key, response_seed = NULL), expected,
-                 tolerance = 1e-12)
-  }
-  expect_equal(selected_reference(path, "second", ncores = 2),
-               selected_reference(path, "second", ncores = 1), tolerance = 1e-12)
-})
+# nscales decides how many parameters a trial draws, and so how far the shared
+# rebuild advanced the stream before the responses. Both settings, or the offset
+# is only right at the one it was written against.
+for (scales in c(1, 3)) {
+  test_that(paste0("independent defaults retain the old shared-rebuild response stream (nscales = ",
+                   scales, ")"), {
+    path <- make_independent_fixture(withr::local_tempdir(), nscales = scales)
+    saved <- read_reference_fixture(path)
+    suppressWarnings(generateStimuli2IFC(saved$base_face_files, saved$n_trials,
+                                         saved$img_size, seed = saved$seed, noise_type = saved$noise_type,
+                                         nscales = saved$nscales, sigma = saved$sigma, ncores = 1,
+                                         return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE))
+    responses <- replicate(24, ((runif(saved$n_trials) > 0.5) * 2) - 1)
+    for (key in c("first", "second")) {
+      expected <- reference_oracle(saved, key, responses = responses)
+      expect_equal(selected_reference(path, key, response_seed = NULL), expected,
+                   tolerance = 1e-12)
+    }
+    expect_equal(selected_reference(path, "second", ncores = 2),
+                 selected_reference(path, "second", ncores = 1), tolerance = 1e-12)
+  })
+}
 
 test_that("selection is required from actual differing matrices and validates keys", {
   path <- make_independent_fixture(withr::local_tempdir())
