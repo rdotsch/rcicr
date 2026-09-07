@@ -7,6 +7,11 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        # Knitted analyses are byte-for-byte what their .Rmd produces, which is
+        # what makes them checkable. R prints a named vector with trailing
+        # spaces, so normalising them here would put the committed file
+        # permanently at odds with a fresh knit.
+        exclude: ^analyses/.*\.md$
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-merge-conflict
