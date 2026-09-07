@@ -180,13 +180,15 @@ The mask helpers live in `R/generateCI.R` rather than a file of their own becaus
 | `label`, `stimulus_path` | What the files were called and where they were written. |
 | `generator_version` | The rcicr version that wrote the file — see the caveat below. |
 
-`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** two more fields to
-the same file the first time you compute an informational value:
+`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** fields to the same
+file the first time you compute an informational value. Which ones depends on whether the
+base images share a parameter matrix:
 
 | Object | What it is |
 |---|---|
-| `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. |
+| `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. Written when the base images share one parameter matrix. |
 | `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in 1.2.0. |
+| `reference_norms_by_base` | Named list keyed by base image, each entry holding that base's `norms` and the `response_seed` they were drawn with. Written in place of the two fields above when the base images carry *different* parameter matrices, since each base then needs a null built from its own saved noise. An unscoped `reference_norms` in such a file is left untouched and unread. Added after 1.3.0. |
 
 Two things worth knowing before you write code against this file:
 
