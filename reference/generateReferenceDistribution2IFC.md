@@ -11,7 +11,8 @@ generateReferenceDistribution2IFC(
   iter = 10000,
   ncores = default_ncores(),
   response_seed = NULL,
-  save_rdata = TRUE
+  save_rdata = TRUE,
+  baseimage = NULL
 )
 ```
 
@@ -50,6 +51,14 @@ generateReferenceDistribution2IFC(
   will use – worth doing whenever `response_seed` is set, so a one-off
   null does not become the file's permanent reference.
 
+- baseimage:
+
+  Saved base-image label, using the same key as
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
+  Required when the saved base images have different noise parameters.
+  With a single base or identical parameter matrices, `NULL` retains the
+  shared reference behavior.
+
 ## Value
 
 The reference distribution, invisibly, as a numeric vector of `iter`
@@ -58,6 +67,8 @@ norms. Unless `save_rdata = FALSE`, it is also added to the supplied
 recording the `response_seed` it was generated with), so a later call to
 [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
 using the same file can reuse it instead of re-simulating.
+Independent-base references instead use `reference_norms_by_base`, as
+described above.
 
 ## Details
 
@@ -73,18 +84,29 @@ depend on `ncores`. Two researchers who compute InfoVal from the same
 stimulus file therefore get the same number, and the same reference
 distribution, on different machines and in different sessions.
 
-This is a guarantee, not a coincidence, and it is relied upon: the
-function re-generates the stimuli through
-[`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md),
-whose internal [`set.seed()`](https://rdrr.io/r/base/Random.html) call
-uses the seed stored in the `.Rdata` file and lands before the random
-responses below are drawn.
+Shared-parameter files re-generate the stimuli through
+[`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md).
+Independent bases use their saved noise basis and parameters directly.
+Both paths seed responses from the state following one shared parameter
+matrix's draws at the saved stimulus seed, preserving the historical
+default response stream.
 
 Pass an explicit `response_seed` to draw a \*different\* null from the
 same stimuli – for instance to check how much Monte Carlo error a given
 `iter` leaves in your InfoVal. This changes only the simulated
 responses; the stimuli themselves, and so the noise basis the null is
 built on, are unaffected.
+
+## Independent base images
+
+When saved parameter matrices differ, supply `baseimage` explicitly. The
+selected base's noise is reconstructed from the saved basis and
+parameters, without reading the original images. Cached distributions
+are stored in `reference_norms_by_base`, keyed by base label, with
+`norms` and `response_seed` in each entry. Old unscoped
+`reference_norms` are neither reused nor overwritten for independent
+bases. Existing shared-parameter files continue using their unscoped
+cache and reconstruction.
 
 ## Examples
 

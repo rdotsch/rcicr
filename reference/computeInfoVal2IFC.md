@@ -10,7 +10,8 @@ computeInfoVal2IFC(
   rdata,
   iter = 10000,
   force_gen_ref_dist = FALSE,
-  response_seed = NULL
+  response_seed = NULL,
+  baseimage = NULL
 )
 ```
 
@@ -53,6 +54,17 @@ computeInfoVal2IFC(
   result is deliberately *not* written back to the `rdata` file, so a
   one-off check cannot change the number every later analysis of that
   stimulus set reports.
+
+- baseimage:
+
+  Saved base-image label used to generate `target_ci`. Required when
+  saved base images have different noise parameters; use the same label
+  passed to
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
+  With a single base or identical parameter matrices, the default `NULL`
+  retains the shared reference behavior. Independent-base caches are
+  separate for each label; old unscoped reference norms are ignored for
+  those files.
 
 ## Value
 

@@ -44,7 +44,8 @@
 <span>  iter <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>  ncores <span class="op">=</span> <span class="fu">default_ncores</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  response_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  save_rdata <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  save_rdata <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  baseimage <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -78,6 +79,12 @@ distribution without changing what later calls to <code><a href="computeInfoVal2
 use – worth doing whenever <code>response_seed</code> is set, so a one-off null does not become
 the file's permanent reference.</p></dd>
 
+
+<dt id="arg-baseimage">baseimage<a class="anchor" aria-label="anchor" href="#arg-baseimage"></a></dt>
+<dd><p>Saved base-image label, using the same key as <code><a href="generateCI.html">generateCI()</a></code>.
+Required when the saved base images have different noise parameters. With a single base
+or identical parameter matrices, <code>NULL</code> retains the shared reference behavior.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -85,7 +92,8 @@ the file's permanent reference.</p></dd>
 Unless <code>save_rdata = FALSE</code>, it is also added to the supplied <code>rdata</code> file as
 <code>reference_norms</code> (alongside <code>reference_norms_seed</code>, recording the
 <code>response_seed</code> it was generated with), so a later call to
-<code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> using the same file can reuse it instead of re-simulating.</p>
+<code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> using the same file can reuse it instead of re-simulating.
+Independent-base references instead use <code>reference_norms_by_base</code>, as described above.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -100,14 +108,25 @@ the stimulus <code>.Rdata</code> file alone. It does not depend on the ambient r
 state of the calling session, and it does not depend on <code>ncores</code>. Two researchers
 who compute InfoVal from the same stimulus file therefore get the same number, and the
 same reference distribution, on different machines and in different sessions.</p>
-<p>This is a guarantee, not a coincidence, and it is relied upon: the function re-generates
-the stimuli through <code><a href="generateStimuli2IFC.html">generateStimuli2IFC</a></code>, whose internal <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>
-call uses the seed stored in the <code>.Rdata</code> file and lands before the random responses
-below are drawn.</p>
+<p>Shared-parameter files re-generate the stimuli through <code><a href="generateStimuli2IFC.html">generateStimuli2IFC</a></code>.
+Independent bases use their saved noise basis and parameters directly. Both paths seed
+responses from the state following one shared parameter matrix's draws at the saved
+stimulus seed, preserving the historical default response stream.</p>
 <p>Pass an explicit <code>response_seed</code> to draw a *different* null from the same stimuli –
 for instance to check how much Monte Carlo error a given <code>iter</code> leaves in your
 InfoVal. This changes only the simulated responses; the stimuli themselves, and so the
 noise basis the null is built on, are unaffected.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="independent-base-images">Independent base images<a class="anchor" aria-label="anchor" href="#independent-base-images"></a></h2>
+
+
+<p>When saved parameter matrices differ, supply <code>baseimage</code> explicitly. The selected
+base's noise is reconstructed from the saved basis and parameters, without reading the
+original images. Cached distributions are stored in <code>reference_norms_by_base</code>,
+keyed by base label, with <code>norms</code> and <code>response_seed</code> in each entry. Old unscoped
+<code>reference_norms</code> are neither reused nor overwritten for independent bases.
+Existing shared-parameter files continue using their unscoped cache and reconstruction.</p>
     </div>
 
     <div class="section level2">

@@ -44,7 +44,8 @@
 <span>  <span class="va">rdata</span>,</span>
 <span>  iter <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>  force_gen_ref_dist <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  response_seed <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  response_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  baseimage <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -77,6 +78,14 @@ forces a fresh reference distribution to be simulated from an independent draw, 
 how you check how much Monte Carlo error <code>iter</code> leaves in this Informational Value.
 The result is deliberately <em>not</em> written back to the <code>rdata</code> file, so a one-off
 check cannot change the number every later analysis of that stimulus set reports.</p></dd>
+
+
+<dt id="arg-baseimage">baseimage<a class="anchor" aria-label="anchor" href="#arg-baseimage"></a></dt>
+<dd><p>Saved base-image label used to generate <code>target_ci</code>. Required when
+saved base images have different noise parameters; use the same label passed to
+<code><a href="generateCI.html">generateCI()</a></code>. With a single base or identical parameter matrices, the default
+<code>NULL</code> retains the shared reference behavior. Independent-base caches are separate
+for each label; old unscoped reference norms are ignored for those files.</p></dd>
 
 </dl></div>
     <div class="section level2">
