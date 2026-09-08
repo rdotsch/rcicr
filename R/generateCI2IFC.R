@@ -24,7 +24,7 @@
 #' classification images. This can be automatized using the \code{autoscale} function.
 #'
 #' @export
-#' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
+#' @param stimuli Numeric vector of stimulus numbers in response order, with one finite, positive whole number per response, within the trials saved for the selected base image. Repeated and nonconsecutive numbers are allowed. Factors, characters and logicals are rejected; verify imported labels against the generated stimulus filenames before converting them to numeric IDs.
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.

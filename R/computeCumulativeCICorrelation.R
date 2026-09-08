@@ -42,7 +42,7 @@
 #' @export
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats cor
-#' @param stimuli Vector with stimulus numbers (should be numeric) that were presented in the order of the response vector. Stimulus numbers must match those in file name of the generated stimuli.
+#' @param stimuli Numeric vector of stimulus numbers in response order, with one finite, positive whole number per response, within the trials saved for the selected base image. Repeated and nonconsecutive numbers are allowed. Factors, characters and logicals are rejected; verify imported labels against the generated stimulus filenames before converting them to numeric IDs.
 #' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
 #' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
@@ -75,8 +75,9 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
 
   # Coerce to plain vectors: tibble columns stay one-column tibbles rather than
   # dropping to vectors (see the same handling in generateCI()).
-  stimuli <- unlist(stimuli, use.names = FALSE)
-  responses <- unlist(responses, use.names = FALSE)
+  trials <- coerceTrialVectors(stimuli, responses, NA)
+  stimuli <- trials$stimuli
+  responses <- trials$responses
 
   # load() assigns straight into this function's frame, so any object stored in
   # the .Rdata file silently overwrites an argument of the same name - the same
@@ -127,6 +128,7 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   # a one-row matrix rather than a vector, so the params[1:trial, ] slice in the
   # cumulative loop below stays valid; without it a length-1 `stimuli` aborted
   # with "incorrect number of dimensions" regardless of parameter count.
+  validateStimulusIds(stimuli, nrow(stimuli_params[[baseimage]]))
   params <- stimuli_params[[baseimage]][stimuli, , drop = FALSE]
 
   # Check whether parameters were found in this .rdata file
