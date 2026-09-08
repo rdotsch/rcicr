@@ -27,7 +27,7 @@
 
 ## Performance
 
-- `generateReferenceDistribution2IFC()` converts shared stimulus data to a matrix once per call instead of once per simulated response set (#306). This avoids repeatedly copying the same data during reference simulation. Reference norms and the random-number stream are unchanged.
+- **`generateReferenceDistribution2IFC()` no longer re-copies its stimulus data on every simulated response set** (#306). Converting it once per call speeds up reference simulation, and so the `computeInfoVal2IFC()` calls that have to generate one. The gain is largest at small image sizes and narrows as the matrix-vector product itself becomes memory-bound. Reference norms and the random-number stream are unchanged.
 
 ## Documentation
 
