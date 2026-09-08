@@ -105,9 +105,7 @@
 <div class="section level3">
 <h3 id="autoscale-leaves-combined-untouched--intentional">
 <code>autoscale()</code> leaves <code>$combined</code> untouched — intentional<a class="anchor" aria-label="anchor" href="#autoscale-leaves-combined-untouched--intentional"></a></h3>
-<p>Flagged as a bug and changed; <strong>Ron overruled, and the change was reverted.</strong> <code>$combined</code> must stay as the caller supplied it, so a combination made before autoscaling survives the call and existing scripts keep plotting the same image; <code>$scaled</code> carries the autoscaled result. The user-facing problem was never the code but that nothing said which field to look at.</p>
-<p>The trap worth knowing: after <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code> (which scales <code>'none'</code> first) <code>$combined</code> is an overlay of <em>unscaled</em> noise and looks almost blank. Build it as <code>(ci$scaled + ci$base) / 2</code>, which is what <code>save_as_pngs = TRUE</code> writes.</p>
-<p>What kept this cheap to undo: it was filed under its own “Behaviour change” heading rather than slipped in with unambiguous bug fixes. <strong>When a fix is debatable, say so.</strong></p>
+<p>At Ron’s direction, <code>$combined</code> stays as the caller supplied it; <code>$scaled</code> carries the autoscaled result. After <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code> (which initially scales with ‘none’), <code>$combined</code> overlays unscaled noise and can look almost blank. Build <code>(ci$scaled + ci$base) / 2</code> to obtain what <code>save_as_pngs = TRUE</code> writes. Changing <code>$combined</code> would change existing scripts’ plotted images.</p>
 </div>
 <div class="section level3">
 <h3 id="base_face_files-validation-rejects-two-inputs-that-used-to-run">
@@ -219,6 +217,10 @@
 </div>
 <div class="section level2">
 <h2 id="arguments-and-internal-guards">Arguments and internal guards<a class="anchor" aria-label="anchor" href="#arguments-and-internal-guards"></a></h2>
+<div class="section level3">
+<h3 id="trial-alignment-errors-stop-computation">Trial alignment errors stop computation<a class="anchor" aria-label="anchor" href="#trial-alignment-errors-stop-computation"></a></h3>
+<p>Participant recycling and malformed stimulus indices can produce plausible CIs from wrong trials (#294, #300). Warnings would still return those results, so these calls error instead. Factors and character IDs require explicit conversion based on experiment records: factor codes and matrix row names are not stimulus numbers. Validation precedes aggregation because aggregation can discard missing IDs. The all-NA convention remains; missing participant semantics are separate.</p>
+</div>
 <div class="section level3">
 <h3 id="write-paths-are-required-arguments-not-defaults-of-tempdir">Write paths are required arguments, not defaults of <code>tempdir()</code>
 <a class="anchor" aria-label="anchor" href="#write-paths-are-required-arguments-not-defaults-of-tempdir"></a></h3>

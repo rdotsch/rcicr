@@ -13,8 +13,8 @@ generateCINoise(stimuli, responses, p)
 
 - stimuli:
 
-  Matrix with one row per trial, each row containing the 4092 parameters
-  for the original stimulus.
+  Matrix with one parameter row per response. A parameter vector is also
+  accepted for a single trial with exactly one response.
 
 - responses:
 

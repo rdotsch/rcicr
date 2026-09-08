@@ -192,22 +192,13 @@ with *k* supplied by R’s [`mad()`](https://rdrr.io/r/stats/mad.html)
 
 ### `autoscale()` leaves `$combined` untouched — intentional
 
-Flagged as a bug and changed; **Ron overruled, and the change was
-reverted.** `$combined` must stay as the caller supplied it, so a
-combination made before autoscaling survives the call and existing
-scripts keep plotting the same image; `$scaled` carries the autoscaled
-result. The user-facing problem was never the code but that nothing said
-which field to look at.
-
-The trap worth knowing: after
+At Ron’s direction, `$combined` stays as the caller supplied it;
+`$scaled` carries the autoscaled result. After
 [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
-(which scales `'none'` first) `$combined` is an overlay of *unscaled*
-noise and looks almost blank. Build it as `(ci$scaled + ci$base) / 2`,
-which is what `save_as_pngs = TRUE` writes.
-
-What kept this cheap to undo: it was filed under its own “Behaviour
-change” heading rather than slipped in with unambiguous bug fixes.
-**When a fix is debatable, say so.**
+(which initially scales with ‘none’), `$combined` overlays unscaled
+noise and can look almost blank. Build `(ci$scaled + ci$base) / 2` to
+obtain what `save_as_pngs = TRUE` writes. Changing `$combined` would
+change existing scripts’ plotted images.
 
 ### `base_face_files` validation rejects two inputs that used to run
 
@@ -567,6 +558,16 @@ Each iteration now allocates only its own trial’s noise.
 ------------------------------------------------------------------------
 
 ## Arguments and internal guards
+
+### Trial alignment errors stop computation
+
+Participant recycling and malformed stimulus indices can produce
+plausible CIs from wrong trials (#294, \#300). Warnings would still
+return those results, so these calls error instead. Factors and
+character IDs require explicit conversion based on experiment records:
+factor codes and matrix row names are not stimulus numbers. Validation
+precedes aggregation because aggregation can discard missing IDs. The
+all-NA convention remains; missing participant semantics are separate.
 
 ### Write paths are required arguments, not defaults of `tempdir()`
 

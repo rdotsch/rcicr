@@ -56,6 +56,26 @@
   [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
   from the existing `.Rdata`.
 
+- **Malformed CI trial inputs now report an error instead of silently
+  changing trial assignments.**
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  requires one participant ID per trial when grouping is enabled. It,
+  [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
+  and
+  [`computeCumulativeCICorrelation()`](https://rdotsch.github.io/rcicr/reference/computeCumulativeCICorrelation.md)
+  reject empty, missing, nonfinite, nonpositive, fractional or
+  out-of-range stimulus IDs, and factor, character or logical IDs.
+  Direct
+  [`generateCINoise()`](https://rdotsch.github.io/rcicr/reference/generateCINoise.md)
+  calls reject mismatched parameter rows and responses. Valid numeric
+  inputs and the all-NA no-grouping convention are preserved. If an
+  existing script now errors, recover the correct trial IDs and
+  participant assignments from the experiment records and recompute
+  affected CIs and downstream results; do not pad or recycle IDs to
+  satisfy the check.
+  ([\#294](https://github.com/rdotsch/rcicr/issues/294),
+  [\#300](https://github.com/rdotsch/rcicr/issues/300))
+
 ### Documentation
 
 - **`ChangeLog` is frozen at 1.0.1 and is no longer updated.** It keeps

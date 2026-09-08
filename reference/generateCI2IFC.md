@@ -27,9 +27,12 @@ generateCI2IFC(
 
 - stimuli:
 
-  Vector with stimulus numbers (should be numeric) that were presented
-  in the order of the response vector. Stimulus numbers must match those
-  in file name of the generated stimuli.
+  Numeric vector of stimulus numbers in response order, with one finite,
+  positive whole number per response, within the trials saved for the
+  selected base image. Repeated and nonconsecutive numbers are allowed.
+  Factors, characters and logicals are rejected; verify imported labels
+  against the generated stimulus filenames before converting them to
+  numeric IDs.
 
 - responses:
 
