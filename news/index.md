@@ -76,6 +76,18 @@
   ([\#294](https://github.com/rdotsch/rcicr/issues/294),
   [\#300](https://github.com/rdotsch/rcicr/issues/300))
 
+### Performance
+
+- **[`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+  no longer re-copies its stimulus data on every simulated response
+  set** ([\#306](https://github.com/rdotsch/rcicr/issues/306)).
+  Converting it once per call speeds up reference simulation, and so the
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  calls that have to generate one. The gain is largest at small image
+  sizes and narrows as the matrix-vector product itself becomes
+  memory-bound. Reference norms and the random-number stream are
+  unchanged.
+
 ### Documentation
 
 - **`ChangeLog` is frozen at 1.0.1 and is no longer updated.** It keeps
@@ -86,6 +98,8 @@
   removed from it.
 
 ## rcicr 1.3.0 (2026-08-18)
+
+CRAN release: 2026-09-02
 
 ### Behaviour changes
 
