@@ -72,10 +72,14 @@ New block in `tests/testthat/test-fixed-bugs.R`, asserting intended behaviour:
 
 - Two named bases × two trials with both flags on writes **eight** PNGs, named for both bases,
   under `use_same_parameters` TRUE and FALSE.
-- `base2`'s decoded pixels differ from `base1`'s, so the test cannot pass by writing the same
-  image twice.
-- `base1`'s decoded pixels equal `(noise + 0.3) / 0.6` combined with its base face, computed
-  independently from the saved parameters — pinning that the first base's output did not move.
+- **Every base's** decoded pixels equal `(noise + 0.3) / 0.6` combined with that base's face,
+  with the noise reconstructed from that base's own row of `stimuli_params` — `base2` against
+  `stimuli_params$base2`, not merely against `base1`'s output. Under
+  `use_same_parameters = FALSE` the base faces differ, so "base2 differs from base1" would hold
+  even if the implementation wrote base2's face over base1's noise; only reconstruction from the
+  independent parameter matrix rules that out. Guarded by asserting the two parameter matrices
+  differ, so the fixture cannot make the comparison vacuous.
+- Decoded pixels are compared to 8-bit precision, since `writePNG()` quantises.
 - The returned frame is 1024 x 2 and equals the first base's noise.
 - With `save_as_png = FALSE`, `generateNoiseImage()` is called once per trial regardless of base
   count (via `trace()`, serial only), pinning the property in the fourth row of the table above.
