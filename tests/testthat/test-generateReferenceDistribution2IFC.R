@@ -250,3 +250,52 @@ test_that("the saved file records which seed produced its norms, and no argument
   expect_false(any(c("response_seed", "save_rdata", "rdata", "ncores", "iter") %in%
                      ls(seeded_run, all.names = TRUE)))
 })
+
+test_that('reference matrix reuse preserves legacy norms, RNG and saved fields exactly', {
+  withr::local_seed(42)
+  for (scales in c(1, 3)) {
+    path <- make_fixture_rdata(withr::local_tempdir(), nscales = scales)
+    original <- new.env(parent = emptyenv())
+    load(path, envir = original)
+
+    for (response_seed in list(NULL, 91)) {
+      stimuli <- suppressWarnings(generateStimuli2IFC(
+        base_face_files = original$base_face_files,
+        n_trials = original$n_trials, img_size = original$img_size,
+        seed = original$seed, noise_type = original$noise_type,
+        nscales = original$nscales, sigma = original$sigma, ncores = 1,
+        return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE
+      ))
+      expect_s3_class(stimuli, 'data.frame')
+      if (!is.null(response_seed)) set.seed(response_seed)
+      expected <- numeric(24)
+      # Retain the old loop's coercion and arithmetic as the compatibility oracle.
+      for (i in seq_along(expected)) {
+        responses <- ((runif(original$n_trials) > 0.5) * 2) - 1
+        ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
+        expected[i] <- norm(ci, 'f')
+      }
+      expected_rng <- .Random.seed
+
+      actual <- suppressWarnings(generateReferenceDistribution2IFC(
+        path, iter = length(expected), ncores = 1,
+        response_seed = response_seed, save_rdata = TRUE
+      ))
+      actual_rng <- .Random.seed
+      expect_identical(actual, expected)
+      expect_identical(actual_rng, expected_rng)
+      expect_gt(length(unique(actual)), 1)
+
+      saved <- new.env(parent = emptyenv())
+      load(path, envir = saved)
+      expect_setequal(ls(saved, all.names = TRUE), c(
+        ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed'
+      ))
+      for (name in ls(original, all.names = TRUE)) {
+        expect_identical(saved[[name]], original[[name]], info = name)
+      }
+      expect_identical(saved$reference_norms, expected)
+      expect_identical(saved$reference_norms_seed, response_seed)
+    }
+  }
+})

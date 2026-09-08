@@ -25,6 +25,10 @@
 
 - **Malformed CI trial inputs now report an error instead of silently changing trial assignments.** `generateCI()` requires one participant ID per trial when grouping is enabled. It, `generateCI2IFC()` and `computeCumulativeCICorrelation()` reject empty, missing, nonfinite, nonpositive, fractional or out-of-range stimulus IDs, and factor, character or logical IDs. Direct `generateCINoise()` calls reject mismatched parameter rows and responses. Valid numeric inputs and the all-NA no-grouping convention are preserved. If an existing script now errors, recover the correct trial IDs and participant assignments from the experiment records and recompute affected CIs and downstream results; do not pad or recycle IDs to satisfy the check. (#294, #300)
 
+## Performance
+
+- **`generateReferenceDistribution2IFC()` no longer re-copies its stimulus data on every simulated response set** (#306). Converting it once per call speeds up reference simulation, and so the `computeInfoVal2IFC()` calls that have to generate one. The gain is largest at small image sizes and narrows as the matrix-vector product itself becomes memory-bound. Reference norms and the random-number stream are unchanged.
+
 ## Documentation
 
 - **`ChangeLog` is frozen at 1.0.1 and is no longer updated.** It keeps the record of

@@ -163,6 +163,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # Re-generate stimuli based on rdata parameters in matrix form
   write("Re-generating stimuli based on rdata file, please wait...", stdout())
   stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed = seed, noise_type = noise_type, nscales = nscales, sigma = sigma, ncores = ncores, return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE)
+  stimuli <- as.matrix(stimuli)
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
@@ -202,7 +203,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
     responses <- ((runif(n_trials) > 0.5) * 2) - 1
 
     # Compute classification image for this iteration
-    ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
+    ci <- (stimuli %*% as.matrix(responses)) / ncol(stimuli)
 
     # Save norm for this iteration
     reference_norms[i] <- norm(ci, "f")
