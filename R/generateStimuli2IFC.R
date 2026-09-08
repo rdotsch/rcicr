@@ -220,10 +220,25 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
       trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial, ], p)
     }
 
-    for (base_face in names(base_faces)) {
+    # Nothing past the first base face is written when save_as_png is FALSE, and
+    # the frame below carries only the first base face's noise either way. This
+    # keeps generateReferenceDistribution2IFC()'s no-PNG re-generation at one
+    # generateNoiseImage() call per trial however many base faces there are.
+    trial_bases <- if (save_as_png) names(base_faces) else names(base_faces)[1]
+    returned_noise <- NULL
+
+    for (base_face in trial_bases) {
       if (!use_same_parameters) {
         # compute noise pattern unique to this base face
         trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], p)
+      }
+
+      # The frame holds one noise image per trial, so it can carry only the
+      # first base face's; ?generateStimuli2IFC documents that. Captured inside
+      # the loop because after it trial_noise holds the *last* base face's noise
+      # when use_same_parameters is FALSE.
+      if (return_as_dataframe && is.null(returned_noise)) {
+        returned_noise <- as.vector(trial_noise)
       }
 
       # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
@@ -248,18 +263,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
       if (save_as_png) {
         png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep = "_"), sep = '/'))
       }
-
-      # Return CI
-      if (return_as_dataframe) {
-        # Advance the bar here too. This return exits the entire foreach body,
-        # not just this loop, so the update below it never ran on this path and
-        # the bar sat at zero for the whole run (issue #82). It is duplicated
-        # rather than hoisted above the loop deliberately: `trial_noise` is
-        # reassigned per base face when use_same_parameters is FALSE, so moving
-        # this return would change *which* base face's noise is returned.
-        if (is.null(cl)) setTxtProgressBar(pb, trial)
-        return(as.vector(trial_noise))
-      }
     }
 
     # Serial path only; in parallel the bar is driven from the parent by
@@ -267,10 +270,10 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     if (is.null(cl)) setTxtProgressBar(pb, trial)
 
     # The body's value feeds .combine/.final even when it is discarded (it is,
-    # unless return_as_dataframe). Return it explicitly: the guard above is
-    # NULL-valued when parallel, and cbind()ing NULLs collapses the frame that
-    # .final then tries to setNames() to n_trials columns.
-    trial
+    # unless return_as_dataframe), and must never be NULL: cbind()ing NULLs
+    # collapses the frame that .final then tries to setNames() to n_trials
+    # columns.
+    if (return_as_dataframe) returned_noise else trial
   }
   if (!is.null(cl)) {
     parallel::stopCluster(cl)
