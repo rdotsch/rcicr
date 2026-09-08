@@ -569,8 +569,8 @@ test_that("generateStimuli2IFC writes every base image's stimuli when returning 
         noise <- generateNoiseImage(e$stimuli_params[[base]][trial, ], e$p)
         for (suffix in names(signs)) {
           expected <- ((signs[[suffix]] * noise + 0.3) / 0.6 + e$base_faces[[base]]) / 2
-          written <- png::readPNG(file.path(out,
-            sprintf("rcic_%s_31_%05d_%s.png", base, trial, suffix)))
+          stimulus <- sprintf("rcic_%s_31_%05d_%s.png", base, trial, suffix)
+          written <- png::readPNG(file.path(out, stimulus))
           # Compared through the same writer rather than against the matrix:
           # 8-bit quantisation, and what png does with the few pixels that noise
           # beyond the nominal +/-0.3 puts outside [0, 1], then apply to both.
@@ -584,18 +584,18 @@ test_that("generateStimuli2IFC writes every base image's stimuli when returning 
 
     # The returned frame is unchanged: one noise image per trial, the first
     # base's, exactly as before the fix.
+    first_noise <- vapply(1:2, function(i) {
+      as.vector(generateNoiseImage(e$stimuli_params$one[i, ], e$p))
+    }, numeric(1024))
     expect_equal(dim(frame), c(1024L, 2L))
-    expect_equal(as.matrix(frame),
-                 vapply(1:2, function(i) as.vector(
-                   generateNoiseImage(e$stimuli_params$one[i, ], e$p)), numeric(1024)),
-                 ignore_attr = TRUE)
+    expect_equal(as.matrix(frame), first_noise, ignore_attr = TRUE)
   }
 })
 
 test_that("generateStimuli2IFC computes noise once per trial when it writes no PNGs", {
-  # Issue #302's fix must not make generateReferenceDistribution2IFC() pay for
-  # base images whose noise it never uses: that call asks for the data frame
-  # with save_as_png = FALSE, and the frame holds only the first base's noise.
+  # Issue #302's fix must not make reference generation pay for base images
+  # whose noise it never uses: it asks for the data frame and no PNGs, and the
+  # frame holds only the first base image's noise.
   tmp <- withr::local_tempdir()
   bases <- lapply(setNames(1:3, c("one", "two", "three")), function(i) {
     make_square_png(file.path(tmp, paste0(i, ".png")), size = 32, seed = i)
