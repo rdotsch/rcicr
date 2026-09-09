@@ -31,7 +31,7 @@ Locally, R 4.3.3, package installed from the working tree at `be3facb`, on a
 | masked zero CI, `independent` | 512 intended NA kept, **512 unmasked pixels NaN** |
 
 Two of the five paths already answer this question, and both answer `0.5`. The fix makes the
-other two agree rather than inventing a policy.
+other three agree rather than inventing a policy.
 
 Also measured: a base image's range after the default contrast maximization is exactly `[0, 1]`.
 
@@ -41,8 +41,13 @@ A zero-range CI renders **neutral** rather than NaN, and is not an error — a b
 `save_individual_cis = TRUE` would otherwise abort over one participant whose responses happen to
 cancel.
 
-1. `independent`: a zero constant yields `0.5`. That is the limit of `(ci + c) / (2c)` as
-   `c -> 0`, and what `constant` scaling already returns for the same input.
+1. `independent`: a zero constant yields `0.5` — what `constant` scaling already returns for the
+   same input, and what `autoscale()` already returns for a zero CI sitting beside one with
+   signal. This is a policy, not a limit: the scaling constant is derived from the CI, so along
+   `ci = t * x` the scaled result is invariant in `t` and depends only on the shape of `x` —
+   measured at `t` of 1e-3 and 1e-9, an all-positive pattern gives `1` and an all-negative one
+   `0`. Nothing is being approached; `0.5` is chosen for consistency with the two paths that
+   already answer.
 2. `autoscale()`: same, when the constant across the whole list is zero.
 3. `matched`: the midpoint of the base image's range, `min(base) + (max(base) - min(base)) / 2`.
    **Not a literal `0.5`**: this method's contract is to map the CI onto the base image's
@@ -93,9 +98,20 @@ limitation is stated where the argument is documented.
 
 ## NEWS.md and DECISIONS.md
 
-`NEWS.md`: under the existing **Behaviour changes** heading in the development section, below
-#302's entry — this one only ever produced NaN, where #302 produced missing files.
+`NEWS.md`: under **Reproducibility impact**, not Behaviour changes. `$scaled` and `$combined` are
+numeric fields of an existing call's return value, and this changes them, so the guiding
+constraint puts it there however unusable the old NaN was. The entry bounds the impact rather
+than overstating it: only a CI whose raw values are exactly zero is affected, every CI with
+signal is untouched, and a result that was NaN cannot have carried a published number.
 
 `DECISIONS.md` gets the reasoning for neutral-not-error, and for `matched` differing from the
 other two. It is at 5197 words against a 5200 budget, so something comes out in the same commit;
 `AGENTS.md` requires the trim rather than the overflow.
+
+The trim is a correction that is due anyway. The entry "`return_as_dataframe = TRUE` returns one
+noise image per trial, not per trial x base image" still explains itself through the early
+`return()` that #310 removed, and closes "Documented on `@param return_as_dataframe` rather than
+changed" — no longer true. Its conclusion stands: the frame has one column per trial, so widening
+it needs a new argument rather than a redefinition. Rewriting it to rest on the frame's shape
+instead of the deleted control flow makes it true again and frees the words this entry needs, so
+no sound reasoning is deleted to make room.
