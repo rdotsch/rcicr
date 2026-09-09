@@ -76,6 +76,20 @@
   ([\#294](https://github.com/rdotsch/rcicr/issues/294),
   [\#300](https://github.com/rdotsch/rcicr/issues/300))
 
+### Behaviour changes
+
+- **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  now writes stimuli for every base image when it also returns a data
+  frame.** With more than one base image and
+  `return_as_dataframe = TRUE`, only the first base image’s PNGs were
+  written, although the call succeeded and the `.Rdata` file recorded
+  every base image’s parameters. A stimulus set generated that way is
+  incomplete: re-run the same call with the same `seed` to write the
+  missing files. Nothing already collected is invalidated. The stimuli
+  that were written are unchanged, as is the returned data frame, which
+  still holds one noise image per trial for the first base image.
+  ([\#302](https://github.com/rdotsch/rcicr/issues/302))
+
 ### Performance
 
 - **[`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
