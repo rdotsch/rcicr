@@ -25,6 +25,16 @@
 
 - **Malformed CI trial inputs now report an error instead of silently changing trial assignments.** `generateCI()` requires one participant ID per trial when grouping is enabled. It, `generateCI2IFC()` and `computeCumulativeCICorrelation()` reject empty, missing, nonfinite, nonpositive, fractional or out-of-range stimulus IDs, and factor, character or logical IDs. Direct `generateCINoise()` calls reject mismatched parameter rows and responses. Valid numeric inputs and the all-NA no-grouping convention are preserved. If an existing script now errors, recover the correct trial IDs and participant assignments from the experiment records and recompute affected CIs and downstream results; do not pad or recycle IDs to satisfy the check. (#294, #300)
 
+## Behaviour changes
+
+- **`generateStimuli2IFC()` now writes stimuli for every base image when it also returns a data
+  frame.** With more than one base image and `return_as_dataframe = TRUE`, only the first base
+  image's PNGs were written, although the call succeeded and the `.Rdata` file recorded every
+  base image's parameters. A stimulus set generated that way is incomplete: re-run the same call
+  with the same `seed` to write the missing files. Nothing already collected is invalidated. The
+  stimuli that were written are unchanged, as is the returned data frame, which still holds one
+  noise image per trial for the first base image. (#302)
+
 ## Performance
 
 - **`generateReferenceDistribution2IFC()` no longer re-copies its stimulus data on every simulated response set** (#306). Converting it once per call speeds up reference simulation, and so the `computeInfoVal2IFC()` calls that have to generate one. The gain is largest at small image sizes and narrows as the matrix-vector product itself becomes memory-bound. Reference norms and the random-number stream are unchanged.
