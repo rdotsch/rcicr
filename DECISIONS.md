@@ -134,6 +134,23 @@ It matches the erratum to Schmitz et al. (2019): the Euclidean norm, with *k* su
 ### `autoscale()` leaves `$combined` untouched — intentional
 At Ron's direction, `$combined` stays as the caller supplied it; `$scaled` carries the autoscaled result. After `batchGenerateCI()` (which initially scales with 'none'), `$combined` overlays unscaled noise and can look almost blank. Build `(ci$scaled + ci$base) / 2` to obtain what `save_as_pngs = TRUE` writes. Changing `$combined` would change existing scripts' plotted images.
 
+### A CI with no range renders neutral, not NaN — and `matched` renders it differently
+Exactly cancelling responses give an all-zero CI. That is a result, so the range-based methods
+fill it neutrally rather than dividing by a zero range into NaN
+([#303](https://github.com/rdotsch/rcicr/issues/303)). `0.5` is a **policy, not a limit**: the
+constant is derived from the CI, so along `ci = t * x` the scaled result is invariant in `t` — an
+all-positive pattern gives 1, an all-negative one 0. It is chosen because `constant` scaling
+already returns it here, as does `autoscale()` for a zero CI beside one with signal.
+
+`matched` takes the midpoint of the **base image's** range: it renders into that range, and `0.5`
+can sit outside it — a base spanning `[0, 0.3]` would show a no-signal CI brighter than any pixel
+in it. Under the default contrast maximization the base spans `[0, 1]` and the two coincide.
+
+The guards differ deliberately: `matched` needs any range, so a uniform *non-zero* CI triggers it
+too; `independent` divides by magnitude, so only an exactly-zero CI does. An entirely masked CI
+has no values rather than no range and is left alone. Erroring was rejected: one participant
+whose responses cancel would abort a whole `save_individual_cis = TRUE` call.
+
 ### `base_face_files` validation rejects two inputs that used to run
 Duplicate names, and a list element that is not a single file name, now stop the call. Both ran
 before, so this is a considered exception to the constraint above — allowed because neither ever
@@ -163,11 +180,12 @@ string and a `package_version`, and compare with `numeric_version()` semantics �
 field; it detects the old `sinusoids`/`sinIdx` layout structurally. Just as well.
 
 ### `return_as_dataframe = TRUE` returns one noise image per trial, not per trial × base image
-`generateStimuli2IFC()`'s early `return()` sits *inside* the per-base-image loop, so with several
-base images it fires on the first and the rest never run. Under the default
-`use_same_parameters = TRUE` that is correct — every base image shares one parameter set — and
-the returned frame has one column per trial, so it could not represent the alternative anyway.
-Documented on `@param return_as_dataframe` rather than changed.
+The frame has one column per trial, so it cannot represent trial × base image and carries the
+first base image's noise — which under the default `use_same_parameters = TRUE` is every base
+image's noise. Documented on `@param return_as_dataframe` rather than changed. Widening it would
+change the return shape, so it needs a **new argument**, never a redefinition. Stimuli are
+written for every base image either way; that they once were not was
+[#302](https://github.com/rdotsch/rcicr/issues/302), a bug, not this decision.
 
 *Later* base images were scored against the first one's null
 ([#299](https://github.com/rdotsch/rcicr/issues/299)), at a cost measured in
@@ -175,8 +193,8 @@ Documented on `@param return_as_dataframe` rather than changed.
 references now take a `baseimage` label, use that base's saved noise, and cache per base.
 Default draws keep the old RNG offset, and on a post-0.3.0 file the first base's parameters come
 from the same leading RNG block — max absolute difference 0 — so shared and post-0.3.0
-first-base numbers hold. A *pre-0.3.0* independent file is the exception (see above): its trials cannot be rebuilt from the seed, so its first base moves too. Widening the
-frame would change the return shape, so it needs a **new argument**, never a redefinition.
+first-base numbers hold. A *pre-0.3.0* independent file is the exception (see above): its trials
+cannot be rebuilt from the seed, so its first base moves too.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI

@@ -25,6 +25,17 @@
 
 - **Malformed CI trial inputs now report an error instead of silently changing trial assignments.** `generateCI()` requires one participant ID per trial when grouping is enabled. It, `generateCI2IFC()` and `computeCumulativeCICorrelation()` reject empty, missing, nonfinite, nonpositive, fractional or out-of-range stimulus IDs, and factor, character or logical IDs. Direct `generateCINoise()` calls reject mismatched parameter rows and responses. Valid numeric inputs and the all-NA no-grouping convention are preserved. If an existing script now errors, recover the correct trial IDs and participant assignments from the experiment records and recompute affected CIs and downstream results; do not pad or recycle IDs to satisfy the check. (#294, #300)
 
+- **A classification image with no signal now renders as a uniform neutral image instead of
+  NaN.** Responses that cancel exactly give an all-zero raw CI. `generateCI()` under its default
+  `scaling = "independent"`, and under `scaling = "matched"`, and `autoscale()` when every CI in
+  its list is zero, divided by a zero range and returned NaN for every pixel of `$scaled` and
+  `$combined`. They now fill the unmasked pixels with a neutral value and warn: `0.5` for
+  `independent` and `autoscale()`, which is what `constant` scaling already returned for the same
+  input, and the midpoint of the base image's range for `matched`, which renders into that range.
+  Masked pixels keep their NA and the unscaled `$ci` is unchanged. Only a CI whose values are
+  exactly zero is affected — every CI with signal returns exactly what it did before, and a
+  result that was NaN cannot have carried a published number. (#303)
+
 ## Behaviour changes
 
 - **`generateStimuli2IFC()` now writes stimuli for every base image when it also returns a data
