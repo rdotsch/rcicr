@@ -76,6 +76,31 @@
   ([\#294](https://github.com/rdotsch/rcicr/issues/294),
   [\#300](https://github.com/rdotsch/rcicr/issues/300))
 
+- **A classification image with no range now renders as a uniform
+  neutral image instead of NaN.** Three cases divided by a zero range.
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  under its default `scaling = "independent"` did so for a CI whose
+  pixels are all exactly zero — what exactly cancelling responses
+  produce — making every pixel of `$scaled` and `$combined` NaN. Under
+  `scaling = "matched"` the same happened for any CI with no variation
+  at all, a uniform *non-zero* one included.
+  [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
+  did so when every CI in its list was zero, in `$scaled` only: it
+  leaves the caller’s `$combined` untouched, as always.
+
+  All three now fill the unmasked pixels with a neutral value and warn:
+  `0.5` for `independent` and
+  [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md),
+  which is what `constant` scaling already returned for the same input,
+  and the midpoint of the base image’s range for `matched`, which
+  renders into that range. Masked pixels keep their NA and the unscaled
+  `$ci` is unchanged.
+
+  **Every value that changes was NaN before.** No finite number moves,
+  no CI with any variation in it is affected, and a result that was NaN
+  cannot have carried a published number.
+  ([\#303](https://github.com/rdotsch/rcicr/issues/303))
+
 ### Behaviour changes
 
 - **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
