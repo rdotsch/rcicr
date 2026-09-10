@@ -35,7 +35,8 @@
   `computeInfoVal2IFC()` call on an existing file therefore pays for one reference distribution
   and warns that it has; `reference_norms_source` is recorded alongside so it happens once and
   not per call. For files that were already correct, which is most of them, the value comes back
-  the same.
+  identical and nothing is said about it; the warning is raised only where rebuilding actually
+  changed the numbers.
 
   A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
   for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating

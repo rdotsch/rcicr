@@ -298,3 +298,56 @@ test_that("an unmarked cache is refreshed even when the file records nscales", {
   expect_identical(again$reference_norms, marked)
   expect_equal(second, first)
 })
+
+test_that("a refresh that changes nothing is silent, and survives warn = 2", {
+  # Most unmarked caches were already correct, and refreshing reproduces them
+  # exactly. Warning on those would put a compatibility notice on stimulus sets
+  # nothing happened to, and stop any script running with warnings as errors.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  # A genuine cache from this version, aged by removing only its marker.
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 20, ncores = 1, save_rdata = TRUE)
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  genuine <- e$reference_norms
+  rm("reference_norms_source", envir = e)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata, iter = 20)),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  # It was refreshed and marked, and came back identical, so nothing is said.
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_identical(after$reference_norms, genuine)
+  expect_identical(after$reference_norms_source, "saved_noise")
+  expect_false(any(grepl("built references from the saved noise",
+                         warnings_seen, fixed = TRUE)))
+
+  # The discriminating case: a cache that really is different does warn.
+  e2 <- new.env()
+  load(rdata, envir = e2)
+  e2$reference_norms <- rep(0.5, 20)
+  rm("reference_norms_source", envir = e2)
+  save(list = ls(e2, all.names = TRUE), file = rdata, envir = e2)
+
+  moved <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
+    warning = function(cond) {
+      moved <<- c(moved, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("gave different values", moved, fixed = TRUE)))
+})

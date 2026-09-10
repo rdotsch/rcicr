@@ -125,22 +125,22 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # the cache, so an old analysis script rerun on an old stimulus set would keep
   # returning the superseded value.
   #
+  # Whether the value actually moved is only knowable afterwards, so the norms
+  # are kept here and the warning is issued further down, on a difference. Most
+  # of these files were already correct and come back identical; warning on those
+  # too would put a compatibility notice on stimulus sets nothing happened to,
+  # and be fatal under options(warn = 2).
+  #
   # A `reference_norms_seed` means someone asked for that exact null, so it is
   # left alone; recomputing one of those is a deliberate act.
   cached <- exists("reference_norms", envir = environment(), inherits = FALSE)
+  .previous_norms <- if (cached) reference_norms else NULL
   stale_cache <- cached &&
     !identical(get0("reference_norms_source", envir = environment(),
                     inherits = FALSE), "saved_noise") &&
     is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
   if (stale_cache) {
     force_gen_ref_dist <- TRUE
-    msg <- paste0('This stimulus file carries a reference distribution from ',
-      'before rcicr built references from the saved noise. There is no way to ',
-      'tell from the file whether it was built on the noise these stimuli ',
-      'actually use, so it is being regenerated once from the saved noise. ',
-      'The InfoVal this returns supersedes any computed from this file before.'
-    )
-    warning(msg, call. = FALSE)
   }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
@@ -245,6 +245,16 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
         # caller's classification image between here and the computation of it.
         load(rdata)
         list2env(.args, envir = environment())
+
+        # Only now can the refresh above say whether it changed anything.
+        if (stale_cache && !identical(reference_norms, .previous_norms)) {
+          msg <- paste0('This stimulus file carried a reference distribution ',
+            'from before rcicr built references from the saved noise, and ',
+            'rebuilding it from the saved noise gave different values. The ',
+            'InfoVal this returns supersedes any computed from this file before.'
+          )
+          warning(msg, call. = FALSE)
+        }
 
         # NB: write() defaults to file = "data", so omitting stdout() here did
         # not print this message - it silently created a file called "data" in
