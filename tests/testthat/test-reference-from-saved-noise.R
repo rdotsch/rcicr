@@ -656,3 +656,61 @@ test_that("a cached reference is reused under a changed OutDec", {
   expect_true(any(grepl("Using reference distribution found in rdata file", said, fixed = TRUE)))
   expect_identical(unname(tools::md5sum(rdata)), before)
 })
+
+test_that("a refresh reproduces the cache only under the stimuli's RNG kind", {
+  # What NEWS.md's unchanged guarantee is conditioned on. seedResponseStream()
+  # replays the stimulus stream with set.seed(), which keeps the session's kind
+  # rather than restoring one, so the session doing the refresh decides -- not
+  # the session that built the reference being replaced.
+  withr::defer(RNGkind("Mersenne-Twister"))
+  tmp <- withr::local_tempdir()
+
+  RNGkind("Mersenne-Twister")
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 5, ncores = 1, save_rdata = TRUE)
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  cached <- e$reference_norms
+
+  refresh_under <- function(kind) {
+    x <- new.env()
+    load(rdata, envir = x)
+    x$reference_norms <- cached
+    rm("reference_norms_source", envir = x)
+    save(list = ls(x, all.names = TRUE), file = rdata, envir = x)
+    RNGkind(kind)
+    suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 5)))
+    y <- new.env()
+    load(rdata, envir = y)
+    y$reference_norms
+  }
+
+  expect_identical(refresh_under("Mersenne-Twister"), cached)
+  expect_false(identical(refresh_under("L'Ecuyer-CMRG"), cached))
+})
+
+test_that("a kind-changed refresh warns that its values superseded the cache", {
+  # The guarantee's escape hatch: where the kinds differ the numbers move, and
+  # NEWS.md says the call reports it. Silence there would be the failure.
+  withr::defer(RNGkind("Mersenne-Twister"))
+  tmp <- withr::local_tempdir()
+
+  RNGkind("Mersenne-Twister")
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  stale_the_cache(rdata)
+
+  RNGkind("L'Ecuyer-CMRG")
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+})

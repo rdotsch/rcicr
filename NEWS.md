@@ -21,13 +21,17 @@
   parameters and basis, and read no image.
 
   **Files that record `nscales` — everything written by 1.1.0 and later — are unchanged**, to the
-  last bit, along with the random stream the call leaves behind, provided their reference was
-  built under the same `RNGkind()` as their stimuli. `set.seed()` keeps whatever kind the session
-  has rather than restoring one, so a reference built under a different kind was already
-  describing a noise basis these stimuli never used, and it changes here too. Older files did not record it,
-  and the rebuild assumed the default 5: where the stimuli used a different `nscales`, the
-  reference described a noise basis the participants never saw, and pre-0.3.0 files were rebuilt
-  at a different stream offset again. Those references change, from wrong to right.
+  last bit, along with the random stream the call leaves behind, provided the session that
+  scores them runs the same `RNGkind()` as the one that generated their stimuli. `set.seed()`
+  keeps whatever kind the session has rather than restoring one, so every reference — the one an
+  older rcicr cached and the one rebuilt here — describes the kind that was in force when it ran.
+  Where those differ the values move and the call says so, whichever of the two was the odd one
+  out. Leave `RNGkind()` alone and this does not arise.
+
+  Older files did not record `nscales`, and the rebuild assumed the default 5: where the stimuli
+  used a different one, the reference described a noise basis the participants never saw, and
+  pre-0.3.0 files were rebuilt at a different stream offset again. Those references change, from
+  wrong to right.
 
   **Any reference distribution already cached in a stimulus file is regenerated once**, whatever
   version wrote it. Scoring writes that cache and `computeInfoVal2IFC()` reuses it, so without
