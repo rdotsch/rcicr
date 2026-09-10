@@ -17,57 +17,70 @@ selectReferenceBase <- function(rdata, baseimage) {
   list(independent = TRUE, baseimage = baseimage, source = source)
 }
 
-# The saved parameter matrix for one base image, normalized: selectStimulusParams()
-# drops the four columns a pre-0.3.0 file holds and never indexes, so its width is
-# also the number of draws the generator spent on each trial.
-# Ties a `reference_norms_source` marker to the norms it describes.
-#
-# The marker alone can outlive its data: an older rcicr re-saves every object it
-# loaded, so a release that predates the marker will preserve it while replacing
-# `reference_norms` with a rebuilt-basis distribution of its own. The file then
-# looks vouched-for and is not. A fingerprint that travels with the marker turns
-# that into a mismatch, and the norms are refreshed as if unmarked.
-#
-# Values drawn from the vector rather than computed from it, and numeric rather
-# than text. `format()` honours `OutDec` and `scipen`; `sum()` accumulates in
-# long double where the platform has one, so it can round differently for the
-# same bytes on a build without it. Either would make a cache fail to match
-# itself and be rebuilt on every call. Selection and `identical()` involve no
-# arithmetic and no formatting, so the fingerprint travels with the file.
+# Retain every value: identical() needs no hash dependency, formatting, or arithmetic.
 referenceFingerprint <- function(norms) {
-  n <- length(norms)
-  c(n, norms[c(1L, (n + 1L) %/% 2L, n)])
+  list(norms = norms)
 }
 
-# A cache is trusted only on positive evidence that it describes this file's
-# saved noise: the marker, and a fingerprint bound to the values it marks.
 vouchedReference <- function(norms, marker, fingerprint) {
   identical(marker, 'saved_noise') &&
     identical(fingerprint, referenceFingerprint(norms))
 }
 
-# Said by both storage shapes, so they cannot drift apart.
-#
-# It reports a migration the caller did not ask for, so it must not be the thing
-# that fails their call: under options(warn = 2) a warning is an error, and the
-# InfoVal -- already computed, and the corrected one -- would never be returned.
-# On a read-only archive there is no cache to write either, so every later call
-# would rebuild and abort again and the file could never be scored. Degrading to
-# a message under that setting keeps the value reachable and still says what
-# happened; ordinary warning behaviour is unchanged.
-warnReferenceSuperseded <- function() {
-  msg <- paste0('This stimulus file carried a reference distribution ',
-                'from before rcicr built references from the saved noise, and ',
-                'rebuilding it from the saved noise gave different values. The ',
-                'InfoVal this returns supersedes any computed from this file before.')
-  tryCatch(warning(msg, call. = FALSE), error = function(e) message(msg))
+# Both cache layouts use this policy; their generators own the storage details.
+resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
+                                  response_seed, baseimage = NULL) {
+  forced <- force_gen_ref_dist || !is.null(response_seed)
+  stale <- !is.null(entry) && is.null(entry$response_seed) &&
+    !vouchedReference(entry$norms, entry$source, entry$fingerprint)
+  if (!forced && !stale && !is.null(entry)) {
+    write('Using reference distribution found in rdata file.', stdout())
+    return(entry$norms)
+  }
+
+  # An unsolicited refresh must preserve the precision and RNG state of a cache hit.
+  automatic <- stale && !forced
+  if (automatic) iter <- length(entry$norms)
+  readonly <- automatic && !writableFile(rdata)
+  save_rdata <- is.null(response_seed) && !readonly
+  simulate <- function() {
+    withCallingHandlers(
+      generateReferenceDistribution2IFC(
+        rdata, iter = iter, response_seed = response_seed,
+        save_rdata = save_rdata, baseimage = baseimage
+      ),
+      warning = function(cond) {
+        # The inherited count is not a new choice the caller can act on.
+        if (automatic && iter < 10000 &&
+              grepl('iter >= 10000', conditionMessage(cond), fixed = TRUE)) {
+          invokeRestart('muffleWarning')
+        }
+      }
+    )
+  }
+  norms <- if (automatic) preserveRandomStream(simulate()) else simulate()
+
+  if (readonly) {
+    label <- if (is.null(baseimage)) 'the reference' else paste0('the reference for baseimage ', baseimage)
+    write(paste0('Rebuilt ', label, ' from saved noise, but ', rdata,
+                 ' is not writable, so the rebuilt values were used without being stored. ',
+                 'The next call will rebuild them again.'), stdout())
+  } else if (save_rdata) {
+    write('The reference distribution has been saved to the .Rdata file for reuse.', stdout())
+  } else {
+    write(paste0('Reference distribution simulated with response_seed = ', response_seed,
+                 '. This independent draw has deliberately not been saved.'), stdout())
+  }
+  if (stale && is.null(response_seed) && !identical(norms, entry$norms)) {
+    message('This stimulus file carried a reference distribution ',
+            'from before rcicr built references from the saved noise, and ',
+            'rebuilding it from the saved noise gave different values. The ',
+            'InfoVal this returns supersedes any computed from this file before.')
+  }
+  norms
 }
 
-# An automatic refresh is not something the caller asked for, so it must not
-# move their random stream. Before the refresh existed, a cached file was a
-# plain cache hit that consumed nothing; regenerating seeds and draws, which
-# would silently change every later sample() in an old analysis script. An
-# explicit regeneration keeps its documented stream behaviour.
+# A cache hit consumed no random numbers before automatic migration existed.
 preserveRandomStream <- function(expr) {
   had <- exists('.Random.seed', envir = globalenv(), inherits = FALSE)
   before <- if (had) get('.Random.seed', envir = globalenv(), inherits = FALSE)
@@ -113,16 +126,8 @@ referenceNoise <- function(source, baseimage, ncores) {
   matrix(noise, ncol = n_trials)
 }
 
-# Put the random stream where the simulated responses expect to find it.
-#
-# generateStimuli2IFC() seeds on the stimulus seed and then spends one draw per
-# parameter per trial, and the reference's responses have always been drawn from
-# whatever that left behind -- which is what makes an InfoVal reproducible from
-# the stimulus file under a fixed RNGkind(), and is documented as a guarantee on
-# ?generateReferenceDistribution2IFC. Since the stimuli
-# are no longer re-generated, that consumption is replayed here instead. The
-# width of the saved matrix is the count, so nothing has to be assumed about a
-# file that does not record its nscales.
+# Replay one normalized parameter matrix's draws to preserve the historical response stream.
+# selectStimulusParams() removes the four unused columns of pre-0.3.0 files.
 seedResponseStream <- function(source, baseimage, response_seed) {
   if (!is.null(response_seed)) {
     set.seed(response_seed)
@@ -168,54 +173,11 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
 computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed, selection) {
   cache <- selection$source$reference_norms_by_base
   if (!is.null(cache) && !is.list(cache)) stop('reference_norms_by_base must be a list.')
-  entry <- cache[[selection$baseimage]]
-
-  # Same rule as the shared path, for the same reason: an entry written before
-  # references came from the saved noise cannot be shown to describe it, so it
-  # is refreshed once rather than certified. An entry recording a response_seed
-  # is a null someone asked for and is left alone.
-  previous <- entry$norms
-  forced_by_caller <- force_gen_ref_dist || !is.null(response_seed)
-  stale <- !is.null(entry) && is.null(entry$response_seed) &&
-    !vouchedReference(previous, entry$source, entry$fingerprint)
-  inherited_iter <- FALSE
-  if (stale && !forced_by_caller) {
-    iter <- length(previous)
-    inherited_iter <- iter < 10000
-  }
-  readonly_refresh <- stale && !forced_by_caller && !writableFile(rdata)
-
-  if (forced_by_caller || stale || is.null(entry)) {
-    simulate <- function() {
-      withCallingHandlers(
-        generateReferenceDistribution2IFC(
-          rdata, iter = iter, response_seed = response_seed,
-          save_rdata = is.null(response_seed) && !readonly_refresh,
-          baseimage = selection$baseimage
-        ),
-        warning = function(cond) {
-          if (inherited_iter && grepl('iter >= 10000', conditionMessage(cond), fixed = TRUE)) {
-            invokeRestart('muffleWarning')
-          }
-        }
-      )
-    }
-    norms <- if (stale && !forced_by_caller) preserveRandomStream(simulate()) else simulate()
-    if (readonly_refresh) {
-      note <- paste0('Rebuilt this base image\'s reference distribution from its saved noise, ',
-                     'but ', rdata, ' is not writable, so the rebuilt values were used without ',
-                     'being stored. The next call will rebuild them again.')
-      write(note, stdout())
-    }
-    if (stale && is.null(response_seed) && !identical(norms, previous)) {
-      warnReferenceSuperseded()
-    }
-  } else {
-    norms <- previous
-    if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
-      stop('Invalid cached reference for baseimage ', selection$baseimage,
-           '. Use force_gen_ref_dist = TRUE to regenerate it.')
-    }
+  norms <- resolveReferenceNorms(cache[[selection$baseimage]], rdata, iter,
+                                 force_gen_ref_dist, response_seed, selection$baseimage)
+  if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
+    stop('Invalid cached reference for baseimage ', selection$baseimage,
+         '. Use force_gen_ref_dist = TRUE to regenerate it.')
   }
   cinorm <- norm(matrix(target_ci[['ci']]), 'f')
   info_val <- (cinorm - median(norms)) / mad(norms)
@@ -225,9 +187,7 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
   return(info_val)
 }
 
-# A seam, not a convenience: an automatic refresh has to know whether it may
-# write before it starts, and a test needs to deny that without depending on
-# permission bits the test's own user may outrank.
+# Named so tests can model read-only archives even when running as root.
 writableFile <- function(path) {
   unname(file.access(path, mode = 2)) == 0L
 }

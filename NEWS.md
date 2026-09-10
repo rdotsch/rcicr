@@ -14,58 +14,15 @@
 
   No stimuli need regenerating or responses recollecting. The [synthetic analysis in #307](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md) characterizes the reference mismatch through modeled shifts across 100 base-image pairs. It does not estimate affected-study rates or bound an individual study's change; recomputing its InfoVal gives that change.
 
-- **The InfoVal reference is built from the noise the stimulus file saved, not by re-generating
-  the stimuli.** `generateReferenceDistribution2IFC()` and `computeInfoVal2IFC()` reopened every
-  base image, so an archived or moved experiment could not be scored at all, and neither could a
-  uniform base made with `maximize_baseimage_contrast = FALSE`. Both now work from the saved
-  parameters and basis, and read no image.
+- **InfoVal references now use the saved noise basis and parameters.** Scoring no longer reopens base images or reconstructs the stimuli from their seed. Archived experiments with moved images and uniform bases made with `maximize_baseimage_contrast = FALSE` can therefore be scored. The obsolete `nscales`, `noise_type` and `sigma` fallback warnings are removed. (#301)
 
-  **Files that record `nscales` — everything written by 1.1.0 and later — are unchanged**, to the
-  last bit, along with the random stream the call leaves behind, provided the session that
-  scores them runs the same `RNGkind()` as the one that generated their stimuli. `set.seed()`
-  keeps whatever kind the session has rather than restoring one, so every reference — the one an
-  older rcicr cached and the one rebuilt here — describes the kind that was in force when it ran.
-  Where those differ the values move and the call says so, whichever of the two was the odd one
-  out. Leave `RNGkind()` alone and this does not arise.
+  References can change for pre-1.1.0 files whose missing settings were previously replaced by defaults, and for pre-0.3.0 files whose parameters could not be reconstructed from the seed. References are otherwise reproduced bit-for-bit when the old reconstruction matched the saved noise and the same `RNGkind()` is used for the response draws. Changing the RNG kind changes those draws, not the saved noise basis. The CI itself is unaffected; no stimuli need regenerating or responses recollecting.
 
-  Older files did not record `nscales`, and the rebuild assumed the default 5: where the stimuli
-  used a different one, the reference described a noise basis the participants never saw, and
-  pre-0.3.0 files were rebuilt at a different stream offset again. Those references change, from
-  wrong to right.
+  Existing default caches without matching provenance are refreshed once, for both shared and independent bases. Automatic refresh keeps the cached iteration count and preserves the caller's random state. Explicit regeneration still uses the requested count and advances the random stream. Read-only files use the refreshed norms in memory and identify the file and, for independent references, the base that could not be saved; they refresh again on the next call.
 
-  **Any reference distribution already cached in a stimulus file is regenerated once**, whatever
-  version wrote it. Scoring writes that cache and `computeInfoVal2IFC()` reuses it, so without
-  this the correction would never reach the files it is for. Nothing in a file says whether an
-  older cache was built on the noise its stimuli actually use — the old rebuild depended on
-  fields the file may not record, and on the RNG kind of the session that ran it, which
-  `set.seed()` does not restore — so such a cache is refreshed rather than trusted. The first
-  `computeInfoVal2IFC()` call on an existing file therefore pays for one reference distribution
-  and warns that it has; `reference_norms_source` is recorded alongside, with a
-  `reference_norms_fingerprint` binding it to the values it describes, so this happens once and
-  not per call — and a marker an older rcicr left behind on replaced norms does not vouch
-  for them. Independent-base files store a reference per base in `reference_norms_by_base`, and
-  each entry carries its own marker and fingerprint on the same terms. For files that were already correct, which is most of them, the value comes back
-  identical and nothing is said about it; the warning is raised only where rebuilding actually
-  changed the numbers. The refresh keeps the count of the cache it replaces rather than the
-  documented default, so a file holding a more precise null does not lose precision to a
-  rebuild nobody asked for; `iter` chooses the count only where the caller asked for the
-  regeneration. A read-only archive is scored from the rebuilt reference in memory rather
-  than failing on the write, and says so — correct value, rebuilt again on the next call. And
-  because the refresh is nobody's request, it puts the caller's random stream back where it
-  found it: a cached file used to consume none, so without that the first scoring call would
-  quietly move every later `sample()` in an old analysis script. An explicit
-  `force_gen_ref_dist` keeps the documented behaviour of seeding and drawing. Under
-  `options(warn = 2)` the superseding notice is given as a message rather than a warning, so a
-  migration nobody requested cannot abort the call before returning the corrected value — on a
-  read-only archive, which never records that it has migrated, that would have left the file
-  unscoreable on every call.
+  **If the norms change, a message says that the returned InfoVal supersedes earlier values.** This is a message under every warning setting, including `options(warn = 2)`; it is not collected by `warnings()` and can be hidden by `suppressMessages()`. Unchanged norms produce no superseding notice. Provenance includes a full copy of the norms, compared exactly, so an older writer cannot leave a trusted marker on replaced values. Earlier development fingerprints refresh once; no new package dependency is needed.
 
-  A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
-  for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating
-  1.1.0**. The CI itself is unaffected, and no stimuli need regenerating.
-
-  The `nscales`, `noise_type` and `sigma` warnings are gone with the rebuild that needed them.
-  (#301)
+  Deliberately seeded caches are retained. **Explicitly regenerate any seeded reference built from an incorrect reconstruction**, including affected pre-1.1.0 files, before recomputing InfoVal.
 
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can

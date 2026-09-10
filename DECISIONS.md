@@ -218,16 +218,11 @@ output for anyone calling without `targetci` *and* stop the curve ending at 1. W
 `generateCI()`'s own weighting suits unbalanced designs is filed separately.
 
 ### A cached reference is trusted only on positive evidence
-Scoring writes `reference_norms` into the stimulus file and later calls reuse it, so
-[#301](https://github.com/rdotsch/rcicr/issues/301)'s correction reaches nothing unless caches
-are invalidated. Nothing in a file can show an old cache was built on the noise its stimuli use: the old rebuild depended on fields the file may not record *and* on the session's
-`RNGkind()`, which `set.seed()` retains rather than restores. Keying invalidation off `nscales`
-certified wrong caches, and rebuilding here to compare would only certify a session
-whose kind matches. Hence a marker plus a fingerprint binding it to the values: an older
-rcicr re-saves objects it does not know, and would otherwise leave a valid-looking marker on
-norms it replaced. Everything else refreshes once, at the cache's own length: `iter` never
-reached the simulation on a call that found a cache. A `reference_norms_seed`
-is left alone: that null was asked for.
+Old references rebuilt stimuli using potentially missing settings and the session's RNG kind. Unmarked default caches therefore refresh once; seeded caches remain deliberate choices. One resolver handles both layouts, preserving iteration counts and caller RNG state on automatic refresh; read-only files are scored in memory.
+
+Older writers preserve unknown fields while replacing norms. The marker is bound to a full copy, checked with `identical()`: every value is covered without hashing, formatting or arithmetic. This costs eight bytes per double (about 80 KB for 10,000 norms), small beside the noise basis. Sampling can miss replacements; a compiled dependency is unnecessary.
+
+Changed references emit messages, including under `warn = 2`, so reporting a correction cannot prevent returning it. This deliberately gives up `warnings()` collection and permits suppression by `suppressMessages()`; NEWS states that trade-off. Caller-chosen iteration counts still receive the reliability warning.
 
 ### Repopulating `ref_lookup` costs four measurements — and the two halves stand or fall together
 `AGENTS.md` covers what the table is; what belongs here is the way out, because either half done

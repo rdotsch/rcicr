@@ -56,12 +56,13 @@ the stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}. It does
 depend on the ambient random number state, and it does not depend on \code{ncores}. Two
 researchers who compute InfoVal from the same stimulus file therefore get the same number,
 and the same reference distribution, on different machines and in different sessions --
-provided both run the generator kind the stimuli were made under.
+provided both sessions use the same RNG kind.
 
 \code{set.seed()} keeps whatever kind the session already has rather than restoring one,
 and no stimulus file records which was in force, so a session that has changed
-\code{RNGkind()} rebuilds a different noise basis and a different null. Leaving it at the
-default avoids this; see \url{https://github.com/rdotsch/rcicr/issues/315}.
+\code{RNGkind()} changes the simulated response draws and therefore the null. The saved
+noise basis and stimulus parameters remain unchanged. To reproduce an earlier reference,
+use the RNG kind that built it; see \url{https://github.com/rdotsch/rcicr/issues/315}.
 
 The noise is reconstructed from the basis and parameters the stimulus file saved, so the
 base images themselves are never reopened and an archived or moved experiment can still be

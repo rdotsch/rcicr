@@ -10,12 +10,13 @@
 #' depend on the ambient random number state, and it does not depend on \code{ncores}. Two
 #' researchers who compute InfoVal from the same stimulus file therefore get the same number,
 #' and the same reference distribution, on different machines and in different sessions --
-#' provided both run the generator kind the stimuli were made under.
+#' provided both sessions use the same RNG kind.
 #'
 #' \code{set.seed()} keeps whatever kind the session already has rather than restoring one,
 #' and no stimulus file records which was in force, so a session that has changed
-#' \code{RNGkind()} rebuilds a different noise basis and a different null. Leaving it at the
-#' default avoids this; see \url{https://github.com/rdotsch/rcicr/issues/315}.
+#' \code{RNGkind()} changes the simulated response draws and therefore the null. The saved
+#' noise basis and stimulus parameters remain unchanged. To reproduce an earlier reference,
+#' use the RNG kind that built it; see \url{https://github.com/rdotsch/rcicr/issues/315}.
 #'
 #' The noise is reconstructed from the basis and parameters the stimulus file saved, so the
 #' base images themselves are never reopened and an archived or moved experiment can still be
@@ -111,22 +112,8 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   save_rdata <- .args$save_rdata
   baseimage <- .args$baseimage
 
-  # The reference is a function of the saved noise, so it is built from the
-  # stored parameters and basis rather than by re-generating the stimuli. That
-  # rebuild reopened every base image, so an archived experiment whose images had
-  # moved could not be scored at all, and a uniform base made with
-  # maximize_baseimage_contrast = FALSE was rejected on the way back in (#301).
-  #
-  # It also needed nscales, noise_type and sigma to rebuild the basis, which
-  # files written before 1.1.0 do not carry: those were assumed and warned about,
-  # and the assumption was wrong whenever the stimuli used anything but the
-  # defaults. The saved basis is the one participants saw, so none of the three
-  # is consulted here and the warnings are gone with them.
-  # Every base image shares one parameter set on this path -- selectReferenceBase()
-  # sent the independent case elsewhere -- so the first label speaks for all of
-  # them. Passed inline rather than held in locals: this function re-saves its
-  # own frame, so anything bound here lands in the user's .Rdata unless it is
-  # also added to `internals` below.
+  # Shared parameters need only the first base. Inline arguments avoid locals
+  # leaking into the frame that is re-saved below.
   write("Building the reference from the saved noise, please wait...", stdout())
   stimuli <- referenceNoise(environment(), names(stimuli_params)[1], ncores)
 
@@ -175,23 +162,8 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
     # Save reference norms to rdata file
     write("\nSaving simulated reference distribution to rdata file...", stdout())
 
-    # Record which seed produced these norms, so a file carrying a deliberately
-    # varied null is distinguishable from one carrying the default. NULL records
-    # the default stream. Files written before this version simply lack the
-    # field, which is why every read of it must be guarded with exists().
+    # Provenance belongs to the saved norms; function arguments and scratch state do not.
     reference_norms_seed <- response_seed # nolint: object_usage_linter.
-
-    # Save everything that came from (or belongs in) the stimulus file, but none
-    # of this function's own arguments or scratch variables. Writing `rdata` and
-    # `ncores` back into the file is what causes the clobbering described at the
-    # top of this function, so they are excluded at the source rather than only
-    # worked around on read. `response_seed` and `save_rdata` are excluded for
-    # the same reason - `reference_norms_seed` is the field that records the
-    # seed, and it is a description of the norms rather than an input.
-    # Says what these norms were built from. Its absence on a file that never
-    # recorded nscales is what tells computeInfoVal2IFC() the cache predates #301
-    # and may have been scored against a rebuilt basis. Read through ls() below,
-    # which the linter cannot see.
     reference_norms_source <- "saved_noise" # nolint: object_usage_linter.
     reference_norms_fingerprint <- referenceFingerprint(reference_norms) # nolint: object_usage_linter.
     outfile <- rdata

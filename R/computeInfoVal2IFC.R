@@ -82,91 +82,21 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   ref_img_size <- NA
   ref_n_trials <- NA
 
-  # Load parameter file (created when generating stimuli)
-  # load() assigns into this frame, so an .Rdata file written by an older
-  # generateReferenceDistribution2IFC() - which saved its own `rdata` argument
-  # into the file - would overwrite the path we were called with. This function
-  # still uses `rdata` further down (to regenerate and re-load), so it would
-  # then operate on whatever path that file happened to record.
-  #
-  # Keep every argument rather than the three that were known to collide: the
-  # hazard has bitten from the .Rdata side twice now (a `sigma` field added to
-  # the file captured generateCI()'s z-map argument; fixed in #146), so the
-  # guard has to hold for fields that do not exist yet. `target_ci` is the one
-  # that would hurt most here - it is read at the very end to compute the CI
-  # norm, so a file carrying that name would silently score somebody else's
-  # classification image and return a plausible number rather than an error.
+  # Old files may contain argument names, including a stale rdata path.
   .args <- captureArgs(environment())
   load(rdata)
   list2env(.args, envir = environment())
 
-  # Asking for a specific response seed is asking for a specific reference
-  # distribution, so it has to imply regeneration. Without this the argument
-  # would be silently ignored on every file that already has reference_norms -
-  # which is every file after the first call, since generating one writes it
-  # back. That is the same shape of bug as force_gen_ref_dist being ignored
-  # (see the comment further down) and the documented-but-unapplied `mask`
-  # argument of plotZmap(): accepted, documented, and doing nothing.
-  if (!is.null(response_seed)) {
-    force_gen_ref_dist <- TRUE
-  }
-
-  # A cached distribution carrying no `reference_norms_source` was written before
-  # references were built from the saved noise, by machinery that rebuilt the
-  # parameters from the seed instead. Whether that rebuild reproduced this file's
-  # own parameters cannot be established from the file: it depended on fields the
-  # file may not record, and on the RNG kind of the session that ran it, since
-  # set.seed() keeps whatever kind is current. Verifying it here would answer the
-  # wrong question -- a rebuild in *this* session says nothing about the one that
-  # wrote the cache -- so an unmarked default cache is regenerated once rather
-  # than certified. Regenerating writes the marker, so this happens once per file.
-  #
-  # Without it the correction would not reach the files it is for: scoring writes
-  # the cache, so an old analysis script rerun on an old stimulus set would keep
-  # returning the superseded value.
-  #
-  # Whether the value actually moved is only knowable afterwards, so the norms
-  # are kept here and the warning is issued further down, on a difference. Most
-  # of these files were already correct and come back identical; warning on those
-  # too would put a compatibility notice on stimulus sets nothing happened to,
-  # and be fatal under options(warn = 2).
-  #
-  # A `reference_norms_seed` means someone asked for that exact null, so it is
-  # left alone; recomputing one of those is a deliberate act.
-  # Whether regeneration was already on the table before the refresh below asked
-  # for it: an explicit force_gen_ref_dist, or the response_seed that implies one.
-  # Either is the caller requesting a fresh run, which gets the documented
-  # default rather than the size of whatever the file happened to be carrying.
-  forced_by_caller <- force_gen_ref_dist
-  inherited_iter <- FALSE
-
-  cached <- exists("reference_norms", envir = environment(), inherits = FALSE)
-  .previous_norms <- if (cached) reference_norms else NULL
-  vouched <- cached &&
-    identical(get0("reference_norms_source", envir = environment(),
-                   inherits = FALSE), "saved_noise") &&
-    identical(get0("reference_norms_fingerprint", envir = environment(),
-                   inherits = FALSE), referenceFingerprint(reference_norms))
-  stale_cache <- cached && !vouched &&
-    is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
-  if (stale_cache) {
-    force_gen_ref_dist <- TRUE
-    # Rebuild at the size the cache already had unless the caller asked for the
-    # regeneration themselves. `iter` has never had any effect on a call that
-    # found a cache -- the guard below only reaches the simulation when there is
-    # none -- so a refresh nobody requested must not be the thing that suddenly
-    # gives it one, and trade a 50000-value null for whatever an old script
-    # happened to pass. A requested run is the opposite case: it gets what the
-    # caller named, or the documented default.
-    if (!forced_by_caller) {
-      iter <- length(.previous_norms)
-      # The size came from the file, not from the caller, so the "iter should be
-      # >= 10000" advice is not theirs to act on here -- and under
-      # options(warn = 2) it would abort the refresh before the marker is
-      # written, failing again on every run. It still fires whenever the caller
-      # chooses the count.
-      inherited_iter <- iter < 10000
-    }
+  if (!is.null(response_seed)) force_gen_ref_dist <- TRUE
+  cached_reference <- if (exists('reference_norms', envir = environment(), inherits = FALSE)) {
+    list(
+      norms = reference_norms,
+      response_seed = get0('reference_norms_seed', envir = environment(), inherits = FALSE),
+      source = get0('reference_norms_source', envir = environment(), inherits = FALSE),
+      fingerprint = get0('reference_norms_fingerprint', envir = environment(), inherits = FALSE)
+    )
+  } else {
+    NULL
   }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
@@ -244,97 +174,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
   if (!exists("ref_median", envir = environment(), inherits = FALSE)) {
 
-    # Regenerate when there is no cached distribution, or when the caller
-    # explicitly asked for one. force_gen_ref_dist previously only skipped the
-    # lookup-table branch above and never reached here, so it was silently
-    # ignored whenever reference_norms already existed in the .Rdata file.
-    if (force_gen_ref_dist || !exists("reference_norms", envir = environment(), inherits = FALSE)) {
-
-      # Reference norms not present in rdata file (or regeneration forced).
-      #
-      # A caller-supplied response_seed is a one-off check, not a redefinition
-      # of this stimulus set's null, so it is never cached: saving it would
-      # silently change what every later InfoVal computed from this file means,
-      # for anyone using it, with nothing in the call to say so.
-      cache_ref_dist <- is.null(response_seed)
-
-      # A refresh nobody asked for is not a request to write. Archives are often
-      # kept read-only, and there the value still has to come back: the fix is
-      # to score against this file's own noise, which works in memory, not to
-      # abort a call that would have succeeded before. A caller who asked for
-      # the regeneration did ask for the write, and still gets the error.
-      readonly_refresh <- cache_ref_dist && stale_cache && !forced_by_caller &&
-        !writableFile(rdata)
-      if (readonly_refresh) cache_ref_dist <- FALSE
-
-      simulate <- function() {
-        withCallingHandlers(
-          generateReferenceDistribution2IFC(
-            rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
-          ),
-          warning = function(cond) {
-            if (inherited_iter && grepl("iter >= 10000", conditionMessage(cond), fixed = TRUE)) {
-              invokeRestart("muffleWarning")
-            }
-          }
-        )
-      }
-      # A refresh nobody asked for must leave the caller's stream where it found
-      # it. This was a cache hit before, consuming nothing, so without this the
-      # first call on every pre-marker archive silently moves every later
-      # sample() in an old analysis script -- including when the norms come back
-      # identical and nothing is said.
-      reference_norms <- if (stale_cache && !forced_by_caller) {
-        preserveRandomStream(simulate())
-      } else {
-        simulate()
-      }
-
-      if (cache_ref_dist) {
-
-        # Re-load rdata file, to pick up the reference_norms just written to it.
-        # This load carries the same hazard as the one above and needs the same
-        # restore: `target_ci` is read after this point (line ~230, for the CI
-        # norm), so without it a file containing that name would replace the
-        # caller's classification image between here and the computation of it.
-        load(rdata)
-        list2env(.args, envir = environment())
-
-        # NB: write() defaults to file = "data", so omitting stdout() here did
-        # not print this message - it silently created a file called "data" in
-        # the working directory. Every other write() in the package passes
-        # stdout(); this one was missed.
-        write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
-
-      } else if (readonly_refresh) {
-
-        write(paste0("Rebuilt this file's reference distribution from its saved noise, but ",
-                rdata, " is not writable, so the rebuilt values were used without being stored. ",
-                "The next call will rebuild them again."
-              ), stdout())
-
-      } else {
-
-        write(paste0("Reference distribution simulated with response_seed = ", response_seed,
-                ". This is an independent draw of the null, not the reference distribution ",
-                "stored in the .Rdata file, and it has deliberately not been saved there."
-              ), stdout())
-
-      }
-
-      # Only now can the refresh above say whether it changed anything. A
-      # response_seed draw is excluded: it is an independent check, so a
-      # difference from the cache says nothing about the cache being wrong.
-      if (stale_cache && is.null(response_seed) &&
-            !identical(reference_norms, .previous_norms)) {
-        warnReferenceSuperseded()
-      }
-
-    } else {
-
-      write("Using reference distribution found in rdata file.", stdout())
-
-    }
+    reference_norms <- resolveReferenceNorms(cached_reference, rdata, iter,
+                                             force_gen_ref_dist, response_seed)
 
     # Compute reference values
     ref_median <- median(reference_norms)

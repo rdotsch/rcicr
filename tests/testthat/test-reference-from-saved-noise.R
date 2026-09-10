@@ -199,16 +199,16 @@ test_that("a reference cached before the change is regenerated once", {
   e$reference_norms_seed <- NULL
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(first <- computeInfoVal2IFC(ci, rdata, iter = 5)),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
   expect_true(any(grepl("before rcicr built references",
-                        warnings_seen, fixed = TRUE)))
+                        messages_seen, fixed = TRUE)))
 
   after <- new.env()
   load(rdata, envir = after)
@@ -216,16 +216,16 @@ test_that("a reference cached before the change is regenerated once", {
   expect_identical(after$reference_norms_source, "saved_noise")
 
   # Once, not on every call: the marker it wrote settles it.
-  second_warnings <- character()
+  second_messages <- character()
   withCallingHandlers(
     utils::capture.output(second <- computeInfoVal2IFC(ci, rdata, iter = 5)),
-    warning = function(cond) {
-      second_warnings <<- c(second_warnings, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      second_messages <<- c(second_messages, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
   expect_false(any(grepl("before rcicr built references",
-                         second_warnings, fixed = TRUE)))
+                         second_messages, fixed = TRUE)))
   expect_equal(second, first)
 })
 
@@ -243,17 +243,17 @@ test_that("a deliberately seeded reference is never discarded", {
   e$reference_norms_seed <- 99
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 5)),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
 
   expect_false(any(grepl("before rcicr built references",
-                         warnings_seen, fixed = TRUE)))
+                         messages_seen, fixed = TRUE)))
   after <- new.env()
   load(rdata, envir = after)
   expect_equal(after$reference_norms, seq(0.4, 0.8, length.out = 5))
@@ -284,15 +284,15 @@ test_that("an unmarked cache is refreshed even when the file records nscales", {
 
   # And once marked it is kept, so the cost is paid once rather than per call.
   marked <- after$reference_norms
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(second <- computeInfoVal2IFC(ci, rdata, iter = 5)),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
-  expect_false(any(grepl("before rcicr built references", warnings_seen, fixed = TRUE)))
+  expect_false(any(grepl("before rcicr built references", messages_seen, fixed = TRUE)))
   again <- new.env()
   load(rdata, envir = again)
   expect_identical(again$reference_norms, marked)
@@ -343,19 +343,19 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   moved <- character()
   withCallingHandlers(
     utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
-    warning = function(cond) {
+    message = function(cond) {
       moved <<- c(moved, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+      invokeRestart("muffleMessage")
     }
   )
   expect_true(any(grepl("gave different values", moved, fixed = TRUE)))
 })
 
-test_that("the warning fires on a real superseded reference, not just a planted one", {
+test_that("the notice fires on a real superseded reference, not just a planted one", {
   # The cases above plant an obviously wrong cache to exercise the comparison.
   # This one plants what the old rebuild actually produced for this file --
   # measured on the tree before the change, at nscales = 3 with nscales stripped,
-  # where the rebuild assumed the default 5 -- so the warning is shown to fire in
+  # where the rebuild assumed the default 5 -- so the notice is shown to fire in
   # the situation it exists for, on values a researcher could really be holding.
   superseded <- c(
     0.856963968913157, 0.855755848808479, 0.896672059991411,
@@ -379,15 +379,15 @@ test_that("the warning fires on a real superseded reference, not just a planted 
   e$reference_norms_seed <- NULL
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = length(superseded))),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
-  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+  expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 
   # And what replaced it is the file's own noise, not merely something else.
   after <- new.env()
@@ -490,12 +490,12 @@ test_that("a marker left on replaced norms does not vouch for them", {
   e$reference_norms <- rep(0.5, 20)
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
 
@@ -504,7 +504,7 @@ test_that("a marker left on replaced norms does not vouch for them", {
   expect_false(identical(after$reference_norms, rep(0.5, 20)))
   expect_identical(after$reference_norms_fingerprint,
                    rcicr:::referenceFingerprint(after$reference_norms))
-  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+  expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 })
 
 # A refresh nobody asked for must not turn a call that used to work into an
@@ -570,8 +570,8 @@ test_that("a refresh that cannot be saved still returns the rebuilt InfoVal", {
   expect_equal(infoval, expected)
 })
 
-test_that("a refresh that cannot be saved still warns when the values moved", {
-  # The warning says the returned InfoVal supersedes earlier ones. That is just
+test_that("a refresh that cannot be saved still reports when the values moved", {
+  # The message says the returned InfoVal supersedes earlier ones. That is just
   # as true when the file could not be updated -- more so, since the stale
   # values stay on disk.
   tmp <- withr::local_tempdir()
@@ -580,21 +580,21 @@ test_that("a refresh that cannot be saved still warns when the values moved", {
   ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
   before <- unname(tools::md5sum(rdata))
 
-  warnings_seen <- character()
+  messages_seen <- character()
   local({
     deny_writes(rdata)
     withCallingHandlers(
       utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
-      warning = function(cond) {
-        warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-        invokeRestart("muffleWarning")
+      message = function(cond) {
+        messages_seen <<- c(messages_seen, conditionMessage(cond))
+        invokeRestart("muffleMessage")
       }
     )
   })
-  # Unchanged on disk, so the warning came from the fallback and not from the
+  # Unchanged on disk, so the notice came from the fallback and not from the
   # ordinary path having quietly written after all.
   expect_identical(unname(tools::md5sum(rdata)), before)
-  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+  expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 })
 
 test_that("read-only permission bits reach the same fallback", {
@@ -641,18 +641,18 @@ test_that("the cache fingerprint does not depend on formatting options", {
   expect_false(identical(rcicr:::referenceFingerprint(rev(norms)), baseline))
 })
 
-test_that("the cache fingerprint computes nothing from the values", {
-  # A fingerprint that did arithmetic would be at the mercy of it: sum() uses
-  # long double where the platform has one and rounds differently where it does
-  # not, so the same bytes would fail to match themselves across builds. Every
-  # element here is drawn from the vector, so there is nothing to round.
+test_that("the cache fingerprint detects changes outside the former sampled positions", {
   norms <- c(2.33438571356728, 1.5, 0.125, 9.75, 0.5)
-  fp <- rcicr:::referenceFingerprint(norms)
+  baseline <- rcicr:::referenceFingerprint(norms)
+  changed <- norms
+  changed[2] <- 7
 
-  # c() coerces the count to double alongside the values; deterministic either way.
-  expect_identical(fp[[1]], as.double(length(norms)))
-  expect_true(all(fp[-1] %in% norms))
-  expect_identical(fp[-1], norms[c(1L, 3L, 5L)])
+  expect_identical(norms[c(1, 3, 5)], changed[c(1, 3, 5)])
+  expect_false(identical(rcicr:::referenceFingerprint(changed), baseline))
+
+  path <- withr::local_tempfile()
+  saveRDS(baseline, path, version = 2)
+  expect_identical(readRDS(path), rcicr:::referenceFingerprint(norms))
 })
 
 test_that("a cached reference is reused under a changed OutDec", {
@@ -713,7 +713,7 @@ test_that("a refresh reproduces the cache only under the stimuli's RNG kind", {
   expect_false(identical(refresh_under("L'Ecuyer-CMRG"), cached))
 })
 
-test_that("a kind-changed refresh warns that its values superseded the cache", {
+test_that("a kind-changed refresh reports that its values superseded the cache", {
   # The guarantee's escape hatch: where the kinds differ the numbers move, and
   # NEWS.md says the call reports it. Silence there would be the failure.
   local_rng_kind("Mersenne-Twister")
@@ -723,15 +723,15 @@ test_that("a kind-changed refresh warns that its values superseded the cache", {
   stale_the_cache(rdata)
 
   RNGkind("L'Ecuyer-CMRG")
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
-  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+  expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 })
 
 test_that("an automatic refresh leaves the caller's random stream alone", {
@@ -790,12 +790,12 @@ test_that("an independent-base cache is refreshed on the same terms", {
   e$reference_norms_by_base[["second"]] <- list(norms = rep(0.5, 20), response_seed = NULL)
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  warnings_seen <- character()
+  messages_seen <- character()
   withCallingHandlers(
     utils::capture.output(second <- computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second")),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
+    message = function(cond) {
+      messages_seen <<- c(messages_seen, conditionMessage(cond))
+      invokeRestart("muffleMessage")
     }
   )
 
@@ -803,7 +803,7 @@ test_that("an independent-base cache is refreshed on the same terms", {
   load(rdata, envir = after)
   expect_identical(after$reference_norms_by_base[["second"]]$norms, genuine)
   expect_equal(second, first)
-  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+  expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 })
 
 test_that("a vouched independent-base cache is reused untouched", {
@@ -900,4 +900,60 @@ test_that("an independent-base refresh under warn = 2 returns its value too", {
     expect_no_error(infoval <- computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second"))
   )
   expect_true(is.finite(infoval))
+})
+
+
+test_that("migration notices are messages under every warning setting", {
+  for (warn in c(0, 1, 2)) {
+    withr::with_options(list(warn = warn), {
+      testthat::local_mocked_bindings(
+        generateReferenceDistribution2IFC = function(...) c(1, 2, 3),
+        writableFile = function(path) TRUE,
+        .package = "rcicr"
+      )
+      expect_message(
+        utils::capture.output(rcicr:::resolveReferenceNorms(
+          list(norms = c(3, 4, 5)), "unused", 10000, FALSE, NULL
+        )),
+        "gave different values"
+      )
+    })
+  }
+})
+
+test_that("the shared resolver preserves iteration advice for requested simulations", {
+  testthat::local_mocked_bindings(
+    generateReferenceDistribution2IFC = function(...) {
+      warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
+      c(1, 2, 3)
+    },
+    writableFile = function(path) TRUE,
+    .package = "rcicr"
+  )
+  for (baseimage in list(NULL, "second")) {
+    expect_warning(
+      utils::capture.output(rcicr:::resolveReferenceNorms(
+        NULL, "unused", 3, FALSE, NULL, baseimage
+      )),
+      "iter >= 10000"
+    )
+    withr::with_options(list(warn = 2), {
+      expect_no_error(utils::capture.output(rcicr:::resolveReferenceNorms(
+        list(norms = c(1, 2, 3)), "unused", 3, FALSE, NULL, baseimage
+      )))
+    })
+  }
+})
+
+test_that("read-only independent refreshes identify the base image", {
+  testthat::local_mocked_bindings(
+    generateReferenceDistribution2IFC = function(...) c(1, 2, 3),
+    writableFile = function(path) FALSE,
+    .package = "rcicr"
+  )
+  said <- utils::capture.output(rcicr:::resolveReferenceNorms(
+    list(norms = c(1, 2, 3)), "archive.Rdata", 10000, FALSE, NULL, "second"
+  ))
+  expect_true(any(grepl("baseimage second", said, fixed = TRUE)))
+  expect_true(any(grepl("is not writable", said, fixed = TRUE)))
 })
