@@ -32,8 +32,8 @@ trials, `nscales = 1`, `seed = 1`, `iter = 6`: norms `2.334, 1.847, 1.738, 1.548
 the RNG state the call leaves behind, sampled as the next three `runif()` draws after a
 `set.seed(99)` and one call: `0.913, 0.294, 0.459`.
 
-**The RNG draw count can come from the saved parameters.** The replication below needs to consume
-what `generateStimuli2IFC()` consumed. Three candidate sources agree everywhere:
+**The RNG draw count comes from the saved parameters.** The replication below has to consume what
+`generateStimuli2IFC()` consumed. Three candidate sources, and what the fixtures say:
 
 | fixture | saved `nscales` | `ncol(stimuli_params)` | nparams from `nscales` | `max(patchIdx)` |
 |---|---|---|---|---|
@@ -91,13 +91,13 @@ do what the independent path does, and the two collapse into one.
   impact" entry, not a bug-fix line** — an affected InfoVal should be recomputed, and it was
   previously scored against the wrong null.
 - **Files that error today start working**, with no previous value to preserve.
-- The release gate cannot cover the changed class: every configuration generates its stimulus
-  file with the version under test, so both sides always save `nscales`.
 - **Release gate: no new `EXPECTED` entry, and none stops firing.** The battery runs four InfoVal
   configurations, three of them on this exact path, including non-default `nscales` and `gabor`
   with non-default `sigma`. The two listed deviations are about *v1.0.1's* behaviour and this
   touches only the current side, so they must still fire. A new deviation means the basis is not
-  being reproduced; a stale entry means one stopped, and both fail the gate.
+  being reproduced; a stale entry means one stopped, and both fail the gate. It cannot reach the
+  changed class at all: every configuration writes its stimulus file with the version under test,
+  so both sides always save `nscales`. Only the tests below cover that.
 
 ## Tests
 
@@ -118,9 +118,10 @@ New `tests/testthat/test-reference-from-saved-noise.R`:
 
 ## Most likely to fail
 
-The RNG replication. It is the whole of the "no numeric change" claim, and a wrong draw count is
-invisible until the norms move — which is why the modern-file norms and the post-call RNG state
-are both pinned rather than assumed, and why the release gate is the check that settles it.
+The RNG replication. It carries the whole claim that files saving `nscales` are untouched, and a
+wrong draw count stays invisible until the norms move — which is why the modern-file norms, the
+post-call RNG state and the 4096-column count are pinned rather than assumed, and why the release
+gate is the check that settles the unchanged class.
 
 ## NEWS.md and DECISIONS.md
 
