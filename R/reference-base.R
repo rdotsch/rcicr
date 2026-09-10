@@ -71,7 +71,8 @@ referenceNoise <- function(source, baseimage, ncores) {
 # generateStimuli2IFC() seeds on the stimulus seed and then spends one draw per
 # parameter per trial, and the reference's responses have always been drawn from
 # whatever that left behind -- which is what makes an InfoVal reproducible from
-# the stimulus file alone, and is documented as a guarantee. Since the stimuli
+# the stimulus file under a fixed RNGkind(), and is documented as a guarantee on
+# ?generateReferenceDistribution2IFC. Since the stimuli
 # are no longer re-generated, that consumption is replayed here instead. The
 # width of the saved matrix is the count, so nothing has to be assumed about a
 # file that does not record its nscales.

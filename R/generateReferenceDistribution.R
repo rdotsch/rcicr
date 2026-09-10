@@ -6,10 +6,16 @@
 #'
 #' @section Reproducibility:
 #' With the default \code{response_seed = NULL}, the reference distribution is determined by
-#' the stimulus \code{.Rdata} file alone. It does not depend on the ambient random number
-#' state of the calling session, and it does not depend on \code{ncores}. Two researchers
-#' who compute InfoVal from the same stimulus file therefore get the same number, and the
-#' same reference distribution, on different machines and in different sessions.
+#' the stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}. It does not
+#' depend on the ambient random number state, and it does not depend on \code{ncores}. Two
+#' researchers who compute InfoVal from the same stimulus file therefore get the same number,
+#' and the same reference distribution, on different machines and in different sessions --
+#' provided both run the generator kind the stimuli were made under.
+#'
+#' \code{set.seed()} keeps whatever kind the session already has rather than restoring one,
+#' and no stimulus file records which was in force, so a session that has changed
+#' \code{RNGkind()} rebuilds a different noise basis and a different null. Leaving it at the
+#' default avoids this; see \url{https://github.com/rdotsch/rcicr/issues/315}.
 #'
 #' The noise is reconstructed from the basis and parameters the stimulus file saved, so the
 #' base images themselves are never reopened and an archived or moved experiment can still be
