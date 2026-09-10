@@ -267,16 +267,28 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
         !writableFile(rdata)
       if (readonly_refresh) cache_ref_dist <- FALSE
 
-      reference_norms <- withCallingHandlers(
-        generateReferenceDistribution2IFC(
-          rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
-        ),
-        warning = function(cond) {
-          if (inherited_iter && grepl("iter >= 10000", conditionMessage(cond), fixed = TRUE)) {
-            invokeRestart("muffleWarning")
+      simulate <- function() {
+        withCallingHandlers(
+          generateReferenceDistribution2IFC(
+            rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
+          ),
+          warning = function(cond) {
+            if (inherited_iter && grepl("iter >= 10000", conditionMessage(cond), fixed = TRUE)) {
+              invokeRestart("muffleWarning")
+            }
           }
-        }
-      )
+        )
+      }
+      # A refresh nobody asked for must leave the caller's stream where it found
+      # it. This was a cache hit before, consuming nothing, so without this the
+      # first call on every pre-marker archive silently moves every later
+      # sample() in an old analysis script -- including when the norms come back
+      # identical and nothing is said.
+      reference_norms <- if (stale_cache && !forced_by_caller) {
+        preserveRandomStream(simulate())
+      } else {
+        simulate()
+      }
 
       if (cache_ref_dist) {
 
@@ -315,12 +327,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       # difference from the cache says nothing about the cache being wrong.
       if (stale_cache && is.null(response_seed) &&
             !identical(reference_norms, .previous_norms)) {
-        msg <- paste0('This stimulus file carried a reference distribution ',
-          'from before rcicr built references from the saved noise, and ',
-          'rebuilding it from the saved noise gave different values. The ',
-          'InfoVal this returns supersedes any computed from this file before.'
-        )
-        warning(msg, call. = FALSE)
+        warnReferenceSuperseded()
       }
 
     } else {

@@ -39,6 +39,40 @@ referenceFingerprint <- function(norms) {
   c(n, norms[c(1L, (n + 1L) %/% 2L, n)])
 }
 
+# A cache is trusted only on positive evidence that it describes this file's
+# saved noise: the marker, and a fingerprint bound to the values it marks.
+vouchedReference <- function(norms, marker, fingerprint) {
+  identical(marker, 'saved_noise') &&
+    identical(fingerprint, referenceFingerprint(norms))
+}
+
+# Said by both storage shapes, so they cannot drift apart.
+warnReferenceSuperseded <- function() {
+  msg <- paste0('This stimulus file carried a reference distribution ',
+                'from before rcicr built references from the saved noise, and ',
+                'rebuilding it from the saved noise gave different values. The ',
+                'InfoVal this returns supersedes any computed from this file before.')
+  warning(msg, call. = FALSE)
+}
+
+# An automatic refresh is not something the caller asked for, so it must not
+# move their random stream. Before the refresh existed, a cached file was a
+# plain cache hit that consumed nothing; regenerating seeds and draws, which
+# would silently change every later sample() in an old analysis script. An
+# explicit regeneration keeps its documented stream behaviour.
+preserveRandomStream <- function(expr) {
+  had <- exists('.Random.seed', envir = globalenv(), inherits = FALSE)
+  before <- if (had) get('.Random.seed', envir = globalenv(), inherits = FALSE)
+  on.exit({
+    if (had) {
+      assign('.Random.seed', before, envir = globalenv())
+    } else if (exists('.Random.seed', envir = globalenv(), inherits = FALSE)) {
+      rm('.Random.seed', envir = globalenv())
+    }
+  }, add = TRUE)
+  expr
+}
+
 savedReferenceParams <- function(source, baseimage) {
   n_trials <- source$n_trials
   if (length(n_trials) != 1L || !is.finite(n_trials) || n_trials < 1 || n_trials != trunc(n_trials)) {
@@ -112,7 +146,10 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
     cache <- source$reference_norms_by_base
     if (is.null(cache)) cache <- list()
     if (!is.list(cache)) stop('reference_norms_by_base must be a list.')
-    cache[[selection$baseimage]] <- list(norms = norms, response_seed = response_seed)
+    cache[[selection$baseimage]] <- list(
+      norms = norms, response_seed = response_seed,
+      source = 'saved_noise', fingerprint = referenceFingerprint(norms)
+    )
     source$reference_norms_by_base <- cache
     save(list = ls(source, all.names = TRUE), file = rdata, envir = source)
   }
@@ -123,12 +160,49 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
   cache <- selection$source$reference_norms_by_base
   if (!is.null(cache) && !is.list(cache)) stop('reference_norms_by_base must be a list.')
   entry <- cache[[selection$baseimage]]
-  if (!is.null(response_seed) || force_gen_ref_dist || is.null(entry)) {
-    norms <- generateReferenceDistribution2IFC(rdata, iter = iter,
-                                               response_seed = response_seed, save_rdata = is.null(response_seed),
-                                               baseimage = selection$baseimage)
+
+  # Same rule as the shared path, for the same reason: an entry written before
+  # references came from the saved noise cannot be shown to describe it, so it
+  # is refreshed once rather than certified. An entry recording a response_seed
+  # is a null someone asked for and is left alone.
+  previous <- entry$norms
+  forced_by_caller <- force_gen_ref_dist || !is.null(response_seed)
+  stale <- !is.null(entry) && is.null(entry$response_seed) &&
+    !vouchedReference(previous, entry$source, entry$fingerprint)
+  inherited_iter <- FALSE
+  if (stale && !forced_by_caller) {
+    iter <- length(previous)
+    inherited_iter <- iter < 10000
+  }
+  readonly_refresh <- stale && !forced_by_caller && !writableFile(rdata)
+
+  if (forced_by_caller || stale || is.null(entry)) {
+    simulate <- function() {
+      withCallingHandlers(
+        generateReferenceDistribution2IFC(
+          rdata, iter = iter, response_seed = response_seed,
+          save_rdata = is.null(response_seed) && !readonly_refresh,
+          baseimage = selection$baseimage
+        ),
+        warning = function(cond) {
+          if (inherited_iter && grepl('iter >= 10000', conditionMessage(cond), fixed = TRUE)) {
+            invokeRestart('muffleWarning')
+          }
+        }
+      )
+    }
+    norms <- if (stale && !forced_by_caller) preserveRandomStream(simulate()) else simulate()
+    if (readonly_refresh) {
+      note <- paste0('Rebuilt this base image\'s reference distribution from its saved noise, ',
+                     'but ', rdata, ' is not writable, so the rebuilt values were used without ',
+                     'being stored. The next call will rebuild them again.')
+      write(note, stdout())
+    }
+    if (stale && is.null(response_seed) && !identical(norms, previous)) {
+      warnReferenceSuperseded()
+    }
   } else {
-    norms <- entry$norms
+    norms <- previous
     if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
       stop('Invalid cached reference for baseimage ', selection$baseimage,
            '. Use force_gen_ref_dist = TRUE to regenerate it.')

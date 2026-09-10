@@ -733,3 +733,91 @@ test_that("a kind-changed refresh warns that its values superseded the cache", {
   )
   expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
 })
+
+test_that("an automatic refresh leaves the caller's random stream alone", {
+  # Before the refresh existed this was a cache hit that consumed nothing, so a
+  # refresh nobody asked for must not move the stream an old analysis script
+  # goes on to sample from. It holds even when the norms come back identical,
+  # which is the case that says nothing to the user.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  stale_the_cache(rdata)
+
+  set.seed(99)
+  expected <- runif(3)
+
+  set.seed(99)
+  suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)))
+  expect_identical(runif(3), expected)
+})
+
+test_that("a regeneration the caller asked for still moves the stream", {
+  # The rule above is about refreshes nobody requested. An explicit
+  # force_gen_ref_dist keeps the documented behaviour of seeding and drawing.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  set.seed(99)
+  expected <- runif(3)
+
+  set.seed(99)
+  suppressWarnings(utils::capture.output(
+    computeInfoVal2IFC(ci, rdata, iter = 20, force_gen_ref_dist = TRUE)
+  ))
+  expect_false(identical(runif(3), expected))
+})
+
+test_that("an independent-base cache is refreshed on the same terms", {
+  # reference_norms_by_base stores its own entries, so the marker has to travel
+  # with each of them. Without this the shared path refreshes and the per-base
+  # path does not, and NEWS.md's "whatever version wrote it" is false.
+  tmp <- withr::local_tempdir()
+  rdata <- make_independent_fixture(tmp)
+  ci <- generateCI(1:12, rep(c(1, -1), 6), "second", rdata,
+                   save_as_png = FALSE, n_cores = 1)
+
+  utils::capture.output(suppressWarnings(
+    first <- computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second")
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  genuine <- e$reference_norms_by_base[["second"]]$norms
+  expect_identical(e$reference_norms_by_base[["second"]]$source, "saved_noise")
+
+  # What a writer predating the marker leaves: norms, no provenance.
+  e$reference_norms_by_base[["second"]] <- list(norms = rep(0.5, 20), response_seed = NULL)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(second <- computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second")),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_identical(after$reference_norms_by_base[["second"]]$norms, genuine)
+  expect_equal(second, first)
+  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+})
+
+test_that("a vouched independent-base cache is reused untouched", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_independent_fixture(tmp)
+  ci <- generateCI(1:12, rep(c(1, -1), 6), "second", rdata,
+                   save_as_png = FALSE, n_cores = 1)
+  utils::capture.output(suppressWarnings(
+    computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second")
+  ))
+  before <- unname(tools::md5sum(rdata))
+
+  said <- utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second"))
+
+  expect_identical(unname(tools::md5sum(rdata)), before)
+  expect_false(any(grepl("Computing reference distribution", said, fixed = TRUE)))
+})

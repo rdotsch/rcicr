@@ -43,13 +43,18 @@
   and warns that it has; `reference_norms_source` is recorded alongside, with a
   `reference_norms_fingerprint` binding it to the values it describes, so this happens once and
   not per call — and a marker an older rcicr left behind on replaced norms does not vouch
-  for them. For files that were already correct, which is most of them, the value comes back
+  for them. Independent-base files store a reference per base in `reference_norms_by_base`, and
+  each entry carries its own marker and fingerprint on the same terms. For files that were already correct, which is most of them, the value comes back
   identical and nothing is said about it; the warning is raised only where rebuilding actually
   changed the numbers. The refresh keeps the count of the cache it replaces rather than the
   documented default, so a file holding a more precise null does not lose precision to a
   rebuild nobody asked for; `iter` chooses the count only where the caller asked for the
   regeneration. A read-only archive is scored from the rebuilt reference in memory rather
-  than failing on the write, and says so — correct value, rebuilt again on the next call.
+  than failing on the write, and says so — correct value, rebuilt again on the next call. And
+  because the refresh is nobody's request, it puts the caller's random stream back where it
+  found it: a cached file used to consume none, so without that the first scoring call would
+  quietly move every later `sample()` in an old analysis script. An explicit
+  `force_gen_ref_dist` keeps the documented behaviour of seeding and drawing.
 
   A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
   for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating
