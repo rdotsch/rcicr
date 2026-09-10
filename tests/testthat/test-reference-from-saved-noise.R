@@ -621,3 +621,38 @@ test_that("read-only permission bits reach the same fallback", {
   expect_identical(unname(tools::md5sum(rdata)), before)
   expect_true(any(grepl("is not writable", said, fixed = TRUE)))
 })
+
+test_that("the cache fingerprint does not depend on formatting options", {
+  # format() honours OutDec and scipen, so a text fingerprint written under one
+  # setting and read under another would reject a cache that is its own.
+  norms <- c(2.33438571356728, 1.5, 0.125)
+  baseline <- rcicr:::referenceFingerprint(norms)
+
+  withr::with_options(list(OutDec = ","), {
+    expect_identical(rcicr:::referenceFingerprint(norms), baseline)
+  })
+  withr::with_options(list(scipen = -10), {
+    expect_identical(rcicr:::referenceFingerprint(norms), baseline)
+  })
+
+  # And it still separates values a refresh must not confuse.
+  expect_false(identical(rcicr:::referenceFingerprint(norms * 2), baseline))
+  expect_false(identical(rcicr:::referenceFingerprint(norms[-1]), baseline))
+})
+
+test_that("a cached reference is reused under a changed OutDec", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 20, ncores = 1, save_rdata = TRUE)
+  ))
+  before <- unname(tools::md5sum(rdata))
+
+  said <- withr::with_options(list(OutDec = ",", scipen = -10), {
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20))
+  })
+
+  expect_true(any(grepl("Using reference distribution found in rdata file", said, fixed = TRUE)))
+  expect_identical(unname(tools::md5sum(rdata)), before)
+})

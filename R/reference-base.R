@@ -27,8 +27,12 @@ selectReferenceBase <- function(rdata, baseimage) {
 # `reference_norms` with a rebuilt-basis distribution of its own. The file then
 # looks vouched-for and is not. A fingerprint that travels with the marker turns
 # that into a mismatch, and the norms are refreshed as if unmarked.
+#
+# Numeric rather than text: `format()` honours `OutDec` and `scipen`, so a cache
+# written under one and read under another would fail to match itself and be
+# rebuilt on every call. `identical()` compares doubles bit for bit.
 referenceFingerprint <- function(norms) {
-  paste(length(norms), format(sum(norms), digits = 17), sep = ":")
+  c(length(norms), sum(norms))
 }
 
 savedReferenceParams <- function(source, baseimage) {
