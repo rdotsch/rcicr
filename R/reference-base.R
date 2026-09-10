@@ -65,6 +65,7 @@ preserveRandomStream <- function(expr) {
   before <- if (had) get('.Random.seed', envir = globalenv(), inherits = FALSE)
   on.exit({
     if (had) {
+      # nolint next: object_name_linter. R owns this name, not this package.
       assign('.Random.seed', before, envir = globalenv())
     } else if (exists('.Random.seed', envir = globalenv(), inherits = FALSE)) {
       rm('.Random.seed', envir = globalenv())
