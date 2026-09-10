@@ -657,15 +657,21 @@ test_that("a cached reference is reused under a changed OutDec", {
   expect_identical(unname(tools::md5sum(rdata)), before)
 })
 
+# Restores whatever kind the session had, not a hardcoded default: the suite
+# should not decide the caller's RNGkind() on its way out.
+local_rng_kind <- function(kind, envir = parent.frame()) {
+  previous <- RNGkind()
+  withr::defer(do.call(RNGkind, as.list(previous)), envir = envir)
+  RNGkind(kind)
+}
+
 test_that("a refresh reproduces the cache only under the stimuli's RNG kind", {
   # What NEWS.md's unchanged guarantee is conditioned on. seedResponseStream()
   # replays the stimulus stream with set.seed(), which keeps the session's kind
   # rather than restoring one, so the session doing the refresh decides -- not
   # the session that built the reference being replaced.
-  withr::defer(RNGkind("Mersenne-Twister"))
+  local_rng_kind("Mersenne-Twister")
   tmp <- withr::local_tempdir()
-
-  RNGkind("Mersenne-Twister")
   rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
   ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
   suppressWarnings(utils::capture.output(
@@ -695,10 +701,8 @@ test_that("a refresh reproduces the cache only under the stimuli's RNG kind", {
 test_that("a kind-changed refresh warns that its values superseded the cache", {
   # The guarantee's escape hatch: where the kinds differ the numbers move, and
   # NEWS.md says the call reports it. Silence there would be the failure.
-  withr::defer(RNGkind("Mersenne-Twister"))
+  local_rng_kind("Mersenne-Twister")
   tmp <- withr::local_tempdir()
-
-  RNGkind("Mersenne-Twister")
   rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
   ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
   stale_the_cache(rdata)
