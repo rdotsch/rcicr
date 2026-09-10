@@ -41,10 +41,14 @@ what `generateStimuli2IFC()` consumed. Three candidate sources agree everywhere:
 | legacy 1.0.1 gabor | absent | 4092 | 4092 | 4092 |
 | legacy 1.1.0 | 1 | 12 | 12 | 12 |
 
-`ncol(stimuli_params)` is the direct answer and needs no `nscales`, which the 1.0.1 files do not
-carry — today's code assumes 5 for them. Where the two would disagree (a file whose `nscales` was
-non-default and unsaved, issue #81's case) `ncol` is the correct one, and no such file can
-deviate numerically anyway because files of that vintage error out today.
+The count comes from the **selected, normalized** parameter matrix — what
+`selectStimulusParams()` returns — not from `stimuli_params`, which is a named list whose `ncol()`
+is `NULL` and whose `runif()` errors outright. The normalization matters on its own: a pre-0.3.0
+file holds 4096 columns of which four are never indexed, `selectStimulusParams()` drops them, and
+today's rebuild consumes 4092 draws per trial. Replaying 4096 would shift the response stream.
+
+The table's agreement is therefore narrower than it looks: none of the three fixtures is
+pre-0.3.0 (all have `min(patchIdx) == 1`), so none distinguishes the two counts.
 
 ## The change
 
@@ -57,10 +61,10 @@ do what the independent path does, and the two collapse into one.
 1. Replace the `generateStimuli2IFC()` call with noise built from the saved parameters and basis,
    reusing `independentReferenceNoise()` rather than adding a second copy: it already resolves
    `p` versus the older `s`, validates `n_trials`, parallelises and drives the progress bar.
-2. Replicate the RNG consumption exactly where the rebuild used to sit, using
-   `ncol(stimuli_params)` as the draw count, so the simulated responses that follow land on the
-   same stream. The default-seed guarantee documented in `?generateReferenceDistribution2IFC` is
-   the thing this protects.
+2. Replicate the RNG consumption exactly where the rebuild used to sit, drawing
+   `ncol()` of the **selected, normalized** parameter matrix per trial, so the simulated
+   responses that follow land on the same stream. The default-seed guarantee documented in
+   `?generateReferenceDistribution2IFC` is the thing this protects.
 3. **The `nscales`, `noise_type` and `sigma` warnings go.** They exist because the basis was
    rebuilt and would otherwise be rebuilt wrong; once the saved basis is used, all three fields
    are unused on this path and warning that "the resulting infoVal will be wrong" would be false.
@@ -69,11 +73,26 @@ do what the independent path does, and the two collapse into one.
 
 ## Expected impact
 
-- **No numeric change for any file that works today.** The saved basis is the one the stimuli
-  were built from, so rebuilding it reproduces it; the norms and the RNG state above must come
-  back identical.
-- **Files that error today start working.** They have no previous value to preserve, which is
-  also why the `ncol` choice above carries no reproducibility risk.
+- **Identical wherever the rebuild already reproduced the saved parameters** — every file that
+  saves `nscales`, which is everything from 1.1.0 on. The norms and RNG state above must come
+  back unchanged, and the pinned tests and the gate are what say so.
+- **Changed where it did not, from wrong to right.** A file that lacks `nscales` and was made
+  with a non-default one has its basis rebuilt at the default 5, so today's reference describes
+  a basis the stimuli never used — issue #81's harm, on the reference side. Measured on such a
+  file with its image still in place, at `nscales = 3`, four trials, `iter = 5`:
+
+  | | reference norms |
+  |---|---|
+  | today | 0.856964, 0.855756, 0.896672, 0.877212, 0.896672 |
+  | from the saved noise | 0.973601, 1.042811, 1.074246, 1.042811, 1.027398 |
+
+  Pre-0.3.0 files are in the same class: the rebuild redraws parameters at a different stream
+  offset, so it never reproduced their saved noise either. **This needs a "Reproducibility
+  impact" entry, not a bug-fix line** — an affected InfoVal should be recomputed, and it was
+  previously scored against the wrong null.
+- **Files that error today start working**, with no previous value to preserve.
+- The release gate cannot cover the changed class: every configuration generates its stimulus
+  file with the version under test, so both sides always save `nscales`.
 - **Release gate: no new `EXPECTED` entry, and none stops firing.** The battery runs four InfoVal
   configurations, three of them on this exact path, including non-default `nscales` and `gabor`
   with non-default `sigma`. The two listed deviations are about *v1.0.1's* behaviour and this
@@ -89,6 +108,10 @@ New `tests/testthat/test-reference-from-saved-noise.R`:
 - A uniform base written with `maximize_baseimage_contrast = FALSE` produces a reference.
 - The modern-file norms above are pinned, and the RNG state after the call is pinned, both
   against the values measured on the unfixed tree.
+- **A synthetic 4096-column file** — no fixture is pre-0.3.0 — asserts the replication draws 4092
+  per trial, so the response stream does not shift for files the truncation applies to.
+- A file lacking `nscales` and made with a non-default one is pinned to the corrected norms
+  above, so the documented reproducibility impact is the measured one.
 - Each legacy fixture produces finite norms, on a copy so `save_rdata` cannot touch the original.
 - `computeInfoVal2IFC()` on a file with a moved image returns the same value as with it in place.
 - Each will be checked to fail without the change with `git stash push -- R/`.
@@ -101,9 +124,10 @@ are both pinned rather than assumed, and why the release gate is the check that 
 
 ## NEWS.md and DECISIONS.md
 
-`NEWS.md`: a bug-fix entry — this only ever produced errors, so it sits below the behaviour
-changes. It says an archived or moved stimulus set can now be scored, and that no existing value
-changes.
+`NEWS.md`: a **Reproducibility impact** entry, not a bug-fix line. It says an archived or moved
+stimulus set can now be scored; that files saving `nscales` are unchanged; and that a file
+without it, made with a non-default one, was scored against a basis its stimuli never used and
+should have its InfoVal recomputed.
 
 `DECISIONS.md` is at exactly 5200 of 5200 words, and this needs no new entry: it makes an
 existing one stale, and rewriting it in place is the whole job. "`set.seed()` in
