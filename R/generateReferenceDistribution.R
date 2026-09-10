@@ -182,6 +182,11 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
     # worked around on read. `response_seed` and `save_rdata` are excluded for
     # the same reason - `reference_norms_seed` is the field that records the
     # seed, and it is a description of the norms rather than an input.
+    # Says what these norms were built from. Its absence on a file that never
+    # recorded nscales is what tells computeInfoVal2IFC() the cache predates #301
+    # and may have been scored against a rebuilt basis. Read through ls() below,
+    # which the linter cannot see.
+    reference_norms_source <- "saved_noise" # nolint: object_usage_linter.
     outfile <- rdata
     internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
       "rdata", "iter", "ncores", "response_seed", "save_rdata",

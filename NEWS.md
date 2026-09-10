@@ -24,9 +24,15 @@
   last bit, along with the random stream the call leaves behind. Older files did not record it,
   and the rebuild assumed the default 5: where the stimuli used a different `nscales`, the
   reference described a noise basis the participants never saw, and pre-0.3.0 files were rebuilt
-  at a different stream offset again. Those references change, from wrong to right. **Recompute
-  InfoVal from any stimulus file that predates 1.1.0**; the CI itself is unaffected, and no
-  stimuli need regenerating.
+  at a different stream offset again. Those references change, from wrong to right.
+
+  A reference already cached in such a file is refreshed once automatically:
+  `computeInfoVal2IFC()` regenerates it from the saved noise, warns that it has, and records
+  `reference_norms_source` in the file so this happens once rather than on every call.
+  Without that the cache would keep returning the value this corrects, since scoring writes it.
+  A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
+  for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating
+  1.1.0**. The CI itself is unaffected, and no stimuli need regenerating.
 
   The `nscales`, `noise_type` and `sigma` warnings are gone with the rebuild that needed them.
   (#301)

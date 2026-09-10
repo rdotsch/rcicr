@@ -176,3 +176,105 @@ test_that("a file without nscales uses its saved basis, not the default", {
     0.877211505127452, 0.896672059991411
   ))))
 })
+
+test_that("a reference cached before the change is regenerated once", {
+  # Scoring writes the reference into the file, so an old analysis script rerun
+  # on an old stimulus set would otherwise keep returning the value #301 exists
+  # to correct: the cache short-circuits the calculation entirely.
+  tmp <- withr::local_tempdir()
+  base_png <- make_square_png(file.path(tmp, "base.png"), size = 32, seed = 1)
+  suppressWarnings(utils::capture.output(generateStimuli2IFC(
+    base_face_files = list(base = base_png), n_trials = 4, img_size = 32,
+    stimulus_path = tmp, seed = 1, nscales = 3, ncores = 1, save_as_png = FALSE
+  )))
+  rdata <- list.files(tmp, pattern = "\\.Rdata$", full.names = TRUE)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  # Age the file: no nscales, and a cached distribution with no marker, which is
+  # what a pre-1.1.0 file scored by an older rcicr looks like.
+  e <- new.env()
+  load(rdata, envir = e)
+  rm("nscales", "sigma", envir = e)
+  e$reference_norms <- rep(0.5, 5)
+  e$reference_norms_seed <- NULL
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(first <- computeInfoVal2IFC(ci, rdata, iter = 5)),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("computed before rcicr rebuilt references",
+                        warnings_seen, fixed = TRUE)))
+
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_false(identical(after$reference_norms, rep(0.5, 5)))
+  expect_identical(after$reference_norms_source, "saved_noise")
+
+  # Once, not on every call: the marker it wrote settles it.
+  second_warnings <- character()
+  withCallingHandlers(
+    utils::capture.output(second <- computeInfoVal2IFC(ci, rdata, iter = 5)),
+    warning = function(cond) {
+      second_warnings <<- c(second_warnings, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_false(any(grepl("computed before rcicr rebuilt references",
+                         second_warnings, fixed = TRUE)))
+  expect_equal(second, first)
+})
+
+test_that("a deliberately seeded reference is never discarded", {
+  # reference_norms_seed records that someone asked for that exact null. It is
+  # not a stale default, so the invalidation above must leave it alone.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  e <- new.env()
+  load(rdata, envir = e)
+  rm("nscales", "sigma", envir = e)
+  e$reference_norms <- seq(0.4, 0.8, length.out = 5)
+  e$reference_norms_seed <- 99
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 5)),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_false(any(grepl("computed before rcicr rebuilt references",
+                         warnings_seen, fixed = TRUE)))
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_equal(after$reference_norms, seq(0.4, 0.8, length.out = 5))
+})
+
+test_that("a modern file's cached reference is left as it is", {
+  # Files recording nscales were never scored against a rebuilt basis, so there
+  # is nothing to invalidate and no reason to make anyone pay for a regeneration.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  e <- new.env()
+  load(rdata, envir = e)
+  e$reference_norms <- rep(0.5, 5)
+  e$reference_norms_seed <- NULL
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 5)))
+
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_equal(after$reference_norms, rep(0.5, 5))
+})

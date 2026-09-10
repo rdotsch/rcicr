@@ -291,7 +291,8 @@ test_that('reference matrix reuse preserves legacy norms, RNG and saved fields e
       saved <- new.env(parent = emptyenv())
       load(path, envir = saved)
       expect_setequal(ls(saved, all.names = TRUE), c(
-        ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed'
+        ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed',
+        'reference_norms_source'
       ))
       for (name in ls(original, all.names = TRUE)) {
         expect_identical(saved[[name]], original[[name]], info = name)
