@@ -137,6 +137,12 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   #
   # A `reference_norms_seed` means someone asked for that exact null, so it is
   # left alone; recomputing one of those is a deliberate act.
+  # Whether regeneration was already on the table before the refresh below asked
+  # for it: an explicit force_gen_ref_dist, or the response_seed that implies one.
+  # Either is the caller requesting a fresh run, which gets the documented
+  # default rather than the size of whatever the file happened to be carrying.
+  forced_by_caller <- force_gen_ref_dist
+
   cached <- exists("reference_norms", envir = environment(), inherits = FALSE)
   .previous_norms <- if (cached) reference_norms else NULL
   stale_cache <- cached &&
@@ -145,12 +151,14 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
   if (stale_cache) {
     force_gen_ref_dist <- TRUE
-    # Rebuild at the size the cache already had, unless the caller named one.
-    # A file cached at 50000 iterations holds a more precise null than the
-    # default 10000, and a refresh nobody asked for must not quietly trade that
-    # away: the InfoVal would move for a reason that has nothing to do with the
-    # noise the null is built on.
-    if (!iter_supplied) {
+    # Rebuild at the size the cache already had, unless the caller named one or
+    # asked for the regeneration themselves. A file cached at 50000 iterations
+    # holds a more precise null than the default 10000, and a refresh nobody
+    # asked for must not quietly trade that away: the InfoVal would move for a
+    # reason that has nothing to do with the noise the null is built on. A
+    # requested run is the opposite case -- it gets the documented default, not
+    # the precision of the thing it is replacing.
+    if (!iter_supplied && !forced_by_caller) {
       iter <- length(.previous_norms)
     }
   }

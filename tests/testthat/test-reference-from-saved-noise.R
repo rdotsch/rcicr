@@ -441,3 +441,28 @@ test_that("an automatic refresh keeps the cache's own iteration count", {
   load(rdata, envir = asked)
   expect_length(asked$reference_norms, 12)
 })
+
+test_that("a regeneration the caller asked for gets the documented default", {
+  # The rule above is about refreshes nobody requested. Someone who passes
+  # force_gen_ref_dist is asking for a fresh null, and gets the documented 10000
+  # rather than the precision of whatever the file happened to be carrying.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 40, ncores = 1, save_rdata = TRUE)
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  rm("reference_norms_source", envir = e)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  suppressWarnings(utils::capture.output(
+    computeInfoVal2IFC(ci, rdata, force_gen_ref_dist = TRUE)
+  ))
+
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_length(after$reference_norms, 10000)
+})
