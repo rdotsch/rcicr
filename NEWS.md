@@ -54,7 +54,11 @@
   because the refresh is nobody's request, it puts the caller's random stream back where it
   found it: a cached file used to consume none, so without that the first scoring call would
   quietly move every later `sample()` in an old analysis script. An explicit
-  `force_gen_ref_dist` keeps the documented behaviour of seeding and drawing.
+  `force_gen_ref_dist` keeps the documented behaviour of seeding and drawing. Under
+  `options(warn = 2)` the superseding notice is given as a message rather than a warning, so a
+  migration nobody requested cannot abort the call before returning the corrected value — on a
+  read-only archive, which never records that it has migrated, that would have left the file
+  unscoreable on every call.
 
   A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
   for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating

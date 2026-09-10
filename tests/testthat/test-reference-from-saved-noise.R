@@ -821,3 +821,83 @@ test_that("a vouched independent-base cache is reused untouched", {
   expect_identical(unname(tools::md5sum(rdata)), before)
   expect_false(any(grepl("Computing reference distribution", said, fixed = TRUE)))
 })
+
+test_that("a refresh that changed the values still returns one under warn = 2", {
+  # The earlier warn = 2 test covers the branch where nothing moved. This is the
+  # other one: the notice fires, and as a warning it would abort the call before
+  # the corrected InfoVal -- already computed -- could be returned.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  stale_the_cache(rdata, planted = rep(0.5, 20))
+
+  withr::local_options(warn = 2)
+  utils::capture.output(
+    expect_no_error(infoval <- computeInfoVal2IFC(ci, rdata, iter = 20))
+  )
+  expect_true(is.finite(infoval))
+})
+
+test_that("under warn = 2 the superseding notice is still said", {
+  # Not aborting must not mean going quiet: the value supersedes earlier ones
+  # and the caller has to hear so, message rather than warning.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  stale_the_cache(rdata, planted = rep(0.5, 20))
+
+  withr::local_options(warn = 2)
+  said <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
+    message = function(cond) {
+      said <<- c(said, conditionMessage(cond))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_true(any(grepl("gave different values", said, fixed = TRUE)))
+})
+
+test_that("a read-only refresh under warn = 2 is scoreable every time", {
+  # The case that has no way out on its own: nothing is written, so the notice
+  # recurs on every call. As a warning under warn = 2 the archive could never be
+  # scored at all.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  stale_the_cache(rdata, planted = rep(0.5, 20))
+
+  withr::local_options(warn = 2)
+  results <- local({
+    deny_writes(rdata)
+    out <- numeric(2)
+    for (i in 1:2) {
+      utils::capture.output(
+        expect_no_error(out[i] <- computeInfoVal2IFC(ci, rdata, iter = 20))
+      )
+    }
+    out
+  })
+  expect_true(all(is.finite(results)))
+  expect_identical(results[[1]], results[[2]])
+})
+
+test_that("an independent-base refresh under warn = 2 returns its value too", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_independent_fixture(tmp)
+  ci <- generateCI(1:12, rep(c(1, -1), 6), "second", rdata,
+                   save_as_png = FALSE, n_cores = 1)
+  utils::capture.output(suppressWarnings(
+    computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second")
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  e$reference_norms_by_base[["second"]] <- list(norms = rep(0.5, 20), response_seed = NULL)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  withr::local_options(warn = 2)
+  utils::capture.output(
+    expect_no_error(infoval <- computeInfoVal2IFC(ci, rdata, iter = 20, baseimage = "second"))
+  )
+  expect_true(is.finite(infoval))
+})

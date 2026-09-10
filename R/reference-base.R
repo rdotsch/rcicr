@@ -47,12 +47,20 @@ vouchedReference <- function(norms, marker, fingerprint) {
 }
 
 # Said by both storage shapes, so they cannot drift apart.
+#
+# It reports a migration the caller did not ask for, so it must not be the thing
+# that fails their call: under options(warn = 2) a warning is an error, and the
+# InfoVal -- already computed, and the corrected one -- would never be returned.
+# On a read-only archive there is no cache to write either, so every later call
+# would rebuild and abort again and the file could never be scored. Degrading to
+# a message under that setting keeps the value reachable and still says what
+# happened; ordinary warning behaviour is unchanged.
 warnReferenceSuperseded <- function() {
   msg <- paste0('This stimulus file carried a reference distribution ',
                 'from before rcicr built references from the saved noise, and ',
                 'rebuilding it from the saved noise gave different values. The ',
                 'InfoVal this returns supersedes any computed from this file before.')
-  warning(msg, call. = FALSE)
+  tryCatch(warning(msg, call. = FALSE), error = function(e) message(msg))
 }
 
 # An automatic refresh is not something the caller asked for, so it must not
