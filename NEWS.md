@@ -14,6 +14,23 @@
 
   No stimuli need regenerating or responses recollecting. The [synthetic analysis in #307](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md) characterizes the reference mismatch through modeled shifts across 100 base-image pairs. It does not estimate affected-study rates or bound an individual study's change; recomputing its InfoVal gives that change.
 
+- **The InfoVal reference is built from the noise the stimulus file saved, not by re-generating
+  the stimuli.** `generateReferenceDistribution2IFC()` and `computeInfoVal2IFC()` reopened every
+  base image, so an archived or moved experiment could not be scored at all, and neither could a
+  uniform base made with `maximize_baseimage_contrast = FALSE`. Both now work from the saved
+  parameters and basis, and read no image.
+
+  **Files that record `nscales` — everything written by 1.1.0 and later — are unchanged**, to the
+  last bit, along with the random stream the call leaves behind. Older files did not record it,
+  and the rebuild assumed the default 5: where the stimuli used a different `nscales`, the
+  reference described a noise basis the participants never saw, and pre-0.3.0 files were rebuilt
+  at a different stream offset again. Those references change, from wrong to right. **Recompute
+  InfoVal from any stimulus file that predates 1.1.0**; the CI itself is unaffected, and no
+  stimuli need regenerating.
+
+  The `nscales`, `noise_type` and `sigma` warnings are gone with the rebuild that needed them.
+  (#301)
+
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
   differ only in rounding in the stored base-face doubles; its participant-facing 8-bit stimuli
@@ -40,23 +57,6 @@
 
   **Every value that changes was NaN before.** No finite number moves, no CI with any variation
   in it is affected, and a result that was NaN cannot have carried a published number. (#303)
-
-- **The InfoVal reference is built from the noise the stimulus file saved, not by re-generating
-  the stimuli.** `generateReferenceDistribution2IFC()` and `computeInfoVal2IFC()` reopened every
-  base image, so an archived or moved experiment could not be scored at all, and neither could a
-  uniform base made with `maximize_baseimage_contrast = FALSE`. Both now work from the saved
-  parameters and basis, and read no image.
-
-  **Files that record `nscales` — everything written by 1.1.0 and later — are unchanged**, to the
-  last bit, along with the random stream the call leaves behind. Older files did not record it,
-  and the rebuild assumed the default 5: where the stimuli used a different `nscales`, the
-  reference described a noise basis the participants never saw, and pre-0.3.0 files were rebuilt
-  at a different stream offset again. Those references change, from wrong to right. **Recompute
-  InfoVal from any stimulus file that predates 1.1.0**; the CI itself is unaffected, and no
-  stimuli need regenerating.
-
-  The `nscales`, `noise_type` and `sigma` warnings are gone with the rebuild that needed them.
-  (#301)
 
 ## Behaviour changes
 
