@@ -111,30 +111,34 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     force_gen_ref_dist <- TRUE
   }
 
-  # A cached distribution written before #301 may have been built on a basis
-  # rebuilt from an assumed nscales rather than on the file's own saved noise.
-  # Only a file that never recorded nscales can be wrong that way, and only the
-  # default stream: `reference_norms_seed` means the user asked for that exact
-  # null, so it is left alone. Regenerating once replaces the cache and writes
-  # the marker, so this fires once per file rather than on every call.
+  # A cached distribution carrying no `reference_norms_source` was written before
+  # references were built from the saved noise, by machinery that rebuilt the
+  # parameters from the seed instead. Whether that rebuild reproduced this file's
+  # own parameters cannot be established from the file: it depended on fields the
+  # file may not record, and on the RNG kind of the session that ran it, since
+  # set.seed() keeps whatever kind is current. Verifying it here would answer the
+  # wrong question -- a rebuild in *this* session says nothing about the one that
+  # wrote the cache -- so an unmarked default cache is regenerated once rather
+  # than certified. Regenerating writes the marker, so this happens once per file.
   #
-  # Without this the fix would not reach the files it is for: scoring writes the
-  # cache, so an old analysis script rerun on an old stimulus set would keep
-  # returning the value #301 exists to correct.
+  # Without it the correction would not reach the files it is for: scoring writes
+  # the cache, so an old analysis script rerun on an old stimulus set would keep
+  # returning the superseded value.
+  #
+  # A `reference_norms_seed` means someone asked for that exact null, so it is
+  # left alone; recomputing one of those is a deliberate act.
   cached <- exists("reference_norms", envir = environment(), inherits = FALSE)
   stale_cache <- cached &&
-    !exists("nscales", envir = environment(), inherits = FALSE) &&
     !identical(get0("reference_norms_source", envir = environment(),
                     inherits = FALSE), "saved_noise") &&
     is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
   if (stale_cache) {
     force_gen_ref_dist <- TRUE
-    msg <- paste0('This stimulus file carries a reference distribution ',
-      'computed before rcicr rebuilt references from saved noise. The file ',
-      'does not record `nscales`, so that distribution may have been scored ',
-      'against a noise basis the stimuli never used. It is being regenerated ',
-      'once from the saved noise; the InfoVal this returns supersedes any ',
-      'computed from this file before.'
+    msg <- paste0('This stimulus file carries a reference distribution from ',
+      'before rcicr built references from the saved noise. There is no way to ',
+      'tell from the file whether it was built on the noise these stimuli ',
+      'actually use, so it is being regenerated once from the saved noise. ',
+      'The InfoVal this returns supersedes any computed from this file before.'
     )
     warning(msg, call. = FALSE)
   }

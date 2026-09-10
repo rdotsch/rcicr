@@ -207,7 +207,7 @@ test_that("a reference cached before the change is regenerated once", {
       invokeRestart("muffleWarning")
     }
   )
-  expect_true(any(grepl("computed before rcicr rebuilt references",
+  expect_true(any(grepl("before rcicr built references",
                         warnings_seen, fixed = TRUE)))
 
   after <- new.env()
@@ -224,7 +224,7 @@ test_that("a reference cached before the change is regenerated once", {
       invokeRestart("muffleWarning")
     }
   )
-  expect_false(any(grepl("computed before rcicr rebuilt references",
+  expect_false(any(grepl("before rcicr built references",
                          second_warnings, fixed = TRUE)))
   expect_equal(second, first)
 })
@@ -252,29 +252,49 @@ test_that("a deliberately seeded reference is never discarded", {
     }
   )
 
-  expect_false(any(grepl("computed before rcicr rebuilt references",
+  expect_false(any(grepl("before rcicr built references",
                          warnings_seen, fixed = TRUE)))
   after <- new.env()
   load(rdata, envir = after)
   expect_equal(after$reference_norms, seq(0.4, 0.8, length.out = 5))
 })
 
-test_that("a modern file's cached reference is left as it is", {
-  # Files recording nscales were never scored against a rebuilt basis, so there
-  # is nothing to invalidate and no reason to make anyone pay for a regeneration.
+test_that("an unmarked cache is refreshed even when the file records nscales", {
+  # The marker is the only positive evidence that a cache was built on this
+  # file's own noise. A rebuild's correctness depended on the RNG kind of the
+  # session that ran it, which set.seed() does not restore and the file does not
+  # record, so a modern file's unmarked cache cannot be certified either.
   tmp <- withr::local_tempdir()
   rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
   ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
 
   e <- new.env()
   load(rdata, envir = e)
+  expect_true(exists("nscales", envir = e, inherits = FALSE))
   e$reference_norms <- rep(0.5, 5)
   e$reference_norms_seed <- NULL
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 5)))
+  suppressWarnings(utils::capture.output(first <- computeInfoVal2IFC(ci, rdata, iter = 5)))
 
   after <- new.env()
   load(rdata, envir = after)
-  expect_equal(after$reference_norms, rep(0.5, 5))
+  expect_false(identical(after$reference_norms, rep(0.5, 5)))
+  expect_identical(after$reference_norms_source, "saved_noise")
+
+  # And once marked it is kept, so the cost is paid once rather than per call.
+  marked <- after$reference_norms
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(second <- computeInfoVal2IFC(ci, rdata, iter = 5)),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_false(any(grepl("before rcicr built references", warnings_seen, fixed = TRUE)))
+  again <- new.env()
+  load(rdata, envir = again)
+  expect_identical(again$reference_norms, marked)
+  expect_equal(second, first)
 })

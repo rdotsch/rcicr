@@ -26,10 +26,17 @@
   reference described a noise basis the participants never saw, and pre-0.3.0 files were rebuilt
   at a different stream offset again. Those references change, from wrong to right.
 
-  A reference already cached in such a file is refreshed once automatically:
-  `computeInfoVal2IFC()` regenerates it from the saved noise, warns that it has, and records
-  `reference_norms_source` in the file so this happens once rather than on every call.
-  Without that the cache would keep returning the value this corrects, since scoring writes it.
+  **Any reference distribution already cached in a stimulus file is regenerated once**, whatever
+  version wrote it. Scoring writes that cache and `computeInfoVal2IFC()` reuses it, so without
+  this the correction would never reach the files it is for. Nothing in a file says whether an
+  older cache was built on the noise its stimuli actually use — the old rebuild depended on
+  fields the file may not record, and on the RNG kind of the session that ran it, which
+  `set.seed()` does not restore — so such a cache is refreshed rather than trusted. The first
+  `computeInfoVal2IFC()` call on an existing file therefore pays for one reference distribution
+  and warns that it has; `reference_norms_source` is recorded alongside so it happens once and
+  not per call. For files that were already correct, which is most of them, the value comes back
+  the same.
+
   A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
   for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating
   1.1.0**. The CI itself is unaffected, and no stimuli need regenerating.
