@@ -96,6 +96,10 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # that would hurt most here - it is read at the very end to compute the CI
   # norm, so a file carrying that name would silently score somebody else's
   # classification image and return a plausible number rather than an error.
+  # Whether the caller named `iter` has to be settled before the load below:
+  # list2env() binds it into this frame, after which missing() is always FALSE.
+  iter_supplied <- !missing(iter)
+
   .args <- captureArgs(environment())
   load(rdata)
   list2env(.args, envir = environment())
@@ -141,6 +145,14 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
   if (stale_cache) {
     force_gen_ref_dist <- TRUE
+    # Rebuild at the size the cache already had, unless the caller named one.
+    # A file cached at 50000 iterations holds a more precise null than the
+    # default 10000, and a refresh nobody asked for must not quietly trade that
+    # away: the InfoVal would move for a reason that has nothing to do with the
+    # noise the null is built on.
+    if (!iter_supplied) {
+      iter <- length(.previous_norms)
+    }
   }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.

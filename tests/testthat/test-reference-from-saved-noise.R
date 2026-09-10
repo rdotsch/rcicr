@@ -406,3 +406,38 @@ test_that("the warning fires on a real superseded reference, not just a planted 
   expect_equal(after$reference_norms, expected)
   expect_false(isTRUE(all.equal(after$reference_norms, superseded)))
 })
+
+test_that("an automatic refresh keeps the cache's own iteration count", {
+  # A file cached at more iterations than the default holds a more precise null.
+  # A refresh nobody asked for must not trade that away: the InfoVal would move
+  # for a reason unrelated to the noise the null is built on.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  # 40 rather than the 10000 default, so a refresh that ignored it is visible.
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 40, ncores = 1, save_rdata = TRUE)
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  genuine <- e$reference_norms
+  expect_length(genuine, 40)
+  rm("reference_norms_source", envir = e)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata)))
+
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_length(after$reference_norms, 40)
+  expect_identical(after$reference_norms, genuine)
+
+  # A caller who names iter still gets it: the rule is about refreshes nobody asked for.
+  rm("reference_norms_source", envir = after)
+  save(list = ls(after, all.names = TRUE), file = rdata, envir = after)
+  suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 12)))
+  asked <- new.env()
+  load(rdata, envir = asked)
+  expect_length(asked$reference_norms, 12)
+})
