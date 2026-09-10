@@ -351,3 +351,58 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   )
   expect_true(any(grepl("gave different values", moved, fixed = TRUE)))
 })
+
+test_that("the warning fires on a real superseded reference, not just a planted one", {
+  # The cases above plant an obviously wrong cache to exercise the comparison.
+  # This one plants what the old rebuild actually produced for this file --
+  # measured on the tree before the change, at nscales = 3 with nscales stripped,
+  # where the rebuild assumed the default 5 -- so the warning is shown to fire in
+  # the situation it exists for, on values a researcher could really be holding.
+  superseded <- c(
+    0.856963968913157, 0.855755848808479, 0.896672059991411,
+    0.877211505127452, 0.896672059991411
+  )
+
+  tmp <- withr::local_tempdir()
+  base_png <- make_square_png(file.path(tmp, "base.png"), size = 32, seed = 1)
+  suppressWarnings(utils::capture.output(generateStimuli2IFC(
+    base_face_files = list(base = base_png), n_trials = 4, img_size = 32,
+    stimulus_path = tmp, seed = 1, nscales = 3, ncores = 1, save_as_png = FALSE
+  )))
+  rdata <- list.files(tmp, pattern = "\\.Rdata$", full.names = TRUE)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  e <- new.env()
+  load(rdata, envir = e)
+  saved_width <- ncol(e$stimuli_params$base)
+  rm("nscales", "sigma", envir = e)
+  e$reference_norms <- superseded
+  e$reference_norms_seed <- NULL
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = length(superseded))),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+
+  # And what replaced it is the file's own noise, not merely something else.
+  after <- new.env()
+  load(rdata, envir = after)
+  noise <- vapply(seq_len(after$n_trials), function(i) {
+    as.vector(generateNoiseImage(after$stimuli_params$base[i, ], after$p))
+  }, numeric(after$img_size^2))
+  set.seed(after$seed)
+  for (trial in seq_len(after$n_trials)) runif(saved_width)
+  expected <- vapply(seq_along(superseded), function(i) {
+    responses <- ((runif(after$n_trials) > 0.5) * 2) - 1
+    norm(noise %*% responses / ncol(noise), "f")
+  }, numeric(1))
+
+  expect_equal(after$reference_norms, expected)
+  expect_false(isTRUE(all.equal(after$reference_norms, superseded)))
+})
