@@ -432,13 +432,17 @@ test_that("an automatic refresh keeps the cache's own iteration count", {
   expect_length(after$reference_norms, 40)
   expect_identical(after$reference_norms, genuine)
 
-  # A caller who names iter still gets it: the rule is about refreshes nobody asked for.
+  # Naming iter does not change that. On a call that finds a cache, iter has
+  # never reached the simulation, so an old script carrying one is not asking
+  # for a 12-value null -- and honouring it would make the refresh the thing
+  # that finally gave the argument an effect.
   rm("reference_norms_source", envir = after)
   save(list = ls(after, all.names = TRUE), file = rdata, envir = after)
   suppressWarnings(utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 12)))
   asked <- new.env()
   load(rdata, envir = asked)
-  expect_length(asked$reference_norms, 12)
+  expect_length(asked$reference_norms, 40)
+  expect_identical(asked$reference_norms, genuine)
 })
 
 test_that("a regeneration the caller asked for gets the documented default", {
@@ -501,4 +505,119 @@ test_that("a marker left on replaced norms does not vouch for them", {
   expect_identical(after$reference_norms_fingerprint,
                    rcicr:::referenceFingerprint(after$reference_norms))
   expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+})
+
+# A refresh nobody asked for must not turn a call that used to work into an
+# error. The tests below cover that fallback from both ends: the branch itself,
+# with the writability check mocked so it runs everywhere, and the real
+# permission bits, which only stop a user the kernel actually stops.
+deny_writes <- function(path) {
+  same_file <- function(p) {
+    identical(normalizePath(p, mustWork = FALSE), normalizePath(path, mustWork = FALSE))
+  }
+  testthat::local_mocked_bindings(
+    writableFile = function(p) !same_file(p),
+    .package = "rcicr",
+    .env = parent.frame()
+  )
+}
+
+# Leaves the file in the state a pre-marker archive is in, and returns the
+# reference the marker vouched for so a test can tell the two values apart.
+stale_the_cache <- function(rdata, planted = NULL) {
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 20, ncores = 1, save_rdata = TRUE)
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  rebuilt <- e$reference_norms
+  if (!is.null(planted)) e$reference_norms <- planted
+  rm("reference_norms_source", envir = e)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+  rebuilt
+}
+
+test_that("a refresh that cannot be saved still returns the rebuilt InfoVal", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  rebuilt <- stale_the_cache(rdata, planted = rep(0.5, 20))
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  before <- unname(tools::md5sum(rdata))
+
+  got <- local({
+    deny_writes(rdata)
+    infoval <- NULL
+    said <- suppressWarnings(utils::capture.output(
+      infoval <- computeInfoVal2IFC(ci, rdata, iter = 20)
+    ))
+    list(infoval = infoval, said = said)
+  })
+  infoval <- got$infoval
+  said <- got$said
+
+  expect_true(is.finite(infoval))
+  expect_identical(unname(tools::md5sum(rdata)), before)
+  expect_true(any(grepl("is not writable", said, fixed = TRUE)))
+
+  # And it is the rebuilt null's value, not the planted cache's.
+  e <- new.env()
+  load(rdata, envir = e)
+  e$reference_norms <- rebuilt
+  e$reference_norms_source <- "saved_noise"
+  e$reference_norms_fingerprint <- rcicr:::referenceFingerprint(rebuilt)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+  utils::capture.output(expected <- computeInfoVal2IFC(ci, rdata, iter = 20))
+  expect_equal(infoval, expected)
+})
+
+test_that("a refresh that cannot be saved still warns when the values moved", {
+  # The warning says the returned InfoVal supersedes earlier ones. That is just
+  # as true when the file could not be updated -- more so, since the stale
+  # values stay on disk.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  rebuilt <- stale_the_cache(rdata, planted = rep(0.5, 20))
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  before <- unname(tools::md5sum(rdata))
+
+  warnings_seen <- character()
+  local({
+    deny_writes(rdata)
+    withCallingHandlers(
+      utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
+      warning = function(cond) {
+        warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+        invokeRestart("muffleWarning")
+      }
+    )
+  })
+  # Unchanged on disk, so the warning came from the fallback and not from the
+  # ordinary path having quietly written after all.
+  expect_identical(unname(tools::md5sum(rdata)), before)
+  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
+})
+
+test_that("read-only permission bits reach the same fallback", {
+  # The mocked tests above pin the branch; this one pins that a real read-only
+  # archive is what selects it. Root is not stopped by the permission bits, so
+  # there the call would succeed by writing and prove nothing.
+  skip_on_os("windows")
+  skip_if(unname(Sys.info()[["effective_user"]]) == "root",
+          "root writes to read-only files, so the fallback is never reached")
+
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  stale_the_cache(rdata)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  before <- unname(tools::md5sum(rdata))
+  Sys.chmod(rdata, "0444")
+  withr::defer(Sys.chmod(rdata, "0644"))
+
+  said <- suppressWarnings(utils::capture.output(
+    infoval <- computeInfoVal2IFC(ci, rdata, iter = 20)
+  ))
+
+  expect_true(is.finite(infoval))
+  expect_identical(unname(tools::md5sum(rdata)), before)
+  expect_true(any(grepl("is not writable", said, fixed = TRUE)))
 })

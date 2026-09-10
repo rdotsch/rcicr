@@ -132,3 +132,10 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
                '; MAD = ', mad(norms), '; iterations = ', length(norms), ')'), stdout())
   return(info_val)
 }
+
+# A seam, not a convenience: an automatic refresh has to know whether it may
+# write before it starts, and a test needs to deny that without depending on
+# permission bits the test's own user may outrank.
+writableFile <- function(path) {
+  unname(file.access(path, mode = 2)) == 0L
+}

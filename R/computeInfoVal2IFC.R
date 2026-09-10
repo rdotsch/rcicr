@@ -96,10 +96,6 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # that would hurt most here - it is read at the very end to compute the CI
   # norm, so a file carrying that name would silently score somebody else's
   # classification image and return a plausible number rather than an error.
-  # Whether the caller named `iter` has to be settled before the load below:
-  # list2env() binds it into this frame, after which missing() is always FALSE.
-  iter_supplied <- !missing(iter)
-
   .args <- captureArgs(environment())
   load(rdata)
   list2env(.args, envir = environment())
@@ -155,14 +151,14 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
   if (stale_cache) {
     force_gen_ref_dist <- TRUE
-    # Rebuild at the size the cache already had, unless the caller named one or
-    # asked for the regeneration themselves. A file cached at 50000 iterations
-    # holds a more precise null than the default 10000, and a refresh nobody
-    # asked for must not quietly trade that away: the InfoVal would move for a
-    # reason that has nothing to do with the noise the null is built on. A
-    # requested run is the opposite case -- it gets the documented default, not
-    # the precision of the thing it is replacing.
-    if (!iter_supplied && !forced_by_caller) {
+    # Rebuild at the size the cache already had unless the caller asked for the
+    # regeneration themselves. `iter` has never had any effect on a call that
+    # found a cache -- the guard below only reaches the simulation when there is
+    # none -- so a refresh nobody requested must not be the thing that suddenly
+    # gives it one, and trade a 50000-value null for whatever an old script
+    # happened to pass. A requested run is the opposite case: it gets what the
+    # caller named, or the documented default.
+    if (!forced_by_caller) {
       iter <- length(.previous_norms)
       # The size came from the file, not from the caller, so the "iter should be
       # >= 10000" advice is not theirs to act on here -- and under
@@ -262,6 +258,15 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       # for anyone using it, with nothing in the call to say so.
       cache_ref_dist <- is.null(response_seed)
 
+      # A refresh nobody asked for is not a request to write. Archives are often
+      # kept read-only, and there the value still has to come back: the fix is
+      # to score against this file's own noise, which works in memory, not to
+      # abort a call that would have succeeded before. A caller who asked for
+      # the regeneration did ask for the write, and still gets the error.
+      readonly_refresh <- cache_ref_dist && stale_cache && !forced_by_caller &&
+        !writableFile(rdata)
+      if (readonly_refresh) cache_ref_dist <- FALSE
+
       reference_norms <- withCallingHandlers(
         generateReferenceDistribution2IFC(
           rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
@@ -283,21 +288,18 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
         load(rdata)
         list2env(.args, envir = environment())
 
-        # Only now can the refresh above say whether it changed anything.
-        if (stale_cache && !identical(reference_norms, .previous_norms)) {
-          msg <- paste0('This stimulus file carried a reference distribution ',
-            'from before rcicr built references from the saved noise, and ',
-            'rebuilding it from the saved noise gave different values. The ',
-            'InfoVal this returns supersedes any computed from this file before.'
-          )
-          warning(msg, call. = FALSE)
-        }
-
         # NB: write() defaults to file = "data", so omitting stdout() here did
         # not print this message - it silently created a file called "data" in
         # the working directory. Every other write() in the package passes
         # stdout(); this one was missed.
         write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
+
+      } else if (readonly_refresh) {
+
+        write(paste0("Rebuilt this file's reference distribution from its saved noise, but ",
+                rdata, " is not writable, so the rebuilt values were used without being stored. ",
+                "The next call will rebuild them again."
+              ), stdout())
 
       } else {
 
@@ -306,6 +308,19 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
                 "stored in the .Rdata file, and it has deliberately not been saved there."
               ), stdout())
 
+      }
+
+      # Only now can the refresh above say whether it changed anything. A
+      # response_seed draw is excluded: it is an independent check, so a
+      # difference from the cache says nothing about the cache being wrong.
+      if (stale_cache && is.null(response_seed) &&
+            !identical(reference_norms, .previous_norms)) {
+        msg <- paste0('This stimulus file carried a reference distribution ',
+          'from before rcicr built references from the saved noise, and ',
+          'rebuilding it from the saved noise gave different values. The ',
+          'InfoVal this returns supersedes any computed from this file before.'
+        )
+        warning(msg, call. = FALSE)
       }
 
     } else {

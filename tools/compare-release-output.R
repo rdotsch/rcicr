@@ -191,7 +191,8 @@ alpha_expectations <- function(ref) {
 }
 
 EXPECTED <- c(list(
-  list(ref = "v1.0.1", key = "sinusoid-64-nscales3-infoval/infoval",
+  list(ref = "v1.0.1",
+       key = c("sinusoid-64-nscales3-infoval/infoval", "sinusoid-64-nscales3-infoval/infoval_twice"),
        reason = paste("v1.0.1 did not save nscales/sigma into the .Rdata, so its",
                       "reference distribution was rebuilt at the default nscales = 5",
                       "regardless of how the stimuli were made. At nscales != 5 the old",
@@ -200,19 +201,22 @@ EXPECTED <- c(list(
   # Listed for both references, because every tagged release carries the defect:
   # the reference selection is new here, so the previous-release run reports the
   # same difference and neither run can report this as stale.
-  list(ref = "v1.0.1", key = "sinusoid-64-twobase-indep-infoval/infoval",
+  list(ref = "v1.0.1",
+       key = c("sinusoid-64-twobase-indep-infoval/infoval", "sinusoid-64-twobase-indep-infoval/infoval_twice"),
        reason = paste("v1.0.1 built one reference distribution per stimulus file and always",
                       "took it from the first base image's noise, so a CI from a later base",
                       "with independent parameters was scored against a null belonging to a",
                       "different base (#299). The reference is now built from the scored",
                       "base's own saved noise."),
        news = "Reproducibility impact"),
-  list(ref = "v1.3.0", key = "sinusoid-64-twobase-indep-infoval/infoval",
+  list(ref = "v1.3.0",
+       key = c("sinusoid-64-twobase-indep-infoval/infoval", "sinusoid-64-twobase-indep-infoval/infoval_twice"),
        reason = paste("Same defect as the v1.0.1 entry above: v1.3.0 has no way to name the",
                       "base a classification image came from, so it scored a later",
                       "independent base against the first base's null too."),
        news = "Reproducibility impact"),
-  list(ref = "v1.0.1", key = "gabor-64-sigma10-infoval/infoval",
+  list(ref = "v1.0.1",
+       key = c("gabor-64-sigma10-infoval/infoval", "gabor-64-sigma10-infoval/infoval_twice"),
        reason = paste("Same cause as the nscales case: v1.0.1's reference distribution",
                       "ignored noise_type and sigma, so InfoVal for Gabor noise (and for",
                       "any non-default sigma) was measured against a sinusoid null."),
@@ -500,7 +504,7 @@ compare_one <- function(name, a, b) {
                 detail = sprintf("not bit-identical (%d of %d elements differ)", n, length(a))))
   }
 
-  if (identical(name, "infoval")) {
+  if (name %in% c("infoval", "infoval_twice")) {
     d <- abs(a - b)
     return(if (d <= INFOVAL_TOL) list(status = "OK", detail = sprintf("|d| = %.3g", d))
            else list(status = "DIFF", detail = sprintf("|d| = %.6g (tol %.0e)", d, INFOVAL_TOL)))

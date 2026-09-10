@@ -21,7 +21,10 @@
   parameters and basis, and read no image.
 
   **Files that record `nscales` — everything written by 1.1.0 and later — are unchanged**, to the
-  last bit, along with the random stream the call leaves behind. Older files did not record it,
+  last bit, along with the random stream the call leaves behind, provided their reference was
+  built under the same `RNGkind()` as their stimuli. `set.seed()` keeps whatever kind the session
+  has rather than restoring one, so a reference built under a different kind was already
+  describing a noise basis these stimuli never used, and it changes here too. Older files did not record it,
   and the rebuild assumed the default 5: where the stimuli used a different `nscales`, the
   reference described a noise basis the participants never saw, and pre-0.3.0 files were rebuilt
   at a different stream offset again. Those references change, from wrong to right.
@@ -38,7 +41,11 @@
   not per call — and a marker an older rcicr left behind on replaced norms does not vouch
   for them. For files that were already correct, which is most of them, the value comes back
   identical and nothing is said about it; the warning is raised only where rebuilding actually
-  changed the numbers.
+  changed the numbers. The refresh keeps the count of the cache it replaces rather than the
+  documented default, so a file holding a more precise null does not lose precision to a
+  rebuild nobody asked for; `iter` chooses the count only where the caller asked for the
+  regeneration. A read-only archive is scored from the rebuilt reference in memory rather
+  than failing on the write, and says so — correct value, rebuilt again on the next call.
 
   A reference carrying a `reference_norms_seed` is left alone — that records a null someone asked
   for deliberately — so **recompute InfoVal explicitly for any seeded null on a file predating

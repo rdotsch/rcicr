@@ -385,6 +385,22 @@ run_config <- function(cfg) {
       infoval_args$baseimage <- key
     }
     out$infoval <- do.call(computeInfoVal2IFC, infoval_args)
+
+    # Score the same CI again, with the marker that vouches for the cached
+    # reference stripped first. Every configuration writes its stimulus file
+    # with the version under test, so a first call always finds a fresh cache
+    # and the refresh path is never reached; removing the marker is what puts
+    # the file in the state a pre-marker archive is in. On a reference version
+    # the field is absent and the round trip changes nothing, so that side
+    # simply reuses its cache -- which is the point: the refreshed value has to
+    # equal what the old code computed.
+    e <- new.env()
+    load(rdata, envir = e)
+    if (exists("reference_norms_source", envir = e, inherits = FALSE)) {
+      rm("reference_norms_source", envir = e)
+    }
+    save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+    out$infoval_twice <- do.call(computeInfoVal2IFC, infoval_args)
   }
 
   unlink(c(stim_dir, ci_dir, zmap_dir, file.path(getwd(), "zmaps")), recursive = TRUE)
