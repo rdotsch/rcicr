@@ -357,9 +357,20 @@ applyScaling <- function(base, ci, scaling, constant) {
     }
     # Scaling using 'matched' method
   } else if (scaling == 'matched') {
-    scaled <- min(base) +
-      ((max(base) - min(base)) * (ci - min(ci[!is.na(ci)])) /
-         (max(ci[!is.na(ci)]) - min(ci[!is.na(ci)])))
+    values <- ci[!is.na(ci)]
+    if (length(values) > 0 && max(values) == min(values)) {
+      # No CI range to map onto the base image's, so the midpoint of that range
+      # is the neutral answer. Deliberately not a literal 0.5: this method
+      # renders into the base image's own intensity range, and 0.5 can sit
+      # outside it -- a base spanning [0, 0.3] would show a no-signal CI
+      # brighter than any pixel in the base.
+      warnDegenerateScaling(scaling)
+      scaled <- neutralScaling(ci, min(base) + (max(base) - min(base)) / 2)
+    } else {
+      scaled <- min(base) +
+        ((max(base) - min(base)) * (ci - min(values)) /
+           (max(values) - min(values)))
+    }
     # Scaling with maximum scaling factor for the given CI
   } else if (scaling == "independent") {
 
@@ -370,7 +381,12 @@ applyScaling <- function(base, ci, scaling, constant) {
       constant <- abs(range(ci[!is.na(ci)])[2])
     }
 
-    scaled <- (ci + constant) / (2 * constant)
+    if (isTRUE(constant == 0)) {
+      warnDegenerateScaling(scaling)
+      scaled <- neutralScaling(ci, 0.5)
+    } else {
+      scaled <- (ci + constant) / (2 * constant)
+    }
     # Print warning when scaling method name is not recognized
   } else {
     warning(paste0('Scaling method \'', scaling, '\' not found. Using none.'))
@@ -379,6 +395,30 @@ applyScaling <- function(base, ci, scaling, constant) {
 
   # Return the scaled CI
   return(scaled)
+}
+
+# Render a classification image that has nothing to scale.
+#
+# Responses that cancel exactly give an all-zero CI: a result, not a failure.
+# The range-based methods would divide by a zero range and return NaN for every
+# pixel, so they fill the image with a neutral value instead -- what 'constant'
+# scaling already returns for the same input, and what autoscale() already
+# returns for a zero CI sitting beside one with signal. Masked pixels keep
+# their NA.
+neutralScaling <- function(ci, value) {
+  scaled <- ci
+  scaled[!is.na(ci)] <- value
+  return(scaled)
+}
+
+warnDegenerateScaling <- function(scaling) {
+  msg <- paste0('This classification image has no range to scale: every ',
+    'pixel holds the same value, which is what exactly cancelling ',
+    'responses produce. Under \'', scaling, '\' scaling it is ',
+    'rendered as a uniform neutral image rather than as NaN. The ',
+    'unscaled CI in $ci is unaffected.'
+  )
+  warning(msg, call. = FALSE)
 }
 
 # Combine scaled CI with base image

@@ -64,9 +64,26 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
 
   write(paste0("Using scaling factor constant:", constant), stdout())
 
+  # A zero constant means every CI in the list is exactly zero, so dividing by
+  # it would make all of them NaN. They render neutral instead, which is what a
+  # zero CI already gets here whenever the list also holds one with signal.
+  degenerate <- isTRUE(constant == 0)
+  if (degenerate) {
+    msg <- paste0('Every classification image in this list is exactly zero, ',
+      'so there is no range to scale them against. They are rendered ',
+      'as uniform neutral images rather than as NaN. The unscaled ',
+      'CIs in $ci are unaffected.'
+    )
+    warning(msg, call. = FALSE)
+  }
+
   # Scale all noise patterns
   for (ciname in names(cis)) {
-    cis[[ciname]]$scaled <-  (cis[[ciname]]$ci + constant) / (2 * constant)
+    cis[[ciname]]$scaled <- if (degenerate) {
+      neutralScaling(cis[[ciname]]$ci, 0.5)
+    } else {
+      (cis[[ciname]]$ci + constant) / (2 * constant)
+    }
 
     # Note that $combined is deliberately NOT updated here. It stays as the
     # caller supplied it, so whatever combination was made before autoscaling
