@@ -142,12 +142,16 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   # Either is the caller requesting a fresh run, which gets the documented
   # default rather than the size of whatever the file happened to be carrying.
   forced_by_caller <- force_gen_ref_dist
+  inherited_iter <- FALSE
 
   cached <- exists("reference_norms", envir = environment(), inherits = FALSE)
   .previous_norms <- if (cached) reference_norms else NULL
-  stale_cache <- cached &&
-    !identical(get0("reference_norms_source", envir = environment(),
-                    inherits = FALSE), "saved_noise") &&
+  vouched <- cached &&
+    identical(get0("reference_norms_source", envir = environment(),
+                   inherits = FALSE), "saved_noise") &&
+    identical(get0("reference_norms_fingerprint", envir = environment(),
+                   inherits = FALSE), referenceFingerprint(reference_norms))
+  stale_cache <- cached && !vouched &&
     is.null(get0("reference_norms_seed", envir = environment(), inherits = FALSE))
   if (stale_cache) {
     force_gen_ref_dist <- TRUE
@@ -160,6 +164,12 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     # the precision of the thing it is replacing.
     if (!iter_supplied && !forced_by_caller) {
       iter <- length(.previous_norms)
+      # The size came from the file, not from the caller, so the "iter should be
+      # >= 10000" advice is not theirs to act on here -- and under
+      # options(warn = 2) it would abort the refresh before the marker is
+      # written, failing again on every run. It still fires whenever the caller
+      # chooses the count.
+      inherited_iter <- iter < 10000
     }
   }
 
@@ -252,8 +262,15 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
       # for anyone using it, with nothing in the call to say so.
       cache_ref_dist <- is.null(response_seed)
 
-      reference_norms <- generateReferenceDistribution2IFC(
-        rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
+      reference_norms <- withCallingHandlers(
+        generateReferenceDistribution2IFC(
+          rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
+        ),
+        warning = function(cond) {
+          if (inherited_iter && grepl("iter >= 10000", conditionMessage(cond), fixed = TRUE)) {
+            invokeRestart("muffleWarning")
+          }
+        }
       )
 
       if (cache_ref_dist) {

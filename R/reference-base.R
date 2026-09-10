@@ -20,6 +20,17 @@ selectReferenceBase <- function(rdata, baseimage) {
 # The saved parameter matrix for one base image, normalized: selectStimulusParams()
 # drops the four columns a pre-0.3.0 file holds and never indexes, so its width is
 # also the number of draws the generator spent on each trial.
+# Ties a `reference_norms_source` marker to the norms it describes.
+#
+# The marker alone can outlive its data: an older rcicr re-saves every object it
+# loaded, so a release that predates the marker will preserve it while replacing
+# `reference_norms` with a rebuilt-basis distribution of its own. The file then
+# looks vouched-for and is not. A fingerprint that travels with the marker turns
+# that into a mismatch, and the norms are refreshed as if unmarked.
+referenceFingerprint <- function(norms) {
+  paste(length(norms), format(sum(norms), digits = 17), sep = ":")
+}
+
 savedReferenceParams <- function(source, baseimage) {
   n_trials <- source$n_trials
   if (length(n_trials) != 1L || !is.finite(n_trials) || n_trials < 1 || n_trials != trunc(n_trials)) {

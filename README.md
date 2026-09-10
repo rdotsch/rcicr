@@ -189,6 +189,7 @@ base images share a parameter matrix:
 | `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. Written when the base images share one parameter matrix. |
 | `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in 1.2.0. |
 | `reference_norms_source` | What `reference_norms` was built from — `"saved_noise"` for a distribution computed from the file's own saved parameters and basis. Its absence means the distribution predates that change and cannot be shown to match this file's noise, so it is regenerated once. Added after 1.3.0. |
+| `reference_norms_fingerprint` | Binds the marker above to the vector it describes. An older rcicr re-saves every object it loaded, so it can preserve the marker while replacing `reference_norms` with a distribution of its own; a fingerprint that no longer matches means the marker vouches for nothing and the norms are regenerated. Added after 1.3.0. |
 | `reference_norms_by_base` | Named list keyed by base image, each entry holding that base's `norms` and the `response_seed` they were drawn with. Written in place of the two fields above when the base images carry *different* parameter matrices, since each base then needs a null built from its own saved noise. An unscoped `reference_norms` in such a file is left untouched and unread. Added after 1.3.0. |
 
 Two things worth knowing before you write code against this file:

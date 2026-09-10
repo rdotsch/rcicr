@@ -317,13 +317,14 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   rm("reference_norms_source", envir = e)
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
 
-  warnings_seen <- character()
-  withCallingHandlers(
-    utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata, iter = 20)),
-    warning = function(cond) {
-      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
-      invokeRestart("muffleWarning")
-    }
+  # warn = 2 with nothing catching warnings on the way: a calling handler that
+  # muffles would defeat the option and make this pass whatever happens. So the
+  # assertion is simply that the call completes -- any warning at all, including
+  # the inherited iter of 20, would abort it.
+  expect_no_error(
+    withr::with_options(list(warn = 2), {
+      utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata))
+    })
   )
 
   # It was refreshed and marked, and came back identical, so nothing is said.
@@ -331,8 +332,6 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   load(rdata, envir = after)
   expect_identical(after$reference_norms, genuine)
   expect_identical(after$reference_norms_source, "saved_noise")
-  expect_false(any(grepl("built references from the saved noise",
-                         warnings_seen, fixed = TRUE)))
 
   # The discriminating case: a cache that really is different does warn.
   e2 <- new.env()
@@ -465,4 +464,41 @@ test_that("a regeneration the caller asked for gets the documented default", {
   after <- new.env()
   load(rdata, envir = after)
   expect_length(after$reference_norms, 10000)
+})
+
+test_that("a marker left on replaced norms does not vouch for them", {
+  # An older rcicr re-saves every object it loaded, so a release predating the
+  # marker preserves it while replacing reference_norms with a distribution of
+  # its own. The file then looks vouched-for and is not. The fingerprint written
+  # beside the marker is what catches that.
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+
+  suppressWarnings(utils::capture.output(
+    generateReferenceDistribution2IFC(rdata, iter = 20, ncores = 1, save_rdata = TRUE)
+  ))
+  e <- new.env()
+  load(rdata, envir = e)
+  expect_identical(e$reference_norms_source, "saved_noise")
+
+  # What an older writer leaves behind: marker kept, norms replaced.
+  e$reference_norms <- rep(0.5, 20)
+  save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20)),
+    warning = function(cond) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(cond))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  after <- new.env()
+  load(rdata, envir = after)
+  expect_false(identical(after$reference_norms, rep(0.5, 20)))
+  expect_identical(after$reference_norms_fingerprint,
+                   rcicr:::referenceFingerprint(after$reference_norms))
+  expect_true(any(grepl("gave different values", warnings_seen, fixed = TRUE)))
 })

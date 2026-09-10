@@ -187,6 +187,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
     # and may have been scored against a rebuilt basis. Read through ls() below,
     # which the linter cannot see.
     reference_norms_source <- "saved_noise" # nolint: object_usage_linter.
+    reference_norms_fingerprint <- referenceFingerprint(reference_norms) # nolint: object_usage_linter.
     outfile <- rdata
     internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
       "rdata", "iter", "ncores", "response_seed", "save_rdata",

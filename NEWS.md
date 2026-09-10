@@ -33,8 +33,10 @@
   fields the file may not record, and on the RNG kind of the session that ran it, which
   `set.seed()` does not restore — so such a cache is refreshed rather than trusted. The first
   `computeInfoVal2IFC()` call on an existing file therefore pays for one reference distribution
-  and warns that it has; `reference_norms_source` is recorded alongside so it happens once and
-  not per call. For files that were already correct, which is most of them, the value comes back
+  and warns that it has; `reference_norms_source` is recorded alongside, with a
+  `reference_norms_fingerprint` binding it to the values it describes, so this happens once and
+  not per call — and a marker an older rcicr left behind on replaced norms does not vouch
+  for them. For files that were already correct, which is most of them, the value comes back
   identical and nothing is said about it; the warning is raised only where rebuilding actually
   changed the numbers.
 
