@@ -104,6 +104,8 @@ test_that("autoscale renders an all-zero list neutral and leaves a mixed list al
   )
   expect_equal(unique(as.vector(all_zero$a$scaled)), 0.5)
   expect_equal(unique(as.vector(all_zero$b$scaled)), 0.5)
+  # Only $scaled is written here, degenerate or not.
+  expect_equal(all_zero$a$combined, zero$combined)
 
   # A list holding signal never reached the degenerate branch and must not now.
   mixed <- autoscale(list(a = zero, b = signal), save_as_pngs = FALSE)
