@@ -134,22 +134,22 @@ It matches the erratum to Schmitz et al. (2019): the Euclidean norm, with *k* su
 ### `autoscale()` leaves `$combined` untouched — intentional
 At Ron's direction, `$combined` stays as the caller supplied it; `$scaled` carries the autoscaled result. After `batchGenerateCI()` (which initially scales with 'none'), `$combined` overlays unscaled noise and can look almost blank. Build `(ci$scaled + ci$base) / 2` to obtain what `save_as_pngs = TRUE` writes. Changing `$combined` would change existing scripts' plotted images.
 
-### A CI with no range renders neutral, not NaN — and `matched` renders it differently
+### A CI with no range renders neutral, not NaN — `matched` differently again
 Exactly cancelling responses give an all-zero CI. That is a result, so the range-based methods
 fill it neutrally rather than dividing by a zero range into NaN
 ([#303](https://github.com/rdotsch/rcicr/issues/303)). `0.5` is a **policy, not a limit**: the
 constant is derived from the CI, so along `ci = t * x` the scaled result is invariant in `t` — an
-all-positive pattern gives 1, an all-negative one 0. It is chosen because `constant` scaling
-already returns it here, as does `autoscale()` for a zero CI beside one with signal.
+all-positive pattern gives 1, an all-negative one 0. It is what `constant` scaling already
+returns here, and `autoscale()` for a zero CI beside one with signal.
 
 `matched` takes the midpoint of the **base image's** range: it renders into that range, and `0.5`
 can sit outside it — a base spanning `[0, 0.3]` would show a no-signal CI brighter than any pixel
-in it. Under the default contrast maximization the base spans `[0, 1]` and the two coincide.
+in it. Under default contrast maximization the base spans `[0, 1]`, so the two coincide.
 
 The guards differ deliberately: `matched` needs any range, so a uniform *non-zero* CI triggers it
-too; `independent` divides by magnitude, so only an exactly-zero CI does. An entirely masked CI
-has no values rather than no range and is left alone. Erroring was rejected: one participant
-whose responses cancel would abort a whole `save_individual_cis = TRUE` call.
+too; `independent` only an exactly-zero one. An entirely masked CI has no values rather than no
+range and is left alone. Erroring was rejected: one cancelling participant would abort a whole
+`save_individual_cis = TRUE` call.
 
 ### `base_face_files` validation rejects two inputs that used to run
 Duplicate names, and a list element that is not a single file name, now stop the call. Both ran
@@ -233,22 +233,15 @@ intending to re-measure and the feature becomes unrecoverable rather than merely
 ## Testing
 
 ### Vacuous assertions have shipped here twice, and both looked fine on the page
-Two `batchGenerateCI*` tests titled "computes one CI per group" asserted only length, names
-and `dim`: **grouping was never checked**, and a bug feeding all trials to every group passed
-green. The other compared `p`/`stimuli_params` in an `.Rdata` file across a call that runs
-with `save_rdata = FALSE` and never writes them back, so it could not have failed. Mutation
-testing caught both; reading did not. Hence every grouping and threshold test now also asserts
-that the *wrong* answer differs (a positional split ≠ a by-column split).
+Two `batchGenerateCI*` tests asserted only length, names and `dim`, so **grouping was never
+checked** and a bug feeding all trials to every group passed green; another compared `.Rdata`
+fields its `save_rdata = FALSE` call never writes. Mutation testing caught both; reading did not.
+Every grouping and threshold test now also asserts that the *wrong* answer differs.
 
-A third instance was caught *before* shipping, when the z-map golden master was written on
-2026-07-28, and it shows the shape to watch for. `zmapmethod = "quick"` ends in `scale()`, so
-its z-map has sum 0 and sd 1 **by construction** — the obvious summary statistics to pin, and
-both worthless as value checks. Mutating `sigma` from 3 to 4, a real change to the output, left
-sum and sd bit-identical while `sum(abs())`, `min`, `max` and every individual cell moved. The
-rule: **before pinning a summary statistic, ask what the transformation guarantees about it.**
-Anything a normalisation fixes carries no information about the values that went in. They are
-still asserted, labelled as a check that the standardisation happened, alongside statistics
-that actually vary.
+**Before pinning a summary statistic, ask what the transformation guarantees about it.** A
+`zmapmethod = "quick"` z-map ends in `scale()`, so its sum 0 and sd 1 are free: mutating `sigma`
+left both bit-identical while every cell moved. They are still asserted, as a check that the
+standardisation happened, alongside statistics that vary.
 
 ### `computeInfoVal2IFC`'s test oracle mirrors the implementation, and is kept anyway
 `test-computeInfoVal2IFC.R` recomputes `(norm(ci, "f") - median(reference_norms)) /
@@ -263,22 +256,13 @@ from the paper or a hand-computed 2×2 CI with a known reference vector, not a t
 restatement of the same expression.
 
 ### Pixel assertions have measured the graphics device twice
-The practice — uniform backgrounds, colour channels only, comparisons rather than pinned
-values — is in `CONTRIBUTING.md`. Here are the two measurements behind it, made one line apart
-in the same fix.
+The practice is in `CONTRIBUTING.md`; both measurements behind it came out of one fix.
 
-**Channel count belongs to the backend.** cairo (Linux, Windows) writes RGB, macOS quartz writes
-RGBA, and an opaque alpha plane is a solid block of 1s — so it adds a distinct value while
-nothing has been painted. `expect_length(unique(as.vector(png)), 1)` measured the backend as
-much as the drawing. It was the only assertion in the suite counting distinct values rather than
-comparing two renders, and so the only one that failed when the suite first ran on macOS: an
-image-to-image comparison stays green because both sides gain the same plane.
-
-**So does the absolute value.** The first attempt at that fix pinned the flat value to the
-background grey and failed on macOS, which renders `bgimage` 0.5 at ~0.573 where cairo gives
-0.502 — colour management, the same mistake being corrected one line above. The check is now an
-*ordering*: the same render over a darker background must come out darker, which survives any
-monotone transfer function.
+**Channel count belongs to the backend**: cairo (Linux, Windows) writes RGB where macOS quartz
+writes RGBA, so counting distinct values measured the backend as much as the drawing, and was the
+only assertion in the suite that failed when it first ran on macOS. **So does the absolute
+value**: quartz renders a 0.5 background at ~0.573 where cairo gives 0.502. The check is now an
+*ordering* — the same render over a darker background must come out darker — which survives any monotone transfer.
 
 ### The recovery test uses a permutation null, not a parametric one
 `test-recovery.R` gives a simulated observer a known template and asserts `generateCI()`
