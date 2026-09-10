@@ -11,10 +11,10 @@
 #' who compute InfoVal from the same stimulus file therefore get the same number, and the
 #' same reference distribution, on different machines and in different sessions.
 #'
-#' Shared-parameter files re-generate the stimuli through \code{\link{generateStimuli2IFC}}.
-#' Independent bases use their saved noise basis and parameters directly. Both paths seed
-#' responses from the state following one shared parameter matrix's draws at the saved
-#' stimulus seed, preserving the historical default response stream.
+#' The noise is reconstructed from the basis and parameters the stimulus file saved, so the
+#' base images themselves are never reopened and an archived or moved experiment can still be
+#' scored. Responses are seeded from the state following one parameter matrix's draws at the
+#' saved stimulus seed, preserving the historical default response stream.
 #'
 #' Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
 #' for instance to check how much Monte Carlo error a given \code{iter} leaves in your
@@ -26,9 +26,9 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
 #' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
-#' @param ncores Number of CPU cores to use when re-generating the stimuli (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param ncores Number of CPU cores to use when rebuilding the saved noise (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @param response_seed Optional seed for the simulated random responses. The default
-#' (\code{NULL}) draws them from the state left by the stimulus re-generation, which is the
+#' (\code{NULL}) draws them from the state the stimulus generator left behind, which is the
 #' reproducible behaviour described under Reproducibility. Supply a number to obtain an
 #' independent draw of the null from the same stimuli.
 #' @param save_rdata Boolean specifying whether the reference distribution should be written
@@ -40,9 +40,8 @@
 #' Required when the saved base images have different noise parameters. With a single base
 #' or identical parameter matrices, \code{NULL} retains the shared reference behavior.
 #' @section Independent base images:
-#' When saved parameter matrices differ, supply \code{baseimage} explicitly. The selected
-#' base's noise is reconstructed from the saved basis and parameters, without reading the
-#' original images. Cached distributions are stored in \code{reference_norms_by_base},
+#' When saved parameter matrices differ, supply \code{baseimage} explicitly to say which
+#' base's noise to use. Cached distributions are stored in \code{reference_norms_by_base},
 #' keyed by base label, with \code{norms} and \code{response_seed} in each entry. Old unscoped
 #' \code{reference_norms} are neither reused nor overwritten for independent bases.
 #' Existing shared-parameter files continue using their unscoped cache and reconstruction.
@@ -106,80 +105,34 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   save_rdata <- .args$save_rdata
   baseimage <- .args$baseimage
 
-  # Recover the noise-basis parameters used for the real stimuli. These were
-  # not saved before this version, so .Rdata files written by older rcicr lack
-  # them. Falling back to the defaults silently would rebuild the reference
-  # distribution on a *different* noise basis than participants actually saw,
-  # producing a wrong infoVal - so warn loudly rather than guessing quietly.
-  if (!exists('nscales', envir = environment(), inherits = FALSE)) {
-    nscales <- 5
-    warning(paste0('This .Rdata file does not contain `nscales`, so the default ',
-      '(5) is assumed for the reference distribution. rcicr did not ',
-      'save it before 1.1.0. If the stimuli were generated with a ',
-      'different nscales, the resulting infoVal will be wrong - ',
-      'regenerate the stimulus set with this version of rcicr to fix ',
-      'this.'
-    ))
-  }
-  # Same story for noise_type, which older .Rdata files also lack. Without this
-  # the re-generation below failed outright with "object 'noise_type' not
-  # found" (issue #94) - the workaround on record was to load the file and
-  # assign noise_type by hand. It gets the same loud warning as nscales,
-  # because guessing wrong here means the null is built on a different *kind* of
-  # noise than participants saw.
+  # The reference is a function of the saved noise, so it is built from the
+  # stored parameters and basis rather than by re-generating the stimuli. That
+  # rebuild reopened every base image, so an archived experiment whose images had
+  # moved could not be scored at all, and a uniform base made with
+  # maximize_baseimage_contrast = FALSE was rejected on the way back in (#301).
   #
-  # It is resolved before sigma because whether a missing sigma matters at all
-  # depends on it.
-  if (!exists('noise_type', envir = environment(), inherits = FALSE)) {
-    noise_type <- 'sinusoid'
-    warning(paste0('This .Rdata file does not contain `noise_type`, so the ',
-      'default (sinusoid) is assumed for the reference distribution. ',
-      'Older files do not carry it. If the stimuli were generated ',
-      'with noise_type = "gabor", the resulting infoVal will be ',
-      'wrong - regenerate the stimulus set with this version of ',
-      'rcicr to fix this.'
-    ))
-  }
-  # sigma reaches the noise basis only through generateGabor(), so for sinusoidal
-  # noise the default is inert: the reference norms are identical whatever it is,
-  # and warning about it would be noise on every legacy sinusoidal file. For
-  # gabor noise it is exactly as load-bearing as nscales - measured on a 1.0.1
-  # gabor file, the norms move from 0.681/0.689/0.680 at 25 to 0.615/0.620/0.626
-  # at 10 - so that case gets the same loud warning.
-  if (!exists('sigma', envir = environment(), inherits = FALSE)) {
-    sigma <- 25
-    if (noise_type == 'gabor') {
-      warning(paste0('This .Rdata file does not contain `sigma`, so the default ',
-        '(25) is assumed for the reference distribution. rcicr did ',
-        'not save it before 1.1.0. These stimuli use gabor noise, ',
-        'where sigma determines the noise basis, so if they were ',
-        'generated with a different sigma the resulting infoVal ',
-        'will be wrong - regenerate the stimulus set with this ',
-        'version of rcicr to fix this.'
-      ))
-    }
-  }
-
-  # Re-generate stimuli based on rdata parameters in matrix form
-  write("Re-generating stimuli based on rdata file, please wait...", stdout())
-  stimuli <- generateStimuli2IFC(base_face_files, n_trials, img_size, seed = seed, noise_type = noise_type, nscales = nscales, sigma = sigma, ncores = ncores, return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE)
-  stimuli <- as.matrix(stimuli)
+  # It also needed nscales, noise_type and sigma to rebuild the basis, which
+  # files written before 1.1.0 do not carry: those were assumed and warned about,
+  # and the assumption was wrong whenever the stimuli used anything but the
+  # defaults. The saved basis is the one participants saw, so none of the three
+  # is consulted here and the warnings are gone with them.
+  # Every base image shares one parameter set on this path -- selectReferenceBase()
+  # sent the independent case elsewhere -- so the first label speaks for all of
+  # them. Passed inline rather than held in locals: this function re-saves its
+  # own frame, so anything bound here lands in the user's .Rdata unless it is
+  # also added to `internals` below.
+  write("Building the reference from the saved noise, please wait...", stdout())
+  stimuli <- referenceNoise(environment(), names(stimuli_params)[1], ncores)
 
   # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
 
-  # Seed the *responses* only, and only when asked. This deliberately sits after
-  # the stimulus re-generation above rather than being passed into it: handing a
-  # different seed to generateStimuli2IFC() would rebuild a different stimulus
-  # set, so the null would describe stimuli the participants never saw. What
-  # varies here is the simulated responding, on the same stimuli.
-  #
-  # NULL means no set.seed() call at all, leaving the stream exactly as the
-  # stimulus re-generation left it - so the default path is byte-identical to
-  # what previous versions produced, not merely equivalent.
-  if (!is.null(response_seed)) {
-    set.seed(response_seed)
-  }
+  # Seed the *responses* only. A response_seed replaces the stimulus stream
+  # entirely; without one, the draws the generator spent on the parameters are
+  # replayed so the responses continue from where they always did. Handing the
+  # stimulus seed a different value instead would describe stimuli the
+  # participants never saw.
+  seedResponseStream(environment(), names(stimuli_params)[1], response_seed)
 
   if (iter < 10000) {
     warning("You should set iter >= 10000 for InfoVal statistic to be reliable")

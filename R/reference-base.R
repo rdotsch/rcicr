@@ -17,14 +17,25 @@ selectReferenceBase <- function(rdata, baseimage) {
   list(independent = TRUE, baseimage = baseimage, source = source)
 }
 
-independentReferenceNoise <- function(selection, ncores) {
-  source <- selection$source
+# The saved parameter matrix for one base image, normalized: selectStimulusParams()
+# drops the four columns a pre-0.3.0 file holds and never indexes, so its width is
+# also the number of draws the generator spent on each trial.
+savedReferenceParams <- function(source, baseimage) {
   n_trials <- source$n_trials
   if (length(n_trials) != 1L || !is.finite(n_trials) || n_trials < 1 || n_trials != trunc(n_trials)) {
     stop('The stimulus file must contain a positive integer n_trials.')
   }
-  params <- selectStimulusParams(source$stimuli_params, selection$baseimage, seq_len(n_trials))
-  params <- matrix(params, nrow = n_trials)
+  params <- selectStimulusParams(source$stimuli_params, baseimage, seq_len(n_trials))
+  matrix(params, nrow = n_trials)
+}
+
+# The reference distribution is a function of the saved noise alone, so it is
+# built from the stored parameters and basis. Re-generating the stimuli instead
+# reopened every base image, which an archived or moved experiment no longer has
+# (#301), and rebuilt the basis from fields older files do not carry.
+referenceNoise <- function(source, baseimage, ncores) {
+  n_trials <- source$n_trials
+  params <- savedReferenceParams(source, baseimage)
   p <- if (exists('s', envir = source, inherits = FALSE)) source$s else source$p
   if (is.null(p)) stop('The stimulus file does not contain its saved noise basis (p or s).')
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
@@ -40,21 +51,33 @@ independentReferenceNoise <- function(selection, ncores) {
   matrix(noise, ncol = n_trials)
 }
 
+# Put the random stream where the simulated responses expect to find it.
+#
+# generateStimuli2IFC() seeds on the stimulus seed and then spends one draw per
+# parameter per trial, and the reference's responses have always been drawn from
+# whatever that left behind -- which is what makes an InfoVal reproducible from
+# the stimulus file alone, and is documented as a guarantee. Since the stimuli
+# are no longer re-generated, that consumption is replayed here instead. The
+# width of the saved matrix is the count, so nothing has to be assumed about a
+# file that does not record its nscales.
+seedResponseStream <- function(source, baseimage, response_seed) {
+  if (!is.null(response_seed)) {
+    set.seed(response_seed)
+    return(invisible(NULL))
+  }
+  nparams <- ncol(savedReferenceParams(source, baseimage))
+  set.seed(source$seed)
+  for (trial in seq_len(source$n_trials)) runif(nparams)
+  invisible(NULL)
+}
+
 generateBaseReference <- function(selection, rdata, iter, ncores, response_seed, save_rdata) {
   source <- selection$source
   if (length(iter) != 1L || !is.finite(iter) || iter < 1 || iter != trunc(iter)) {
     stop('iter must be a positive integer.')
   }
-  stimuli <- independentReferenceNoise(selection, ncores)
-  if (is.null(response_seed)) {
-    # The old reference generator rebuilt one shared parameter matrix, even for independent bases.
-    nscales <- if (exists('nscales', envir = source, inherits = FALSE)) source$nscales else 5
-    nparams <- sum(12 * 4^(seq_len(nscales) - 1))
-    set.seed(source$seed)
-    for (trial in seq_len(source$n_trials)) runif(nparams)
-  } else {
-    set.seed(response_seed)
-  }
+  stimuli <- referenceNoise(source, selection$baseimage, ncores)
+  seedResponseStream(source, selection$baseimage, response_seed)
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
   pb <- txtProgressBar(min = 0, max = iter, style = 3)
   on.exit(close(pb), add = TRUE)

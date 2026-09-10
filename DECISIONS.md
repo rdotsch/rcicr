@@ -33,7 +33,7 @@ enforces them, are in `CONTRIBUTING.md`.
 `purrr::rbernoulli(n, p)` uses `runif(n) > (1 - p)`. `rbinom()` consumes the seeded stream differently, verified across 150 seed/probability combinations, and would alter every derived InfoVal. The replacement therefore uses the bit-identical `runif()` expression. Equal marginal distributions are insufficient in a seeded pipeline.
 
 ### A base image's alpha channel is discarded, not composited
-Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. `rcicr` renders opaque stimuli, so alpha has no downstream meaning. Hidden RGB values can differ from a viewer's composited image, so a cut-out may reveal pixels stored beneath transparent areas.
+Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. `rcicr` renders opaque stimuli, so alpha has no downstream meaning. Hidden RGB values can differ from a viewer's composited image, so a cut-out may reveal pixels beneath transparent areas.
 
 ### `rowMeans(x, dims = 2)` was adopted despite not being bit-identical
 The patch-averaging step in `generateNoiseImage()` moved from `apply(..., 1:2, mean)`, about
@@ -49,14 +49,19 @@ dims 2 *and* 3, and `array()` then silently recycles the short result. The versi
 submitted did exactly that — measured max deviation 0.21 against data with SD ~0.01, not the
 ~1e-17 it claimed.
 
-### `set.seed()` in `generateStimuli2IFC()` is load-bearing far beyond stimulus generation
-`generateReferenceDistribution2IFC()` rebuilds the stimuli through it, so that
-`set.seed(seed)` lands *before* the simulation loop's `runif()` draws — which is what makes
-InfoVal reproducible from a stimulus file alone, independent of ambient RNG state and of
-`ncores`. This was **emergent, not designed**: moving one line would have silently changed
-every InfoVal ever computed, without touching `computeInfoVal2IFC()`. It is now a documented
-guarantee in `?generateReferenceDistribution2IFC`, pinned by a test, with a comment on the
-`set.seed()` call saying what depends on it.
+### The stimulus seed's stream is load-bearing well beyond stimulus generation
+`generateStimuli2IFC()` seeds on the stimulus seed and spends one `runif()` draw per parameter
+per trial; the reference's responses have always been drawn from what that left behind, which is
+what makes InfoVal reproducible from a stimulus file alone, whatever the ambient RNG state and
+`ncores`. **Emergent, not designed**: moving one line would have silently changed every InfoVal
+ever computed, without touching `computeInfoVal2IFC()`. Documented in
+`?generateReferenceDistribution2IFC` and pinned by a test.
+
+The stimuli are no longer re-generated to get there
+([#301](https://github.com/rdotsch/rcicr/issues/301)), so `seedResponseStream()` **replays** that
+consumption. Do not "simplify" the loop away: it looks inert and is the whole guarantee. Its
+count is the saved matrix's width *after* `selectStimulusParams()` — a pre-0.3.0 file's raw 4096
+would shift the stream, as below.
 
 ### `response_seed`, not `seed`
 Four choices, each forced by something specific:
@@ -65,11 +70,10 @@ Four choices, each forced by something specific:
   `generateReferenceDistribution2IFC()` re-saves its own frame, so an argument of that name
   would overwrite the stimulus seed and write it back — corrupting the record of how the
   stimuli were generated.
-- **It seeds the responses, applied after the stimulus rebuild**, not forwarded into it.
-  Forwarding would rebuild a different stimulus set, so the null would describe stimuli the
-  participants never saw.
-- **`NULL` issues no `set.seed()` call at all**, so the default path is byte-identical rather
-  than merely equivalent-looking.
+- **It seeds the responses**, replacing the replayed stimulus stream rather than being forwarded
+  into generation, which would describe stimuli participants never saw.
+- **`NULL` replays the stimulus stream instead of seeding afresh**, so the default path stays
+  byte-identical rather than merely equivalent-looking.
 - **`computeInfoVal2IFC(response_seed=)` forces regeneration and never caches.** Without the
   first it would be silently ignored on every file after the first, since the generator writes
   `reference_norms` into the file; caching a one-off Monte Carlo check would redefine what
@@ -79,7 +83,7 @@ Four choices, each forced by something specific:
 rcicr 0.3.0 (2015-01-23) cut the per-trial random draws from 4096 to 4092. 4092 is the real
 patch count — 6 orientations × 2 phases × `sum(4^0..4^4)` — while 4096 was a round `2^12`
 over-allocation, so four contrasts were drawn per trial that no patch index ever referred to.
-`ChangeLog` calls them "redundant" and says the change "does not affect anything else".
+`ChangeLog` says the change "does not affect anything else".
 
 **That last claim is true for analysis and false for regeneration**, which is not obvious and
 matters. Analysing a pre-0.3.0 file reads its *stored* parameters, and dropping four unused
@@ -109,11 +113,9 @@ where 0.3.0 only flipped the default and added the flag. Do **not** "fix" the re
 1-offsetting the index: that changes which sinusoid is dropped, altering the CI of every
 genuinely pre-0.3.0 file. `test-generateNoiseImage.R` pins both properties.
 
-The truncation left a dead branch in `generateCI()` for eleven years: the single-trial path
-tested for a length of 4092 and truncated to 4092, so it could never fire on the 4096-length
-input it was written for. **A backward-compatibility path that nothing exercises is
-indistinguishable from one that works** — it had no test until 2026-07-28, and neither did the
-`sinusoids`/`sinIdx` path, also broken.
+**A backward-compatibility path that nothing exercises is indistinguishable from one that
+works.** The truncation left one dead in `generateCI()` for eleven years, untested until
+2026-07-28, as was the `sinusoids`/`sinIdx` path — also broken.
 
 ### `load()` assigns into the calling frame — check every new argument against saved names
 An object in an `.Rdata` file silently overwrites a function argument of the same name.
