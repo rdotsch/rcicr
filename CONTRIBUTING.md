@@ -1,10 +1,10 @@
 # Contributing to rcicr
 
 Contributions, thoughts and criticisms are welcome. This file records
-the few conventions that are specific to this package — the rest is
-ordinary R package practice. Releases are in `RELEASING.md`, the
-repository’s automation in `MAINTENANCE.md`, and why the package behaves
-as it does in `DECISIONS.md`.
+the conventions specific to this package; the rest is ordinary R package
+practice. Releases are in `RELEASING.md`, the repository’s automation in
+`MAINTENANCE.md`, and why the package behaves as it does in
+`DECISIONS.md`.
 
 **Keep this file under 2800 words.** A convention nobody reaches is not
 a convention; over budget, something comes out before something goes in.
@@ -40,11 +40,10 @@ compares. Every release has to pass it — see `RELEASING.md`.
 
 ## Getting set up
 
-On a fresh Ubuntu machine with only R installed (no compiler, no package
-library) – `tools/dev-setup.sh` is Ubuntu-specific, it shells out to
-`apt-get` – it installs the system toolchain and every Imports/Suggests
-package from source, then installs the package itself. Idempotent –
-rerun it after pulling a dependency change.
+`tools/dev-setup.sh` sets up a fresh machine that has only R. It is
+Ubuntu-specific, shelling out to `apt-get` for the system toolchain,
+then installs every Imports/Suggests package from source and the package
+itself. Idempotent – rerun it after a dependency change.
 
 ``` r
 
@@ -79,9 +78,8 @@ Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs
 that were entirely the sandbox; installing it was the only change needed
 to reach 2. **Do not reach for `--no-manual` to make the manual checks
 go away**: it skips them rather than passing them. A clean run shows
-`checking PDF version of manual ... OK` and
-`checking HTML version of manual ... OK` — if you do not see those
-lines, you have not checked the manual.
+`checking PDF version of manual ... OK` and the HTML equivalent; without
+those two lines you have not checked the manual.
 
 ## Reporting a bug
 
@@ -114,7 +112,7 @@ preferable to attaching a real face photo.
   “non-standard file/directory found at top level” NOTE. It holds
   `^`-anchored *regexes*, not globs.
 - Run `git diff --stat main...HEAD` before opening the PR: `R CMD check`
-  leaves a full copy of the package behind, which has happened by
+  leaves a full copy of the package behind, which has been committed by
   accident.
 - PRs are merged to `main` with **squash merges**, so put anything a
   future reader needs (measurements, rejected alternatives,
@@ -137,14 +135,14 @@ preferable to attaching a real face photo.
   somehow did it would hide the test rather than fail it. A skip reads
   as “this passed” at a glance, which is the opposite of what you want
   to know.
-- **Going beyond the one-off check above — mutating the code repeatedly
-  — keep `cp` backups in a scratchpad, and never restore with
-  `git checkout <file>`.** The `git stash push -- R/` in the checklist
-  is right for proving a single fix; it is the *restore* step that
-  bites, because `git checkout <file>` discards unstaged work and has
-  destroyed an in-progress implementation here. Guard each mutation with
-  a `grep -q MUTANT` check too — one that silently failed to apply looks
-  exactly like a surviving mutant.
+- **Mutating the code repeatedly, beyond the one-off check above: keep
+  `cp` backups in a scratchpad, and never restore with
+  `git checkout <file>`**, which discards unstaged work and has
+  destroyed an in-progress implementation here. The checklist’s
+  `git stash push -- R/` is right for proving a single fix; it is the
+  *restore* that bites. Guard each mutation with a `grep -q MUTANT`
+  check too — one that silently failed to apply looks like a surviving
+  mutant.
 - **When a test reads pixels back from a graphics device, assert only
   relationships between renders.** Every absolute property of those
   pixels belongs to the device: the channel count (cairo writes RGB,
@@ -173,9 +171,10 @@ wrapper, never the findings.
 **It must not become something that can block.** If it is switched off,
 erroring, or simply not answering, merge on the other checks.
 
-Push everything first — a push does not re-trigger the review; only this
-comment, opening the PR, or marking a draft ready does. Keep the
-timestamp it returns:
+Push everything first — a push never re-triggers the review, and
+**marking a draft ready cannot be relied on**: measured once firing
+within four minutes and once not at all in thirty-five, after which this
+comment did. Post it rather than waiting. Keep its timestamp:
 
 ``` sh
 trig=$(gh api repos/rdotsch/rcicr/issues/<n>/comments -f body='@codex review' --jq '.created_at')
@@ -206,11 +205,10 @@ Two conditions clear a squash.
     ruleset sets `required_review_thread_resolution`, so an unresolved
     thread blocks the squash server-side.
 
-Do not compute “is this safe to merge” client-side. Earlier versions of
-this section derived it from review objects and `commit_id` and were
-wrong six separate ways, each failing *open*. The reaction is the one
-signal Codex sets deliberately; thread resolution is GitHub’s to
-enforce.
+Do not compute “is this safe to merge” client-side. Earlier versions
+derived it from review objects and `commit_id` and were wrong six
+separate ways, each failing *open*. The reaction is the one signal Codex
+sets deliberately; thread resolution is GitHub’s to enforce.
 
 ## Code conventions
 
@@ -242,11 +240,11 @@ change because nothing outside the package can call them:
 | Internal helpers | camelCase, matching the exported style | Currently 7 camelCase (`applyMask`, `saveToImage`, `startBackend`, …) against one snake_case (`default_ncores`). New helpers follow the majority. |
 | Strings | single quotes | Roughly 3:2 in favour today; not worth churn to unify, but write new code single-quoted. |
 | Indentation | 2 spaces, no tabs | Already consistent; there are no tabs in `R/`. |
-| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` are rebindable variables. In package code they resolve through the namespace and never reach a user’s globals, so this is style rather than a hazard — but it is free, and the reasoning has to be re-derived every time someone notices. All occurrences were replaced in 1.2.2. |
+| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` are rebindable. In package code they resolve through the namespace, so this is style rather than a hazard, but it is free and the reasoning otherwise gets re-derived every time. All occurrences were replaced in 1.2.2. |
 | Sequences | [`seq_len()`](https://rdrr.io/r/base/seq.html)/[`seq_along()`](https://rdrr.io/r/base/seq.html), not `1:n` | `1:0` counts *backwards*, so `1:length(x)` on an empty vector iterates twice. |
 | Returns | explicit [`return()`](https://rdrr.io/r/base/function.html) at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md). `zzz.R` holds the [`globalVariables()`](https://rdrr.io/r/utils/globalVariables.html) declarations. |
-| Roxygen | exported functions only | `man/` holds exactly the 17 exports plus the package doc; internal helpers use plain `#` comments, including the ones sharing a file with an exported function. Roxygen on a non-exported function either publishes a help page for something no user can call, or needs `@noRd` — a comment in stricter syntax. There are none. |
+| Roxygen | exported functions only | `man/` holds exactly the 17 exports plus the package doc; internal helpers use plain `#` comments, including those sharing a file with an export. Roxygen on a non-exported function either publishes a page no user can reach or needs `@noRd`, a comment in stricter syntax. There are none. |
 | Namespacing | prefer `@importFrom pkg fn` over `@import pkg` | `@import matlab` masks [`base::sum()`](https://rdrr.io/r/base/sum.html) with MATLAB semantics across six files — a live trap, issue \#182. |
 
 Line length is not enforced; 35 lines in `R/` already exceed 100
@@ -254,8 +252,8 @@ characters. Wrap new code at something reasonable rather than reflowing
 what is there.
 
 **Markdown prose isn’t line-wrapped: write one line per paragraph and
-let the reader’s editor word-wrap it, and skip em dashes** for a period,
-comma, colon or parenthesis instead.
+let the reader’s editor wrap it, and skip em dashes** for a period,
+comma, colon or parenthesis.
 
 **Show why something matters, never assert that it does.** “It is worth
 …”, “it matters because”, “in ways that matter”, or anything similar:
@@ -338,8 +336,8 @@ comment-only edits — roughly the inert set
     “The Codex review” above. The same two conditions clear it.
 3.  Implement on that same branch, and **delete the plan file there** as
     part of the work.
-4.  **Mark the draft ready**, which re-triggers the review on the full
-    diff — a push alone does not.
+4.  **Mark the draft ready**, then post the `@codex review` comment —
+    see above.
 5.  Squash as usual.
 
 Because the plan file is added and deleted within the branch, the squash
