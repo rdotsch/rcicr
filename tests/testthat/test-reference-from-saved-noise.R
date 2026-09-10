@@ -638,6 +638,21 @@ test_that("the cache fingerprint does not depend on formatting options", {
   # And it still separates values a refresh must not confuse.
   expect_false(identical(rcicr:::referenceFingerprint(norms * 2), baseline))
   expect_false(identical(rcicr:::referenceFingerprint(norms[-1]), baseline))
+  expect_false(identical(rcicr:::referenceFingerprint(rev(norms)), baseline))
+})
+
+test_that("the cache fingerprint computes nothing from the values", {
+  # A fingerprint that did arithmetic would be at the mercy of it: sum() uses
+  # long double where the platform has one and rounds differently where it does
+  # not, so the same bytes would fail to match themselves across builds. Every
+  # element here is drawn from the vector, so there is nothing to round.
+  norms <- c(2.33438571356728, 1.5, 0.125, 9.75, 0.5)
+  fp <- rcicr:::referenceFingerprint(norms)
+
+  # c() coerces the count to double alongside the values; deterministic either way.
+  expect_identical(fp[[1]], as.double(length(norms)))
+  expect_true(all(fp[-1] %in% norms))
+  expect_identical(fp[-1], norms[c(1L, 3L, 5L)])
 })
 
 test_that("a cached reference is reused under a changed OutDec", {

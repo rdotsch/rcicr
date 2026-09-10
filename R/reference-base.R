@@ -28,11 +28,15 @@ selectReferenceBase <- function(rdata, baseimage) {
 # looks vouched-for and is not. A fingerprint that travels with the marker turns
 # that into a mismatch, and the norms are refreshed as if unmarked.
 #
-# Numeric rather than text: `format()` honours `OutDec` and `scipen`, so a cache
-# written under one and read under another would fail to match itself and be
-# rebuilt on every call. `identical()` compares doubles bit for bit.
+# Values drawn from the vector rather than computed from it, and numeric rather
+# than text. `format()` honours `OutDec` and `scipen`; `sum()` accumulates in
+# long double where the platform has one, so it can round differently for the
+# same bytes on a build without it. Either would make a cache fail to match
+# itself and be rebuilt on every call. Selection and `identical()` involve no
+# arithmetic and no formatting, so the fingerprint travels with the file.
 referenceFingerprint <- function(norms) {
-  c(length(norms), sum(norms))
+  n <- length(norms)
+  c(n, norms[c(1L, (n + 1L) %/% 2L, n)])
 }
 
 savedReferenceParams <- function(source, baseimage) {
