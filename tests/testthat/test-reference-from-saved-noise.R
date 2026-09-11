@@ -503,7 +503,7 @@ test_that("a marker left on replaced norms does not vouch for them", {
   load(rdata, envir = after)
   expect_false(identical(after$reference_norms, rep(0.5, 20)))
   expect_identical(after$reference_norms_fingerprint,
-                   rcicr:::referenceFingerprint(after$reference_norms))
+                   rcicr:::referenceSnapshot(after$reference_norms))
   expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 })
 
@@ -564,7 +564,7 @@ test_that("a refresh that cannot be saved still returns the rebuilt InfoVal", {
   load(rdata, envir = e)
   e$reference_norms <- rebuilt
   e$reference_norms_source <- "saved_noise"
-  e$reference_norms_fingerprint <- rcicr:::referenceFingerprint(rebuilt)
+  e$reference_norms_fingerprint <- rcicr:::referenceSnapshot(rebuilt)
   save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
   utils::capture.output(expected <- computeInfoVal2IFC(ci, rdata, iter = 20))
   expect_equal(infoval, expected)
@@ -626,33 +626,33 @@ test_that("the cache fingerprint does not depend on formatting options", {
   # format() honours OutDec and scipen, so a text fingerprint written under one
   # setting and read under another would reject a cache that is its own.
   norms <- c(2.33438571356728, 1.5, 0.125)
-  baseline <- rcicr:::referenceFingerprint(norms)
+  baseline <- rcicr:::referenceSnapshot(norms)
 
   withr::with_options(list(OutDec = ","), {
-    expect_identical(rcicr:::referenceFingerprint(norms), baseline)
+    expect_identical(rcicr:::referenceSnapshot(norms), baseline)
   })
   withr::with_options(list(scipen = -9), {
-    expect_identical(rcicr:::referenceFingerprint(norms), baseline)
+    expect_identical(rcicr:::referenceSnapshot(norms), baseline)
   })
 
   # And it still separates values a refresh must not confuse.
-  expect_false(identical(rcicr:::referenceFingerprint(norms * 2), baseline))
-  expect_false(identical(rcicr:::referenceFingerprint(norms[-1]), baseline))
-  expect_false(identical(rcicr:::referenceFingerprint(rev(norms)), baseline))
+  expect_false(identical(rcicr:::referenceSnapshot(norms * 2), baseline))
+  expect_false(identical(rcicr:::referenceSnapshot(norms[-1]), baseline))
+  expect_false(identical(rcicr:::referenceSnapshot(rev(norms)), baseline))
 })
 
 test_that("the cache fingerprint detects changes outside the former sampled positions", {
   norms <- c(2.33438571356728, 1.5, 0.125, 9.75, 0.5)
-  baseline <- rcicr:::referenceFingerprint(norms)
+  baseline <- rcicr:::referenceSnapshot(norms)
   changed <- norms
   changed[2] <- 7
 
   expect_identical(norms[c(1, 3, 5)], changed[c(1, 3, 5)])
-  expect_false(identical(rcicr:::referenceFingerprint(changed), baseline))
+  expect_false(identical(rcicr:::referenceSnapshot(changed), baseline))
 
   path <- withr::local_tempfile()
   saveRDS(baseline, path, version = 2)
-  expect_identical(readRDS(path), rcicr:::referenceFingerprint(norms))
+  expect_identical(readRDS(path), rcicr:::referenceSnapshot(norms))
 })
 
 test_that("a cached reference is reused under a changed OutDec", {

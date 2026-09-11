@@ -174,8 +174,8 @@ The mask helpers live in `R/generateCI.R` rather than a file of their own becaus
 | `stimuli_params` | Named list, one entry per base image, each an `n_trials × nparams` matrix of contrast weights in `[-1, 1]`. **Row *i* is the noise of stimulus *i*** — this is what `generateCI()` looks up and weights by responses. |
 | `base_faces` | Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained. |
 | `base_face_files` | The paths they were read from, for reference. |
-| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters. `generateReferenceDistribution2IFC()` re-reads these to rebuild the same noise basis when simulating a null distribution, so they must describe the stimuli exactly. |
-| `seed` | The RNG seed. Regenerating with the same seed and parameters reproduces the identical stimulus set. |
+| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters. The reference distribution uses the saved `p` (legacy `s`) and `stimuli_params`, with `n_trials` selecting the trial rows; it does not reconstruct the basis from `nscales`, `sigma`, or `noise_type`. |
+| `seed` | The RNG seed. Reproducing the stimulus set from the seed also requires the same generation settings and `RNGkind()`; the file does not record the kind. |
 | `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
 | `label`, `stimulus_path` | What the files were called and where they were written. |
 | `generator_version` | The rcicr version that wrote the file — see the caveat below. |
@@ -188,16 +188,16 @@ base images share a parameter matrix:
 |---|---|
 | `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. Written when the base images share one parameter matrix. |
 | `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in 1.2.0. |
-| `reference_norms_source` | What `reference_norms` was built from — `"saved_noise"` for a distribution computed from the file's own saved parameters and basis. Its absence means the distribution predates that change and cannot be shown to match this file's noise, so it is regenerated once. Added after 1.3.0. |
-| `reference_norms_fingerprint` | Binds the marker above to the vector it describes. An older rcicr re-saves every object it loaded, so it can preserve the marker while replacing `reference_norms` with a distribution of its own; a fingerprint that no longer matches means the marker vouches for nothing and the norms are regenerated. Added after 1.3.0. |
-| `reference_norms_by_base` | Named list keyed by base image, each entry holding that base's `norms`, the `response_seed` they were drawn with, and its own `source` and `fingerprint` carrying the same meaning as the two fields above. Written in place of the two fields above when the base images carry *different* parameter matrices, since each base then needs a null built from its own saved noise. An unscoped `reference_norms` in such a file is left untouched and unread. Added after 1.3.0. |
+| `reference_norms_source` | What `reference_norms` was built from — `"saved_noise"` for a distribution computed from the file's own saved parameters and basis. Without a matching marker and snapshot, a default-stream cache (`reference_norms_seed` absent or `NULL`) is regenerated and, when writable, saved for reuse. Deliberately seeded caches are retained; explicitly regenerate any seeded reference built from an incorrect reconstruction before recomputing InfoVal. Added after 1.3.0. |
+| `reference_norms_fingerprint` | A full copy of the reference vector in `list(norms = ...)`, compared with `identical()`, rather than a digest. It adds about 80 KB of numeric data for 10,000 norms before file compression. An older rcicr can preserve the marker while replacing the norms; a mismatching copy invalidates the marker for default-stream caches. Added after 1.3.0. |
+| `reference_norms_by_base` | Named list keyed by base image, each entry holding that base's `norms`, the `response_seed` they were drawn with, and its own `source` and `fingerprint` carrying the same meaning as the two fields above. Written in place of the shared reference fields above when the base images carry *different* parameter matrices, since each base then needs a null built from its own saved noise. An unscoped `reference_norms` in such a file is left untouched and unread. Added after 1.3.0. |
 
 Two things worth knowing before you write code against this file:
 
 - **The contract is append-only.** Fields get added across versions and are never renamed or
-  repurposed, so newer rcicr reads older files. The converse does not hold: `nscales` and
-  `sigma` were only added in 1.1.0, and `noise_type` earlier still, so functions warn rather
-  than guess when reading a file that predates them.
+  repurposed, so newer rcicr reads older files. `nscales` and `sigma` were only added in
+  1.1.0, and `noise_type` earlier still. Reference generation uses the saved basis even when
+  those fields are absent, without the former fallback warnings.
 - **`generator_version` is unreliable on older files.** It was a hardcoded `'0.4.0'` string
   until 1.2.0, so any file written between 0.4.0 and 1.1.0 claims to be
   0.4.0 whatever wrote it. `p$generator_version` has always held the real value. Compare

@@ -18,13 +18,13 @@ selectReferenceBase <- function(rdata, baseimage) {
 }
 
 # Retain every value: identical() needs no hash dependency, formatting, or arithmetic.
-referenceFingerprint <- function(norms) {
+referenceSnapshot <- function(norms) {
   list(norms = norms)
 }
 
 vouchedReference <- function(norms, marker, fingerprint) {
   identical(marker, 'saved_noise') &&
-    identical(fingerprint, referenceFingerprint(norms))
+    identical(fingerprint, referenceSnapshot(norms))
 }
 
 # Both cache layouts use this policy; their generators own the storage details.
@@ -162,7 +162,7 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
     if (!is.list(cache)) stop('reference_norms_by_base must be a list.')
     cache[[selection$baseimage]] <- list(
       norms = norms, response_seed = response_seed,
-      source = 'saved_noise', fingerprint = referenceFingerprint(norms)
+      source = 'saved_noise', fingerprint = referenceSnapshot(norms)
     )
     source$reference_norms_by_base <- cache
     save(list = ls(source, all.names = TRUE), file = rdata, envir = source)

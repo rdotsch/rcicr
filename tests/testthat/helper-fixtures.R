@@ -43,7 +43,7 @@ seed_reference_norms <- function(rdata_path, n = 50, seed = 1) {
   # to match the file's noise -- correct in the field, and the opposite of what a
   # planted reference is for.
   e$reference_norms_source <- "saved_noise"
-  e$reference_norms_fingerprint <- rcicr:::referenceFingerprint(e$reference_norms)
+  e$reference_norms_fingerprint <- rcicr:::referenceSnapshot(e$reference_norms)
   save(list = ls(e), file = rdata_path, envir = e)
   invisible(rdata_path)
 }

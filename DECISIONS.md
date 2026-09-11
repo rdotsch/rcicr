@@ -51,11 +51,11 @@ submitted did exactly that — measured max deviation 0.21 against data with SD 
 
 ### The stimulus seed's stream is load-bearing well beyond stimulus generation
 `generateStimuli2IFC()` seeds on the stimulus seed and spends one `runif()` draw per parameter
-per trial; the reference's responses have always been drawn from what that left behind, which is
-what makes InfoVal reproducible from a stimulus file alone, whatever the ambient RNG state and
-`ncores`. **Emergent, not designed**: moving one line would have silently changed every InfoVal
-ever computed, without touching `computeInfoVal2IFC()`. Documented in
-`?generateReferenceDistribution2IFC` and pinned by a test.
+per trial. Reference responses continue that stream: the file and session's `RNGkind()`
+determine the null, independently of the ambient random state and `ncores`. Files do not
+record the kind; changing it changes the response draws, not the saved noise.
+[#315](https://github.com/rdotsch/rcicr/issues/315) tracks this limitation. The historical
+stream is documented in `?generateReferenceDistribution2IFC` and pinned by tests.
 
 The stimuli are no longer re-generated to get there
 ([#301](https://github.com/rdotsch/rcicr/issues/301)), so `seedResponseStream()` **replays** that

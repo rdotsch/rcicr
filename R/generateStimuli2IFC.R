@@ -151,14 +151,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     stimulus_path <- NA_character_
   }
 
-  # More depends on this call than the stimuli. generateReferenceDistribution2IFC()
-  # re-generates stimuli through this function and then draws its simulated
-  # responses with runif(), *after* this set.seed() has run - which is what makes
-  # every Informational Value reproducible from the stimulus file alone, and is
-  # documented as a guarantee in ?generateReferenceDistribution2IFC.
-  #
-  # So moving or removing this line, or reseeding after it, changes every InfoVal
-  # ever computed with this package without touching computeInfoVal2IFC() at all.
+  # Reference generation replays these parameter draws to preserve the historical
+  # response stream. Changing the seeding or draw count here requires revisiting
+  # seedResponseStream(); reproducibility also requires the same RNGkind().
   set.seed(seed)
 
   stimuli_params <- list()

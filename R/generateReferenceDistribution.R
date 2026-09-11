@@ -165,7 +165,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
     # Provenance belongs to the saved norms; function arguments and scratch state do not.
     reference_norms_seed <- response_seed # nolint: object_usage_linter.
     reference_norms_source <- "saved_noise" # nolint: object_usage_linter.
-    reference_norms_fingerprint <- referenceFingerprint(reference_norms) # nolint: object_usage_linter.
+    reference_norms_fingerprint <- referenceSnapshot(reference_norms) # nolint: object_usage_linter.
     outfile <- rdata
     internals <- c("stimuli", "responses", "pb", "ci", "i", ".args",
       "rdata", "iter", "ncores", "response_seed", "save_rdata",
