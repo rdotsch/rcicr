@@ -323,7 +323,7 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   # the inherited iter of 20, would abort it.
   expect_no_error(
     withr::with_options(list(warn = 2), {
-      utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata))
+      expect_message(utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata)), NA)
     })
   )
 
@@ -631,7 +631,7 @@ test_that("the cache fingerprint does not depend on formatting options", {
   withr::with_options(list(OutDec = ","), {
     expect_identical(rcicr:::referenceFingerprint(norms), baseline)
   })
-  withr::with_options(list(scipen = -10), {
+  withr::with_options(list(scipen = -9), {
     expect_identical(rcicr:::referenceFingerprint(norms), baseline)
   })
 
@@ -664,7 +664,7 @@ test_that("a cached reference is reused under a changed OutDec", {
   ))
   before <- unname(tools::md5sum(rdata))
 
-  said <- withr::with_options(list(OutDec = ",", scipen = -10), {
+  said <- withr::with_options(list(OutDec = ",", scipen = -9), {
     utils::capture.output(computeInfoVal2IFC(ci, rdata, iter = 20))
   })
 
@@ -937,6 +937,12 @@ test_that("the shared resolver preserves iteration advice for requested simulati
       )),
       "iter >= 10000"
     )
+    expect_warning(
+      utils::capture.output(rcicr:::resolveReferenceNorms(
+        list(norms = c(1, 2, 3)), "unused", 3, TRUE, NULL, baseimage
+      )),
+      "iter >= 10000"
+    )
     withr::with_options(list(warn = 2), {
       expect_no_error(utils::capture.output(rcicr:::resolveReferenceNorms(
         list(norms = c(1, 2, 3)), "unused", 3, FALSE, NULL, baseimage
@@ -956,4 +962,81 @@ test_that("read-only independent refreshes identify the base image", {
   ))
   expect_true(any(grepl("baseimage second", said, fixed = TRUE)))
   expect_true(any(grepl("is not writable", said, fixed = TRUE)))
+})
+
+
+test_that("automatic refresh does not hide unrelated warnings", {
+  testthat::local_mocked_bindings(
+    generateReferenceDistribution2IFC = function(...) {
+      warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
+      warning("saved noise diagnostic")
+      c(1, 2, 3)
+    },
+    writableFile = function(path) TRUE,
+    .package = "rcicr"
+  )
+  for (baseimage in list(NULL, "second")) {
+    expect_warning(
+      utils::capture.output(rcicr:::resolveReferenceNorms(
+        list(norms = c(1, 2, 3)), "unused", 99, FALSE, NULL, baseimage
+      )),
+      "saved noise diagnostic"
+    )
+    withr::with_options(list(warn = 2), {
+      expect_error(utils::capture.output(rcicr:::resolveReferenceNorms(
+        list(norms = c(1, 2, 3)), "unused", 99, FALSE, NULL, baseimage
+      )), "saved noise diagnostic")
+    })
+  }
+})
+
+test_that("both public refresh paths restore RNG state on success and failure", {
+  withr::local_preserve_seed()
+  for (independent in c(FALSE, TRUE)) {
+    tmp <- withr::local_tempdir()
+    rdata <- if (independent) make_independent_fixture(tmp) else make_fixture_rdata(tmp)
+    baseimage <- if (independent) "second" else NULL
+    e <- new.env()
+    load(rdata, envir = e)
+    if (independent) {
+      e$reference_norms_by_base <- list(second = list(norms = c(1, 2, 3)))
+    } else {
+      e$reference_norms <- c(1, 2, 3)
+    }
+    save(list = ls(e, all.names = TRUE), file = rdata, envir = e)
+
+    for (fail in c(FALSE, TRUE)) {
+      testthat::local_mocked_bindings(
+        generateReferenceDistribution2IFC = function(rdata, iter, baseimage, ...) {
+          expect_identical(iter, 3L)
+          expect_identical(baseimage, if (independent) "second" else NULL)
+          set.seed(123)
+          runif(7)
+          if (fail) stop("regeneration failed after drawing")
+          c(1, 2, 3)
+        },
+        .package = "rcicr"
+      )
+      for (has_seed in c(FALSE, TRUE)) {
+        if (has_seed) {
+          set.seed(99)
+          before <- get(".Random.seed", envir = globalenv())
+        } else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+          rm(".Random.seed", envir = globalenv())
+        }
+        call <- function() {
+          utils::capture.output(computeInfoVal2IFC(
+            list(ci = matrix(1, 32, 32)), rdata, iter = 99, baseimage = baseimage
+          ))
+        }
+        if (fail) {
+          expect_error(call(), "regeneration failed after drawing")
+        } else {
+          expect_message(call(), NA)
+        }
+        expect_identical(exists(".Random.seed", envir = globalenv(), inherits = FALSE), has_seed)
+        if (has_seed) expect_identical(get(".Random.seed", envir = globalenv()), before)
+      }
+    }
+  }
 })
