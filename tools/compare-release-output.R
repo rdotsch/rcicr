@@ -236,9 +236,11 @@ EXPECTED <- c(list(
        check = relabelled_only,
        news = "Reproducibility impact"),
 
-  # Listed for both references, unlike the entries around it, because the defect
-  # is in both: the mislabelling dates to 0.4.0 and every tagged release since
-  # carries it, so neither run can report this as stale.
+  # A second entry because this reference carries the defect too: the
+  # mislabelling dates to 0.4.0 and was fixed in 1.3.0, so v1.0.1 and v1.2.3
+  # both report it while v1.3.0 needs no entry. CI names only v1.0.1 and the
+  # newest tag, so nothing exercises this entry now and no run can call it
+  # stale: check it by hand if v1.2.3 ever becomes a reference again.
   list(ref = "v1.2.3",
        key = c("defaults-512-sinusoid/individual_cis",
                "sinusoid-128-nscales3/individual_cis"),
