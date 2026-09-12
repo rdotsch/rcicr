@@ -62,3 +62,20 @@ minutes per reference plus ~1.5 GB of RAM at 512px, so prefer running it in CI:
 a `workflow_dispatch` of `reproducibility.yaml` runs the **full** battery
 against both references, because the `--quick` choice keys off a
 `pull_request` event.
+
+### Isolating one change from what its base branch already carries
+
+`--ref` takes any git rev, not just a tag, and `EXPECTED` entries are filtered
+to those naming the resolved reference. So a branch or SHA matches **no** entry
+and every difference is reported:
+
+```sh
+Rscript tools/compare-release-output.R --ref="$(git rev-parse origin/main)"
+```
+
+That answers what the release runs cannot. An entry without a `check` predicate
+excuses *any* deviation in its output, so where `main` already deviates from a
+tag for a documented reason, a new regression in the same output would be
+absorbed by the entry rather than reported. Against `main` itself nothing is
+excused, which turns "the gate is green" into "this change moves no number".
+Expect `0 expected deviations`; anything else is the change's own doing.
