@@ -16,6 +16,12 @@ on:
   # matters. `schedule` always runs on the default branch, so it needs no
   # branch filter, and GitHub notifies on failure only.
   #
+  # The minute is deliberately not 0. GitHub names the start of every hour as a
+  # high-load window for scheduled runs, where they are commonly delayed and,
+  # under enough load, dropped outright. A dropped run costs a daily job a day
+  # and this one a fortnight, which is the margin the weekly cadence exists to
+  # protect. Keep it off the hour.
+  #
   # Two things to know before editing the cron. GitHub sends the failure mail
   # to whoever last changed this cron line, not to the repository owner, and a
   # workflow that is disabled and re-enabled sends it to whoever re-enabled it
@@ -27,7 +33,7 @@ on:
   # repository this is for. Treat it as a warning system whose own death is
   # announced, not a guarantee.
   schedule:
-    - cron: '0 5 * * 1'
+    - cron: '37 5 * * 1'
   # The same matrix on demand, which is the first thing a returning maintainer
   # wants and was otherwise reachable only by pushing.
   workflow_dispatch:
