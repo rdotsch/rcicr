@@ -9,10 +9,20 @@
 # options is the property that was broken, and the caller's options surviving
 # the call is what makes neutralising them safe.
 #
+# scipen is -9, not a rounder -10: R clamps it to -9 and warns from 4.6 on, so
+# a smaller value tests one thing on the maintainer's machine and another on
+# CI. Each test first asserts that the options still render a port unparseably,
+# because an R that stopped doing so would leave the rest passing vacuously.
+#
 # CI runners have OutDec = ".", so nothing else in the suite can hold this.
 
+expect_unparseable_port <- function() {
+  expect_match(format(11000), ",", fixed = TRUE) # nolint: object_usage_linter.
+}
+
 test_that("startBackend starts a cluster under any OutDec and scipen", {
-  withr::local_options(OutDec = ",", scipen = -10)
+  withr::local_options(OutDec = ",", scipen = -9)
+  expect_unparseable_port()
 
   cl <- rcicr:::startBackend(2L)
   on.exit(rcicr:::stopClusterSafely(cl), add = TRUE)
@@ -25,11 +35,16 @@ test_that("startBackend starts a cluster under any OutDec and scipen", {
 })
 
 test_that("startBackend leaves the caller's formatting options alone", {
-  withr::local_options(OutDec = ",", scipen = -10)
+  withr::local_options(OutDec = ",", scipen = -9)
+  expect_unparseable_port()
+
+  # Compared against the values actually in force, so a future R that stores
+  # or clamps them differently still tests "unchanged" rather than a literal.
+  before <- list(OutDec = getOption("OutDec"), scipen = getOption("scipen"))
 
   cl <- rcicr:::startBackend(2L)
   rcicr:::stopClusterSafely(cl)
 
-  expect_identical(getOption("OutDec"), ",")
-  expect_identical(getOption("scipen"), -10)
+  expect_identical(getOption("OutDec"), before$OutDec)
+  expect_identical(getOption("scipen"), before$scipen)
 })
