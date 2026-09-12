@@ -61,6 +61,18 @@
   stimuli that were written are unchanged, as is the returned data frame, which still holds one
   noise image per trial for the first base image. (#302)
 
+## Bug fixes
+
+- **Parallel workers now start whatever the session's `OutDec` and `scipen` are.** With both
+  `options(OutDec = ",")` and a `scipen` negative enough to force scientific notation — neither
+  alone does it — every call that spawns workers failed, after waiting out the whole connection
+  timeout and then naming the workers rather than the cause:
+  `generateStimuli2IFC()`, `generateCI()` and friends with `n_cores > 1`, and reference
+  generation. `parallel` renders a worker's port into a command line as text, where those
+  options wrote `11000` as `1,1e+04` for the child to read as `NA`. Both are now neutralised
+  across cluster construction and restored immediately afterwards. They govern rendering and
+  never arithmetic, so no numeric output changes and no existing result is affected. (#316)
+
 ## Performance
 
 - **`generateReferenceDistribution2IFC()` no longer re-copies its stimulus data on every simulated response set** (#306). Converting it once per call speeds up reference simulation, and so the `computeInfoVal2IFC()` calls that have to generate one. The gain is largest at small image sizes and narrows as the matrix-vector product itself becomes memory-bound. Reference norms and the random-number stream are unchanged.

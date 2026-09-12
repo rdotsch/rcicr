@@ -40,6 +40,16 @@ startBackend <- function(ncores) {
     return(NULL)
   }
 
+  # parallel renders the worker's connection arguments into a command line as
+  # text, so the parent's formatting options reach the child: under
+  # OutDec = "," with scipen forcing scientific notation a port of 11000 is
+  # written 1,1e+04, parses to NA, and the worker dies on setup_timeout >= 0
+  # while the parent waits out its whole connection timeout (issue #316). Both
+  # options govern rendering, never arithmetic, and nothing is computed between
+  # here and the restore, so neutralising them cannot move a number.
+  old <- options(scipen = 0, OutDec = ".")
+  on.exit(options(old), add = TRUE)
+
   cl <- parallel::makeCluster(ncores, outfile = "")
   doSNOW::registerDoSNOW(cl)
   cl
