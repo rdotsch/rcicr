@@ -15,9 +15,13 @@ commit drops it.
 they answer different questions.
 
 ``` sh
-Rscript tools/compare-release-output.R               # vs v1.0.1 -- the published baseline
-Rscript tools/compare-release-output.R --ref=v1.1.0  # vs the previous release
+Rscript tools/compare-release-output.R  # vs v1.0.1 -- the published baseline
+Rscript tools/compare-release-output.R --ref="$(git tag --list 'v*' --sort=-v:refname | head -1)"
 ```
+
+The second is derived, not named: it moves with each release, and a
+named one quietly stops being the previous release. CI picks it the same
+way.
 
 The v1.0.1 run asks whether this tree still produces the numbers that
 are *in the literature*. It never advances, because a reference that
@@ -25,7 +29,7 @@ moves forward with each release lets a tree drift away from those
 numbers one tolerated epsilon at a time. The second asks whether
 anything broke since the last release, and reaches further: calls that
 used to crash — masks, small z-maps, undecorated z-maps — have a
-comparable value in v1.1.0 and none at all in v1.0.1.
+comparable value from v1.1.0 on and none at all in v1.0.1.
 
 Exit `0` clean, `1` an unaccounted difference, `2` could not run. On a
 difference there are two honest outcomes: **it was not intended**, so

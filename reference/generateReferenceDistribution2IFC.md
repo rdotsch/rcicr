@@ -31,13 +31,13 @@ generateReferenceDistribution2IFC(
 
 - ncores:
 
-  Number of CPU cores to use when re-generating the stimuli (default:
+  Number of CPU cores to use when rebuilding the saved noise (default:
   `detectCores()-1`; 2 under `R CMD check`, per CRAN policy).
 
 - response_seed:
 
   Optional seed for the simulated random responses. The default (`NULL`)
-  draws them from the state left by the stimulus re-generation, which is
+  draws them from the state the stimulus generator left behind, which is
   the reproducible behaviour described under Reproducibility. Supply a
   number to obtain an independent draw of the null from the same
   stimuli.
@@ -78,18 +78,28 @@ the supplied rdata file for later reuse.
 ## Reproducibility
 
 With the default `response_seed = NULL`, the reference distribution is
-determined by the stimulus `.Rdata` file alone. It does not depend on
-the ambient random number state of the calling session, and it does not
-depend on `ncores`. Two researchers who compute InfoVal from the same
-stimulus file therefore get the same number, and the same reference
-distribution, on different machines and in different sessions.
+determined by the stimulus `.Rdata` file and the session's
+[`RNGkind`](https://rdrr.io/r/base/Random.html). It does not depend on
+the ambient random number state, and it does not depend on `ncores`. Two
+researchers who compute InfoVal from the same stimulus file therefore
+get the same number, and the same reference distribution, on different
+machines and in different sessions – provided both sessions use the same
+RNG kind.
 
-Shared-parameter files re-generate the stimuli through
-[`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md).
-Independent bases use their saved noise basis and parameters directly.
-Both paths seed responses from the state following one shared parameter
-matrix's draws at the saved stimulus seed, preserving the historical
-default response stream.
+[`set.seed()`](https://rdrr.io/r/base/Random.html) keeps whatever kind
+the session already has rather than restoring one, and no stimulus file
+records which was in force, so a session that has changed
+[`RNGkind()`](https://rdrr.io/r/base/Random.html) changes the simulated
+response draws and therefore the null. The saved noise basis and
+stimulus parameters remain unchanged. To reproduce an earlier reference,
+use the RNG kind that built it; see
+<https://github.com/rdotsch/rcicr/issues/315>.
+
+The noise is reconstructed from the basis and parameters the stimulus
+file saved, so the base images themselves are never reopened and an
+archived or moved experiment can still be scored. Responses are seeded
+from the state following one parameter matrix's draws at the saved
+stimulus seed, preserving the historical default response stream.
 
 Pass an explicit `response_seed` to draw a \*different\* null from the
 same stimuli – for instance to check how much Monte Carlo error a given
@@ -99,14 +109,13 @@ built on, are unaffected.
 
 ## Independent base images
 
-When saved parameter matrices differ, supply `baseimage` explicitly. The
-selected base's noise is reconstructed from the saved basis and
-parameters, without reading the original images. Cached distributions
-are stored in `reference_norms_by_base`, keyed by base label, with
-`norms` and `response_seed` in each entry. Old unscoped
-`reference_norms` are neither reused nor overwritten for independent
-bases. Existing shared-parameter files continue using their unscoped
-cache and reconstruction.
+When saved parameter matrices differ, supply `baseimage` explicitly to
+say which base's noise to use. Cached distributions are stored in
+`reference_norms_by_base`, keyed by base label, with `norms` and
+`response_seed` in each entry. Old unscoped `reference_norms` are
+neither reused nor overwritten for independent bases. Existing
+shared-parameter files continue using their unscoped cache and
+reconstruction.
 
 ## Examples
 
@@ -131,8 +140,9 @@ rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE
 
 # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-#> Re-generating stimuli based on rdata file, please wait...
-#>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%Computing reference distribution, please wait...
+#> Building the reference from the saved noise, please wait...
+#>   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%
+#> Computing reference distribution, please wait...
 #>   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
 #> 
 #> Saving simulated reference distribution to rdata file...
