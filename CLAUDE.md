@@ -3,7 +3,10 @@ This file exists only so that Claude Code loads this repository's conventions.
 Claude Code reads CLAUDE.md and does not read AGENTS.md:
 https://code.claude.com/docs/en/memory#agents-md
 
-AGENTS.md remains the single source of truth. Put conventions there, not here.
+AGENTS.md remains the single source of truth for the repository's conventions.
+Put those there, not here. What belongs here is the little that is true only of
+the Claude Code container and would be noise in a file other agents read --
+currently the bootstrap below, and nothing else.
 
 An @-import is used rather than `ln -s AGENTS.md CLAUDE.md` because symlinks
 require Administrator privileges or Developer Mode on Windows, and this package
@@ -15,3 +18,47 @@ look for CLAUDE.md under "Memory files".
 -->
 
 @AGENTS.md
+
+## Getting R in a Claude Code container
+
+A fresh container has **no R at all**, and the egress proxy refuses every CRAN
+mirror and every GitHub tarball host — `403` on `CONNECT` from
+`cloud.r-project.org`, `cran.r-project.org`, `cran.rstudio.com`,
+`packagemanager.posit.co`, `github.com` and `codeload.github.com`. So
+`install.packages()` and `remotes::install_github()` are both dead ends. That is
+an organization egress policy rather than a fault: report it, do not route
+around it, and never disable TLS verification or unset `HTTPS_PROXY`.
+
+Ubuntu's `universe` pocket *is* reachable, and carries a Debian build of every
+dependency this package and its pinned v1.0.1 gate reference need, bar one:
+
+```sh
+bash tools/setup-container-r.sh      # toolchain + rcicr; re-runnable
+```
+
+After that the ordinary workflow applies, including the release gate. Measured
+here: `testthat::test_local()` gives 1119 passing and 1 skip.
+
+Three things to know before trusting or editing that script:
+
+- **The spatstat packages keep their dots** — `r-cran-spatstat.explore`, not
+  `r-cran-spatstat-explore`. Applying the usual dash convention reports MISSING
+  and invites the wrong conclusion that CRAN is needed after all.
+- **`yesno` is the one package with no Debian build**, so the script installs a
+  stub. `computeInfoVal2IFC()` reaches the real thing from a single
+  `if (interactive())` branch, behind a `ref_lookup` whose rows have been
+  commented out since 2018, so the prompt cannot be reached in a batch run. The
+  stub raises an error rather than answering, so nothing can quietly come to
+  depend on a stubbed reply.
+- **The v1.0.1 reference's own imports are installed too** — `raster`, `sp`,
+  `ggplot2`, `plyr` and the rest this package has since dropped — so the gate
+  never needs `--install-deps` and never reaches for CRAN. `raster` is also what
+  pulls in the GDAL/GEOS/PROJ system libraries it links against.
+
+Two things differ from CI and will mislead you if you forget them. Sessions run
+as **root**, so a file made read-only is still writable and the one test that
+depends on that skips instead of running. And the full release gate wants ~20
+minutes per reference plus ~1.5 GB of RAM at 512px, so prefer running it in CI:
+a `workflow_dispatch` of `reproducibility.yaml` runs the **full** battery
+against both references, because the `--quick` choice keys off a
+`pull_request` event.
