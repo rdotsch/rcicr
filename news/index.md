@@ -155,6 +155,23 @@
   still holds one noise image per trial for the first base image.
   ([\#302](https://github.com/rdotsch/rcicr/issues/302))
 
+### Bug fixes
+
+- **Parallel workers now start whatever the session’s `OutDec` and
+  `scipen` are.** With both `options(OutDec = ",")` and a `scipen`
+  negative enough to force scientific notation — neither alone does it —
+  every call that spawns workers failed, after waiting out the whole
+  connection timeout and then naming the workers rather than the cause:
+  [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md),
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  and friends with `n_cores > 1`, and reference generation. `parallel`
+  renders a worker’s port into a command line as text, where those
+  options wrote `11000` as `1,1e+04` for the child to read as `NA`. Both
+  are now neutralised across cluster construction and restored
+  immediately afterwards. They govern rendering and never arithmetic, so
+  no numeric output changes and no existing result is affected.
+  ([\#316](https://github.com/rdotsch/rcicr/issues/316))
+
 ### Performance
 
 - **[`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
