@@ -33,30 +33,35 @@ enforces them, are in `CONTRIBUTING.md`.
 `purrr::rbernoulli(n, p)` uses `runif(n) > (1 - p)`. `rbinom()` consumes the seeded stream differently, verified across 150 seed/probability combinations, and would alter every derived InfoVal. The replacement therefore uses the bit-identical `runif()` expression. Equal marginal distributions are insufficient in a seeded pipeline.
 
 ### A base image's alpha channel is discarded, not composited
-Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. `rcicr` renders opaque stimuli, so alpha has no downstream meaning. Hidden RGB values can differ from a viewer's composited image, so a cut-out may reveal pixels stored beneath transparent areas.
+Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. `rcicr` renders opaque stimuli, so alpha has no downstream meaning. Hidden RGB values can differ from a viewer's composited image, so a cut-out may reveal pixels beneath transparent areas.
 
 ### `rowMeans(x, dims = 2)` was adopted despite not being bit-identical
 The patch-averaging step in `generateNoiseImage()` moved from `apply(..., 1:2, mean)`, about
-6x faster end-to-end. The two sum in a different order and so differ by roughly 1 ULP (~1e-19
-on pixel values of order 0.01). Adopted because an **independent oracle** — the average
-written as an explicit triple loop, using neither function — put both forms ~5.6e-17 away
-across noise types, scales and seeds. Neither is "more correct", and at the golden master's
-own configuration the results came out bit-identical. Unlike the `rbinom` case above this is
-floating-point summation order, not a changed random stream; `NEWS.md` says so explicitly.
+6x faster end-to-end. The two sum in a different order and so differ by roughly 1 ULP (~1e-19 on
+pixel values of order 0.01). Adopted because an **independent oracle** — the average as an
+explicit triple loop, using neither function — put both forms ~5.6e-17 away across noise types,
+scales and seeds. Neither is "more correct", and at the golden master's own configuration they
+came out bit-identical. Unlike the `rbinom` case above this is summation order, not a changed
+random stream.
 
 The subtlety that bit once: **`rowMeans()` on a 3-D array defaults to `dims = 1`**, collapsing
 dims 2 *and* 3, and `array()` then silently recycles the short result. The version originally
 submitted did exactly that — measured max deviation 0.21 against data with SD ~0.01, not the
 ~1e-17 it claimed.
 
-### `set.seed()` in `generateStimuli2IFC()` is load-bearing far beyond stimulus generation
-`generateReferenceDistribution2IFC()` rebuilds the stimuli through it, so that
-`set.seed(seed)` lands *before* the simulation loop's `runif()` draws — which is what makes
-InfoVal reproducible from a stimulus file alone, independent of ambient RNG state and of
-`ncores`. This was **emergent, not designed**: moving one line would have silently changed
-every InfoVal ever computed, without touching `computeInfoVal2IFC()`. It is now a documented
-guarantee in `?generateReferenceDistribution2IFC`, pinned by a test, with a comment on the
-`set.seed()` call saying what depends on it.
+### The stimulus seed's stream is load-bearing well beyond stimulus generation
+`generateStimuli2IFC()` seeds on the stimulus seed and spends one `runif()` draw per parameter
+per trial. Reference responses continue that stream: the file and session's `RNGkind()`
+determine the null, independently of the ambient random state and `ncores`. Files do not
+record the kind; changing it changes the response draws, not the saved noise.
+[#315](https://github.com/rdotsch/rcicr/issues/315) tracks this limitation. The historical
+stream is documented in `?generateReferenceDistribution2IFC` and pinned by tests.
+
+The stimuli are no longer re-generated to get there
+([#301](https://github.com/rdotsch/rcicr/issues/301)), so `seedResponseStream()` **replays** that
+consumption. Do not "simplify" the loop away: it looks inert and is the whole guarantee. Its
+count is the saved matrix's width *after* `selectStimulusParams()` — a pre-0.3.0 file's raw 4096
+would shift the stream, as below.
 
 ### `response_seed`, not `seed`
 Four choices, each forced by something specific:
@@ -65,11 +70,10 @@ Four choices, each forced by something specific:
   `generateReferenceDistribution2IFC()` re-saves its own frame, so an argument of that name
   would overwrite the stimulus seed and write it back — corrupting the record of how the
   stimuli were generated.
-- **It seeds the responses, applied after the stimulus rebuild**, not forwarded into it.
-  Forwarding would rebuild a different stimulus set, so the null would describe stimuli the
-  participants never saw.
-- **`NULL` issues no `set.seed()` call at all**, so the default path is byte-identical rather
-  than merely equivalent-looking.
+- **It seeds the responses**, replacing the replayed stimulus stream rather than being forwarded
+  into generation, which would describe stimuli participants never saw.
+- **`NULL` replays the stimulus stream instead of seeding afresh**, so the default path stays
+  byte-identical rather than merely equivalent-looking.
 - **`computeInfoVal2IFC(response_seed=)` forces regeneration and never caches.** Without the
   first it would be silently ignored on every file after the first, since the generator writes
   `reference_norms` into the file; caching a one-off Monte Carlo check would redefine what
@@ -79,7 +83,7 @@ Four choices, each forced by something specific:
 rcicr 0.3.0 (2015-01-23) cut the per-trial random draws from 4096 to 4092. 4092 is the real
 patch count — 6 orientations × 2 phases × `sum(4^0..4^4)` — while 4096 was a round `2^12`
 over-allocation, so four contrasts were drawn per trial that no patch index ever referred to.
-`ChangeLog` calls them "redundant" and says the change "does not affect anything else".
+`ChangeLog` says the change "does not affect anything else".
 
 **That last claim is true for analysis and false for regeneration**, which is not obvious and
 matters. Analysing a pre-0.3.0 file reads its *stored* parameters, and dropping four unused
@@ -109,11 +113,9 @@ where 0.3.0 only flipped the default and added the flag. Do **not** "fix" the re
 1-offsetting the index: that changes which sinusoid is dropped, altering the CI of every
 genuinely pre-0.3.0 file. `test-generateNoiseImage.R` pins both properties.
 
-The truncation left a dead branch in `generateCI()` for eleven years: the single-trial path
-tested for a length of 4092 and truncated to 4092, so it could never fire on the 4096-length
-input it was written for. **A backward-compatibility path that nothing exercises is
-indistinguishable from one that works** — it had no test until 2026-07-28, and neither did the
-`sinusoids`/`sinIdx` path, also broken.
+**A backward-compatibility path that nothing exercises is indistinguishable from one that
+works.** The truncation left one dead in `generateCI()` for eleven years, untested until
+2026-07-28, as was the `sinusoids`/`sinIdx` path — also broken.
 
 ### `load()` assigns into the calling frame — check every new argument against saved names
 An object in an `.Rdata` file silently overwrites a function argument of the same name.
@@ -190,17 +192,15 @@ written for every base image either way; that they once were not was
 *Later* base images were scored against the first one's null
 ([#299](https://github.com/rdotsch/rcicr/issues/299)), at a cost measured in
 [`analyses/infoval-reference-impact.md`](analyses/infoval-reference-impact.md). Independent-base
-references now take a `baseimage` label, use that base's saved noise, and cache per base.
-Default draws keep the old RNG offset, and on a post-0.3.0 file the first base's parameters come
-from the same leading RNG block — max absolute difference 0 — so shared and post-0.3.0
-first-base numbers hold. A *pre-0.3.0* independent file is the exception (see above): its trials
-cannot be rebuilt from the seed, so its first base moves too.
+references now take a `baseimage` label and cache per base. Shared and post-0.3.0 first-base
+numbers hold — max absolute difference 0, the first base's parameters coming from the same
+leading RNG block. A *pre-0.3.0* independent file is the exception (see above): its trials cannot
+be rebuilt from the seed, so its first base moves too.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI
 (`R/generateCI.R:184-191`); `computeCumulativeCICorrelation()` does not, and walks trials in
-presentation order. Deliberate — collapsing repeats would discard exactly the order a cumulative
-curve is about.
+presentation order — collapsing repeats would discard the order a cumulative curve is about.
 
 With no `targetci` the final CI is built from the same un-aggregated trials as the curve, so the
 curve **ends at exactly 1** — self-consistency, not convergence. Three conditions, all measured:
@@ -213,20 +213,24 @@ That self-computed final CI equals `generateCI()`'s only under equal repeat coun
 are bit-identical. Unequal counts weight the data differently — each trial equally here, each
 unique stimulus equally there: counts 3/1 correlate at 0.845, counts 4/2/1/1 at 0.773.
 
-Documented and pinned by a test rather than changed. Aggregating the self-computed final CI would
-move numeric output for anyone calling without `targetci` *and* stop the curve ending at 1 — a
-worse default than the one being fixed. Whether `generateCI()`'s own weighting is right for
-unbalanced designs is filed separately.
+Pinned by a test rather than changed: aggregating the self-computed final CI would move numeric
+output for anyone calling without `targetci` *and* stop the curve ending at 1. Whether
+`generateCI()`'s own weighting suits unbalanced designs is filed separately.
+
+### A cached reference is trusted only on positive evidence
+Old references rebuilt stimuli using potentially missing settings and the session's RNG kind. Unmarked default caches therefore refresh once; seeded caches remain deliberate choices. One resolver handles both layouts, preserving iteration counts and caller RNG state on automatic refresh; read-only files are scored in memory.
+
+Older writers preserve unknown fields while replacing norms. The marker is bound to a full copy, checked with `identical()`: every value is covered without hashing, formatting or arithmetic. This costs eight bytes per double (about 80 KB for 10,000 norms), small beside the noise basis. Sampling can miss replacements; a compiled dependency is unnecessary.
+
+Changed references emit messages, including under `warn = 2`, so reporting a correction cannot prevent returning it. This deliberately gives up `warnings()` collection and permits suppression by `suppressMessages()`; NEWS states that trade-off. Caller-chosen iteration counts still receive the reliability warning.
 
 ### Repopulating `ref_lookup` costs four measurements — and the two halves stand or fall together
-`AGENTS.md` covers what the table is (not a cache, empty since 2018, every lookup misses). What
-belongs here is the way out, because either half done alone is worse than the status quo.
-
-Repopulating means measuring four numbers: `median(reference_norms)` and `mad(reference_norms)`
-under the current formula for seed 1, 512px, 10000 iterations at 100/300/500/1000 trials, one
-`generateReferenceDistribution2IFC()` run each. The alternative is deleting the ~55 lines of
-matching and prompt machinery. **Do not do half of either** — delete the machinery while
-intending to re-measure and the feature becomes unrecoverable rather than merely dormant.
+`AGENTS.md` covers what the table is; what belongs here is the way out, because either half done
+alone is worse than the status quo. Repopulating means four numbers: `median(reference_norms)`
+and `mad(reference_norms)` under the current formula for seed 1, 512px, 10000 iterations at
+100/300/500/1000 trials. The alternative is deleting the ~55 lines of matching and prompt
+machinery. **Do not do half of either** — delete the machinery while intending to re-measure and
+the feature becomes unrecoverable rather than merely dormant.
 
 ---
 
@@ -282,19 +286,18 @@ applied consistently inside `generateNoiseImage()`, because the template is buil
 same function and the error cancels. The oracle test covers that.
 
 ### The release gate runs the old code; the golden master only re-runs ours
-`test-regression-baseline.R` pins values *this repository computed for itself*. That makes it
-self-referential in one specific way: it can only catch drift away from the moment the numbers
-were written down. Had a P0 fix already changed results before the baseline was recorded, the
-baseline would have pinned the changed values and passed green forever.
-`tools/compare-release-output.R` closes that gap by installing the reference commit into a
-temporary library and running both versions over the same battery — it is the only thing here
-that executes the old code. The two are complements, not substitutes: the golden master is
-cheap enough to run on every commit, the gate costs two package installs and minutes of
-compute, so it runs `--quick` on PRs and in full at release.
+`test-regression-baseline.R` pins values *this repository computed for itself*, so it catches
+only drift away from the moment the numbers were written down: had a P0 fix already changed
+results before the baseline was recorded, it would have pinned the changed values and passed
+green forever. `tools/compare-release-output.R` closes that gap by installing the reference
+commit into a temporary library and running both versions over the same battery — the only thing
+here that executes the old code. Complements, not substitutes: the golden master runs on every
+commit, the gate costs two package installs and minutes of compute, so it runs `--quick` on PRs
+and in full at release.
 
-The battery is snapshotted into the temp directory before either side runs, so editing the
-working copy mid-run cannot leave the two sides comparing different things — which happened
-here once, and produces a "difference" that is purely an artefact.
+The battery is snapshotted into the temp directory before either side runs: editing the working
+copy mid-run once left the two sides comparing different things, producing a "difference" that
+was purely an artefact.
 
 ### The legacy `.Rdata` fixtures are committed, not generated when the tests run
 Both directions of the compatibility promise now have a test. The gate above checks that this
@@ -310,14 +313,11 @@ and the files are committed, so the safeguard runs in every CI job, on every pla
 network. Regenerating is a deliberate act: a red test here means this version can no longer read
 a file a researcher already has, which is the failure, not the fixture.
 
-Each is generated at the era's **defaults** — `nscales = 5`, `sigma = 25` for 1.0.1 — so its
-missing-field fallbacks land on the right noise basis, which is the situation a returning
-researcher is actually in. Any other value would enshrine a wrong null. The gabor row exists
-because `sigma` reaches the basis through `generateGabor()` alone: sinusoidal norms are
-identical at `sigma` 25 and 10, so no sinusoidal fixture can exercise that fallback at all.
-
-Writing them also settled the `generator_version` question with data: the 1.0.1 and 1.1.0 files
-really do carry a top-level `'0.4.0'` while `p$generator_version` holds the truth.
+Each is generated at the era's **defaults** — `nscales = 5`, `sigma = 25` for 1.0.1 — which is
+the situation a returning researcher is actually in. The gabor row is the one fixture whose
+saved basis is not sinusoidal. It was written to exercise the missing-field fallbacks, which
+[#301](https://github.com/rdotsch/rcicr/issues/301) removed by reading the saved basis rather
+than rebuilding one; it now covers that basis being read back.
 
 ### The v1.0.1 reference is pinned; the previous release is a *second* run, not a replacement
 The obvious move once a release is green is to make it the new reference. It is wrong. Each
@@ -356,13 +356,12 @@ arrives as **1.33e-15** — measured at 512px against v1.0.1. One ULP of the lar
 (9.0e-16) rejects that; eight accepts it and still sits three orders of magnitude below anything
 observable.
 
-Widening a tolerance to make a run pass is the move `CONTRIBUTING.md` warns against, so the
-distinction matters: what protects this comparison is not the tolerance but the two **exact**
-checks beside it — 0 of N pixels may differ once quantised to 8 bits, and the NA pattern must
-match cell for cell. The z-map sigma bug moved 1,282 cells across the threshold and was caught by
-the NA check; every numeric tolerance considered here would have passed it. The 8-bit check is
-also the one answering the question a researcher actually has — does the PNG I publish change —
-which is why a 1.11e-16 difference in the CI is a pass rather than an argument.
+What protects this comparison is not the tolerance but the two **exact** checks beside it — 0 of
+N pixels may differ once quantised to 8 bits, and the NA pattern must match cell for cell. The
+z-map sigma bug moved 1,282 cells across the threshold and was caught by the NA check; every
+numeric tolerance considered here would have passed it. The 8-bit check also answers the question
+a researcher actually has — does the PNG I publish change — which is why a 1.11e-16 difference in
+the CI is a pass rather than an argument.
 
 ---
 
@@ -456,12 +455,11 @@ masked, whatever the page said. Changing the code to match the prose would have 
 inverted every existing mask — the one outcome with real cost, since a mask covers a face and
 an inverted one looks plausible.
 
-**This nearly shipped backwards.** The first version of the `plotZmap` fix believed the docs
-and branched on provenance, masking where `0` for a PNG and where `TRUE` for a matrix. That
-would have made the same mask remove complementary halves in the two functions. It was caught
-by Ron asking whether the two forms should really be opposite, and the answer was in the
-sibling implementation rather than in any documentation. **When two documented conventions
-conflict, run the one that has been executing for a decade.**
+**This nearly shipped backwards.** The first version of the `plotZmap` fix believed the docs and
+branched on provenance, masking where `0` for a PNG and where `TRUE` for a matrix — the same mask
+removing complementary halves in the two functions. The answer was in the sibling implementation,
+not in any documentation. **When two documented conventions conflict, run the one that has been
+executing for a decade.**
 
 ### `plotZmap(mask = ...)` was applied rather than deprecated
 It had been documented since 2016 and never worked — the import half landed with an explicit

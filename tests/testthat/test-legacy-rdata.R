@@ -114,21 +114,19 @@ reference_norms_for <- function(rdata) {
   list(warnings = seen, norms = after$reference_norms)
 }
 
-test_that("the missing-nscales fallback assumes the historical default of 5", {
+test_that("a file without nscales is scored from its saved basis, whatever nscales says", {
   skip_if_not_installed("withr")
 
-  # generateCI() never reads nscales or sigma, so it cannot exercise the
-  # compatibility fallbacks -- those are in generateReferenceDistribution2IFC(),
-  # which re-generates the stimuli and therefore needs the noise-basis parameters
-  # 1.0.1 did not save. This is the reader that would break if they were removed.
+  # generateCI() never reads nscales or sigma, and the reference distribution no
+  # longer does either: it is built from the basis the file saved (#301) rather
+  # than rebuilt from an nscales *value*. So the fallback this used to pin is
+  # gone, and what replaces it is the stronger claim -- the stored value cannot
+  # influence the answer at all.
   #
-  # That re-generation rebuilds the basis from the nscales *value*, not from the
-  # stored stimuli, so what this pins is the value the fallback picks: it must be
-  # 5, the default a 1.0.1 user actually generated with, or the null is built on a
-  # different basis than the participant saw -- which finishes just as happily and
-  # is wrong. So "finite norms" is not the claim; equalling an explicit 5, and
-  # differing from any other value, is. The fixture is likewise generated at 5
-  # (tools/make-legacy-rdata.R) so it represents that real default case.
+  # That is what fixes these files. The old rebuild assumed 5 whenever nscales
+  # was absent, which is right only for a file generated at the default; at any
+  # other value it scored the participant's stimuli against a basis they never
+  # saw, and finished just as happily.
   fallback <- reference_norms_for(local_fixture_copy("1.0.1"))
 
   explicit_5 <- local_fixture_copy("1.0.1")
@@ -139,14 +137,13 @@ test_that("the missing-nscales fallback assumes the historical default of 5", {
   mutate_rdata(explicit_3, nscales = 3)
   explicit_3 <- reference_norms_for(explicit_3)
 
-  expect_true(any(grepl("does not contain `nscales`", fallback$warnings, fixed = TRUE)))
+  # No field is missing any more, because none is consulted.
+  expect_false(any(grepl("does not contain `nscales`", fallback$warnings, fixed = TRUE)))
   expect_false(any(grepl("does not contain `noise_type`", fallback$warnings, fixed = TRUE)))
-  expect_false(any(grepl("does not contain `nscales`", explicit_5$warnings, fixed = TRUE)))
 
-  # The fallback picks 5 specifically: identical to an explicit 5, and the value
-  # is load-bearing, so a different one gives a different null.
+  # The saved basis governs: injecting a right or a wrong nscales changes nothing.
   expect_identical(fallback$norms, explicit_5$norms)
-  expect_false(identical(fallback$norms, explicit_3$norms))
+  expect_identical(fallback$norms, explicit_3$norms)
   expect_length(fallback$norms, 3)
   expect_false(anyNA(fallback$norms))
 })
@@ -162,14 +159,15 @@ test_that("a 1.0.1 gabor file lacks nscales and sigma but records its noise type
   expect_equal(get("noise_type", envir = e), "gabor")
 })
 
-test_that("the missing-sigma fallback assumes 25, and warns only for gabor noise", {
+test_that("a gabor file without sigma is scored from its saved basis", {
   skip_if_not_installed("withr")
 
-  # sigma reaches the noise basis through generateGabor() alone, so it is inert
-  # for sinusoidal noise -- measured, the sinusoidal norms are identical at sigma
-  # 25 and 10, while these gabor ones move 0.681/0.689/0.680 -> 0.615/0.620/0.626.
-  # That asymmetry is the whole test: the value must be pinned where it matters,
-  # and the warning must not fire where it cannot.
+  # sigma reaches the noise basis through generateGabor() alone, and the basis is
+  # no longer rebuilt: it is read from the file (#301). So the value that used to
+  # be assumed, warned about and pinned here cannot reach the answer at all --
+  # which is what makes these files right rather than merely quiet. Under the old
+  # rebuild a gabor file generated at sigma 10 was scored at the assumed 25, and
+  # the norms differ: 0.615/0.620/0.626 against 0.681/0.689/0.680.
   fallback <- reference_norms_for(local_fixture_copy(gabor_fixture))
 
   explicit_25 <- local_fixture_copy(gabor_fixture)
@@ -184,32 +182,26 @@ test_that("the missing-sigma fallback assumes 25, and warns only for gabor noise
 
   warned <- function(x) any(grepl("does not contain `sigma`", x$warnings, fixed = TRUE))
 
-  # All three directions. The first assertion alone is satisfied by an
-  # implementation that warns on every gabor file -- which would put a spurious
-  # compatibility warning on every current gabor stimulus set, all of which save
-  # sigma, and be fatal under options(warn = 2). The other two rule that out, and
-  # rule out warning on any legacy file regardless of noise type.
-  expect_true(warned(fallback))
+  # No field is missing any more, on any of them, because none is consulted.
+  expect_false(warned(fallback))
   expect_false(warned(explicit_25))
   expect_false(warned(sinusoidal))
 
-  # The fallback picks 25 specifically: identical to an explicit 25, and the
-  # value is load-bearing, so a different one gives a different null.
+  # The saved basis governs: injecting either sigma changes nothing.
   expect_identical(fallback$norms, explicit_25$norms)
-  expect_false(identical(fallback$norms, explicit_10$norms))
+  expect_identical(fallback$norms, explicit_10$norms)
   expect_length(fallback$norms, 3)
   expect_false(anyNA(fallback$norms))
 })
 
-test_that("a 1.1.0 file's saved nscales is honoured, not the fallback", {
+test_that("a 1.1.0 file is scored from its basis, not from its recorded nscales", {
   skip_if_not_installed("withr")
 
   # 1.1.0 records nscales, and this fixture records 1 -- deliberately unlike the
-  # fallback's 5. "No fallback warning" alone would not catch the reader ignoring
-  # the saved value and using 5 anyway: no field is missing, so no warning fires,
-  # and the null is still finite. So the check is that the null matches an
-  # explicit 1 and differs from an explicit 5 -- the value that a saved-nscales
-  # regression would substitute.
+  # 5 the old rebuild fell back to. The reference is read from the saved basis
+  # now (#301), so the recorded value has no influence: what pins the reader is
+  # that mutating nscales to 5 leaves the null untouched, where the rebuild would
+  # have moved it.
   e <- new.env()
   load(legacy_fixture("1.1.0"), envir = e)
   expect_equal(get("nscales", envir = e), 1)
@@ -226,7 +218,7 @@ test_that("a 1.1.0 file's saved nscales is honoured, not the fallback", {
 
   expect_false(any(grepl("does not contain `nscales`", saved$warnings, fixed = TRUE)))
   expect_identical(saved$norms, as_1$norms)
-  expect_false(identical(saved$norms, as_5$norms))
+  expect_identical(saved$norms, as_5$norms)
 })
 
 test_that("the writing version is read from p, not from the field that says 0.4.0", {

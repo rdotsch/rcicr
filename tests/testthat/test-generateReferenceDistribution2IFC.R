@@ -44,10 +44,12 @@ test_that("the reference norms are positive and actually vary across iterations"
   expect_gt(mad(e$reference_norms), 0)
 })
 
-test_that("an .Rdata file predating noise_type still works, and says so", {
+test_that("an .Rdata file predating noise_type is scored without consulting it", {
   # Issue #94. Old files have no noise_type, and re-generating the stimuli from
   # one failed outright with "object 'noise_type' not found". The workaround on
-  # record was to load the file and assign noise_type by hand.
+  # record was to load the file and assign noise_type by hand. The reference now
+  # comes from the saved basis (#301), so the field is never read and the warning
+  # that stood in for it is gone.
   tmp <- withr::local_tempdir()
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 
@@ -76,23 +78,22 @@ test_that("an .Rdata file predating noise_type still works, and says so", {
     generateReferenceDistribution2IFC(rdata_path, iter = 3, ncores = 1)
   )
 
-  expect_true(any(grepl("does not contain `noise_type`", warnings_seen, fixed = TRUE)))
+  expect_false(any(grepl("does not contain `noise_type`", warnings_seen, fixed = TRUE)))
 
-  # It has to actually finish, not just warn on the way to the old error.
+  # It has to actually finish, not merely stop warning on the way to the old error.
   after <- new.env()
   load(rdata_path, envir = after)
   expect_length(after$reference_norms, 3)
   expect_false(anyNA(after$reference_norms))
 
-  # And the warning must be specific to the missing field, or it is just noise
-  # on every call.
+  # And the answer is the one this file's own noise implies: an identical file
+  # that still carries noise_type scores the same.
   fresh <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6,
                               nscales = 1, seed = 1)
-  expect_false(any(grepl(
-    "does not contain `noise_type`",
-    collect_warnings(generateReferenceDistribution2IFC(fresh, iter = 3, ncores = 1)),
-    fixed = TRUE
-  )))
+  intact <- suppressWarnings(generateReferenceDistribution2IFC(
+    fresh, iter = 3, ncores = 1, save_rdata = FALSE
+  ))
+  expect_identical(after$reference_norms, intact)
 })
 
 test_that("the reference distribution is fixed by the stimulus file, not the caller's RNG state", {
@@ -152,42 +153,43 @@ test_that("response_seed varies the null reproducibly, and NULL leaves the defau
   # And a seeded null is not just the default null relabelled.
   expect_false(identical(norms_for("seeded", response_seed = 99), norms_for("default")))
 })
-
-test_that("response_seed reaches the responses, and never the stimulus rebuild", {
-  # This is the whole semantic distinction, and the reason the seed is not
-  # simply forwarded to generateStimuli2IFC(): handing that function a different
-  # seed would rebuild a *different stimulus set*, so the null would describe
-  # stimuli the participants never saw.
+test_that("response_seed reaches the responses, and never the saved noise", {
+  # A response_seed must redraw the null on the same stimuli. Reaching the noise
+  # instead would describe stimuli the participants never saw, and the stimulus
+  # seed recorded in the file must be untouched either way.
   #
-  # It has to be tested on the call itself. Comparing p/stimuli_params in the
-  # .Rdata before and after is vacuous -- the rebuild runs with
-  # save_rdata = FALSE and never writes stimuli back, so the file is unchanged
-  # whichever seed the rebuild received. A mutant forwarding response_seed to
-  # generateStimuli2IFC() passed that version of this test.
+  # Asserted on the numbers rather than by watching an internal call: the noise
+  # comes from the saved parameters, so an oracle built from them says exactly
+  # which stream the responses came off.
   tmp <- withr::local_tempdir()
   rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1, seed = 1)
 
-  # Grab the real function before mocking, so the mock can delegate to it.
-  real_generate <- get("generateStimuli2IFC", envir = asNamespace("rcicr"))
-  seen_seed <- NULL
+  before <- new.env()
+  load(rdata_path, envir = before)
 
-  testthat::local_mocked_bindings(
-    generateStimuli2IFC = function(..., seed) {
-      seen_seed <<- seed
-      real_generate(..., seed = seed)
-    },
-    .package = "rcicr"
-  )
-
-  suppressWarnings(generateReferenceDistribution2IFC(
-    rdata_path, iter = 8, ncores = 1, response_seed = 99
+  seeded <- suppressWarnings(generateReferenceDistribution2IFC(
+    rdata_path, iter = 8, ncores = 1, response_seed = 99, save_rdata = FALSE
+  ))
+  default <- suppressWarnings(generateReferenceDistribution2IFC(
+    rdata_path, iter = 8, ncores = 1, save_rdata = FALSE
   ))
 
-  # The stimulus seed stored in the file, not the response seed we passed.
-  stored <- new.env()
-  load(rdata_path, envir = stored)
-  expect_equal(seen_seed, stored$seed)
-  expect_false(identical(seen_seed, 99))
+  noise <- vapply(seq_len(before$n_trials), function(i) {
+    as.vector(generateNoiseImage(before$stimuli_params$base[i, ], before$p))
+  }, numeric(before$img_size^2))
+  set.seed(99)
+  oracle <- vapply(seq_len(8), function(i) {
+    responses <- ((runif(before$n_trials) > 0.5) * 2) - 1
+    norm(noise %*% responses / ncol(noise), "f")
+  }, numeric(1))
+
+  # The same noise, against responses seeded at 99 and nowhere else.
+  expect_equal(seeded, oracle)
+  expect_false(isTRUE(all.equal(seeded, default)))
+
+  after <- new.env()
+  load(rdata_path, envir = after)
+  expect_identical(after$seed, before$seed)
 })
 
 test_that("save_rdata = FALSE returns the norms without touching the file", {
@@ -289,7 +291,8 @@ test_that('reference matrix reuse preserves legacy norms, RNG and saved fields e
       saved <- new.env(parent = emptyenv())
       load(path, envir = saved)
       expect_setequal(ls(saved, all.names = TRUE), c(
-        ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed'
+        ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed',
+        'reference_norms_source', 'reference_norms_fingerprint'
       ))
       for (name in ls(original, all.names = TRUE)) {
         expect_identical(saved[[name]], original[[name]], info = name)

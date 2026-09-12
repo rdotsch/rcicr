@@ -37,6 +37,13 @@ seed_reference_norms <- function(rdata_path, n = 50, seed = 1) {
   e <- new.env()
   load(rdata_path, envir = e)
   e$reference_norms <- withr::with_seed(seed, rnorm(n, mean = 10, sd = 2))
+  # Marked as current, which is what this helper is asserting: the caller wants a
+  # known reference distribution to score against. Without the marker
+  # computeInfoVal2IFC() would refresh it, since an unmarked cache cannot be shown
+  # to match the file's noise -- correct in the field, and the opposite of what a
+  # planted reference is for.
+  e$reference_norms_source <- "saved_noise"
+  e$reference_norms_fingerprint <- rcicr:::referenceSnapshot(e$reference_norms)
   save(list = ls(e), file = rdata_path, envir = e)
   invisible(rdata_path)
 }

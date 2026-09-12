@@ -82,33 +82,21 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   ref_img_size <- NA
   ref_n_trials <- NA
 
-  # Load parameter file (created when generating stimuli)
-  # load() assigns into this frame, so an .Rdata file written by an older
-  # generateReferenceDistribution2IFC() - which saved its own `rdata` argument
-  # into the file - would overwrite the path we were called with. This function
-  # still uses `rdata` further down (to regenerate and re-load), so it would
-  # then operate on whatever path that file happened to record.
-  #
-  # Keep every argument rather than the three that were known to collide: the
-  # hazard has bitten from the .Rdata side twice now (a `sigma` field added to
-  # the file captured generateCI()'s z-map argument; fixed in #146), so the
-  # guard has to hold for fields that do not exist yet. `target_ci` is the one
-  # that would hurt most here - it is read at the very end to compute the CI
-  # norm, so a file carrying that name would silently score somebody else's
-  # classification image and return a plausible number rather than an error.
+  # Old files may contain argument names, including a stale rdata path.
   .args <- captureArgs(environment())
   load(rdata)
   list2env(.args, envir = environment())
 
-  # Asking for a specific response seed is asking for a specific reference
-  # distribution, so it has to imply regeneration. Without this the argument
-  # would be silently ignored on every file that already has reference_norms -
-  # which is every file after the first call, since generating one writes it
-  # back. That is the same shape of bug as force_gen_ref_dist being ignored
-  # (see the comment further down) and the documented-but-unapplied `mask`
-  # argument of plotZmap(): accepted, documented, and doing nothing.
-  if (!is.null(response_seed)) {
-    force_gen_ref_dist <- TRUE
+  if (!is.null(response_seed)) force_gen_ref_dist <- TRUE
+  cached_reference <- if (exists('reference_norms', envir = environment(), inherits = FALSE)) {
+    list(
+      norms = reference_norms,
+      response_seed = get0('reference_norms_seed', envir = environment(), inherits = FALSE),
+      source = get0('reference_norms_source', envir = environment(), inherits = FALSE),
+      fingerprint = get0('reference_norms_fingerprint', envir = environment(), inherits = FALSE)
+    )
+  } else {
+    NULL
   }
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
@@ -186,54 +174,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
   if (!exists("ref_median", envir = environment(), inherits = FALSE)) {
 
-    # Regenerate when there is no cached distribution, or when the caller
-    # explicitly asked for one. force_gen_ref_dist previously only skipped the
-    # lookup-table branch above and never reached here, so it was silently
-    # ignored whenever reference_norms already existed in the .Rdata file.
-    if (force_gen_ref_dist || !exists("reference_norms", envir = environment(), inherits = FALSE)) {
-
-      # Reference norms not present in rdata file (or regeneration forced).
-      #
-      # A caller-supplied response_seed is a one-off check, not a redefinition
-      # of this stimulus set's null, so it is never cached: saving it would
-      # silently change what every later InfoVal computed from this file means,
-      # for anyone using it, with nothing in the call to say so.
-      cache_ref_dist <- is.null(response_seed)
-
-      reference_norms <- generateReferenceDistribution2IFC(
-        rdata, iter = iter, response_seed = response_seed, save_rdata = cache_ref_dist
-      )
-
-      if (cache_ref_dist) {
-
-        # Re-load rdata file, to pick up the reference_norms just written to it.
-        # This load carries the same hazard as the one above and needs the same
-        # restore: `target_ci` is read after this point (line ~230, for the CI
-        # norm), so without it a file containing that name would replace the
-        # caller's classification image between here and the computation of it.
-        load(rdata)
-        list2env(.args, envir = environment())
-
-        # NB: write() defaults to file = "data", so omitting stdout() here did
-        # not print this message - it silently created a file called "data" in
-        # the working directory. Every other write() in the package passes
-        # stdout(); this one was missed.
-        write("Note that now that this simulated reference distribution has been saved to the .Rdata file, the next time you call computeInfoVal2IFC(), it will not need to be computed again.", stdout())
-
-      } else {
-
-        write(paste0("Reference distribution simulated with response_seed = ", response_seed,
-                ". This is an independent draw of the null, not the reference distribution ",
-                "stored in the .Rdata file, and it has deliberately not been saved there."
-              ), stdout())
-
-      }
-
-    } else {
-
-      write("Using reference distribution found in rdata file.", stdout())
-
-    }
+    reference_norms <- resolveReferenceNorms(cached_reference, rdata, iter,
+                                             force_gen_ref_dist, response_seed)
 
     # Compute reference values
     ref_median <- median(reference_norms)

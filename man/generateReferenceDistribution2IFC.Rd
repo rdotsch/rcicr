@@ -18,10 +18,10 @@ generateReferenceDistribution2IFC(
 
 \item{iter}{Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).}
 
-\item{ncores}{Number of CPU cores to use when re-generating the stimuli (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
+\item{ncores}{Number of CPU cores to use when rebuilding the saved noise (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
 
 \item{response_seed}{Optional seed for the simulated random responses. The default
-(\code{NULL}) draws them from the state left by the stimulus re-generation, which is the
+(\code{NULL}) draws them from the state the stimulus generator left behind, which is the
 reproducible behaviour described under Reproducibility. Supply a number to obtain an
 independent draw of the null from the same stimuli.}
 
@@ -52,15 +52,22 @@ In order to compute the Informational Value metric. Saves its results in the sup
 \section{Reproducibility}{
 
 With the default \code{response_seed = NULL}, the reference distribution is determined by
-the stimulus \code{.Rdata} file alone. It does not depend on the ambient random number
-state of the calling session, and it does not depend on \code{ncores}. Two researchers
-who compute InfoVal from the same stimulus file therefore get the same number, and the
-same reference distribution, on different machines and in different sessions.
+the stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}. It does not
+depend on the ambient random number state, and it does not depend on \code{ncores}. Two
+researchers who compute InfoVal from the same stimulus file therefore get the same number,
+and the same reference distribution, on different machines and in different sessions --
+provided both sessions use the same RNG kind.
 
-Shared-parameter files re-generate the stimuli through \code{\link{generateStimuli2IFC}}.
-Independent bases use their saved noise basis and parameters directly. Both paths seed
-responses from the state following one shared parameter matrix's draws at the saved
-stimulus seed, preserving the historical default response stream.
+\code{set.seed()} keeps whatever kind the session already has rather than restoring one,
+and no stimulus file records which was in force, so a session that has changed
+\code{RNGkind()} changes the simulated response draws and therefore the null. The saved
+noise basis and stimulus parameters remain unchanged. To reproduce an earlier reference,
+use the RNG kind that built it; see \url{https://github.com/rdotsch/rcicr/issues/315}.
+
+The noise is reconstructed from the basis and parameters the stimulus file saved, so the
+base images themselves are never reopened and an archived or moved experiment can still be
+scored. Responses are seeded from the state following one parameter matrix's draws at the
+saved stimulus seed, preserving the historical default response stream.
 
 Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
 for instance to check how much Monte Carlo error a given \code{iter} leaves in your
@@ -70,9 +77,8 @@ noise basis the null is built on, are unaffected.
 
 \section{Independent base images}{
 
-When saved parameter matrices differ, supply \code{baseimage} explicitly. The selected
-base's noise is reconstructed from the saved basis and parameters, without reading the
-original images. Cached distributions are stored in \code{reference_norms_by_base},
+When saved parameter matrices differ, supply \code{baseimage} explicitly to say which
+base's noise to use. Cached distributions are stored in \code{reference_norms_by_base},
 keyed by base label, with \code{norms} and \code{response_seed} in each entry. Old unscoped
 \code{reference_norms} are neither reused nor overwritten for independent bases.
 Existing shared-parameter files continue using their unscoped cache and reconstruction.

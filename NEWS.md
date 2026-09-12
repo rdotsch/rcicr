@@ -14,6 +14,16 @@
 
   No stimuli need regenerating or responses recollecting. The [synthetic analysis in #307](https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-reference-impact.md) characterizes the reference mismatch through modeled shifts across 100 base-image pairs. It does not estimate affected-study rates or bound an individual study's change; recomputing its InfoVal gives that change.
 
+- **InfoVal references now use the saved noise basis and parameters.** Scoring no longer reopens base images or reconstructs the stimuli from their seed. Archived experiments with moved images and uniform bases made with `maximize_baseimage_contrast = FALSE` can therefore be scored. The obsolete `nscales`, `noise_type` and `sigma` fallback warnings are removed. (#301)
+
+  References can change for pre-1.1.0 files whose missing settings were previously replaced by defaults, and for pre-0.3.0 files whose parameters could not be reconstructed from the seed. References are otherwise reproduced bit-for-bit when the old reconstruction matched the saved noise and the same `RNGkind()` is used for the response draws. Changing the RNG kind changes those draws, not the saved noise basis. The CI itself is unaffected; no stimuli need regenerating or responses recollecting.
+
+  Existing default caches without matching provenance are refreshed once, for both shared and independent bases. Automatic refresh keeps the cached iteration count and preserves the caller's random state. Explicit regeneration still uses the requested count and advances the random stream. Read-only files use the refreshed norms in memory and identify the file and, for independent references, the base that could not be saved; they refresh again on the next call.
+
+  **If the norms change, a message says that the returned InfoVal supersedes earlier values.** This is a message under every warning setting, including `options(warn = 2)`; it is not collected by `warnings()` and can be hidden by `suppressMessages()`. Unchanged norms produce no superseding notice. Provenance includes a full copy of the norms, compared exactly, so an older writer cannot leave a trusted marker on replaced values. Earlier development fingerprints refresh once; no new package dependency is needed.
+
+  Deliberately seeded caches are retained. **Explicitly regenerate any seeded reference built from an incorrect reconstruction**, including affected pre-1.1.0 files, before recomputing InfoVal.
+
 - **`generateStimuli2IFC()` now ignores an image's alpha channel when reading a base face.**
   Greyscale and RGB images are unaffected. At the default contrast setting, an opaque PNG can
   differ only in rounding in the stored base-face doubles; its participant-facing 8-bit stimuli
