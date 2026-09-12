@@ -32,9 +32,33 @@
       <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
-<p>@AGENTS.md</p>
 
-  </main></div>
+<p>@AGENTS.md</p>
+<div class="section level2">
+<h2 id="getting-r-in-a-claude-code-container">Getting R in a Claude Code container<a class="anchor" aria-label="anchor" href="#getting-r-in-a-claude-code-container"></a></h2>
+<p>A fresh container has <strong>no R at all</strong>, and the egress proxy refuses every CRAN mirror and every GitHub tarball host — <code>403</code> on <code>CONNECT</code> from <code>cloud.r-project.org</code>, <code>cran.r-project.org</code>, <code>cran.rstudio.com</code>, <code>packagemanager.posit.co</code>, <code>github.com</code> and <code>codeload.github.com</code>. So <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> and <code>remotes::install_github()</code> are both dead ends. That is an organization egress policy rather than a fault: report it, do not route around it, and never disable TLS verification or unset <code>HTTPS_PROXY</code>.</p>
+<p>Ubuntu’s <code>universe</code> pocket <em>is</em> reachable, and carries a Debian build of every dependency this package and its pinned v1.0.1 gate reference need, bar one:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">bash</span> tools/setup-container-r.sh      <span class="co"># toolchain + rcicr; re-runnable</span></span></code></pre></div>
+<p>After that the ordinary workflow applies, including the release gate. Measured here: <code><a href="https://testthat.r-lib.org/reference/test_package.html" class="external-link">testthat::test_local()</a></code> gives 1119 passing and 1 skip.</p>
+<p>Three things to know before trusting or editing that script:</p>
+<ul><li>
+<strong>The spatstat packages keep their dots</strong> — <code>r-cran-spatstat.explore</code>, not <code>r-cran-spatstat-explore</code>. Applying the usual dash convention reports MISSING and invites the wrong conclusion that CRAN is needed after all.</li>
+<li>
+<strong><code>yesno</code> is the one package with no Debian build</strong>, so the script installs a stub. <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> reaches the real thing from a single <code>if (interactive())</code> branch, behind a <code>ref_lookup</code> whose rows have been commented out since 2018, so the prompt cannot be reached in a batch run. The stub raises an error rather than answering, so nothing can quietly come to depend on a stubbed reply.</li>
+<li>
+<strong>The v1.0.1 reference’s own imports are installed too</strong> — <code>raster</code>, <code>sp</code>, <code>ggplot2</code>, <code>plyr</code> and the rest this package has since dropped — so the gate never needs <code>--install-deps</code> and never reaches for CRAN. <code>raster</code> is also what pulls in the GDAL/GEOS/PROJ system libraries it links against.</li>
+</ul><p>Two things differ from CI and will mislead you if you forget them. Sessions run as <strong>root</strong>, so a file made read-only is still writable and the one test that depends on that skips instead of running. And the full release gate wants ~20 minutes per reference plus ~1.5 GB of RAM at 512px, so prefer running it in CI: a <code>workflow_dispatch</code> of <code>reproducibility.yaml</code> runs the <strong>full</strong> battery against both references, because the <code>--quick</code> choice keys off a <code>pull_request</code> event.</p>
+<div class="section level3">
+<h3 id="isolating-one-change-from-what-its-base-branch-already-carries">Isolating one change from what its base branch already carries<a class="anchor" aria-label="anchor" href="#isolating-one-change-from-what-its-base-branch-already-carries"></a></h3>
+<p><code>--ref</code> takes any git rev, not just a tag, and <code>EXPECTED</code> entries are filtered to those naming the resolved reference. So a branch or SHA matches <strong>no</strong> entry and every difference is reported:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">Rscript</span> tools/compare-release-output.R <span class="at">--ref</span><span class="op">=</span><span class="st">"</span><span class="va">$(</span><span class="fu">git</span> rev-parse origin/main<span class="va">)</span><span class="st">"</span></span></code></pre></div>
+<p>That answers what the release runs cannot. An entry without a <code>check</code> predicate excuses <em>any</em> deviation in its output, so where <code>main</code> already deviates from a tag for a documented reason, a new regression in the same output would be absorbed by the entry rather than reported. Against <code>main</code> itself nothing is excused, which turns “the gate is green” into “this change moves no number”. Expect <code>0 expected deviations</code>; anything else is the change’s own doing.</p>
+</div>
+</div>
+
+
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
