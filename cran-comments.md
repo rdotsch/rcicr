@@ -39,11 +39,13 @@ iteration.
 
 Checked release-branch commit `375bbcedd90ac3a5b6af1cd6e62610056056aa08` on 2026-09-12.
 
+**Superseded: package sources changed after that commit** — `R/reference-base.R` and `R/computeInfoVal2IFC.R` — so every result recorded below, the win-builder submissions included, describes a tarball this branch no longer builds. Rebuild the tarball from the new head and redo all of them before submission.
+
 * GitHub Actions, R 4.6.1: Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 (x86_64, ucrt).
 * GitHub Actions, R-devel (2026-09-11 r90528): Ubuntu 24.04.5 LTS (x86_64).
 * R-hub, R-devel (2026-09-11 r90528): Ubuntu 24.04.5 LTS (x86_64) and Windows Server 2022 (x86_64, ucrt).
 * R-hub, R-devel (2026-09-12 r90532): macOS Sequoia 15.7.9 (x86_64).
-* **Pending: win-builder R-release and R-devel. Record the actual R versions and results before submission.**
+* **Pending: win-builder R-release and R-devel.** The 2026-09-13 submissions of `rcicr_1.4.0.tar.gz` (SHA-256 `168aea375d3d67a8d26dd37d159dc66f99b4c4dc9ae0dd8152c383e0089e8b02`) both returned `Status: OK` — R-devel (2026-09-12 r90533 ucrt) and R 4.6.1 (2026-06-24 ucrt) — but for the superseded sources above. Resubmit the rebuilt tarball and record its R versions and results.
 
 ## R CMD check results
 
