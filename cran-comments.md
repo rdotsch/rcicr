@@ -20,6 +20,12 @@ by reopening the base images. Archived experiments whose base images have moved 
 be scored at all. Where a reference changes, the returned value is reported as superseding the
 earlier one rather than changing silently.
 
+**Read-only archived experiment files can now be scored without modification.** When an InfoVal
+reference is missing or must be refreshed, `computeInfoVal2IFC()` computes it in memory if the
+stimulus archive is not writable and leaves the file unchanged. Previously these calls could
+fail while trying to save an otherwise successfully computed reference. Numerical results are
+unchanged relative to the same calculation on a writable copy.
+
 **Malformed trial input is rejected instead of silently changing trial assignments.**
 `generateCI()` requires one participant identifier per trial when grouping, and empty, missing,
 nonfinite, fractional or out-of-range stimulus identifiers now error. Valid numeric input is
@@ -37,23 +43,19 @@ iteration.
 
 ## Test environments
 
-Checked release-branch commit `375bbcedd90ac3a5b6af1cd6e62610056056aa08` on 2026-09-12.
+Checked release-branch package sources at commit `8ea15202b1e6cafa814a76da18468f0140508d52` on 2026-09-13.
 
-**Superseded: the branch now carries the read-only reference fix (#324).** Every result below, the win-builder submissions included, describes a tarball built before it. Rebuild from the current head and redo all of them before submission.
-
-* GitHub Actions, R 4.6.1: Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 (x86_64, ucrt).
-* GitHub Actions, R-devel (2026-09-11 r90528): Ubuntu 24.04.5 LTS (x86_64).
-* R-hub, R-devel (2026-09-11 r90528): Ubuntu 24.04.5 LTS (x86_64) and Windows Server 2022 (x86_64, ucrt).
-* R-hub, R-devel (2026-09-12 r90532): macOS Sequoia 15.7.9 (x86_64).
-* **Pending: win-builder R-release and R-devel.** The 2026-09-13 submissions of `rcicr_1.4.0.tar.gz` (SHA-256 `168aea375d3d67a8d26dd37d159dc66f99b4c4dc9ae0dd8152c383e0089e8b02`) both returned `Status: OK` — R-devel (2026-09-12 r90533 ucrt) and R 4.6.1 (2026-06-24 ucrt) — for the superseded sources above. Resubmit the rebuilt tarball and record its R versions and results.
+* GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 (x86_64, ucrt).
+* GitHub Actions, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64).
+* **Pending: R-hub on Linux, macOS and Windows for these package sources.**
+* **Pending: win-builder R-release and R-devel for a tarball built from these package sources.**
+* **Pending: a complete check including the PDF and HTML manual checks.**
 
 ## R CMD check results
 
-All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34700615293](https://github.com/rdotsch/rcicr/actions/runs/34700615293).
+All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34749247939](https://github.com/rdotsch/rcicr/actions/runs/34749247939).
 
-All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34718965345](https://github.com/rdotsch/rcicr/actions/runs/34718965345).
-
-**Pending: both win-builder logs, their incoming-feasibility results, and a complete manual check. Replace this paragraph with the actual results before submission.** Do not carry forward the reinstatement NOTEs from 1.3.0.
+**Pending: the current-candidate R-hub artifact logs, both win-builder logs and their incoming-feasibility results, and a complete manual check. Replace this paragraph with the actual results before submission.** R-hub uses `--no-manual` and omits incoming feasibility, so it establishes neither. Do not carry forward the reinstatement NOTEs from 1.3.0.
 
 ## Downstream dependencies
 
