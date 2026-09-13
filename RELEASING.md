@@ -203,13 +203,14 @@ Tagging on acceptance would point
 release for as long as CRAN takes.
 
 So a tag naming a tree CRAN never took is expected here rather than a
-defect — already true of `v1.2.0` and `v1.2.2` — and answering a review
-means shipping X.Y.Z+1, an ordinary release whose `cran-comments.md`
-happens to be a point-by-point reply. **Which versions CRAN accepted is
-recorded rather than inferred from the tags**: in
+defect — already true of `v1.2.0` and `v1.2.2`. **Which versions CRAN
+accepted is recorded rather than inferred from the tags**: in
 `notes/cran-review-<version>.md` and in the tag’s GitHub release notes.
 
-The alternative is to stop making GitHub releases once the package is
-back on CRAN and adopt the `usethis` order wholesale. That trade is only
-worth revisiting if CRAN becomes the channel people actually install
-from.
+**Revisited once CRAN was back, and kept.** Adopting the `usethis` order
+would delay GitHub releases to acceptance and drop them for a declined
+version; its one gain, never tagging a declined tree, does not survive
+CRAN’s rule that resubmissions carry a new version number. A declined
+version is never reused, so answering a review means shipping X.Y.Z+1,
+and the earlier tag marks a tree that was built and sent rather than
+clutter.
