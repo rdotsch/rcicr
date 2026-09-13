@@ -67,13 +67,10 @@ curl -T rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-devel/
 curl -T rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-release/
 ```
 
-Then trigger R-hub from the Actions tab against the release branch. Two NOTEs are expected
-locally and explained in `cran-comments.md`: CRAN incoming feasibility (new submission of an
-archived package) and future file timestamps (no network clock in a sandbox).
+Then trigger R-hub from the Actions tab against the release branch. Record each check's actual errors, warnings and NOTEs, with its R version and platform. Do not carry archived-package reinstatement NOTEs into a routine update. Report sandbox-only NOTEs as local results.
 
 **Why results can be written into the commit they describe:** `cran-comments.md` is
-`.Rbuildignore`d and verifiably absent from the tarball, so editing it produces the same tarball
-byte for byte. It is not a package artifact at all — it is the text pasted into the submission
+`.Rbuildignore`d and verifiably absent from the tarball, so editing it changes no package source in the tarball. Byte identity is not assumed: fresh builds differ in packaging timestamps and metadata. It is not a package artifact at all — it is the text pasted into the submission
 form. At 1.2.1 these checks ran *after* the tag and the `.9000` reopen, so the results landed on
 a development tree and the tag recorded no evidence that the tree it names had passed anything.
 
@@ -90,9 +87,7 @@ front of a third party.
   `workflow_dispatch`-only it must reach the **default branch** before it can be triggered at
   all. **Download the artifacts; do not use `gh run view --log`**, which truncates: at 1.2.1 the
   38-minute macOS job returned 1548 lines ending four minutes in, with no `Status:` line.
-  `gh run download <run-id> -D <dir>`, then read `*/rcicr.Rcheck/00check.log`. Expect
-  `Status: OK` where win-builder reports 1 NOTE — R-hub does not run the incoming feasibility
-  check, so that is agreement, not a discrepancy.
+  `gh run download <run-id> -D <dir>`, then read `*/rcicr.Rcheck/00check.log`. R-hub skips incoming feasibility and uses `--no-manual`. A green run establishes neither; obtain a complete manual check before submission.
 - **`RHUB_TOKEN` is deliberately unset and nothing is missing.** The stock workflow passes it to
   four actions, which makes it look required. It is an optional slot for your own PAT to reach
   *private* repositories, not a credential R-hub issues, and no step in `r-hub/actions@v1`
@@ -136,8 +131,7 @@ the "Optional comment" field — `.Rbuildignore`d, so it reaches CRAN only this 
 tag's copy** (`git show vX.Y.Z:cran-comments.md`): submission can trail tagging by weeks while
 `main` moves, and `main`'s copy would describe check results from a tree that is not the tarball.
 
-**Ron submits personally.** CRAN emails the maintainer address to confirm, and for a package
-archived over an undeliverable address, that confirmation *is* the point of the resubmission.
+**Ron submits personally.** CRAN emails the maintainer address to confirm; complete that confirmation after uploading.
 
 ### Answering a review
 
