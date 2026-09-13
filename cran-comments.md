@@ -2,15 +2,11 @@
 
 ## Submission type
 
-Update to rcicr 1.3.0, which you published on 2026-09-02. No new submission, no archival
-involved. The maintainer address `rdotsch@gmail.com` is unchanged and is the address this is
-sent from.
+Submission of rcicr 1.4.0 as an update to 1.3.0, published on 2026-09-02. The maintainer address `rdotsch@gmail.com` is unchanged.
 
 ## What changed
 
-`NEWS.md` carries the full list, ordered largest-impact first. Five entries change numbers a
-researcher may already have, and each says who is affected and what to do; they are grouped
-under "Reproducibility impact" so that nobody has to infer it from a diff.
+`NEWS.md` carries the full list. Its "Reproducibility impact" section describes changes to existing results, who is affected and what to do.
 
 **The informational-value statistic is scored against the right reference distribution.** With
 several base images and per-base noise parameters, base images after the first were scored
@@ -36,29 +32,30 @@ Every value that changes was `NaN` before; no finite number moves.
 first base image's PNGs were written before, though the call succeeded.
 
 Also: an image's alpha channel is ignored when reading a base face; parallel workers start
-under any `OutDec` and `scipen` setting, where a comma decimal separator previously stopped
-them starting at all; and reference simulation no longer re-copies its stimulus matrix per
+under any `OutDec` and `scipen` setting, where a comma decimal separator combined with scientific notation previously prevented startup; and reference simulation no longer re-copies its stimulus matrix per
 iteration.
 
 ## Test environments
 
-*To be filled from the win-builder, R-hub and GitHub Actions runs against the release branch —
-see `RELEASING.md` §2. Nothing below this heading has been run for 1.4.0 yet; the figures from
-the 1.3.0 submission are deliberately not carried over.*
+Checked release-branch commit `375bbcedd90ac3a5b6af1cd6e62610056056aa08` on 2026-09-12.
+
+* GitHub Actions, R 4.6.1: Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 (x86_64, ucrt).
+* GitHub Actions, R-devel (2026-09-11 r90528): Ubuntu 24.04.5 LTS (x86_64).
+* R-hub, R-devel (2026-09-11 r90528): Ubuntu 24.04.5 LTS (x86_64) and Windows Server 2022 (x86_64, ucrt).
+* R-hub, R-devel (2026-09-12 r90532): macOS Sequoia 15.7.9 (x86_64).
+* **Pending: win-builder R-release and R-devel. Record the actual R versions and results before submission.**
 
 ## R CMD check results
 
-*To be filled from the same runs.*
+All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34700615293](https://github.com/rdotsch/rcicr/actions/runs/34700615293).
 
-The incoming-feasibility NOTE from the 1.3.0 submission — `New submission` and
-`Package was archived on CRAN` — should not recur for an update, but that is an expectation
-rather than a result, and the actual output goes here.
+All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34718965345](https://github.com/rdotsch/rcicr/actions/runs/34718965345).
+
+**Pending: both win-builder logs, their incoming-feasibility results, and a complete manual check. Replace this paragraph with the actual results before submission.** Do not carry forward the reinstatement NOTEs from 1.3.0.
 
 ## Downstream dependencies
 
-*To be checked with `revdepcheck` or the CRAN reverse-dependency listing once 1.3.0 has been on
-CRAN long enough for any to exist. The 1.3.0 submission reported none, on the grounds that the
-package had been off CRAN since 2021; that reasoning no longer applies.*
+No reverse dependencies are listed on the [CRAN package page, ETH Zurich mirror](https://stat.ethz.ch/CRAN/web/packages/rcicr/index.html), checked on 2026-09-13. This is a listing check, not a revdepcheck run.
 
 ## Notes
 
@@ -68,5 +65,5 @@ package had been off CRAN since 2021; that reasoning no longer applies.*
   validate an installation: a golden-master regression baseline and the cross-platform z-map
   literals, a pipeline smoke test, a signal-recovery test, four serial-versus-parallel
   agreement checks, a progress-reporting check, and the slower path-handling and
-  trial-validation cases. They run on every push in CI. Where a file skips only part of itself,
+  trial-validation cases. They run in CI. Where a file skips only part of itself,
   the single-core and fast cases run everywhere.
