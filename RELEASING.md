@@ -171,8 +171,8 @@ So a tag naming a tree CRAN never took is expected here rather than a defect —
 `v1.2.0` and `v1.2.2`. **Which versions CRAN accepted is recorded rather than inferred from the
 tags**: in `notes/cran-review-<version>.md` and in the tag's GitHub release notes.
 
-**Revisited once CRAN was back, and kept.** Adopting the `usethis` order would mean giving up
-GitHub releases, and its one gain — never tagging a tree CRAN declined — does not survive
-CRAN's rule that a resubmission carries a new version number. A declined version is never
-reused, so answering a review means shipping X.Y.Z+1, and the earlier tag marks a tree that was
-built and sent rather than clutter.
+**Revisited once CRAN was back, and kept.** Adopting the `usethis` order would delay GitHub
+releases to acceptance and drop them for a declined version; its one gain, never tagging a
+declined tree, does not survive CRAN's rule that resubmissions carry a new version number. A
+declined version is never reused, so answering a review means shipping X.Y.Z+1, and the earlier
+tag marks a tree that was built and sent rather than clutter.
