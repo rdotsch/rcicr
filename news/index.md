@@ -63,9 +63,12 @@
   once, for both shared and independent bases. Automatic refresh keeps
   the cached iteration count and preserves the caller’s random state.
   Explicit regeneration still uses the requested count and advances the
-  random stream. Read-only files use the refreshed norms in memory and
-  identify the file and, for independent references, the base that could
-  not be saved; they refresh again on the next call.
+  random stream. Read-only files use the norms in memory and identify
+  the file and, for independent references, the base that could not be
+  saved; they build them again on the next call. That applies to every
+  reference
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  builds, not only a refresh — see Bug fixes.
 
   **If the norms change, a message says that the returned InfoVal
   supersedes earlier values.** This is a message under every warning
@@ -171,6 +174,24 @@
   immediately afterwards. They govern rendering and never arithmetic, so
   no numeric output changes and no existing result is affected.
   ([\#316](https://github.com/rdotsch/rcicr/issues/316))
+
+- **Scoring a read-only archive no longer fails when it has no cached
+  reference to reuse.**
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  simulates the reference before storing it, then asked to store it even
+  where the file could not be written, so a call that had already
+  computed its answer ended in `cannot open the connection`. Three cases
+  reached it: a stimulus file with no cached reference,
+  `force_gen_ref_dist = TRUE`, and — for saved base images with
+  different noise parameters — any archive predating per-base caches,
+  whose unscoped `reference_norms` older versions of rcicr scored from
+  without writing anything. Only an unsolicited refresh of a stale cache
+  had the fallback. All of them now use the computed norms in memory,
+  say which file and base could not be saved, and leave the archive
+  untouched. The InfoVal is the value a writable run returns; nothing
+  about how references are simulated or cached changed. A direct
+  `generateReferenceDistribution2IFC(save_rdata = TRUE)` still reports
+  an error, because there the save is what was asked for.
 
 ### Performance
 
