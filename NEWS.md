@@ -18,7 +18,7 @@
 
   References can change for pre-1.1.0 files whose missing settings were previously replaced by defaults, and for pre-0.3.0 files whose parameters could not be reconstructed from the seed. References are otherwise reproduced bit-for-bit when the old reconstruction matched the saved noise and the same `RNGkind()` is used for the response draws. Changing the RNG kind changes those draws, not the saved noise basis. The CI itself is unaffected; no stimuli need regenerating or responses recollecting.
 
-  Existing default caches without matching provenance are refreshed once, for both shared and independent bases. Automatic refresh keeps the cached iteration count and preserves the caller's random state. Explicit regeneration still uses the requested count and advances the random stream. Read-only files use the refreshed norms in memory and identify the file and, for independent references, the base that could not be saved; they refresh again on the next call.
+  Existing default caches without matching provenance are refreshed once, for both shared and independent bases. Automatic refresh keeps the cached iteration count and preserves the caller's random state. Explicit regeneration still uses the requested count and advances the random stream. Read-only files use the norms in memory and identify the file and, for independent references, the base that could not be saved; they build them again on the next call. That applies to every reference `computeInfoVal2IFC()` builds, not only a refresh — see Bug fixes.
 
   **If the norms change, a message says that the returned InfoVal supersedes earlier values.** This is a message under every warning setting, including `options(warn = 2)`; it is not collected by `warnings()` and can be hidden by `suppressMessages()`. Unchanged norms produce no superseding notice. Provenance includes a full copy of the norms, compared exactly, so an older writer cannot leave a trusted marker on replaced values. Earlier development fingerprints refresh once; no new package dependency is needed.
 
@@ -72,6 +72,19 @@
   options wrote `11000` as `1,1e+04` for the child to read as `NA`. Both are now neutralised
   across cluster construction and restored immediately afterwards. They govern rendering and
   never arithmetic, so no numeric output changes and no existing result is affected. (#316)
+
+- **Scoring a read-only archive no longer fails when it has no cached reference to reuse.**
+  `computeInfoVal2IFC()` simulates the reference before storing it, then asked to store it
+  even where the file could not be written, so a call that had already computed its answer
+  ended in `cannot open the connection`. Three cases reached it: a stimulus file with no
+  cached reference, `force_gen_ref_dist = TRUE`, and — for saved base images with different
+  noise parameters — any archive predating per-base caches, whose unscoped `reference_norms`
+  older versions of rcicr scored from without writing anything. Only an unsolicited refresh
+  of a stale cache had the fallback. All of them now use the computed norms in memory, say
+  which file and base could not be saved, and leave the archive untouched. The InfoVal is the
+  value a writable run returns; nothing about how references are simulated or cached changed.
+  A direct `generateReferenceDistribution2IFC(save_rdata = TRUE)` still reports an error,
+  because there the save is what was asked for.
 
 ## Performance
 
