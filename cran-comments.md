@@ -49,8 +49,8 @@ Checked release-branch package sources at commit `be704a4b2ebdb5ec85e6d479572867
 * GitHub Actions, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64).
 * R-hub, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64) and Windows Server 2022 (x86_64, ucrt).
 * R-hub, R-devel (2026-09-12 r90532): macOS Sequoia 15.7.9 (x86_64).
-* **Pending: win-builder R-release and R-devel for a tarball built from these package sources.**
-* **Pending: a complete check including the PDF and HTML manual checks.**
+* win-builder, R-devel (2026-09-12 r90533): Windows Server 2022 x64 (build 20348, ucrt).
+* win-builder, R 4.6.1 (2026-06-24): Windows Server 2022 x64 (build 20348, ucrt).
 
 ## R CMD check results
 
@@ -60,7 +60,7 @@ All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 wa
 
 The repository's full reproducibility gate passes against both v1.0.1, the published baseline, and v1.3.0, the previous release. [Run 34750613924](https://github.com/rdotsch/rcicr/actions/runs/34750613924).
 
-**Pending: both win-builder logs and their incoming-feasibility results, and a complete manual check. Replace this paragraph with the actual results before submission.** Do not carry forward the reinstatement NOTEs from 1.3.0.
+Both win-builder checks report `Status: OK`: 0 errors, 0 warnings, 0 notes. Their CRAN incoming-feasibility, PDF-manual and HTML-manual checks all pass. [R-devel result](https://win-builder.r-project.org/vpjy23cb7Hc8/) and [R-release result](https://win-builder.r-project.org/geM7EKfBxBwN/).
 
 ## Downstream dependencies
 
