@@ -10,10 +10,10 @@
 # Two baselines, because arguments have been appended across several releases
 # and they catch different things:
 #
-#   1.3.0  the latest release, and the one doing the work. Its argument list
+#   1.4.0  the latest release, and the one doing the work. Its argument list
 #          contains v1.0.1's as a prefix, and 1.2.3's too -- measured, for every
 #          function both fixtures name -- so it pins everything the older
-#          baseline does *and* the arguments added in 1.1.0-1.3.0. Checking only
+#          baseline does *and* the arguments added in 1.1.0-1.4.0. Checking only
 #          v1.0.1 would let a new formal be inserted after its arguments but
 #          before the later ones, passing while breaking every script written
 #          against 1.1.0 or newer.
@@ -38,7 +38,7 @@
 # reordered signature reaches a user.
 
 test_that("every exported function still starts with its released arguments", {
-  baselines <- c("1.0.1", "1.3.0")
+  baselines <- c("1.0.1", "1.4.0")
   exports <- sort(getNamespaceExports("rcicr"))
   compared <- 0
 
