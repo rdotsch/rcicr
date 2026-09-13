@@ -622,6 +622,100 @@ test_that("read-only permission bits reach the same fallback", {
   expect_true(any(grepl("is not writable", said, fixed = TRUE)))
 })
 
+# A reference that was never cached is in the same position as one being
+# refreshed: it is fully simulated before the save is attempted, so an
+# unwritable archive must not cost the caller the number it already has.
+# Independent bases reach this through an empty reference_norms_by_base, which
+# an archive predating per-base caches always has -- and which older rcicr
+# scored from its unscoped cache without writing anything.
+test_that("a reference that was never cached is scoreable on an unwritable archive", {
+  cases <- list(
+    list(
+      name = "independent base, only a legacy unscoped cache",
+      baseimage = "second",
+      args = list(),
+      make = function(tmp) {
+        rdata <- make_independent_fixture(tmp)
+        mutate_rdata(rdata, reference_norms = rep(0.5, 20),
+                     .remove = "reference_norms_by_base")
+        list(rdata = rdata, responses = rep(c(1, -1), 6), stimuli = 1:12)
+      }
+    ),
+    list(
+      name = "shared base, no cache at all",
+      baseimage = NULL,
+      args = list(),
+      make = function(tmp) {
+        rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+        mutate_rdata(rdata, .remove = c("reference_norms", "reference_norms_seed",
+                                        "reference_norms_source", "reference_norms_fingerprint"))
+        list(rdata = rdata, responses = c(1, -1, 1, -1), stimuli = 1:4)
+      }
+    ),
+    list(
+      name = "shared base, regeneration forced over a sound cache",
+      baseimage = NULL,
+      args = list(force_gen_ref_dist = TRUE),
+      make = function(tmp) {
+        rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+        list(rdata = rdata, responses = c(1, -1, 1, -1), stimuli = 1:4)
+      }
+    )
+  )
+
+  for (case in cases) {
+    tmp <- withr::local_tempdir()
+    fixture <- case$make(tmp)
+    rdata <- fixture$rdata
+    label <- if (is.null(case$baseimage)) "base" else case$baseimage
+    ci <- generateCI(fixture$stimuli, fixture$responses, label, rdata,
+                     save_as_png = FALSE, n_cores = 1)
+    score <- function(path) {
+      do.call(computeInfoVal2IFC, c(list(ci, path, iter = 20,
+                                         baseimage = case$baseimage), case$args))
+    }
+
+    # The same archive scored where writing is allowed: the fallback owes the
+    # caller this number, not merely a finite one.
+    writable <- file.path(withr::local_tempdir(), basename(rdata))
+    file.copy(rdata, writable)
+    suppressWarnings(utils::capture.output(expected <- score(writable)))
+
+    before <- unname(tools::md5sum(rdata))
+    got <- local({
+      deny_writes(rdata)
+      infoval <- NULL
+      said <- suppressWarnings(utils::capture.output(infoval <- score(rdata)))
+      list(infoval = infoval, said = said)
+    })
+
+    expect_true(is.finite(got$infoval), info = case$name)
+    expect_equal(got$infoval, expected, info = case$name)
+    expect_identical(unname(tools::md5sum(rdata)), before, info = case$name)
+    expect_true(any(grepl("is not writable", got$said, fixed = TRUE)), info = case$name)
+  }
+})
+
+# Writability is only consulted when a save was wanted. A seeded draw is never
+# stored, so a read-only archive must not relabel it as one that could not be.
+test_that("a seeded draw on an unwritable archive still reports as unsaved by design", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
+  before <- unname(tools::md5sum(rdata))
+
+  said <- local({
+    deny_writes(rdata)
+    suppressWarnings(utils::capture.output(
+      computeInfoVal2IFC(ci, rdata, iter = 20, response_seed = 3)
+    ))
+  })
+
+  expect_true(any(grepl("deliberately not been saved", said, fixed = TRUE)))
+  expect_false(any(grepl("is not writable", said, fixed = TRUE)))
+  expect_identical(unname(tools::md5sum(rdata)), before)
+})
+
 test_that("the cache fingerprint does not depend on formatting options", {
   # format() honours OutDec and scipen, so a text fingerprint written under one
   # setting and read under another would reject a cache that is its own.
