@@ -57,6 +57,12 @@ The simulation to compute the reference distribution takes a long time, and is o
 pre-computed values for the reference distribution matching the stimulus set in the .Rdata file have
 not been supplied by the rcicr package.
 
+A reference the \code{rdata} file does not already carry is simulated and then stored there for
+reuse. Where that file cannot be written, the simulated reference is used for this call, a note
+names the file -- and, for independent bases, the base -- that could not be saved, and the next
+call simulates it again. An archive on read-only media is therefore still scoreable, at the cost
+of re-simulating each time.
+
 For more information see Brinkman, Goffin, Aarts, van Haren, & Dotsch (in prep).
 }
 \examples{
