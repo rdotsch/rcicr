@@ -43,7 +43,7 @@ iteration.
 
 ## Test environments
 
-Checked release-branch package sources at commit `8ea15202b1e6cafa814a76da18468f0140508d52` on 2026-09-13. The Linux R-hub artifact contains `rcicr_1.4.0.tar.gz` with SHA-256 `3c33f106e351a9938a467965f683cdbf66e148254cb43acd984f2d1b8a816d50`.
+Checked release-branch package sources at commit `be704a4b2ebdb5ec85e6d4795728673c9f4665e4` on 2026-09-13. The Linux R-hub artifact contains `rcicr_1.4.0.tar.gz` with SHA-256 `0ab791c88293430044aa429afd840dcdd0d727bdce41387c6efc260bce65a143`.
 
 * GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 (x86_64, ucrt).
 * GitHub Actions, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64).
@@ -54,9 +54,11 @@ Checked release-branch package sources at commit `8ea15202b1e6cafa814a76da18468f
 
 ## R CMD check results
 
-All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34749524282](https://github.com/rdotsch/rcicr/actions/runs/34749524282).
+All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34750613911](https://github.com/rdotsch/rcicr/actions/runs/34750613911).
 
-All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34749913500](https://github.com/rdotsch/rcicr/actions/runs/34749913500).
+All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34750744174](https://github.com/rdotsch/rcicr/actions/runs/34750744174).
+
+The repository's full reproducibility gate passes against both v1.0.1, the published baseline, and v1.3.0, the previous release. [Run 34750613924](https://github.com/rdotsch/rcicr/actions/runs/34750613924).
 
 **Pending: both win-builder logs and their incoming-feasibility results, and a complete manual check. Replace this paragraph with the actual results before submission.** Do not carry forward the reinstatement NOTEs from 1.3.0.
 
