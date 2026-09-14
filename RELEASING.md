@@ -141,10 +141,9 @@ a summary that had kept only one, 1.2.2 asked the reviewer which line she meant 
 for the file she had named sat in the same commit under a different point. Two further drafts
 repeated it. Sweep everything the point could apply to, then report what was found.
 
-**And do not explain a note the reviewer does not have.** Before 1.4.0,
-`cran-comments.md` answered a `medium.com` 403 seen only on a local check, not on an external check
-or CRAN's pretest, so that explanation was removed (issue #192). The 1.4.0 incoming pretest later
-reported the URL as a permanent redirect, and the obsolete link was removed from `README.md`.
+**Do not explain a note the reviewer does not have.** A local-only `medium.com` 403 was
+removed from `cran-comments.md` (issue #192). CRAN's 1.4.0 pretest later reported a permanent
+redirect, so the obsolete `README.md` link was removed.
 
 ## 5. Reopen development
 
