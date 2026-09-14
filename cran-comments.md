@@ -49,9 +49,9 @@ iteration.
 
 Checked release-branch package sources at commit `8d283f398a955672fb3ae534f1c492597ae5e8b4` on 2026-09-14. The Linux R-hub artifact contains `rcicr_1.4.1.tar.gz` with SHA-256 `cc29ac15bec4cee269041927d1dd6db729a782450b7d2ba3f907fea9928b3dde`.
 
-* GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 x64 build 26100 (x86_64, ucrt).
+* GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2025 (build 26100) (x86_64, ucrt).
 * GitHub Actions, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64).
-* R-hub, R-devel (2026-09-13 r90534): Ubuntu 24.04.5 LTS (x86_64), Windows Server 2022 x64 build 26100 (x86_64, ucrt), and macOS Sequoia 15.7.9 (x86_64).
+* R-hub, R-devel (2026-09-13 r90534): Ubuntu 24.04.5 LTS (x86_64), Windows Server 2025 (build 26100) (x86_64, ucrt), and macOS Sequoia 15.7.9 (x86_64).
 * win-builder, R-release and R-devel: submitted on 2026-09-14; results pending.
 
 ## R CMD check results
