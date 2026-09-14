@@ -1,5 +1,9 @@
 # rcicr (development version)
 
+## Documentation
+
+- Removed the obsolete Medium tutorial link; the maintained package vignette is the current walkthrough.
+
 # rcicr 1.4.0 (2026-09-13)
 
 ## Reproducibility impact
