@@ -41,3 +41,23 @@ Check: *, Result: OK
 Flavor: r-devel-linux-x86_64-debian-gcc
 Check: CRAN incoming feasibility, Result: INFO
   Maintainer: 'Ron Dotsch <rdotsch@gmail.com>'
+
+
+---
+
+## The Debian URL NOTE
+
+The linked Debian log reported the following diagnostic, which CRAN's manual review
+subsequently reproduced:
+
+```
+Found the following (possibly) invalid URLs:
+  URL:
+    https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/
+  From: README.md
+  Status: 301
+  Message: Moved Permanently
+```
+
+The redirect target was the same URL without its trailing slash. The obsolete link is
+removed in the 1.4.1 resubmission.
