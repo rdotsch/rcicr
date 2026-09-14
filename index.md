@@ -131,11 +131,7 @@ method, and telling signal from noise. Its code runs when the package is
 built, so it cannot drift out of date.
 
 For example datasets and analysis scripts, see
-[rcicr_examples](https://github.com/rdotsch/rcicr_examples/). There is
-also an older [Medium
-post](https://medium.com/@rondotsch/reverse-correlation-image-classification-using-r-a0701648fb0/)
-covering similar ground; the vignette above supersedes it and is the
-version kept current with the code.
+[rcicr_examples](https://github.com/rdotsch/rcicr_examples/).
 
 ## How it works
 

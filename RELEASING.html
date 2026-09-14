@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rcicr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Releasing rcicr</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/v1.4.0/RELEASING.md" class="external-link"><code>RELEASING.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/main/RELEASING.md" class="external-link"><code>RELEASING.md</code></a></small>
     </div>
 
 <div id="releasing-rcicr" class="section level1">
@@ -98,7 +98,7 @@
 <div class="section level3">
 <h3 id="answering-a-review">Answering a review<a class="anchor" aria-label="anchor" href="#answering-a-review"></a></h3>
 <p><strong>Never send CRAN a question a sweep can answer.</strong> A round trip costs weeks; a sweep costs minutes. The review of 1.2.1 named two <code>.Rd</code> files with commented-out example lines; working from a summary that had kept only one, 1.2.2 asked the reviewer which line she meant — while the fix for the file she had named sat in the same commit under a different point. Two further drafts repeated it. Sweep everything the point could apply to, then report what was found.</p>
-<p><strong>And do not explain a note the reviewer does not have.</strong> <code>cran-comments.md</code> once answered a <code>medium.com</code> 403 that appears only on our local check — not on any external check, not in CRAN’s own pretest. Removed; the link stays in <code>README.md</code> (issue #192).</p>
+<p><strong>Do not explain a note the reviewer does not have.</strong> A local-only <code>medium.com</code> 403 was removed from <code>cran-comments.md</code> (issue #192). CRAN’s 1.4.0 pretest later reported a permanent redirect, so the obsolete <code>README.md</code> link was removed.</p>
 </div>
 </div>
 <div class="section level2">
