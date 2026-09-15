@@ -52,7 +52,8 @@ Checked release-branch package sources at commit `8d283f398a955672fb3ae534f1c492
 * GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2025 (build 26100) (x86_64, ucrt).
 * GitHub Actions, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64).
 * R-hub, R-devel (2026-09-13 r90534): Ubuntu 24.04.5 LTS (x86_64), Windows Server 2025 (build 26100) (x86_64, ucrt), and macOS Sequoia 15.7.9 (x86_64).
-* win-builder, R-release and R-devel: submitted on 2026-09-14; results pending.
+* win-builder, R 4.6.1 (2026-06-24): Windows Server 2022 x64 (build 20348, ucrt).
+* win-builder, R-devel (2026-09-13 r90534): Windows Server 2022 x64 (build 20348, ucrt).
 
 ## R CMD check results
 
@@ -62,7 +63,7 @@ All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 wa
 
 The repository's full reproducibility gate passes against both v1.0.1, the published baseline, and v1.4.0, the previous release. [Run 34883151753](https://github.com/rdotsch/rcicr/actions/runs/34883151753).
 
-The R-release and R-devel win-builder uploads were received; their check results will be recorded here when the result mails arrive.
+Both win-builder checks report `Status: OK`: 0 errors, 0 warnings, 0 notes. Their CRAN incoming-feasibility, PDF-manual and HTML-manual checks all pass. [R-release result](https://win-builder.r-project.org/RFXt3YpPIkUv/) and [R-devel result](https://win-builder.r-project.org/d0HbKL2yZFIN/).
 
 ## Downstream dependencies
 
