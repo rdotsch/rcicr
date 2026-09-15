@@ -1,6 +1,6 @@
 # Changelog
 
-## rcicr (development version)
+## rcicr 1.4.1 (2026-09-15)
 
 ### Documentation
 
