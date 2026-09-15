@@ -2,7 +2,11 @@
 
 ## Submission type
 
-Submission of rcicr 1.4.0 as an update to 1.3.0, published on 2026-09-02. The maintainer address `rdotsch@gmail.com` is unchanged.
+Resubmission of rcicr 1.4.1 as an update to 1.3.0, published on 2026-09-02. The maintainer address `rdotsch@gmail.com` is unchanged.
+
+## Resubmission
+
+CRAN reviewed the 1.4.0 submission and reported that an obsolete Medium tutorial URL in `README.md` returned a permanent redirect. That link has been removed. No package code or computed result changed in response to the review. The version has been incremented because the declined 1.4.0 submission is not reused.
 
 ## What changed
 
@@ -43,24 +47,23 @@ iteration.
 
 ## Test environments
 
-Checked release-branch package sources at commit `be704a4b2ebdb5ec85e6d4795728673c9f4665e4` on 2026-09-13. The Linux R-hub artifact contains `rcicr_1.4.0.tar.gz` with SHA-256 `0ab791c88293430044aa429afd840dcdd0d727bdce41387c6efc260bce65a143`.
+Checked release-branch package sources at commit `8d283f398a955672fb3ae534f1c492597ae5e8b4` on 2026-09-14. The Linux R-hub artifact contains `rcicr_1.4.1.tar.gz` with SHA-256 `cc29ac15bec4cee269041927d1dd6db729a782450b7d2ba3f907fea9928b3dde`.
 
-* GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2022 (x86_64, ucrt).
+* GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2025 (build 26100) (x86_64, ucrt).
 * GitHub Actions, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64).
-* R-hub, R-devel (2026-09-12 r90533): Ubuntu 24.04.5 LTS (x86_64) and Windows Server 2022 (x86_64, ucrt).
-* R-hub, R-devel (2026-09-12 r90532): macOS Sequoia 15.7.9 (x86_64).
-* win-builder, R-devel (2026-09-12 r90533): Windows Server 2022 x64 (build 20348, ucrt).
+* R-hub, R-devel (2026-09-13 r90534): Ubuntu 24.04.5 LTS (x86_64), Windows Server 2025 (build 26100) (x86_64, ucrt), and macOS Sequoia 15.7.9 (x86_64).
 * win-builder, R 4.6.1 (2026-06-24): Windows Server 2022 x64 (build 20348, ucrt).
+* win-builder, R-devel (2026-09-13 r90534): Windows Server 2022 x64 (build 20348, ucrt).
 
 ## R CMD check results
 
-All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34750613911](https://github.com/rdotsch/rcicr/actions/runs/34750613911).
+All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34883151399](https://github.com/rdotsch/rcicr/actions/runs/34883151399).
 
-All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34750744174](https://github.com/rdotsch/rcicr/actions/runs/34750744174).
+All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34888514612](https://github.com/rdotsch/rcicr/actions/runs/34888514612).
 
-The repository's full reproducibility gate passes against both v1.0.1, the published baseline, and v1.3.0, the previous release. [Run 34750613924](https://github.com/rdotsch/rcicr/actions/runs/34750613924).
+The repository's full reproducibility gate passes against both v1.0.1, the published baseline, and v1.4.0, the previous release. [Run 34883151753](https://github.com/rdotsch/rcicr/actions/runs/34883151753).
 
-Both win-builder checks report `Status: OK`: 0 errors, 0 warnings, 0 notes. Their CRAN incoming-feasibility, PDF-manual and HTML-manual checks all pass. [R-devel result](https://win-builder.r-project.org/vpjy23cb7Hc8/) and [R-release result](https://win-builder.r-project.org/geM7EKfBxBwN/).
+Both win-builder checks report `Status: OK`: 0 errors, 0 warnings, 0 notes. Their CRAN incoming-feasibility, PDF-manual and HTML-manual checks all pass. [R-release result](https://win-builder.r-project.org/RFXt3YpPIkUv/) and [R-devel result](https://win-builder.r-project.org/d0HbKL2yZFIN/).
 
 ## Downstream dependencies
 
