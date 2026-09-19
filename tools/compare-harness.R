@@ -176,6 +176,58 @@ if (nzchar(Sys.getenv("RCICR_COMPARE_QUICK"))) {
 
 SCALINGS <- c("none", "constant", "matched", "independent")
 
+# The corrected InfoVal, recomputed from the saved noise alone. An EXPECTED
+# entry on a bare scalar excuses any value in that output, so where InfoVal
+# already deviates from a reference for a documented reason, a later regression
+# that moved the corrected value would be absorbed by the entry on file (#318).
+# The reference distribution is a function of the saved basis and parameter
+# matrix, so it can be rebuilt without the code path under test -- lifted from
+# tests/testthat/test-independent-reference.R, which pins the same values for
+# the suite.
+#
+# What it pins is the null: the basis, the parameter matrix, the base the CI was
+# scored against and the response stream. The standardisation is the
+# implementation's own expression, so a change made here and in R/ together
+# would pass both -- see DECISIONS.md, "computeInfoVal2IFC's test oracle mirrors
+# the implementation". Against that, the gate still compares infoval itself to
+# the released value.
+#
+# Uses only load(), generateNoiseImage() and fields v1.0.1 already saved, so it
+# executes on either side. The stimulus seed is restored afterwards: this draws
+# from the same stream the rest of the battery uses.
+infoval_oracle <- function(rdata, target_ci, baseimage, iter) {
+  had <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  if (had) before <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  on.exit({
+    if (had) assign(".Random.seed", before, envir = globalenv())
+    else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+      rm(".Random.seed", envir = globalenv())
+  }, add = TRUE)
+
+  e <- new.env()
+  load(rdata, envir = e)
+  params <- e$stimuli_params[[baseimage]]
+  # Pre-0.3.0 files carry 4096 parameters per trial where only 4092 patches
+  # exist; selectStimulusParams() does this inside the package.
+  if (ncol(params) == 4096) params <- params[, seq_len(4092), drop = FALSE]
+  p <- if (!is.null(e$s)) e$s else e$p
+  n_trials <- e$n_trials
+  pixels <- vapply(seq_len(n_trials), function(trial) {
+    as.vector(generateNoiseImage(params[trial, ], p))
+  }, numeric(e$img_size ^ 2))
+
+  # The response stream the package replays: the stimulus seed, advanced past
+  # the draws stimulus generation made, then one draw per iteration.
+  set.seed(e$seed)
+  for (trial in seq_len(n_trials)) runif(ncol(params))
+  norms <- vapply(seq_len(iter), function(i) {
+    responses <- ((runif(n_trials) > 0.5) * 2) - 1
+    norm(pixels %*% responses / n_trials, "f")
+  }, numeric(1))
+
+  (norm(matrix(target_ci[["ci"]]), "f") - median(norms)) / mad(norms)
+}
+
 run_config <- function(cfg) {
   out <- list()
 
@@ -418,6 +470,13 @@ run_config <- function(cfg) {
     # first current value would pass. This delta is 0 on both sides or it is a
     # regression, and needs no entry to say so.
     out$infoval_refresh_delta <- out$infoval_twice - out$infoval
+
+    # Against the oracle rather than against the other side: the released value
+    # is what an EXPECTED entry is allowed to excuse, the recomputed one is not.
+    # 0 on the side that scores the CI against its own base's saved noise; on a
+    # reference that scored it against the wrong null, it is that error.
+    out$infoval_oracle_delta <-
+      out$infoval - infoval_oracle(rdata, ci, key, cfg$infoval_iter)
   }
 
   unlink(c(stim_dir, ci_dir, zmap_dir, file.path(getwd(), "zmaps")), recursive = TRUE)
