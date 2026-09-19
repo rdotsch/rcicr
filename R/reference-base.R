@@ -41,8 +41,15 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
   # An unsolicited refresh must preserve the precision and RNG state of a cache hit.
   automatic <- stale && !forced
   if (automatic) iter <- length(entry$norms)
-  readonly <- automatic && !writableFile(rdata)
-  save_rdata <- is.null(response_seed) && !readonly
+  # Only InfoVal scoring reaches here, where the cache is an optimization: the
+  # norms are simulated before the save is attempted, so an archive that cannot
+  # be written must not cost the caller the number it already has. A direct
+  # generateReferenceDistribution2IFC(save_rdata = TRUE) still errors, because
+  # there the save is the request. A seeded draw is never stored, so it is not
+  # a save that failed and writability does not describe it.
+  wanted_save <- is.null(response_seed)
+  readonly <- wanted_save && !writableFile(rdata)
+  save_rdata <- wanted_save && !readonly
   simulate <- function() {
     withCallingHandlers(
       generateReferenceDistribution2IFC(
@@ -62,9 +69,9 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
 
   if (readonly) {
     label <- if (is.null(baseimage)) 'the reference' else paste0('the reference for baseimage ', baseimage)
-    write(paste0('Rebuilt ', label, ' from saved noise, but ', rdata,
-                 ' is not writable, so the rebuilt values were used without being stored. ',
-                 'The next call will rebuild them again.'), stdout())
+    write(paste0('Built ', label, ' from saved noise, but ', rdata,
+                 ' is not writable, so the values were used without being stored. ',
+                 'The next call will build them again.'), stdout())
   } else if (save_rdata) {
     write('The reference distribution has been saved to the .Rdata file for reuse.', stdout())
   } else {

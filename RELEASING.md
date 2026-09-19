@@ -67,13 +67,10 @@ curl -T rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-devel/
 curl -T rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-release/
 ```
 
-Then trigger R-hub from the Actions tab against the release branch. Two NOTEs are expected
-locally and explained in `cran-comments.md`: CRAN incoming feasibility (new submission of an
-archived package) and future file timestamps (no network clock in a sandbox).
+Then trigger R-hub from the Actions tab against the release branch. Record each check's actual errors, warnings and NOTEs, with its R version and platform. Do not carry archived-package reinstatement NOTEs into a routine update. Report sandbox-only NOTEs as local results.
 
 **Why results can be written into the commit they describe:** `cran-comments.md` is
-`.Rbuildignore`d and verifiably absent from the tarball, so editing it produces the same tarball
-byte for byte. It is not a package artifact at all — it is the text pasted into the submission
+`.Rbuildignore`d and verifiably absent from the tarball, so editing it changes no package source in the tarball. Byte identity is not assumed: fresh builds differ in packaging timestamps and metadata. It is not a package artifact at all — it is the text pasted into the submission
 form. At 1.2.1 these checks ran *after* the tag and the `.9000` reopen, so the results landed on
 a development tree and the tag recorded no evidence that the tree it names had passed anything.
 
@@ -90,9 +87,7 @@ front of a third party.
   `workflow_dispatch`-only it must reach the **default branch** before it can be triggered at
   all. **Download the artifacts; do not use `gh run view --log`**, which truncates: at 1.2.1 the
   38-minute macOS job returned 1548 lines ending four minutes in, with no `Status:` line.
-  `gh run download <run-id> -D <dir>`, then read `*/rcicr.Rcheck/00check.log`. Expect
-  `Status: OK` where win-builder reports 1 NOTE — R-hub does not run the incoming feasibility
-  check, so that is agreement, not a discrepancy.
+  `gh run download <run-id> -D <dir>`, then read `*/rcicr.Rcheck/00check.log`. R-hub skips incoming feasibility and uses `--no-manual`. A green run establishes neither; obtain a complete manual check before submission.
 - **`RHUB_TOKEN` is deliberately unset and nothing is missing.** The stock workflow passes it to
   four actions, which makes it look required. It is an optional slot for your own PAT to reach
   *private* repositories, not a credential R-hub issues, and no step in `r-hub/actions@v1`
@@ -136,8 +131,8 @@ the "Optional comment" field — `.Rbuildignore`d, so it reaches CRAN only this 
 tag's copy** (`git show vX.Y.Z:cran-comments.md`): submission can trail tagging by weeks while
 `main` moves, and `main`'s copy would describe check results from a tree that is not the tarball.
 
-**Ron submits personally.** CRAN emails the maintainer address to confirm, and for a package
-archived over an undeliverable address, that confirmation *is* the point of the resubmission.
+**An agent may upload; Ron alone confirms.** Nothing reaches CRAN until the maintainer clicks
+the link CRAN then emails him.
 
 ### Answering a review
 
@@ -147,9 +142,9 @@ a summary that had kept only one, 1.2.2 asked the reviewer which line she meant 
 for the file she had named sat in the same commit under a different point. Two further drafts
 repeated it. Sweep everything the point could apply to, then report what was found.
 
-**And do not explain a note the reviewer does not have.** `cran-comments.md` once answered a
-`medium.com` 403 that appears only on our local check — not on any external check, not in CRAN's
-own pretest. Removed; the link stays in `README.md` (issue #192).
+**Do not explain a note the reviewer does not have.** A local-only `medium.com` 403 was
+removed from `cran-comments.md` (issue #192). CRAN's 1.4.0 pretest later reported a permanent
+redirect, so the obsolete `README.md` link was removed.
 
 ## 5. Reopen development
 
@@ -168,11 +163,11 @@ version. Tagging on acceptance would point
 CRAN takes.
 
 So a tag naming a tree CRAN never took is expected here rather than a defect — already true of
-`v1.2.0` and `v1.2.2` — and answering a review means shipping X.Y.Z+1, an ordinary release
-whose `cran-comments.md` happens to be a point-by-point reply. **Which versions CRAN accepted
-is recorded rather than inferred from the tags**: in `notes/cran-review-<version>.md` and in
-the tag's GitHub release notes.
+`v1.2.0` and `v1.2.2`. **Which versions CRAN accepted is recorded rather than inferred from the
+tags**: in `notes/cran-review-<version>.md` and in the tag's GitHub release notes.
 
-The alternative is to stop making GitHub releases once the package is back on CRAN and adopt
-the `usethis` order wholesale. That trade is only worth revisiting if CRAN becomes the channel
-people actually install from.
+**Revisited once CRAN was back, and kept.** Adopting the `usethis` order would delay GitHub
+releases to acceptance and drop them for a declined version; its one gain, never tagging a
+declined tree, does not survive CRAN's rule that resubmissions carry a new version number. A
+declined version is never reused, so answering a review means shipping X.Y.Z+1, and the earlier
+tag marks a tree that was built and sent rather than clutter.
