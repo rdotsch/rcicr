@@ -69,6 +69,14 @@ relabelled_only <- function(a, b) {
   identical(names(a), names(b)) && identical(sort(unname(a)), sort(unname(b)))
 }
 
+# The shape of an InfoVal deviation: whatever the reference's own error was, the
+# value under test equals the reference distribution rebuilt from the saved
+# noise. Only the side under test is asserted -- the reference's error is what
+# the entry exists to excuse, and a bound on it would pin a number no one should
+# reproduce. The harness computes the delta because a predicate here sees one
+# output's pair of values and never another's.
+oracle_agrees <- function(ref, cur) abs(cur) <= INFOVAL_TOL
+
 alpha_bases <- function(filename, maximize) {
   img <- png::readPNG(file.path(basedir, filename))
   old <- apply(img, c(1, 2), mean)
@@ -191,6 +199,11 @@ alpha_expectations <- function(ref) {
 }
 
 EXPECTED <- c(list(
+  # The four InfoVal entries below carry no predicate and cannot: a pair of
+  # scalars has no shape to test. Each is paired instead with an entry on the
+  # same config's infoval_oracle_delta, which is what keeps it from excusing a
+  # later regression in the corrected value as the deviation already on file
+  # (#318): the infoval pair may move freely, the recomputed value may not.
   list(ref = "v1.0.1",
        key = c("sinusoid-64-nscales3-infoval/infoval", "sinusoid-64-nscales3-infoval/infoval_twice"),
        reason = paste("v1.0.1 did not save nscales/sigma into the .Rdata, so its",
@@ -222,6 +235,37 @@ EXPECTED <- c(list(
                       "any non-default sigma) was measured against a sinusoid null."),
        news = "Reproducibility impact"),
 
+  # One per InfoVal entry above, for the same reference: the reference's delta is
+  # its own error while this tree's is zero, so the two sides differ and the
+  # deviation needs an entry. A config whose InfoVal the reference got right
+  # needs none -- both deltas are zero and the outputs agree, and a regression in
+  # either is reported by that agreement failing.
+  list(ref = "v1.0.1", key = "sinusoid-64-nscales3-infoval/infoval_oracle_delta",
+       reason = paste("v1.0.1 built this reference distribution at the default nscales = 5",
+                      "instead of the nscales the stimuli were made with, so its InfoVal",
+                      "does not match the null rebuilt from the saved noise. This tree's",
+                      "does."),
+       check = oracle_agrees,
+       news = "Reproducibility impact"),
+  list(ref = "v1.0.1", key = "sinusoid-64-twobase-indep-infoval/infoval_oracle_delta",
+       reason = paste("v1.0.1 scored the second base against the first base's null, so its",
+                      "InfoVal does not match the null rebuilt from the scored base's own",
+                      "saved noise. This tree's does."),
+       check = oracle_agrees,
+       news = "Reproducibility impact"),
+  list(ref = "v1.3.0", key = "sinusoid-64-twobase-indep-infoval/infoval_oracle_delta",
+       reason = paste("Same defect as the v1.0.1 entry above: v1.3.0 cannot name the base a",
+                      "classification image came from, so it scored the second base against",
+                      "the first base's null."),
+       check = oracle_agrees,
+       news = "Reproducibility impact"),
+  list(ref = "v1.0.1", key = "gabor-64-sigma10-infoval/infoval_oracle_delta",
+       reason = paste("v1.0.1 ignored noise_type and sigma when building the reference, so",
+                      "its InfoVal for Gabor noise does not match the null rebuilt from the",
+                      "saved noise. This tree's does."),
+       check = oracle_agrees,
+       news = "Reproducibility impact"),
+
   list(ref = "v1.0.1",
        key = c("defaults-512-sinusoid/individual_cis",
                "sinusoid-128-nscales3/individual_cis"),
@@ -239,8 +283,10 @@ EXPECTED <- c(list(
   # A second entry because this reference carries the defect too: the
   # mislabelling dates to 0.4.0 and was fixed in 1.3.0, so v1.0.1 and v1.2.3
   # both report it while v1.3.0 needs no entry. CI names only v1.0.1 and the
-  # newest tag, so nothing exercises this entry now and no run can call it
-  # stale: check it by hand if v1.2.3 ever becomes a reference again.
+  # newest tag, so no CI run exercises this entry or can report it stale -- but
+  # --ref is any git rev, and a --ref=v1.2.3 run does both. It stays for that
+  # run: dropping it would turn a documented historical deviation into an
+  # unexpected failure there.
   list(ref = "v1.2.3",
        key = c("defaults-512-sinusoid/individual_cis",
                "sinusoid-128-nscales3/individual_cis"),
@@ -250,6 +296,8 @@ EXPECTED <- c(list(
        check = relabelled_only,
        news = "Reproducibility impact"),
 
+  # Dormant in CI for the same reason as the v1.2.3 entry above, and kept on the
+  # same ground: --ref=v1.1.0 exercises it.
   list(ref = "v1.1.0",
        key = c("defaults-512-sinusoid/zmap_quick",
                "defaults-512-sinusoid/zmap_plain",
@@ -506,7 +554,12 @@ compare_one <- function(name, a, b) {
                 detail = sprintf("not bit-identical (%d of %d elements differ)", n, length(a))))
   }
 
-  if (name %in% c("infoval", "infoval_twice")) {
+  # infoval_oracle_delta joins them: on the side that scores the CI against its
+  # own base the two routes reduce to the same matrix product and the delta is
+  # exactly zero, so what needs tolerating is not their summation order but the
+  # reference's own InfoVal error -- a difference between two O(1) values. That
+  # is the absolute bar, not the relative one below.
+  if (name %in% c("infoval", "infoval_twice", "infoval_oracle_delta")) {
     d <- abs(a - b)
     return(if (d <= INFOVAL_TOL) list(status = "OK", detail = sprintf("|d| = %.3g", d))
            else list(status = "DIFF", detail = sprintf("|d| = %.6g (tol %.0e)", d, INFOVAL_TOL)))
