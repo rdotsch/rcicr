@@ -131,7 +131,8 @@ the "Optional comment" field — `.Rbuildignore`d, so it reaches CRAN only this 
 tag's copy** (`git show vX.Y.Z:cran-comments.md`): submission can trail tagging by weeks while
 `main` moves, and `main`'s copy would describe check results from a tree that is not the tarball.
 
-**Ron submits personally.** CRAN emails the maintainer address to confirm; complete that confirmation after uploading.
+**An agent may upload; Ron alone confirms.** Nothing reaches CRAN until the maintainer clicks
+the link CRAN then emails him.
 
 ### Answering a review
 
