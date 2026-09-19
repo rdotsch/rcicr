@@ -32,7 +32,9 @@ that ruleset is a repo-settings write agents here cannot make, so a
 newly added workflow’s check reports on PRs but blocks none until the
 maintainer adds it by hand via GitHub → Settings → Rules → Rulesets — a
 UI edit, since a malformed `PUT` risks dropping unrelated ruleset
-fields.
+fields. A separate **Tags** ruleset blocks creating, moving and deleting
+tags; the maintainer (Repository admin role) bypasses it to tag
+releases.
 
 Two consequences worth knowing before editing a workflow. **Required
 checks are matched by name**, so rows can be added to a matrix freely

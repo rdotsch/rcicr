@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rcicr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Releasing rcicr</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/v1.4.1/RELEASING.md" class="external-link"><code>RELEASING.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rdotsch/rcicr/blob/main/RELEASING.md" class="external-link"><code>RELEASING.md</code></a></small>
     </div>
 
 <div id="releasing-rcicr" class="section level1">
@@ -94,7 +94,7 @@
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">git</span> switch <span class="at">-</span></span></code></pre></div>
 <p>Building from the tag keeps the development suffix out of the submitted version: <code>Version contains large components</code> only blocks if the <em>tarball</em> carries it.</p>
 <p>Submit at <a href="https://cran.r-project.org/submit.html" class="external-link uri">https://cran.r-project.org/submit.html</a>, pasting the body of <code>cran-comments.md</code> into the “Optional comment” field — <code>.Rbuildignore</code>d, so it reaches CRAN only this way. <strong>Paste the tag’s copy</strong> (<code>git show vX.Y.Z:cran-comments.md</code>): submission can trail tagging by weeks while <code>main</code> moves, and <code>main</code>’s copy would describe check results from a tree that is not the tarball.</p>
-<p><strong>Ron submits personally.</strong> CRAN emails the maintainer address to confirm; complete that confirmation after uploading.</p>
+<p><strong>An agent may upload; Ron alone confirms.</strong> Nothing reaches CRAN until the maintainer clicks the link CRAN then emails him.</p>
 <div class="section level3">
 <h3 id="answering-a-review">Answering a review<a class="anchor" aria-label="anchor" href="#answering-a-review"></a></h3>
 <p><strong>Never send CRAN a question a sweep can answer.</strong> A round trip costs weeks; a sweep costs minutes. The review of 1.2.1 named two <code>.Rd</code> files with commented-out example lines; working from a summary that had kept only one, 1.2.2 asked the reviewer which line she meant — while the fix for the file she had named sat in the same commit under a different point. Two further drafts repeated it. Sweep everything the point could apply to, then report what was found.</p>
