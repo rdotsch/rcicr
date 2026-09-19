@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/rdotsch/rcicr/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/rdotsch/rcicr/blob/v1.4.1/inst/CITATION)
 
 Ron Dotsch (2026). rcicr: Reverse correlation image classification
 toolbox. R package version 1.4.1.
