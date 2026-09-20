@@ -1,8 +1,11 @@
 # CRAN acceptance of the 1.4.1 submission
 
-**Received** 2026-09-20, from CRAN's auto-check service rather than a human reviewer: the
-resubmission passed the incoming checks with no manual inspection. 1.4.1 answers the 1.4.0
-submission CRAN declined over an obsolete `README.md` URL, logged in
+**Received** 2026-09-20, from CRAN's auto-check service, reporting `Result: OK` on both flavors
+it names. Whether a team member also inspected the submission is not established by the reply:
+an auto-check message can be triggered by a team member, as the 1.3.0 auto-process mail records,
+so the sender alone does not settle it.
+
+1.4.1 answers the 1.4.0 submission CRAN declined over an obsolete `README.md` URL, logged in
 [`cran-review-1.4.0.md`](cran-review-1.4.0.md); removing that link was the only change.
 
 The publication date is not recorded here because it was not confirmed at the time of writing.
