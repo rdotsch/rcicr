@@ -27,8 +27,8 @@ write agents here cannot make, so a newly added workflow's check reports on PRs 
 until the maintainer adds it by hand via GitHub → Settings → Rules → Rulesets — a UI edit, since
 a malformed `PUT` risks dropping unrelated ruleset fields.
 A separate **Tags** ruleset blocks creating, moving and deleting tags; the maintainer
-(Repository admin role) bypasses it to tag releases. A ruleset refuses force-pushes to feature
-branches too, so catch a stale branch up by merging `main` in, not rebasing.
+(Repository admin role) bypasses it to tag releases. A ruleset refused a force-push to a `claude/*`
+branch: expect to catch a stale branch up by merging `main` in, not rebasing.
 
 Two consequences worth knowing before editing a workflow. **Required checks are matched by
 name**, so rows can be added to a matrix freely but never renamed — a renamed check reads as
