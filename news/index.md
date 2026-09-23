@@ -4,6 +4,8 @@
 
 ## rcicr 1.4.1 (2026-09-15)
 
+CRAN release: 2026-09-19
+
 ### Documentation
 
 - Removed the obsolete Medium tutorial link; the maintained package
