@@ -130,7 +130,7 @@ output as its \code{targetci}.
 base_face <- tempfile(fileext = ".png")
 png::writePNG(matrix(runif(32 * 32), 32, 32), base_face)
 
-stimulus_path <- tempdir()
+stimulus_path <- tempfile("stimuli")
 generateStimuli2IFC(
   base_face_files = list(face = base_face),
   n_trials = 6,
