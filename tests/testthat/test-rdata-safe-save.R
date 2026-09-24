@@ -141,13 +141,13 @@ test_that("a committed save is kept when its backup cannot be deleted", {
   expect_identical(loaded_x(path), 2)
 })
 
-test_that("a leftover backup beside a file that loads is removed and the save proceeds", {
+test_that("a leftover backup beside a file that loads stops the save and is kept", {
   dir <- withr::local_tempdir()
   path <- stim_file(dir, value = 1)
   file.copy(path, rdataBackupPath(path))
-  expect_message(save_x(path, 2), "Removed")
-  expect_identical(loaded_x(path), 2)
-  expect_identical(sidecars(dir), character(0))
+  expect_error(save_x(path, 2), "delete it")
+  expect_identical(loaded_x(path), 1)
+  expect_true(file.exists(rdataBackupPath(path)))
 })
 
 test_that("a leftover backup beside a damaged file stops with the restore command", {

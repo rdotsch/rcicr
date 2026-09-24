@@ -155,10 +155,12 @@ saveRdataSafely <- function(names, file, envir) {
     if (!rdataLoads(file)) {
       stop(file, ' does not load. ', restoreAdvice(file, backup), call. = FALSE)
     }
-    # The file is complete, possibly already the newer version, so the
-    # backup is stale; restoring it could put older contents back.
-    unlink(backup)
-    message('Removed ', backup, ', left by an earlier save of a file that loads.')
+    # The file is complete, possibly already the newer version, so restoring
+    # the backup could put older contents back. Nor is it deleted: rcicr cannot
+    # prove it made that file.
+    stop(file, ' loads, but ', backup, ' exists, probably left by an earlier save that was ',
+         'interrupted after it finished. Check it is not a copy you want to keep, delete it, ',
+         'and run this again.', call. = FALSE)
   }
   staging <- tempfile(pattern = prefix, tmpdir = dirname(file))
   if (nchar(basename(staging), type = 'bytes') > 255) {
@@ -204,7 +206,8 @@ saveRdataSafely <- function(names, file, envir) {
   phase <- 3
   if (!removeFile(backup)) {
     warning(file, ' was saved, but its backup could not be deleted: ', backup,
-            '. Delete it; it holds the previous contents.', call. = FALSE)
+            '. Delete it before saving to this file again; it holds the previous contents.',
+            call. = FALSE)
   }
   invisible(NULL)
 }
