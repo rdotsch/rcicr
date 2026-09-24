@@ -195,7 +195,7 @@ CRAN's review of 1.2.1 asked us to "omit any default path in writing functions".
 It cost nothing to verify: the gate reports `max|d| = 0` across 135 checks, because `tools/compare-harness.R` already passed every path explicitly.
 
 ### A stimulus file is saved in place behind a backup, not replaced by a rename
-Renaming a new file over the original (#333) was **rejected**: the file would take the R process's owner and group and lose its ACLs, which base R cannot restore. `saveRdataSafely()` keeps a verified backup until `save()` completes. rcicr never deletes or overwrites a `.rcicr-backup` it cannot prove it made; restoring one needs a check first.
+Renaming a new file over the original (#333) was **rejected**: it would change the file's owner, group and ACLs, which base R cannot restore. `saveRdataSafely()` keeps a verified backup until `save()` completes. Barring concurrent saves, which stay unsafe, rcicr never deletes or overwrites a `.rcicr-backup` it cannot prove it made; restoring one needs a check first.
 
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 The `load()` guard copies a function's arguments and restores them after reading an `.Rdata` file. Once paths became required, `mget(names(formals()))` started failing: it forces each promise, and a wrapper passing on its own missing argument (`batchGenerateCI()` passing `targetpath = targetpath`) turns that promise into a missing symbol. The guard is used by `computeInfoVal2IFC()` and `computeCumulativeCICorrelation()`; `generateCI()` loads into a private environment instead, so it has no frame to guard.
