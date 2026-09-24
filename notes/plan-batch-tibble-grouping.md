@@ -31,7 +31,7 @@ For both functions, on the same data as a `data.frame` and as a tibble:
 - a factor `by` column gives the same result as a character one;
 - file names, and so the list names, are unchanged for a `data.frame`.
 
-Each new test must fail on the current code; checked with `git stash push -- R/`.
+Each tibble test must fail on the current code, checked with `git stash push -- R/`. The `data.frame` tests are guards and pass before and after.
 
 ## The step most likely to fail
 
