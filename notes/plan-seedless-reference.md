@@ -6,7 +6,7 @@ Without a `response_seed`, the reference distribution replays the stimulus strea
 
 ## Change
 
-1. **Check for the seed before any simulation**, in both reference paths: `generateReferenceDistribution2IFC()` (shared parameters) and `generateBaseReference()` (independent base images), ahead of `referenceNoise()`, which at 512px is the slow step. One helper, called from both, stops when `response_seed` is `NULL` and the file has no `seed`. The message says the file has no stimulus seed to replay, and that `response_seed` draws a reproducible reference from the saved noise instead (not stored in the file).
+1. **Check for the seed before any simulation**, in both reference paths: `generateReferenceDistribution2IFC()` (shared parameters) and `generateBaseReference()` (independent base images), ahead of `referenceNoise()`, which at 512px is the slow step. One helper, called from both, stops when `response_seed` is `NULL` and the file has no `seed`. The message says the file has no stimulus seed to replay, and that `response_seed` draws a reproducible reference from the saved noise instead. It names `generateReferenceDistribution2IFC(rdata, response_seed = <n>)` as the way to store one: that call saves the reference with its seed recorded, and later `computeInfoVal2IFC()` calls reuse it. The message makes no other claim about storage, since whether a seeded reference is saved depends on the call (`computeInfoVal2IFC()` never stores one; `generateReferenceDistribution2IFC()` does unless `save_rdata = FALSE`).
 2. **Only a missing `seed` is rejected.** Every other value `set.seed()` either already rejects with an error or seeds deterministically, so rejecting it would turn reproducible results into errors.
 3. **`NEWS.md`, under "Bug fixes"**: who is affected (a stimulus file without `seed`, on 1.4.0 and 1.4.1), what they got (a different reference and InfoVal on every call), what happens now, and that a `response_seed` gives a reproducible reference. Files that have `seed` are unaffected.
 
@@ -18,12 +18,14 @@ No `DECISIONS.md` entry: this applies the existing "Trial alignment errors stop 
 - Installed from their tags and ran #334's reproduction (each version generating its own file, then `seed` removed): v1.0.1 and v1.1.0 stop with "object 'seed' not found"; v1.4.1, the version on CRAN, and `main` return a reference that differs between two calls. `set.seed(source$seed)` arrived with #305 and is in v1.4.0 and v1.4.1, not v1.3.0.
 - Every generator in the repository saves `seed`, back to the R-Forge import, and so do all three legacy fixtures. So the gate and every existing test use files with `seed`, and neither should move.
 - `computeInfoVal2IFC()` passes `response_seed` through to the same paths, so the message's remedy applies to it too.
+- On `main`, with a file whose `seed` was removed: `generateReferenceDistribution2IFC(rd, response_seed = 7)` stores `reference_norms` with `reference_norms_seed = 7`, and two `computeInfoVal2IFC()` calls then report "Using reference distribution found in rdata file" and return identical values. So one stored seeded reference makes the file reproducible from then on, without the check being reached again.
 
 ## Tests
 
 - `generateReferenceDistribution2IFC()` on a file without `seed` stops, naming `seed` and `response_seed`, for shared and for independent base images;
 - `computeInfoVal2IFC()` on such a file stops the same way;
 - with a `response_seed`, a file without `seed` gives the same reference on two calls;
+- a reference stored that way is reused by `computeInfoVal2IFC()` with no error, for shared and for independent base images;
 - the stop comes before the noise is built (checked by mocking `referenceNoise()` to fail if reached).
 
 Each new failure test must fail on the current code; checked with `git stash push -- R/`.
