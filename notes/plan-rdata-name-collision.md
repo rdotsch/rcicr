@@ -8,7 +8,7 @@ The name is built at the end, after every PNG is written, so a check there would
 
 ## Change
 
-1. **Reserve the file name before any stimulus is generated**, by creating it exclusively with `file(path, open = "wx")`, which fails if the file exists. That is one atomic step, so two calls that overlap cannot both pass it, however long generation takes: a check-then-write would let both through and the later `save()` would still overwrite the earlier. `save()` writes into the reserved file at the end. If the reservation fails, the call stops with an error that names the file and says to use a different `label` or `stimulus_path`, or to delete the file if it is a set being regenerated on purpose; nothing is written. If the call fails after reserving, the empty file is removed. A call killed outright leaves it, and it then blocks that name, which is the safe direction.
+1. **Reserve the name before any stimulus is generated, with a lock beside the file, never the file itself.** The lock is a directory named like the file with `.Rdata` replaced by `.rcicr-lock`, created with `dir.create()`, which is atomic and fails if it exists. Holding it, the call checks that the `.Rdata` file itself does not exist yet, generates, `save()`s the real file at the end, and removes the lock (also on error). Two calls that overlap cannot both hold the lock, however long generation takes; a check-then-write would let both through and the later `save()` would still overwrite the earlier. If the lock cannot be taken or the file exists, the call stops before writing anything, with an error that names the file and says to use a different `label` or `stimulus_path`, or to delete the file if it is a set being regenerated on purpose. A call killed outright leaves the lock, which then blocks that name; the error names it and says it can be deleted. The lock never contains "Rdata", so no `list.files()` pattern for the output, with or without `$`, can pick it up; the empty placeholder that reserving the file itself would leave could be.
 2. **The time in the name becomes the start of the call** instead of the end. Nothing reads that time; it only makes names unique, and it is now fixed before anything is written.
 3. **Only when `save_rdata = TRUE`.** Without an `.Rdata` file there is nothing to lose.
 4. **`NEWS.md`, under "Bug fixes"**: what used to happen, what happens now, and that the time in the name is the start of the call.
@@ -19,21 +19,22 @@ The name is built at the end, after every PNG is written, so a check there would
 ## Verified before planning
 
 - The reproduction above, on `main`.
+- `dir.create()` on an existing directory returns `FALSE` (measured: `TRUE`, then `FALSE`), as `?dir.create` documents for a directory that already exists; the underlying `mkdir` is a single atomic operation on every OS CI checks.
+- Every example in the repository finds the output with `list.files(stimulus_path, pattern = "\\.Rdata$")[1]`; a `.rcicr-lock` name matches neither that nor a bare `"Rdata"`.
 - Every caller in the repository tolerates the stop: with `generateStimuli2IFC()` temporarily made to stop whenever its `.Rdata` name already existed, `testthat::test_local()` had no failures. `tools/compare-harness.R` empties its directory before each call.
 
 ## Tests
 
 - two calls with the same `label` and `seed` into one directory, with the clock mocked to one minute: the second stops, and the directory holds exactly the first call's PNGs and `.Rdata`, unchanged (checksums);
 - a different `label`, or `save_rdata = FALSE`, does not stop;
-- the reservation is exclusive on every OS CI checks (Linux, macOS, Windows): a second `file(open = "wx")` on an existing path fails. This is measured, not assumed: R documents `open` modes without `x`, which works because R passes the mode to C's `fopen()`, where C11 defines it;
-- a call that errors after reserving leaves no file behind;
+- a held lock stops a second call before it writes anything, and a leftover lock's error names it;
+- a call that errors after taking the lock leaves neither the lock nor an `.Rdata` file;
+- while a call runs, `list.files(pattern = "Rdata")` finds nothing new (checked from inside the generation step with a mocked hook);
 - the name carries the start time: with the clock mocked to advance during the call, the file is named for the first reading.
 
 The failure test must fail on the current code; checked with `git stash push -- R/`.
 
 ## The step most likely to fail
-
-**The `x` mode on Windows and macOS.** It is measured on Linux only (R 4.3.3: the second open warns "File exists" and fails). If CI shows it is not exclusive on another OS, the reservation becomes a lock directory made with `dir.create()`, which is atomic and documented, beside the file and removed at the end.
 
 **Quick reruns.** Rerunning an identical script into the same folder within the same minute now stops, where it used to overwrite the file with identical contents. That is the cost of the stop, and the message says what to do. The suite measures how common it is in practice: nothing in it does this.
 
