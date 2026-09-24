@@ -14,6 +14,8 @@
 
   Limits: a writable file in a read-only directory (Unix), and a file name over 228 bytes, are saved as before, without a backup, with a warning. On Windows, a writable file in a folder that refuses new files now stops with an error instead of being saved, as does any save where the backup cannot be made, such as on a full disk. On Windows the backup has its folder's permissions rather than being private to you. Power loss and operating-system crashes are not covered, and two R sessions saving the same file at once remain unsafe.
 
+- **`generateCI()` stops when some, but not all, `participants` IDs are `NA`.** It used to return a CI in which every pixel was `NA`, with only `min`/`max` warnings, and write it as a solid black PNG; every version since 1.0.1 did this. The error names the trials without an ID. Give them one, or remove them from `stimuli`, `responses` and `participants` alike. An all-`NA` `participants` still means no grouping, and no valid result changes. (#337)
+
 ## Documentation
 
 - Corrected help pages that disagreed with the code:

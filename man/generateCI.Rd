@@ -39,7 +39,7 @@ generateCI(
 
 \item{rdata}{Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.}
 
-\item{participants}{Optional vector with one participant ID per trial, the same length as \code{stimuli} and \code{responses}. When given, the CI is computed in two steps: one CI per participant, then their average. When missing or all \code{NA}, one CI is computed from all trials together.}
+\item{participants}{Optional vector with one participant ID per trial, the same length as \code{stimuli} and \code{responses}. When given, the CI is computed in two steps: one CI per participant, then their average. When missing or all \code{NA}, one CI is computed from all trials together. Some, but not all, \code{NA} is an error: give every trial an ID, or remove the trials without one.}
 
 \item{save_individual_cis}{Boolean: when \code{participants} is given, also save each participant's CI as a PNG image.}
 
