@@ -6,6 +6,14 @@
 
   You were affected if the list these functions returned had one element although your data held several participants or conditions; data read with readr or processed with dplyr is a tibble. Recompute those CIs with this version, or with an older one after `as.data.frame()`. No stimuli need regenerating or responses recollecting. Of the affected versions, only 1.3.0 and 1.4.1 were released on CRAN; the others were GitHub releases. The 1.1.0 entry below saying these functions accept tibble columns held only for a single group.
 
+## Bug fixes
+
+- **Saving a reference distribution no longer risks the stimulus `.Rdata` file.** `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` store the reference in that file, and a save that was interrupted (Esc, an error, R killed or crashing) could leave it unloadable, losing the only record of the stimuli. The file is now backed up beside itself for the duration of the save, as `<file>.rcicr-backup`, and restored automatically if the save fails. It keeps its owner, group and permissions. (#333)
+
+  If R is killed during the save, the backup remains, and any function that reads the damaged file says so. If the file still loads, the next save stops and asks you to delete the backup, since rcicr does not delete a file it cannot prove it made. If the file no longer loads, check that the backup holds this experiment (the error shows how), restore it with `file.copy("<file>.rcicr-backup", "<file>", overwrite = TRUE, copy.mode = FALSE)`, check that the file loads again, and only then delete the backup. Leftover `<file>.rcicr-staging-*` files are incomplete copies and can be deleted.
+
+  Limits: a writable file in a read-only directory (Unix), and a file name over 228 bytes, are saved as before, without a backup, with a warning. On Windows, a writable file in a folder that refuses new files now stops with an error instead of being saved, as does any save where the backup cannot be made, such as on a full disk. On Windows the backup has its folder's permissions rather than being private to you. Power loss and operating-system crashes are not covered, and two R sessions saving the same file at once remain unsafe.
+
 ## Documentation
 
 - Corrected help pages that disagreed with the code:
