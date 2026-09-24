@@ -46,12 +46,13 @@ computeInfoVal2IFC(
   distribution. The default, `NULL`, uses the reference distribution
   stored in the `rdata` file, or simulates the reproducible default one
   described under Reproducibility in
-  [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md).
-  A number forces a fresh reference distribution from an independent
-  draw; use it to check how much Monte Carlo error `iter` leaves in the
-  Informational Value. That result is *not* written back to the `rdata`
-  file, so a one-off check cannot change the number every later analysis
-  of the stimulus set reports.
+  [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md),
+  which needs the stimulus seed saved in the file. For a file without
+  one, pass a number. A number forces a fresh reference distribution
+  from an independent draw; use it to check how much Monte Carlo error
+  `iter` leaves in the Informational Value. That result is *not* written
+  back to the `rdata` file, so a one-off check cannot change the number
+  every later analysis of the stimulus set reports.
 
 - baseimage:
 

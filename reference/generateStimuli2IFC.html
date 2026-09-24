@@ -87,7 +87,7 @@
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Seed for the random number generator, for reproducibility.</p></dd>
+<dd><p>Seed for the random number generator, for reproducibility. It is saved in the <code>.Rdata</code> file, where the default InfoVal reference replays it. With <code>seed = NULL</code> there is nothing to replay, so InfoVal references for that file need an explicit <code>response_seed</code>.</p></dd>
 
 
 <dt id="arg-maximize-baseimage-contrast">maximize_baseimage_contrast<a class="anchor" aria-label="anchor" href="#arg-maximize-baseimage-contrast"></a></dt>

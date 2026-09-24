@@ -76,16 +76,18 @@ seeds with the stimulus seed and draws one
 per trial. The simulated reference responses continue that stream, so
 the null depends on the file and the session’s
 [`RNGkind()`](https://rdrr.io/r/base/Random.html), not on the current
-random state or `ncores`. Files do not record the RNG kind, and changing
-it changes the response draws but not the saved noise;
-[\#315](https://github.com/rdotsch/rcicr/issues/315) tracks this.
+random state or `ncores`. Files do not record the RNG kind
+([\#315](https://github.com/rdotsch/rcicr/issues/315)).
 [`?generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
-documents the historical stream, and tests pin it.
+documents the historical stream, and tests pin it. A `NULL` or missing
+stimulus seed leaves none, so the default stops and asks for a
+`response_seed` ([\#334](https://github.com/rdotsch/rcicr/issues/334))
+rather than reseed from the clock.
 
-The stimuli are no longer regenerated to reach that point in the stream
-([\#301](https://github.com/rdotsch/rcicr/issues/301)), so
-`seedResponseStream()` **replays** their draws. Do not “simplify” that
-loop away: it looks inert and is the whole guarantee. Its draw count is
+`seedResponseStream()` **replays** the stimulus draws instead of
+regenerating the stimuli
+([\#301](https://github.com/rdotsch/rcicr/issues/301)). Do not
+“simplify” that loop away: it is the whole guarantee. Its draw count is
 the saved matrix’s width *after* `selectStimulusParams()`; a pre-0.3.0
 file’s raw 4096 columns would shift the stream, as below.
 

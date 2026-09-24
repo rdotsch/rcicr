@@ -66,7 +66,10 @@ generateStimuli2IFC(
 
 - seed:
 
-  Seed for the random number generator, for reproducibility.
+  Seed for the random number generator, for reproducibility. It is saved
+  in the `.Rdata` file, where the default InfoVal reference replays it.
+  With `seed = NULL` there is nothing to replay, so InfoVal references
+  for that file need an explicit `response_seed`.
 
 - maximize_baseimage_contrast:
 

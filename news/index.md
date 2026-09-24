@@ -25,6 +25,36 @@
   GitHub releases. The 1.1.0 entry below saying these functions accept
   tibble columns held only for a single group.
 
+- **The default InfoVal reference now needs the stimulus seed saved in
+  the file.** Without a `response_seed`, the reference replays that
+  seed. A file without one (made with
+  `generateStimuli2IFC(seed = NULL)`, or with the `seed` field removed)
+  now stops with an error before anything is simulated. The error gives
+  the call that stores a reproducible reference,
+  `generateReferenceDistribution2IFC(rdata, response_seed = <n>)`, which
+  later
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  calls reuse, and, for a file that cannot be written,
+  `computeInfoVal2IFC(..., response_seed = <n>)`. Files with a seed are
+  unaffected.
+
+  Such a file used to reseed from the clock, so its reference could not
+  be reproduced.
+  [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+  and `computeInfoVal2IFC(force_gen_ref_dist = TRUE)` returned a
+  different one on every call. The first automatic
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  stored one that later calls reused, so the InfoVal was stable on that
+  copy of the file and different on any other. This happened on every
+  version back to 1.0.1 for files made with `seed = NULL`, and on 1.4.0
+  and 1.4.1 for files without the field; earlier versions stopped on
+  those. A reference already stored by 1.4.0 or later is still used,
+  with a message that it cannot be regenerated from the file. An older
+  stored reference, which rcicr rebuilds, now stops like any other.
+  Replacing either with a seeded reference makes the InfoVal
+  reproducible; it will differ from the one reported before.
+  ([\#334](https://github.com/rdotsch/rcicr/issues/334))
+
 ### Bug fixes
 
 - **Saving a reference distribution no longer risks the stimulus

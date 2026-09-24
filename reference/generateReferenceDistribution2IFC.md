@@ -36,8 +36,9 @@ generateReferenceDistribution2IFC(
 
   Optional seed for the simulated random responses. The default, `NULL`,
   continues from the state the stimulus generator left behind, as
-  described under Reproducibility. A number gives an independent draw of
-  the null from the same stimuli.
+  described under Reproducibility; it needs the stimulus seed saved in
+  the file. A number gives an independent draw of the null from the same
+  stimuli.
 
 - save_rdata:
 
@@ -46,7 +47,9 @@ generateReferenceDistribution2IFC(
   [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
   keep using what the file already holds. Set it to `FALSE` whenever you
   set `response_seed`, so a one-off null does not become the file's
-  permanent reference.
+  permanent reference. The exception is a file without a stimulus seed:
+  there the seeded reference is the one to keep, as the file's
+  reproducible reference.
 
 - baseimage:
 
@@ -82,6 +85,11 @@ random state, and not on `ncores`. Two researchers computing InfoVal
 from the same stimulus file get the same reference distribution, and the
 same number, on any machine and in any session, provided both use the
 same RNG kind.
+
+This needs the stimulus seed saved in the file. A file without one (made
+with `generateStimuli2IFC(seed = NULL)`, or with the field removed) has
+no stream to continue, so the default stops with an error; pass a
+`response_seed` instead.
 
 The RNG kind is the one gap.
 [`set.seed()`](https://rdrr.io/r/base/Random.html) keeps whatever kind
