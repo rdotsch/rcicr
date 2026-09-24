@@ -6,9 +6,9 @@ Without a `response_seed`, the reference distribution replays the stimulus strea
 
 ## Change
 
-1. **Check for the seed before any simulation**, in both reference paths: `generateReferenceDistribution2IFC()` (shared parameters) and `generateBaseReference()` (independent base images), ahead of `referenceNoise()`, which at 512px is the slow step. One helper, called from both, stops when `response_seed` is `NULL` and the file has no `seed`. The message says the file has no stimulus seed to replay, and that `response_seed` draws a reproducible reference from the saved noise instead. It names `generateReferenceDistribution2IFC(rdata, response_seed = <n>)` as the way to store one: that call saves the reference with its seed recorded, and later `computeInfoVal2IFC()` calls reuse it. The message makes no other claim about storage, since whether a seeded reference is saved depends on the call (`computeInfoVal2IFC()` never stores one; `generateReferenceDistribution2IFC()` does unless `save_rdata = FALSE`).
+1. **Check for the seed before any simulation**, in both reference paths: `generateReferenceDistribution2IFC()` (shared parameters) and `generateBaseReference()` (independent base images), ahead of `referenceNoise()`, which at 512px is the slow step. One helper, called from both, stops when `response_seed` is `NULL` and the file has no `seed`. The message says the file has no stimulus seed to replay, and that `response_seed` draws a reproducible reference from the saved noise instead. It names `generateReferenceDistribution2IFC(rdata, response_seed = <n>)` as the way to store one, with `baseimage = "<label>"` added on the independent-base path, where that call requires it (`selectReferenceBase()`): that call saves the reference with its seed recorded, and later `computeInfoVal2IFC()` calls reuse it. The message makes no other claim about storage, since whether a seeded reference is saved depends on the call (`computeInfoVal2IFC()` never stores one; `generateReferenceDistribution2IFC()` does unless `save_rdata = FALSE`).
 2. **Only a missing `seed` is rejected.** Every other value `set.seed()` either already rejects with an error or seeds deterministically, so rejecting it would turn reproducible results into errors.
-3. **`NEWS.md`, under "Bug fixes"**: who is affected (a stimulus file without `seed`, on 1.4.0 and 1.4.1), what they got (a different reference and InfoVal on every call), what happens now, and that a `response_seed` gives a reproducible reference. Files that have `seed` are unaffected.
+3. **`NEWS.md`, under "Reproducibility impact"**, since affected calls used to return numbers and now stop: who is affected (a stimulus file without `seed`, on 1.4.0 and 1.4.1), what they got (a different reference and InfoVal on every call), what happens now, and that a `response_seed` gives a reproducible reference. Files that have `seed` are unaffected.
 
 No `DECISIONS.md` entry: this applies the existing "Trial alignment errors stop computation" reasoning, and the file has 2 words of headroom.
 
@@ -26,6 +26,7 @@ No `DECISIONS.md` entry: this applies the existing "Trial alignment errors stop 
 - `computeInfoVal2IFC()` on such a file stops the same way;
 - with a `response_seed`, a file without `seed` gives the same reference on two calls;
 - a reference stored that way is reused by `computeInfoVal2IFC()` with no error, for shared and for independent base images;
+- on the independent-base path the message names the `baseimage` label, and the call it gives runs as written;
 - the stop comes before the noise is built (checked by mocking `referenceNoise()` to fail if reached).
 
 Each new failure test must fail on the current code; checked with `git stash push -- R/`.
