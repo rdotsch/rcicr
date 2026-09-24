@@ -105,7 +105,7 @@ at a small size so the vignette builds quickly. A real study typically
 uses <code>img_size = 512</code> and several hundred trials (Dotsch
 &amp; Todorov, 2012).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">stimulus_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">stimulus_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"stimuli"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC</a></span><span class="op">(</span></span>
 <span>  base_face_files <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>face <span class="op">=</span> <span class="va">base_face_path</span><span class="op">)</span>,</span>

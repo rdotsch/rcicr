@@ -48,7 +48,7 @@ a small size so the vignette builds quickly. A real study typically uses
 
 ``` r
 
-stimulus_path <- tempdir()
+stimulus_path <- tempfile("stimuli")
 
 generateStimuli2IFC(
   base_face_files = list(face = base_face_path),

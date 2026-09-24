@@ -116,7 +116,12 @@ generateStimuli2IFC(
 
   Boolean: save the `.Rdata` file with the stimulus parameters (default:
   `TRUE`). Computing classification images needs that file, so keep this
-  `TRUE`; the argument exists mainly for internal use.
+  `TRUE`; the argument exists mainly for internal use. The file is named
+  `<label>_seed_<seed>_time_<month>_<day>_<year>_<hour>_<minute>.Rdata`,
+  for the minute the call started. An existing file of that name is
+  never overwritten: the call stops before generating anything. So does
+  a call into the same folder with the same seed, started in the same
+  minute, while another is still running.
 
 ## Value
 
@@ -140,7 +145,7 @@ generateStimuli2IFC(
   base_face_files = list(face = base_face),
   n_trials = 4,
   img_size = 32,
-  stimulus_path = tempdir(),
+  stimulus_path = tempfile("stimuli"),
   seed = 1,
   ncores = 1,
   nscales = 1

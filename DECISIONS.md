@@ -113,45 +113,41 @@ Four choices, each forced by something specific:
 
 ### 4096 → 4092 parameters: why old stimulus files cannot be regenerated from their seed
 
-rcicr 0.3.0 (2015-01-23) cut the random draws per trial from 4096 to
-4092. 4092 is the real patch count, 6 orientations × 2 phases ×
-`sum(4^0..4^4)`; 4096 was a round `2^12` over-allocation, so four
-contrasts per trial were drawn that no patch index used. `ChangeLog`
-says the change “does not affect anything else”.
+rcicr 0.3.0 (2015-01-23) cut the draws per trial from 4096, a round
+`2^12`, to 4092, the real patch count (6 orientations × 2 phases ×
+`sum(4^0..4^4)`); four drawn contrasts per trial had no patch.
+`ChangeLog` says this “does not affect anything else”.
 
-**That is true for analysis and false for regeneration.** Analysing a
-pre-0.3.0 file reads its *stored* parameters, and four unused columns
-change nothing. But [`runif()`](https://rdrr.io/r/stats/Uniform.html) is
-a stream: at the same seed, trial 1 gets identical values either way and
-**every later trial is shifted by four draws** (verified: trial 1
-identical, trials 2 and 3 not). A pre-0.3.0 stimulus set can be
-re-analysed exactly, but not re-created from its seed.
+**True for analysis, false for regeneration.** Analysis reads the
+*stored* parameters. But
+[`runif()`](https://rdrr.io/r/stats/Uniform.html) is a stream: at the
+same seed trial 1 is identical and **every later trial shifts by four
+draws** (verified on trials 1 to 3). A pre-0.3.0 set can be re-analysed
+exactly, not re-created from its seed.
 
 The same release fixed `sinIdx` counting from 0 instead of 1, an
 independent change that the `pre_0.3.0` flag handles.
 
 **The 0-based path in
 [`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md)
-looks as if it corrupts the whole image, and does not.** When
-`min(patchIdx) == 0`, `params[p$patchIdx]` drops every cell indexed 0 (R
-drops a 0 subscript rather than returning `NA`). The result is too short
-for the patch array, and [`array()`](https://rdrr.io/r/base/array.html)
-recycles it, which would normally misalign everything. It is harmless
-because the same counting from 0 leaves the *last* patch layer
-unwritten, so every cell with `patchIdx == 0` also has `patches == 0`.
-Those cells come last in column-major order, so the recycled values land
-only where the patch is zero and are multiplied away. Measured:
-identical to the honest “one patch not shown” result (maximum absolute
-difference 0) across 36 combinations of size, `nscales` and seed.
+looks as if it corrupts the whole image, and does not.** With
+`min(patchIdx) == 0`, `params[p$patchIdx]` drops every 0 subscript (R
+drops it rather than returning `NA`), and
+[`array()`](https://rdrr.io/r/base/array.html) recycles the short
+result. But counting from 0 also leaves the *last* patch layer
+unwritten, so every cell with `patchIdx == 0` has `patches == 0`. Those
+cells come last in column-major order, so the recycled values land only
+where they are multiplied by zero. Measured: identical to the honest
+“one patch not shown” result (maximum absolute difference 0) across 36
+combinations of size, `nscales` and seed.
 
-A stimulus file stores the patch array its own generator wrote, and the
-genuine pre-0.3.0 generator is the same `co = 0` / `idx = 0` loop that
-the `pre_0.3.0` flag runs. That was verified against the R-Forge source
-(`git show 7d0d9e6:pkg/R/rcicr.R`): 0.3.0 only flipped the default and
-added the flag. Do **not** “fix” the recycling by offsetting the index
-by one: that changes which sinusoid is dropped and alters the CI of
-every genuine pre-0.3.0 file. `test-generateNoiseImage.R` pins both
-properties.
+The genuine pre-0.3.0 generator is the same `co = 0` / `idx = 0` loop
+the `pre_0.3.0` flag runs (verified against
+`git show 7d0d9e6:pkg/R/rcicr.R`: 0.3.0 only flipped the default and
+added the flag), and a file stores the patch array its generator wrote.
+Do **not** “fix” the recycling by offsetting the index: that changes
+which sinusoid is dropped and alters the CI of every genuine pre-0.3.0
+file. `test-generateNoiseImage.R` pins both properties.
 
 **A backward-compatibility path that nothing exercises cannot be told
 apart from one that works.** The truncation left one broken in
@@ -610,6 +606,17 @@ can, `saveRdataSafely()` keeps a verified backup until
 [`save()`](https://rdrr.io/r/base/save.html) completes. Barring
 concurrent saves, rcicr never deletes or overwrites a `.rcicr-backup` it
 cannot prove it made; restoring needs a check first.
+
+### A stimulus `.Rdata` file is never overwritten
+
+[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+stops rather than replace one
+([\#338](https://github.com/rdotsch/rcicr/issues/338)). A `_2` suffix
+was **rejected**: `list.files(...)[1]` would silently pick the older
+file, which may not match the PNGs on disk. Seconds in the name only
+make a collision rarer. Its lock is keyed on seed and minute, not
+`label`: file systems equate spellings (case, Unicode) base R cannot
+normalize.
 
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 

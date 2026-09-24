@@ -119,7 +119,7 @@
 
 
 <dt id="arg-save-rdata">save_rdata<a class="anchor" aria-label="anchor" href="#arg-save-rdata"></a></dt>
-<dd><p>Boolean: save the <code>.Rdata</code> file with the stimulus parameters (default: <code>TRUE</code>). Computing classification images needs that file, so keep this <code>TRUE</code>; the argument exists mainly for internal use.</p></dd>
+<dd><p>Boolean: save the <code>.Rdata</code> file with the stimulus parameters (default: <code>TRUE</code>). Computing classification images needs that file, so keep this <code>TRUE</code>; the argument exists mainly for internal use. The file is named <code>&lt;label&gt;_seed_&lt;seed&gt;_time_&lt;month&gt;_&lt;day&gt;_&lt;year&gt;_&lt;hour&gt;_&lt;minute&gt;.Rdata</code>, for the minute the call started. An existing file of that name is never overwritten: the call stops before generating anything. So does a call into the same folder with the same seed, started in the same minute, while another is still running.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -142,7 +142,7 @@ generate each stimulus. Analysing the responses later requires that file.</p>
 <span class="r-in"><span>  base_face_files <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>face <span class="op">=</span> <span class="va">base_face</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  n_trials <span class="op">=</span> <span class="fl">4</span>,</span></span>
 <span class="r-in"><span>  img_size <span class="op">=</span> <span class="fl">32</span>,</span></span>
-<span class="r-in"><span>  stimulus_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  stimulus_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"stimuli"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>  nscales <span class="op">=</span> <span class="fl">1</span></span></span>
