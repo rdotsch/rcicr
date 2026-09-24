@@ -12,11 +12,11 @@ Generate stimuli and analyze data of reverse correlation image classification ex
 }
 \details{
 \code{vignette("reverse-correlation-walkthrough")} works through a complete
-experiment end to end. In brief: \code{\link{generateStimuli2IFC}} creates the
-stimuli together with the \code{.Rdata} file recording how they were made, and
-\code{\link{generateCI2IFC}} or \code{\link{batchGenerateCI}} turns participants'
-responses into classification images. \code{citation("rcicr")} prints the
-reference to cite.
+experiment. In brief: \code{\link{generateStimuli2IFC}} creates the stimuli and the
+\code{.Rdata} file recording how they were made, and \code{\link{generateCI}} or
+\code{\link{batchGenerateCI}} turns participants' responses into classification images.
+\code{citation("rcicr")} prints the reference for the software; cite the method papers
+below as well.
 }
 \references{
 Dotsch, R., & Todorov, A. (2012). Reverse correlating social face perception.

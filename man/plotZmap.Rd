@@ -19,45 +19,49 @@ plotZmap(
 )
 }
 \arguments{
-\item{zmap}{A matrix containing z-scores that map onto a given base image. zmap and baseimage must have the same dimensions.}
+\item{zmap}{Matrix of z-scores. Must have the same dimensions as \code{bgimage}.}
 
-\item{bgimage}{A matrix containing the grayscale image to use as a background. This should be either the base image or the final CI. If not this argument is not given, only the Z-map will be drawn.}
+\item{bgimage}{Greyscale image matrix to draw behind the z-map, normally the base image or the final CI. Without it, only the z-map is drawn.}
 
-\item{sigma}{The sigma of the smoothing that was applied to the CI to create the Z-map.}
+\item{sigma}{Sigma of the smoothing applied to the CI to create the z-map, shown in the decoration.}
 
-\item{threshold}{Integer specifying the threshold z-score (default: 3). Z-scores below the threshold will not be plotted on the z-map.}
+\item{threshold}{Threshold z-score (default: 3). Z-scores below it are not drawn on the z-map.}
 
-\item{mask}{Optional. A binary matrix with the same dimensions as zmap: cells that are 0 (or FALSE) are masked, cells that are 1 (or TRUE) are kept. Can also be the filename (as a string) of a black and white PNG image, in which case black (0) is masked and white (1) is kept. This is the same convention \code{generateCI()} uses for its own \code{mask} argument, so a mask can be used with both. Note that earlier versions of this documentation stated the opposite for the matrix form; the description here matches what the code does.}
+\item{mask}{Optional mask: a binary matrix the size of \code{zmap} (0 or \code{FALSE} = masked, 1 or \code{TRUE} = kept), or the path to a black-and-white PNG image (black = masked, white = kept). This is the same convention as \code{generateCI()}'s \code{mask}, so one mask works for both. Earlier versions of this documentation described the matrix the wrong way round.}
 
-\item{decoration}{Optional boolean specifying whether the Z-map should be plotted with margins, text (sigma, threshold) and a scale (default: TRUE).}
+\item{decoration}{Boolean: draw the z-map with margins, a caption (sigma, threshold) and a scale (default: \code{TRUE}).}
 
-\item{targetpath}{String specifying the directory to save the Z-map PNG to. Required: this function exists to write a file, and has no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
+\item{targetpath}{Directory to save the z-map PNG to. Required, since writing that file is this function's purpose; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.}
 
-\item{filename}{Optional string to specify a file name for the Z-map PNG.}
+\item{filename}{Optional file name for the z-map PNG.}
 
-\item{size}{Integer specifying the width and height of the PNG image (default: 512).}
+\item{size}{Width and height of the PNG image, in pixels (default: 512).}
 
-\item{...}{Additional arguments to be passed to \code{graphics::image}. Only applied when decoration is TRUE.}
+\item{...}{Further arguments passed to \code{graphics::image}. Used only when \code{decoration = TRUE}.}
 
-\item{pointsize}{Integer specifying the text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up. The minimum size is measured in inches and therefore depends on the device's resolution: roughly \code{12.3 * pointsize} pixels at 72 ppi (Linux, macOS) and \code{16.4 * pointsize} at 96 ppi (Windows) -- about 160px and 200px respectively at the default. Below that \code{plotZmap()} stops and names the minimum for the device in use. Lowering it is what makes a decorated z-map possible on a small device -- at the cost of a smaller map, since the margins shrink but the labels still need room. Ignored when \code{decoration = FALSE}, which has no margins and works at any size.}
+\item{pointsize}{Text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up. The minimum image size is fixed in inches, so in pixels it depends on the device's resolution: roughly \code{12.3 * pointsize} pixels at 72 ppi (Linux, macOS) and \code{16.4 * pointsize} at 96 ppi (Windows), about 160 and 200 pixels at the default. Below that, \code{plotZmap()} stops and names the minimum for your device. A lower \code{pointsize} fits a decorated z-map onto a small image, at the cost of a smaller map: the margins shrink but the labels still need room. Ignored when \code{decoration = FALSE}, which has no margins and works at any size.}
 }
 \value{
-Nothing. It writes a Z-map image.
+Nothing; the z-map is written as a PNG.
 }
 \description{
-Plots a Z-map given a matrix of z-scores that maps onto a specified base image.
+Plots a z-map: a matrix of z-scores drawn over a background image.
 }
 \details{
-This function takes in a matrix of z-scores (as returned by generateCI) and an Rdata file containing a base image. It returns a Z-map image in PNG format.
-Unlisted additional arguments will be passed to \code{graphics::image}. For example, a different color palette can be specified using the \code{col} argument. See \code{graphics::image} for details. Versions up to and including 1.2.3 passed these to the raster package's plot method instead; \code{col} works the same way in both, but an argument specific to that method will no longer be understood.
+Takes a matrix of z-scores, such as the \code{zmap} that \code{\link{generateCI}} returns,
+and optionally a background image matrix, and writes the z-map as a PNG.
+Further arguments are passed to \code{graphics::image}; for example, \code{col} sets a
+different colour palette. Versions up to and including 1.2.3 passed them to the raster
+package's plot method instead. \code{col} works the same in both, but arguments specific to
+that method are no longer understood.
 }
 \section{Reproducibility across platforms}{
 
-The z-scores themselves are ordinary R arithmetic and do not depend on your operating system, and neither do classification images, scaling or informational value. The PNG this function writes is different: it is drawn through a graphics device, and graphics devices differ between platforms both in colour management and in whether they write an alpha channel. The same z-map rendered on Linux and on macOS gives visibly identical figures whose files are not byte-identical -- macOS renders a mid-grey background at roughly 0.573 where the cairo device gives 0.502.
+The z-scores are ordinary R arithmetic and do not depend on your operating system; nor do classification images, scaling or informational value. The PNG this function writes does: it is drawn through a graphics device, and devices differ between platforms in colour management and in whether they write an alpha channel. The same z-map rendered on Linux and on macOS gives figures that look identical but are not byte-identical. macOS renders a mid-grey background at roughly 0.573, where the cairo device gives 0.502.
 
-So when you are checking that an analysis reproduces, compare the numbers rather than the rendered figures. A z-map PNG that differs pixel-for-pixel on a colleague's machine is not a different result, and regenerating figures on another platform is safe.
+So to check that an analysis reproduces, compare the numbers, not the rendered figures. A z-map PNG that differs pixel for pixel on a colleague's machine is not a different result, and regenerating figures on another platform is safe.
 
-This applies only to \code{plotZmap()}, which is the only function in the package that opens a graphics device. Every other PNG written by \code{rcicr} -- stimuli, classification images, autoscaled classification images -- is written straight from the pixel array by \code{png::writePNG()} and carries no such dependence.
+This applies only to \code{plotZmap()}, the one function in the package that opens a graphics device. Every other PNG \code{rcicr} writes (stimuli, classification images, autoscaled classification images) comes straight from the pixel array via \code{png::writePNG()}.
 }
 
 \examples{

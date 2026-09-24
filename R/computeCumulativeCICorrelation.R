@@ -1,54 +1,51 @@
 #' Computes cumulative trial CIs correlations with final/target CI
 #'
-#' Computes cumulative trial CIs correlations with final/target CI.
+#' Correlates the CI built from the first trials with the final or target CI, adding trials one step at a time.
 #'
-#' Use for instance for plotting curves of trial-final/target CI correlations to estimate how many trials are necessary in your task
+#' Plot the resulting curve to estimate how many trials your task needs.
 #'
 #' @section Repeated presentations of the same stimulus:
-#' This function walks trials in the order they were presented and does not aggregate repeated
-#' presentations of a stimulus, unlike \code{\link{generateCI}}, which averages the responses to
-#' each unique stimulus before building its classification image. That is deliberate: collapsing
-#' repeats would discard the presentation order a cumulative curve is entirely about.
+#' This function takes the trials in the order they were presented and does not average repeated
+#' presentations of a stimulus. \code{\link{generateCI}} does average them, per unique stimulus,
+#' before building its classification image. Averaging here would discard the presentation order
+#' that a cumulative curve is about.
 #'
-#' One consequence is worth knowing. With no \code{targetci}, the final CI computed here is built
-#' from the same un-aggregated trials as the curve. Where the evaluated trials reach the last one
-#' -- always so at the default \code{step = 1} -- the curve's final point compares that CI with
-#' itself and is exactly 1: self-consistency, not evidence of convergence. A larger \code{step}
-#' can stop short, because trials are taken at \code{seq(1, length(responses), step)}: with six
-#' responses and \code{step = 2} the last one evaluated is the fifth, and the curve ends at
-#' whatever that partial CI correlates to -- 0.97 in one such set, not 1.
+#' Without a \code{targetci}, the final CI is built here from the same trials as the curve. When
+#' the evaluated trials reach the last one, as they always do at the default \code{step = 1}, the
+#' curve's last point compares that CI with itself and is exactly 1. That shows self-consistency,
+#' not convergence. A larger \code{step} can stop short, because trials are taken at
+#' \code{seq(1, length(responses), step)}: with six responses and \code{step = 2}, the last trial
+#' evaluated is the fifth, and the curve ends at whatever that partial CI correlates to (0.97 in
+#' one such set, not 1).
 #'
-#' Both statements assume the CI being compared against varies at all. Responses that cancel
-#' exactly -- every presentation of a stimulus answered both ways -- average to a uniformly zero
-#' CI, and a correlation against a constant is undefined, so \strong{every} point on the curve is
-#' \code{NA} rather than the last one being 1. Such a curve means the responses carry no net
-#' signal, not that the call failed.
+#' This assumes the CI compared against varies at all. Responses that cancel exactly, with every
+#' presentation of a stimulus answered both ways, average to a CI that is zero everywhere. A
+#' correlation with a constant is undefined, so then \strong{every} point on the curve is
+#' \code{NA}. Such a curve means the responses carry no net signal, not that the call failed.
 #'
-#' A \code{targetci} carrying masked pixels -- \code{\link{generateCI}} stores \code{NA} in every
-#' pixel a \code{mask} excludes -- is handled by correlating over the unmasked pixels only. If the
-#' mask covers \emph{every} pixel, there are no complete pairs and the curve is all-\code{NA}, same
-#' as the zero-variance case above.
+#' A \code{targetci} with masked pixels (\code{\link{generateCI}} stores \code{NA} in every pixel
+#' a \code{mask} excludes) is correlated over the unmasked pixels only. If the mask covers
+#' \emph{every} pixel, no pairs remain and the whole curve is \code{NA}, as above.
 #'
-#' Where every stimulus was
-#' presented the same number of times, that final CI is identical to the one \code{generateCI}
-#' returns. Where repeat counts differ, the two weight the data differently -- each trial equally
-#' here, each unique stimulus equally there -- and they diverge: on an 8-trial set with counts
+#' If every stimulus was shown equally often, the final CI computed here is identical to the one
+#' \code{generateCI} returns. If not, the two weight the data differently (each trial equally
+#' here, each unique stimulus equally there) and they diverge: on an 8-trial set with counts
 #' 4/2/1/1 they correlate at 0.77.
 #'
-#' So to see how the CI approaches the one you will actually report, pass it as
-#' \code{targetci = generateCI(...)} rather than relying on the self-computed default -- built
-#' without a \code{mask}, per the note above.
+#' So to see how the CI approaches the one you will report, pass that CI as
+#' \code{targetci = generateCI(...)} instead of relying on the default, which is always built
+#' without a \code{mask}.
 #'
 #' @export
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats cor
-#' @param stimuli Numeric vector of stimulus numbers in response order, with one finite, positive whole number per response, within the trials saved for the selected base image. Repeated and nonconsecutive numbers are allowed. Factors, characters and logicals are rejected; verify imported labels against the generated stimulus filenames before converting them to numeric IDs.
-#' @param responses Vector specifying the responses in the same order of the stimuli vector, coded 1 for original stimulus selected and -1 for inverted stimulus selected.
-#' @param baseimage String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.
-#' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param targetci List Target CI object generated with rcicr functions to correlate cumulative CIs with.
-#' @param step Step size in sequence of trials to compute correlations with.
-#' @return Vector containing correlation between cumulative CI and final/target CI.
+#' @param stimuli Numeric vector of stimulus numbers, one per response and in the same order. Each must be a positive whole number no larger than the number of trials saved for the selected base image. Numbers may repeat and need not be consecutive. Factors, characters and logicals are rejected: if your data hold stimulus labels, check them against the generated stimulus filenames before converting them to numbers.
+#' @param responses Vector of responses in the same order as \code{stimuli}: 1 where the original stimulus was chosen, -1 where the inverted one was.
+#' @param baseimage String naming the base image: not its file name, but its key in the \code{base_face_files} list passed to \code{\link{generateStimuli2IFC}}.
+#' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
+#' @param targetci Optional target CI to correlate the cumulative CIs with, as returned by \code{\link{generateCI}}. Without it, the final CI of these trials is used.
+#' @param step Number of trials added between successive correlations.
+#' @return Vector of correlations between each cumulative CI and the final or target CI.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")

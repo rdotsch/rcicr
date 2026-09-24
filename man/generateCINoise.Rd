@@ -9,10 +9,9 @@ generateCINoise(stimuli, responses, p)
 \arguments{
 \item{stimuli}{Matrix with one parameter row per response. A parameter vector is also accepted for a single trial with exactly one response.}
 
-\item{responses}{Vector containing the response to each trial (1 if participant selected original, -1 if participant selected inverted;
-this can be changed into a scale).}
+\item{responses}{Vector with the response to each trial: 1 where the participant chose the original, -1 where they chose the inverted image. Other values, such as ratings on a scale, weight the trials accordingly.}
 
-\item{p}{3D patch matrix (generated using \code{generateNoisePattern()}).}
+\item{p}{Noise basis, as returned by \code{\link{generateNoisePattern}}.}
 }
 \value{
 The classification image as pixel matrix.

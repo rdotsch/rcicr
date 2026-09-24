@@ -23,45 +23,45 @@ generateStimuli2IFC(
 )
 }
 \arguments{
-\item{base_face_files}{Named list of base face file names used as base images for stimuli, e.g. \code{list(aName = 'baseface.jpg')}. Accepts JPEG and PNG images, recognised by a \code{.png}, \code{.jpg} or \code{.jpeg} extension. Each name labels that base image's stimulus files and indexes the .Rdata file that \code{\link{generateCI}} reads back, so every element must be named, and named uniquely. Each image must be square and exactly \code{img_size} by \code{img_size} pixels: rcicr does not resize base images. All of this is checked before any stimuli are generated, and the message names the offending entry.}
+\item{base_face_files}{Named list of base image files, e.g. \code{list(aName = 'baseface.jpg')}. JPEG and PNG images are accepted, recognised by a \code{.png}, \code{.jpg} or \code{.jpeg} extension. Each name labels that base image's stimulus files and is the key \code{\link{generateCI}} uses to find it in the \code{.Rdata} file, so every element needs a unique name. Each image must be square and exactly \code{img_size} pixels wide: rcicr does not resize base images. All of this is checked before any stimuli are generated, and an error names the offending entry.}
 
-\item{n_trials}{Number specifying how many trials the task will have (function will generate two images for each trial per base image: original and inverted/negative noise).}
+\item{n_trials}{Number of trials. Each trial gets two images per base image: one with the noise added (original) and one with it subtracted (inverted).}
 
-\item{img_size}{Number specifying the number of pixels that the stimulus image will span horizontally and vertically (will be square, so only one integer needed).}
+\item{img_size}{Width and height of the square stimulus images, in pixels.}
 
-\item{stimulus_path}{String specifying the directory to save the stimuli and the .Rdata file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
+\item{stimulus_path}{Directory to save the stimuli and the \code{.Rdata} file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.}
 
-\item{label}{Label to prepend to each file for your convenience.}
+\item{label}{Label put at the start of each file name.}
 
-\item{use_same_parameters}{Boolean specifying whether for each base image the same set of parameters is used (TRUE) or a unique set is created for each base image (FALSE).}
+\item{use_same_parameters}{Boolean: all base images share one set of noise parameters (\code{TRUE}) or each gets its own (\code{FALSE}).}
 
-\item{seed}{Integer seeding the random number generator (for reproducibility).}
+\item{seed}{Seed for the random number generator, for reproducibility.}
 
-\item{maximize_baseimage_contrast}{Boolean specifying whether the pixel values of the base image should be rescaled to maximize its contrast. A base image with no contrast at all — every pixel the same value — has nothing to rescale, and is rejected with an error rather than silently turned into an all-\code{NaN} base image. Such an image is still usable with \code{maximize_baseimage_contrast = FALSE}.}
+\item{maximize_baseimage_contrast}{Boolean: rescale the base image's pixel values to maximize its contrast. A base image with no contrast at all, every pixel the same value, cannot be rescaled and is rejected with an error. It can still be used with \code{maximize_baseimage_contrast = FALSE}.}
 
-\item{noise_type}{String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).}
+\item{noise_type}{Noise pattern type: \code{sinusoid} (default) or \code{gabor}.}
 
-\item{nscales}{Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.}
+\item{nscales}{Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.}
 
-\item{sigma}{Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).}
+\item{sigma}{Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).}
 
-\item{ncores}{Number of CPU cores to use (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).}
+\item{ncores}{Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).}
 
-\item{return_as_dataframe}{Boolean specifying whether to return a data frame with the raw noise of the stimuli that were generated (default: FALSE). Data frame columns represent pixel values, data frame rows represent stimuli. The frame holds one noise image per trial, so it is meaningful only under the default \code{use_same_parameters = TRUE}, where every base image shares a single parameter set and one noise image per trial is all there is. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned; the frame's shape cannot represent trial x base image. Stimuli are still written to disk for every base image either way, and \code{save_rdata = TRUE} records the full parameter set, so nothing is lost from the files themselves.}
+\item{return_as_dataframe}{Boolean: return a data frame with the raw noise of the generated stimuli (default: \code{FALSE}), one row per pixel and one column per trial. With the default \code{use_same_parameters = TRUE} every base image shares the same noise, so that is all of it. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned, because one column per trial cannot hold several. The stimuli are still written for every base image, and \code{save_rdata = TRUE} records every parameter set, so nothing is missing from the files.}
 
-\item{save_as_png}{Boolean specifying whether to write the stimuli as images to disk (default: TRUE).}
+\item{save_as_png}{Boolean: write the stimuli to disk as PNG images (default: \code{TRUE}).}
 
-\item{save_rdata}{Boolean specifying whether .RData file with stimulus parameters will be saved (default: TRUE). Note: you always need to save the .RData file so that you can retrieve the stimulus parameters to compute classification images. This function argument exists primarily for internal rcicr use.}
+\item{save_rdata}{Boolean: save the \code{.Rdata} file with the stimulus parameters (default: \code{TRUE}). Computing classification images needs that file, so keep this \code{TRUE}; the argument exists mainly for internal use.}
 }
 \value{
-Nothing, everything is saved to files, unless return_as_dataframe is set to TRUE.
+Nothing: everything is saved to files. With \code{return_as_dataframe = TRUE}, the data frame described there.
 }
 \description{
-Generate stimuli for 2 images forced choice reverse correlation task.
+Generate stimuli for a two-image forced-choice reverse correlation task.
 }
 \details{
-Will save the stimuli as PNGs to a folder, including .Rdata file needed for analysis of data
-after data collection. This .Rdata file contains the parameters that were used to generate each stimulus.
+Saves the stimuli as PNGs, together with an \code{.Rdata} file holding the parameters used to
+generate each stimulus. Analysing the responses later requires that file.
 }
 \examples{
 # a synthetic square grayscale image stands in for a real base face photo

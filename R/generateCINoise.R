@@ -2,9 +2,8 @@
 #'
 #' @export
 #' @param stimuli Matrix with one parameter row per response. A parameter vector is also accepted for a single trial with exactly one response.
-#' @param responses Vector containing the response to each trial (1 if participant selected original, -1 if participant selected inverted;
-#' this can be changed into a scale).
-#' @param p 3D patch matrix (generated using \code{generateNoisePattern()}).
+#' @param responses Vector with the response to each trial: 1 where the participant chose the original, -1 where they chose the inverted image. Other values, such as ratings on a scale, weight the trials accordingly.
+#' @param p Noise basis, as returned by \code{\link{generateNoisePattern}}.
 #' @return The classification image as pixel matrix.
 #' @examples
 #' p <- generateNoisePattern(img_size = 32, nscales = 1)

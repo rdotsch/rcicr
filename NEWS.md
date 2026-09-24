@@ -1,5 +1,16 @@
 # rcicr (development version)
 
+## Documentation
+
+- Corrected help pages that disagreed with the code:
+  - `generateStimuli2IFC(return_as_dataframe = TRUE)` returns one row per pixel and one column per trial, not the reverse.
+  - `generateCI()` takes its scaling constant as `scaling_constant`, not `constant`.
+  - `batchGenerateCI()` also accepts `scaling = "matched"`.
+  - `plotZmap()` takes a background image matrix, not an `.Rdata` file.
+  - `generateNoisePattern()` returns four elements, not two.
+  - `computeInfoVal2IFC()` always simulates a reference distribution the `.Rdata` file does not hold; rcicr ships no precomputed ones.
+- Rewrote the README, both vignettes and the help pages for readability. The "no longer actively maintained" notice is removed from the README.
+
 # rcicr 1.4.1 (2026-09-15)
 
 ## Documentation
