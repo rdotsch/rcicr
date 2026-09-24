@@ -27,7 +27,12 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 
    The restore **copies the backup's contents into the existing file**, never renames it over the original, which would replace the file and change its owner, group, ACLs and hard links: `file.copy("<file>.rcicr-backup", "<file>", overwrite = TRUE, copy.mode = FALSE)`, then delete the backup. `NEWS.md` and the error message both give this command.
 3. **Read-only targets behave as today.** `save()` fails to open a read-only file without truncating it (measured as an unprivileged user: the file's checksum is unchanged), the checksums then match, and the backup is removed.
-4. **`NEWS.md`**, under Bug fixes: an interrupted or failed save of a reference distribution no longer destroys the stimulus file, when the file's directory is writable. It includes the hard-kill restore command, and says that on Windows the backup has its folder's permissions rather than being private to the user. Nothing under "Reproducibility impact": no number changes.
+4. **`NEWS.md`**, under Bug fixes: an interrupted or failed save of a reference distribution no longer destroys the stimulus file. The entry states every exception and change, so it claims no more than the code does:
+   - **not protected, saved as before with a warning:** a writable file in a read-only directory (Unix), and a file name over 228 bytes;
+   - **a new error:** on Windows, a writable file in a folder that refuses new files, which saves today; also, on any platform, when the backup cannot be made for another reason, such as a full disk;
+   - on Windows the backup has its folder's permissions rather than being private to the user;
+   - power loss and operating-system crashes are not covered;
+   - the hard-kill restore command. Nothing under "Reproducibility impact": no number changes.
 
 **What this does not cover: power loss or an operating-system crash.** A verified copy only shows the backup is readable through the operating system's cache, not that it has reached the disk, and base R cannot force that (it has no `fsync`). The guarantee is therefore limited to interrupts, R errors and a killed or crashed R process, and `NEWS.md` says so rather than promising more.
 
