@@ -151,7 +151,7 @@ saveRdataSafely <- function(names, file, envir) {
     warning('Incomplete copies of ', file, ' left by an interrupted save can be deleted: ',
             paste(file.path(dirname(file), leftovers), collapse = ', '), call. = FALSE)
   }
-  if (file.exists(backup)) {
+  if (pathExists(backup)) {
     if (!rdataLoads(file)) {
       stop(file, ' does not load. ', restoreAdvice(file, backup), call. = FALSE)
     }
@@ -239,6 +239,13 @@ rdataLoads <- function(file) {
     suppressWarnings(load(file, envir = new.env(parent = emptyenv())))
     TRUE
   }, error = function(e) FALSE)
+}
+
+# file.exists() follows symlinks, so a link to a missing file reads as absent,
+# and renaming the backup into place would replace it.
+pathExists <- function(path) {
+  link <- Sys.readlink(path)
+  file.exists(path) || (!is.na(link) && nzchar(link))
 }
 
 sameContents <- function(a, b) {

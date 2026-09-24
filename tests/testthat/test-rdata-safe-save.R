@@ -150,6 +150,16 @@ test_that("a leftover backup beside a file that loads stops the save and is kept
   expect_true(file.exists(rdataBackupPath(path)))
 })
 
+test_that("a dangling symlink at the backup path stops the save and is kept", {
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  path <- stim_file(dir, value = 1)
+  file.symlink(file.path(dir, "missing"), rdataBackupPath(path))
+  expect_error(save_x(path, 2), "delete it")
+  expect_identical(loaded_x(path), 1)
+  expect_true(nzchar(Sys.readlink(rdataBackupPath(path))))
+})
+
 test_that("a leftover backup beside a damaged file stops with the restore command", {
   dir <- withr::local_tempdir()
   path <- stim_file(dir, value = 1)
