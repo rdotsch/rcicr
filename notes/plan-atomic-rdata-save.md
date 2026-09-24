@@ -22,7 +22,7 @@ Writing a temporary file and renaming it over the original was rejected: a renam
    - **after a committed save**, remove the backup. If that fails, warn that the save succeeded and name the backup to delete. **Never roll back a committed save**: the new file and the backup differ by design, so treating a cleanup failure like a save failure would restore the old contents over the new ones. The leftover backup then stops the next save until it is deleted, which the warning says;
    - **on error or interrupt before the save committed** (Esc, Ctrl-C and R errors all run `on.exit()`): if the original's checksum differs from the backup's, copy the backup back in place with `file.copy(backup, file, overwrite = TRUE, copy.mode = FALSE)`. Remove the backup once the checksums match, then re-raise the error. If the restore fails, keep the backup and give the restore command.
 2. **A hard kill** (the R process killed, or crashing) skips `on.exit()`:
-   - during the backup copy, it leaves only a staging file; the original is untouched and the next save proceeds. The staging file can be deleted;
+   - during the backup copy, it leaves only a staging file; the original is untouched and the next save proceeds. **Each save lists leftover `<file>.rcicr-staging-*` files for that file and warns with their names**, saying they are incomplete copies that can be deleted, so repeated interruptions cannot quietly fill the disk. The helper does not delete them itself: a file this call did not create could belong to another R session saving at the same moment;
    - during the save, it leaves the complete backup beside a possibly damaged original, and the leftover-backup check stops the next save.
 
    The restore **copies the backup's contents into the existing file**, never renames it over the original, which would replace the file and change its owner, group, ACLs and hard links: `file.copy("<file>.rcicr-backup", "<file>", overwrite = TRUE, copy.mode = FALSE)`, then delete the backup. `NEWS.md` and the error message both give this command.
@@ -49,6 +49,7 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 - A failing backup copy stops before the original is touched, and leaves neither a staging file nor a backup (mocked).
 - A `Sys.chmod()` that leaves the staging file at another mode stops before any data is copied (mocked; Unix only).
 - A file name too long for the backup suffix falls back to today's save with a warning (mocked).
+- Leftover staging files for the same file are reported by name in a warning and left in place (mocked).
 - A refused publishing rename stops before the original is touched, and leaves no staging file (mocked).
 - A failure to delete the backup after a successful save warns, keeps the new contents, and does not restore the backup (mocked).
 - A staging file that cannot be created falls back to today's in-place save when the directory is not writable, and stops without touching the original when it is (both mocked).
