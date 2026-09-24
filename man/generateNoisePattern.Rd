@@ -13,9 +13,9 @@ generateNoisePattern(
 )
 }
 \arguments{
-\item{img_size}{Width and height of the noise pattern, in pixels.}
+\item{img_size}{Width and height of the noise pattern, in pixels. It must be divisible by \code{2^(nscales - 1)}, because the finest scale tiles the image with that many patches per side.}
 
-\item{nscales}{Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.}
+\item{nscales}{Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency. \code{img_size} must be divisible by \code{2^(nscales - 1)}.}
 
 \item{noise_type}{Noise pattern type: \code{sinusoid} (default) or \code{gabor}.}
 

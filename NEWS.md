@@ -22,6 +22,8 @@
 
 - **`generateStimuli2IFC()` never overwrites a stimulus `.Rdata` file.** Its file name records the minute, so two calls into one folder with the same `label` and `seed` in the same minute used to write one file, and the first set's PNGs lost the only record of their noise parameters. The name is now reserved before anything is generated, and the call stops, having written nothing, if that file exists or if another call into the same folder with the same seed, started in the same minute, is still running. The error says to use a different `label` or `stimulus_path`, or to delete the file if the set is being regenerated on purpose. The time in the name is now the start of the call rather than its end. (#338)
 
+- **An `img_size` the noise scales cannot tile now gets an error that says so.** The finest of `nscales` scales tiles the image with `2^(nscales - 1)` patches per side, so `img_size` must be divisible by that. `generateNoisePattern()`, and through it `generateStimuli2IFC()` and `simulateNoiseIntensities()`, used to fail with "number of items to replace is not a multiple of replacement length". The error now names the constraint, the nearest valid sizes and the largest `nscales` that fits. Every size that worked still works. (#339)
+
 ## Documentation
 
 - Corrected help pages that disagreed with the code:
