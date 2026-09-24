@@ -1,6 +1,6 @@
 # Maintaining the repository
 
-How this repository's automation is wired, and why. `CONTRIBUTING.md` covers how to contribute, `RELEASING.md` how to cut a release, and `DECISIONS.md` why the package behaves as it does. This file covers the machinery around them.
+How this repository's automation is wired, and why; `AGENTS.md` says which document owns what.
 
 **Keep this file under 1800 words.**
 
@@ -17,7 +17,7 @@ How this repository's automation is wired, and why. `CONTRIBUTING.md` covers how
 | `rhub.yaml` | Stock R-hub v2, `workflow_dispatch` only. |
 | `lint.yaml` | `lintr::lint_package()`, which must come back clean; `.lintr` holds the config and an empty `exclusions:`. A required check (below), with `lintr` pinned; `tools/regenerate-lintr-baseline.R` rebuilds `exclusions:` if that is ever needed. |
 
-**The required status checks on `main`** are `compare`, `ubuntu-latest (release)`, `ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)` and `lint`. For the live list, query `gh api repos/rdotsch/rcicr/rules/branches/main`. A **ruleset** enforces them, not classic branch protection, so `gh api repos/rdotsch/rcicr/branches/main` reports no required contexts and looks unconfigured. Agents here cannot add a name to that ruleset, so a new workflow's check reports on PRs but blocks none until the maintainer adds it under GitHub → Settings → Rules → Rulesets. Use the web interface: a malformed `PUT` risks dropping unrelated ruleset fields. A separate **Tags** ruleset blocks creating, moving and deleting tags; the maintainer (Repository admin role) bypasses it to tag releases.
+**The required status checks on `main`** are `compare`, `ubuntu-latest (release)`, `ubuntu-latest (devel)`, `macos-latest (release)`, `windows-latest (release)` and `lint`. For the live list, query `gh api repos/rdotsch/rcicr/rules/branches/main`. A **ruleset** enforces them, not classic branch protection, so `gh api repos/rdotsch/rcicr/branches/main` reports no required contexts and looks unconfigured. Agents here cannot add a name to that ruleset, so a new workflow's check reports on PRs but blocks none until the maintainer adds it under GitHub → Settings → Rules → Rulesets. Use the web interface: a malformed `PUT` risks dropping unrelated ruleset fields. A separate **Tags** ruleset blocks creating, moving and deleting tags; the maintainer (Repository admin role) bypasses it to tag releases. A ruleset also refuses force-pushes to `claude/*` branches, so catch a stale branch up by merging `main` into it, not by rebasing.
 
 Two rules for editing a workflow:
 
