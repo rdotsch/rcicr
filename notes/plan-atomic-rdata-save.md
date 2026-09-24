@@ -77,5 +77,6 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 
 ## Out of scope
 
+- **Two R sessions saving the same file at once.** That is unsafe today without any backup: two concurrent plain `save()` calls to one file left it unloadable in 3 of 5 runs (measured). This change does not make it safer or worse, and phase 0 may treat another session's in-flight backup as stale in that case. Making concurrent saves safe needs a lock across sessions, which is a separate change.
 - #334 (a file without `seed`): a separate change.
 - Loading the stimulus file two or three times per InfoVal call: a speed issue, not correctness.
