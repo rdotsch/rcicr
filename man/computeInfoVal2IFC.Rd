@@ -25,7 +25,8 @@ computeInfoVal2IFC(
 \item{response_seed}{Optional seed for the simulated random responses behind the reference
 distribution. The default, \code{NULL}, uses the reference distribution stored in the
 \code{rdata} file, or simulates the reproducible default one described under Reproducibility
-in \code{\link{generateReferenceDistribution2IFC}}. A number forces a fresh reference
+in \code{\link{generateReferenceDistribution2IFC}}, which needs the stimulus seed saved in the
+file. For a file without one, pass a number. A number forces a fresh reference
 distribution from an independent draw; use it to check how much Monte Carlo error \code{iter}
 leaves in the Informational Value. That result is \emph{not} written back to the \code{rdata}
 file, so a one-off check cannot change the number every later analysis of the stimulus set

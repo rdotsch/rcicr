@@ -12,6 +12,10 @@
 #' stimulus file get the same reference distribution, and the same number, on any machine and in
 #' any session, provided both use the same RNG kind.
 #'
+#' This needs the stimulus seed saved in the file. A file without one (made with
+#' \code{generateStimuli2IFC(seed = NULL)}, or with the field removed) has no stream to continue,
+#' so the default stops with an error; pass a \code{response_seed} instead.
+#'
 #' The RNG kind is the one gap. \code{set.seed()} keeps whatever kind the session already has,
 #' and no stimulus file records which kind was in use. A session with a different
 #' \code{RNGkind()} therefore draws different simulated responses, and so a different null; the
@@ -35,11 +39,14 @@
 #' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @param response_seed Optional seed for the simulated random responses. The default,
 #' \code{NULL}, continues from the state the stimulus generator left behind, as described under
-#' Reproducibility. A number gives an independent draw of the null from the same stimuli.
+#' Reproducibility; it needs the stimulus seed saved in the file. A number gives an independent
+#' draw of the null from the same stimuli.
 #' @param save_rdata Boolean: write the reference distribution into the \code{rdata} file
 #' (default \code{TRUE}). With \code{FALSE}, later calls to \code{\link{computeInfoVal2IFC}}
 #' keep using what the file already holds. Set it to \code{FALSE} whenever you set
-#' \code{response_seed}, so a one-off null does not become the file's permanent reference.
+#' \code{response_seed}, so a one-off null does not become the file's permanent reference. The
+#' exception is a file without a stimulus seed: there the seeded reference is the one to keep, as
+#' the file's reproducible reference.
 #' @param baseimage Base-image label, the same key passed to \code{generateCI()}. Required when
 #' the base images have different noise parameters. With a single base image, or base images
 #' sharing one parameter set, leave it at \code{NULL}.
@@ -111,6 +118,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
 
   # Shared parameters need only the first base. Inline arguments avoid locals
   # leaking into the frame that is re-saved below.
+  if (is.null(response_seed)) requireStimulusSeed(get0("seed", envir = environment(), inherits = FALSE), rdata)
   write("Building the reference from the saved noise, please wait...", stdout())
   stimuli <- referenceNoise(environment(), names(stimuli_params)[1], ncores)
 

@@ -35,7 +35,7 @@ generateStimuli2IFC(
 
 \item{use_same_parameters}{Boolean: all base images share one set of noise parameters (\code{TRUE}) or each gets its own (\code{FALSE}).}
 
-\item{seed}{Seed for the random number generator, for reproducibility.}
+\item{seed}{Seed for the random number generator, for reproducibility. It is saved in the \code{.Rdata} file, where the default InfoVal reference replays it. With \code{seed = NULL} there is nothing to replay, so InfoVal references for that file need an explicit \code{response_seed}.}
 
 \item{maximize_baseimage_contrast}{Boolean: rescale the base image's pixel values to maximize its contrast. A base image with no contrast at all, every pixel the same value, cannot be rescaled and is rejected with an error. It can still be used with \code{maximize_baseimage_contrast = FALSE}.}
 
