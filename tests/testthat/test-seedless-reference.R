@@ -4,12 +4,15 @@
 make_seedless <- function(dir, kind = c("removed", "null"), independent = FALSE) {
   kind <- match.arg(kind)
   bases <- list(a = file.path(dir, "a.png"), b = file.path(dir, "b.png"))
-  make_square_png(bases$a, size = 32, seed = 1)
-  make_square_png(bases$b, size = 32, seed = 2)
+  make_square_png(bases$a, size = 32, seed = 1) # nolint: object_usage_linter.
+  make_square_png(bases$b, size = 32, seed = 2) # nolint: object_usage_linter.
   if (!independent) bases <- bases["a"]
   seed <- if (kind == "null") NULL else 1
-  quietly(generateStimuli2IFC(bases, n_trials = 6, img_size = 32, stimulus_path = dir,
-    seed = seed, ncores = 1, nscales = 1, save_as_png = FALSE, use_same_parameters = !independent))
+  quietly(
+    generateStimuli2IFC(bases, n_trials = 6, img_size = 32, stimulus_path = dir, seed = seed,
+                        ncores = 1, nscales = 1, save_as_png = FALSE,
+                        use_same_parameters = !independent)
+  )
   path <- list.files(dir, "\\.Rdata$", full.names = TRUE)
   if (kind == "removed") edit_rdata(path, function(e) rm("seed", envir = e))
   path
