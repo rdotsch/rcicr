@@ -15,18 +15,20 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 1. **One internal helper, `saveRdataSafely(names, file, envir)`, in `R/rdata.R`**, used by both call sites:
    - `backup <- paste0(file, ".rcicr-backup")`. **If `backup` already exists, stop** before touching anything, naming both files and the restore command below. A backup only exists at that path once it is complete (next step), so a leftover one means an earlier save was killed mid-write and the original may be damaged. Copying that original over the backup could destroy the only good copy;
    - **make the backup under a staging name, then publish it.** Create `staging <- tempfile(pattern = paste0(basename(file), ".rcicr-staging-"), tmpdir = dirname(file))` empty, set it to mode 600 with `Sys.chmod(staging, "600", use_umask = FALSE)`, and copy the original into it with `file.copy(file, staging, overwrite = TRUE, copy.mode = FALSE)`. Check that its `tools::md5sum()` equals the original's, then `file.rename(staging, backup)`. Mode 600 lets only the user running R read the backup, who could already read the original. The original's mode would not do: the backup takes the process's owner and group, so a group-readable original would give a group-readable backup for a different group;
-   - **if the staging file cannot be created**, for example because the directory is read-only while the file is writable, save in place without a backup, exactly as today. That case works today, and protecting it would need somewhere to write;
+   - **if the staging file cannot be created**, check the directory with `file.access(dirname(file), 2)`. Only when that reports it not writable (a read-only directory holding a writable file) does the helper save in place without a backup, exactly as today: that case works today, and protecting it would need somewhere to write. **Any other failure stops before the original is touched**: a directory that reports writable but refuses the file is out of space, inodes or quota, and saving in place there is the very failure this change prevents;
    - if the copy or the checksum fails (for example, a full disk), remove the staging file and stop; the original has not been touched;
    - `save()` in place, as today;
    - **on success**, remove the backup;
    - **on error or interrupt** (Esc, Ctrl-C and R errors all run `on.exit()`): if the original's checksum differs from the backup's, copy the backup back in place with `file.copy(backup, file, overwrite = TRUE, copy.mode = FALSE)`. Remove the backup once the checksums match, then re-raise the error. If the restore fails, keep the backup and give the restore command.
-2. **A hard kill** (the process killed, a crash, power loss) skips `on.exit()`:
+2. **A hard kill** (the R process killed, or crashing) skips `on.exit()`:
    - during the backup copy, it leaves only a staging file; the original is untouched and the next save proceeds. The staging file can be deleted;
    - during the save, it leaves the complete backup beside a possibly damaged original, and the leftover-backup check stops the next save.
 
    The restore **copies the backup's contents into the existing file**, never renames it over the original, which would replace the file and change its owner, group, ACLs and hard links: `file.copy("<file>.rcicr-backup", "<file>", overwrite = TRUE, copy.mode = FALSE)`, then delete the backup. `NEWS.md` and the error message both give this command.
 3. **Read-only targets behave as today.** `save()` fails to open a read-only file without truncating it (measured as an unprivileged user: the file's checksum is unchanged), the checksums then match, and the backup is removed.
 4. **`NEWS.md`**, under Bug fixes: an interrupted or failed save of a reference distribution no longer destroys the stimulus file, when the file's directory is writable. It includes the hard-kill restore command. Nothing under "Reproducibility impact": no number changes.
+
+**What this does not cover: power loss or an operating-system crash.** A verified copy only shows the backup is readable through the operating system's cache, not that it has reached the disk, and base R cannot force that (it has no `fsync`). The guarantee is therefore limited to interrupts, R errors and a killed or crashed R process, and `NEWS.md` says so rather than promising more.
 
 ## Verified before planning
 
@@ -35,6 +37,7 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 - **`file.copy(copy.mode = TRUE)` and `Sys.chmod()` both apply the umask by default**: mode 660 became 640 (measured). Hence the pre-created backup, `use_umask = FALSE`, and `copy.mode = FALSE` throughout.
 - **A failed `save()` on a read-only file leaves it untouched** (measured as an unprivileged user, since sessions here run as root).
 - **A writable file in a read-only directory** can be saved in place, but no file can be created beside it (both measured as an unprivileged user). Hence the fallback to today's save.
+- **`file.access(dir, 2)` identifies that case**: -1 for a mode-555 directory, 0 for a writable one (measured as an unprivileged user). On Windows, where `DECISIONS.md` calls `file.access()` unreliable, a wrong answer can only turn the fallback into a stop, never a save without a backup where the directory was writable but full.
 - **Content is unchanged**: the same objects are saved to the same path. A test asserts `identical()` loaded contents against the current behaviour.
 
 ## Tests
@@ -43,7 +46,7 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 - **Interruption:** a mocked writer that writes part of the file and then errors. The original loads with its original contents, has the same mode, and the backup is gone.
 - A leftover backup stops the save with an error that gives the restore command, and neither file changes.
 - A failing backup copy stops before the original is touched, and leaves neither a staging file nor a backup (mocked).
-- A staging file that cannot be created falls back to today's in-place save (mocked).
+- A staging file that cannot be created falls back to today's in-place save when the directory is not writable, and stops without touching the original when it is (both mocked).
 - The backup is mode 600 whatever the original's mode (skipped on Windows).
 - File mode 600 and 660 are preserved (skipped on Windows).
 
