@@ -9,7 +9,7 @@
 1. **`generateNoisePattern()` checks first** that `img_size %% 2^(nscales - 1) == 0`, and otherwise stops with a message naming the constraint and two ways out: the nearest valid sizes (the multiples of `2^(nscales - 1)` below and above, the lower one only if it is positive), and the largest `nscales` that tiles this `img_size`. For example, `img_size = 100, nscales = 5`: "use img_size 96 or 112, or nscales = 3 or fewer".
 2. **Every call that works today still works:** the check rejects exactly the calls that already fail (below). `generateStimuli2IFC()` needs no change; it calls `generateNoisePattern()` before creating the folder or taking the `.Rdata` lock, so nothing is written.
 3. **`NEWS.md`, under "Bug fixes"**, last (a message-only fix).
-4. **`?generateStimuli2IFC`** (`img_size`, `nscales`) states the constraint.
+4. **Every exported entry point documents the constraint:** `?generateStimuli2IFC` and `?generateNoisePattern` (`img_size`, `nscales`), and `?simulateNoiseIntensities`, which always uses the default five scales, so its `img_size` must be a multiple of 16.
 
 ## Verified before planning
 
