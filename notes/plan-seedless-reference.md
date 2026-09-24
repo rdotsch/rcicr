@@ -2,38 +2,42 @@
 
 ## Problem
 
-Without a `response_seed`, the reference distribution replays the stimulus stream: `seedResponseStream()` (`R/reference-base.R`) calls `set.seed(source$seed)`. When the `.Rdata` file has no `seed`, that is `set.seed(NULL)`, which reseeds from the clock. The reference, and every InfoVal scored against it, then differs on every call, with no warning. #334 has the reproduction.
+Without a `response_seed`, the reference distribution replays the stimulus stream: `seedResponseStream()` (`R/reference-base.R`) calls `set.seed(source$seed)`. When the `.Rdata` file has no `seed`, that is `set.seed(NULL)`, which reseeds from the clock. Measured on `main` with files whose `seed` was removed:
+
+| path | result |
+|---|---|
+| `computeInfoVal2IFC()`, shared base images, no stored reference | stops, with the `dplyr` error "In argument: `ref_seed == seed`" from the empty `ref_lookup` |
+| `computeInfoVal2IFC(force_gen_ref_dist = TRUE)`, or `generateReferenceDistribution2IFC()` | a different reference on every call |
+| `computeInfoVal2IFC()`, first automatic build (independent base images, or a shared reference refreshed as stale) | a random reference, stored; later calls reuse it, so the InfoVal is stable on that file but differs on a fresh copy |
 
 ## Change
 
-1. **Check for the seed before any simulation**, in both reference paths: `generateReferenceDistribution2IFC()` (shared parameters) and `generateBaseReference()` (independent base images), ahead of `referenceNoise()`, which at 512px is the slow step. One helper, called from both, stops when `response_seed` is `NULL` and the file has no `seed`. The message says the file has no stimulus seed to replay, and that `response_seed` draws a reproducible reference from the saved noise instead. It names `generateReferenceDistribution2IFC(rdata, response_seed = <n>)` as the way to store one, with `baseimage = "<label>"` added on the independent-base path, where that call requires it (`selectReferenceBase()`): that call saves the reference with its seed recorded, and later `computeInfoVal2IFC()` calls reuse it. The message makes no other claim about storage, since whether a seeded reference is saved depends on the call (`computeInfoVal2IFC()` never stores one; `generateReferenceDistribution2IFC()` does unless `save_rdata = FALSE`).
+1. **Stop before any simulation when there is no `seed` and no `response_seed`.** One helper, called ahead of `referenceNoise()` (the slow step at 512px) in both reference paths, `generateReferenceDistribution2IFC()` and `generateBaseReference()`, and at the top of `computeInfoVal2IFC()`'s lookup block, so the first row gets this message instead of the `dplyr` one. The message says the file has no stimulus seed to replay, and names `generateReferenceDistribution2IFC(rdata, response_seed = <n>)` as the way to store a reproducible reference, adding `baseimage = "<label>"` on the independent-base path, where that call requires it (`selectReferenceBase()`). The stored reference records its seed, and later `computeInfoVal2IFC()` calls reuse it. The message makes no other storage claim, since whether a seeded reference is saved depends on the call.
 2. **Only a missing `seed` is rejected.** Every other value `set.seed()` either already rejects with an error or seeds deterministically, so rejecting it would turn reproducible results into errors.
-3. **`NEWS.md`, under "Reproducibility impact"**, since affected calls used to return numbers and now stop: who is affected (a stimulus file without `seed`, on 1.4.0 and 1.4.1), what they got (a different reference and InfoVal on every call), what happens now, and that a `response_seed` gives a reproducible reference. Files that have `seed` are unaffected.
+3. **Warn when a stored reference was drawn from the clock.** A file without `seed` whose stored reference has no `response_seed` got it from the third row. It is still used, so no number changes, but `computeInfoVal2IFC()` warns that it cannot be reproduced from the stimuli, and how to replace it (the call in 1).
+4. **`NEWS.md`, under "Reproducibility impact"**, since forced and direct calls used to return numbers and now stop: the three rows above, for 1.4.0 and 1.4.1; what happens now; how to get a reproducible reference; and that files with `seed` are unaffected.
 
 No `DECISIONS.md` entry: this applies the existing "Trial alignment errors stop computation" reasoning, and the file has 2 words of headroom.
 
 ## Verified before planning
 
+- The table above, on `main` (script: two copies of one seedless file, each path called twice).
 - `set.seed()` on each kind of bad value: `NULL` is the only one that runs and is not reproducible. `numeric(0)`, `NA`, `NaN`, `Inf`, `"abc"` and `list(1)` stop with "supplied seed is not a valid integer"; `"7"`, `c(1, 2)`, `1.5` and `TRUE` reproduce.
-- Installed from their tags and ran #334's reproduction (each version generating its own file, then `seed` removed): v1.0.1 and v1.1.0 stop with "object 'seed' not found"; v1.4.1, the version on CRAN, and `main` return a reference that differs between two calls. `set.seed(source$seed)` arrived with #305 and is in v1.4.0 and v1.4.1, not v1.3.0.
-- Every generator in the repository saves `seed`, back to the R-Forge import, and so do all three legacy fixtures. So the gate and every existing test use files with `seed`, and neither should move.
-- `computeInfoVal2IFC()` passes `response_seed` through to the same paths, so the message's remedy applies to it too.
-- On `main`, with a file whose `seed` was removed: `generateReferenceDistribution2IFC(rd, response_seed = 7)` stores `reference_norms` with `reference_norms_seed = 7`, and two `computeInfoVal2IFC()` calls then report "Using reference distribution found in rdata file" and return identical values. So one stored seeded reference makes the file reproducible from then on, without the check being reached again.
+- Installed from their tags: v1.0.1 and v1.1.0 stop on a seedless file with "object 'seed' not found"; v1.4.1, the version on CRAN, returns a different reference on two generator calls. `set.seed(source$seed)` arrived with #305 and is in v1.4.0 and v1.4.1, not v1.3.0.
+- `generateReferenceDistribution2IFC(rd, response_seed = 7)` on a seedless file stores `reference_norms` with `reference_norms_seed = 7`, and two `computeInfoVal2IFC()` calls then reuse it ("Using reference distribution found in rdata file") and return identical values.
+- Every generator in the repository saves `seed`, back to the R-Forge import, and so do all three legacy fixtures, so the gate and the existing tests should not move.
 
 ## Tests
 
-- `generateReferenceDistribution2IFC()` on a file without `seed` stops, naming `seed` and `response_seed`, for shared and for independent base images;
-- `computeInfoVal2IFC()` on such a file stops the same way;
-- with a `response_seed`, a file without `seed` gives the same reference on two calls;
-- a reference stored that way is reused by `computeInfoVal2IFC()` with no error, for shared and for independent base images;
-- on the independent-base path the message names the `baseimage` label, and the call it gives runs as written;
-- the stop comes before the noise is built (checked by mocking `referenceNoise()` to fail if reached).
+- each row of the table now stops with the new message, before `referenceNoise()` is reached (mocked to fail if called);
+- the message's call runs as written, for shared and for independent base images, and `computeInfoVal2IFC()` then reuses the stored reference with identical values;
+- a seedless file carrying a stored reference without `response_seed` returns the same InfoVal as before, with the warning; one with a recorded `response_seed` gives no warning.
 
 Each new failure test must fail on the current code; checked with `git stash push -- R/`.
 
 ## The step most likely to fail
 
-**A cached reference that is refreshed automatically.** A file whose cached reference predates saved-noise references is rebuilt without being asked (`resolveReferenceNorms()`, "stale"). If such a file also lacks `seed`, `computeInfoVal2IFC()` used to return a new random InfoVal on each call and will now stop. That is the intended outcome, since the number could not be reproduced, but it is the one path where a call that returned a number now errors. A cached reference that does not need refreshing is still used, and no simulation runs.
+**The third row.** Its users got a stable number and will now get an error on a fresh copy, or a warning on the file that holds it. Both are intended: that number cannot be reproduced from the stimuli. The warning is also the one change that reaches files where nothing is recomputed, so its condition must be exactly "no `seed` and no recorded `response_seed`", never a file that has `seed`.
 
 ## Out of scope
 
