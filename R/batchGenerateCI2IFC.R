@@ -70,9 +70,12 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
   cis <- list()
 
   # Remove by = NA's from data
-  data <- data[!is.na(data[, by]), ]
+  # Columns are read with [[ ]], never [, col]: on a tibble the latter stays a
+  # one-column tibble, which the loop and the == below treat as one unit,
+  # mixing every group into a single CI (#336).
+  data <- data[!is.na(data[[by]]), , drop = FALSE]
 
-  by.levels <- unique(data[, by])
+  by.levels <- unique(data[[by]])
   # dplyr::progress_estimated() is deprecated; use the base R progress bar
   pb <- txtProgressBar(min = 0, max = length(by.levels), style = 3)
   pb_i <- 0
@@ -84,19 +87,19 @@ batchGenerateCI2IFC <- function(data, by, stimuli, responses, baseimage, rdata, 
     setTxtProgressBar(pb, pb_i)
 
     # Get subset of data
-    unitdata <- data[data[, by] == unit, ]
+    unitdata <- data[data[[by]] == unit, , drop = FALSE]
 
     # Specify filename for CI PNG
     if (label == '') {
-      filename <- paste0(baseimage, '_', by, '_', unitdata[1, by])
+      filename <- paste0(baseimage, '_', by, '_', unitdata[[by]][1])
     } else {
-      filename <- paste0(baseimage, '_', label, '_', by, '_', unitdata[1, by])
+      filename <- paste0(baseimage, '_', label, '_', by, '_', unitdata[[by]][1])
     }
 
     # Compute CI with appropriate settings for this subset (Optimize later so rdata file is loaded only once)
     cis[[filename]] <- generateCI2IFC(
-      stimuli = unitdata[, stimuli],
-      responses = unitdata[, responses],
+      stimuli = unitdata[[stimuli]],
+      responses = unitdata[[responses]],
       baseimage = baseimage,
       rdata = rdata,
       save_as_png = save_as_png,
