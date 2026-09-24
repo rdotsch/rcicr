@@ -64,7 +64,9 @@ generateCI(
   Optional vector with one participant ID per trial, the same length as
   `stimuli` and `responses`. When given, the CI is computed in two
   steps: one CI per participant, then their average. When missing or all
-  `NA`, one CI is computed from all trials together.
+  `NA`, one CI is computed from all trials together. Some, but not all,
+  `NA` is an error: give every trial an ID, or remove the trials without
+  one.
 
 - save_individual_cis:
 

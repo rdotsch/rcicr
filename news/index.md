@@ -60,6 +60,15 @@
   you. Power loss and operating-system crashes are not covered, and two
   R sessions saving the same file at once remain unsafe.
 
+- **[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  stops when some, but not all, `participants` IDs are `NA`.** It used
+  to return a CI in which every pixel was `NA`, with only `min`/`max`
+  warnings, and write it as a solid black PNG; every version since 1.0.1
+  did this. The error names the trials without an ID. Give them one, or
+  remove them from `stimuli`, `responses` and `participants` alike. An
+  all-`NA` `participants` still means no grouping, and no valid result
+  changes. ([\#337](https://github.com/rdotsch/rcicr/issues/337))
+
 ### Documentation
 
 - Corrected help pages that disagreed with the code:

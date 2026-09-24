@@ -578,12 +578,12 @@ noise.
 
 Recycled participant IDs and malformed stimulus indices can produce
 plausible CIs from the wrong trials (#294, \#300). A warning would still
-return those results, so these calls raise an error instead. Factor and
-character IDs need explicit conversion based on the experiment records:
-factor codes and matrix row names are not stimulus numbers. Validation
-comes before averaging, because averaging can drop missing IDs. The
-all-NA convention for “no participants” stays; what a partly missing
-participant vector should mean is a separate question.
+return them, so these calls stop instead. Factor and character IDs need
+explicit conversion based on the experiment records: factor codes and
+matrix row names are not stimulus numbers. Validation comes before
+averaging, because averaging can drop missing IDs. The all-NA convention
+for “no participants” stays; a partly missing one stops too (#337):
+dropping those trials would guess what the gap means.
 
 ### Write paths are required arguments, not defaults of `tempdir()`
 

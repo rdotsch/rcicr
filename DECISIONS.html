@@ -231,7 +231,7 @@
 <h2 id="arguments-and-internal-guards">Arguments and internal guards<a class="anchor" aria-label="anchor" href="#arguments-and-internal-guards"></a></h2>
 <div class="section level3">
 <h3 id="trial-alignment-errors-stop-computation">Trial alignment errors stop computation<a class="anchor" aria-label="anchor" href="#trial-alignment-errors-stop-computation"></a></h3>
-<p>Recycled participant IDs and malformed stimulus indices can produce plausible CIs from the wrong trials (#294, #300). A warning would still return those results, so these calls raise an error instead. Factor and character IDs need explicit conversion based on the experiment records: factor codes and matrix row names are not stimulus numbers. Validation comes before averaging, because averaging can drop missing IDs. The all-NA convention for “no participants” stays; what a partly missing participant vector should mean is a separate question.</p>
+<p>Recycled participant IDs and malformed stimulus indices can produce plausible CIs from the wrong trials (#294, #300). A warning would still return them, so these calls stop instead. Factor and character IDs need explicit conversion based on the experiment records: factor codes and matrix row names are not stimulus numbers. Validation comes before averaging, because averaging can drop missing IDs. The all-NA convention for “no participants” stays; a partly missing one stops too (#337): dropping those trials would guess what the gap means.</p>
 </div>
 <div class="section level3">
 <h3 id="write-paths-are-required-arguments-not-defaults-of-tempdir">Write paths are required arguments, not defaults of <code>tempdir()</code>

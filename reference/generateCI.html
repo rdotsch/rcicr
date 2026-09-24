@@ -87,7 +87,7 @@
 
 
 <dt id="arg-participants">participants<a class="anchor" aria-label="anchor" href="#arg-participants"></a></dt>
-<dd><p>Optional vector with one participant ID per trial, the same length as <code>stimuli</code> and <code>responses</code>. When given, the CI is computed in two steps: one CI per participant, then their average. When missing or all <code>NA</code>, one CI is computed from all trials together.</p></dd>
+<dd><p>Optional vector with one participant ID per trial, the same length as <code>stimuli</code> and <code>responses</code>. When given, the CI is computed in two steps: one CI per participant, then their average. When missing or all <code>NA</code>, one CI is computed from all trials together. Some, but not all, <code>NA</code> is an error: give every trial an ID, or remove the trials without one.</p></dd>
 
 
 <dt id="arg-save-individual-cis">save_individual_cis<a class="anchor" aria-label="anchor" href="#arg-save-individual-cis"></a></dt>
