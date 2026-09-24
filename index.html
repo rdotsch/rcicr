@@ -59,14 +59,14 @@
 </h1>
 </div>
 <p><a href="https://CRAN.R-project.org/package=rcicr" class="external-link"><img src="https://img.shields.io/cran/v/rcicr.svg" alt="CRAN status"></a> <a href="https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://rdotsch.github.io/rcicr/"><img src="https://img.shields.io/badge/docs-rdotsch.github.io%2Frcicr-blue" alt="Documentation"></a></p>
-<p><code>rcicr</code> implements <strong>reverse correlation image classification</strong>, a technique from psychophysics for visualizing internal mental representations (for example, of faces). It generates noise-based stimuli for two-image-forced-choice (2IFC) perceptual tasks, and computes “classification images” from participants’ responses that reveal what visual features drove their choices.</p>
+<p><code>rcicr</code> implements <strong>reverse correlation image classification</strong>, a psychophysics technique for visualizing mental representations, for example of faces. It generates noise-based stimuli for two-image forced-choice (2IFC) tasks. From participants’ responses it then computes “classification images”, which show the visual features that drove their choices.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Install the current release from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'rcicr'</span><span class="op">)</span></span></code></pre></div>
-<p>Use GitHub when you need to reproduce an analysis with a specific tagged release or test the unreleased development version:</p>
+<p>Install from GitHub to reproduce an analysis with a specific release, or to try the unreleased development version:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'remotes'</span><span class="op">)</span></span>
 <span></span>
@@ -78,11 +78,11 @@
 <span></span>
 <span><span class="co"># Reinstall that exact development snapshot later</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@&lt;commit-sha&gt;'</span><span class="op">)</span></span></code></pre></div>
-<p>Every release is tagged, and the tags are listed on the <a href="https://github.com/rdotsch/rcicr/releases" class="external-link">releases page</a>. Record the version you ran in your analysis script, and install it by tag when you come back to that analysis. For an unreleased GitHub install, also record the commit SHA and pin that SHA when you return: a classification image is only reproducible against the exact code that computed it, and any release that changes numeric output says so in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”.</p>
+<p>Every release is tagged; the <a href="https://github.com/rdotsch/rcicr/releases" class="external-link">releases page</a> lists them. Record the version you ran in your analysis script, and install that tag when you come back to the analysis. For an unreleased GitHub install, record the commit SHA instead and install that. A classification image is only reproducible with the exact code that computed it. Any release that changes numeric output says so in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”.</p>
 <blockquote>
-<p><strong>If you saved per-participant classification images before 1.3.0, check them.</strong> <code>generateCI(participants = ..., save_individual_cis = TRUE)</code> wrote an image under another participant’s filename at each position where appearance order and sorted order differed (for text identifiers that means lexical order, which includes the ordinary case of <code>p1 ... p10</code> in collection order). The images were correct; only the names were wrong, and correcting them is a rename rather than a re-run. The <a href="https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html">individual-CI filename advisory</a> is the full version: how to tell whether you are affected, what it did to an analysis, and the recovery. A shorter form is in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”, and <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link">which version you had</a> if you need to work out what a stored analysis actually ran. <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> and <code><a href="reference/generateCI2IFC.html">generateCI2IFC()</a></code> were never affected.</p>
+<p><strong>Saved per-participant classification images before 1.3.0? Check their filenames.</strong> With <code>generateCI(participants = ..., save_individual_cis = TRUE)</code>, an image could be saved under another participant’s name. This happened wherever the order in which participants appear in your data differs from their sorted order. For text IDs that includes the ordinary case of <code>p1</code> to <code>p10</code> in collection order, which sort as <code>p1, p10, p2, ...</code>. The images themselves are correct, so the fix is renaming files, not re-running anything. The <a href="https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html">individual-CI filename advisory</a> explains how to tell whether you are affected, what it did to an analysis, and how to recover. <a href="NEWS.html"><code>NEWS.md</code></a> has a shorter version under “Reproducibility impact”, and <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link">this note</a> helps you work out which version a stored analysis actually ran. <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> and <code><a href="reference/generateCI2IFC.html">generateCI2IFC()</a></code> were never affected.</p>
 </blockquote>
-<p>Version 1.3.0 returned <code>rcicr</code> to CRAN after the package was archived in 2021 because email to an old maintainer address was undeliverable. The archival was administrative, not caused by a problem with the package.</p>
+<p>Version 1.3.0 returned <code>rcicr</code> to CRAN. The package had been archived in 2021 because email to an old maintainer address bounced; nothing was wrong with the package itself.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-example">Quick example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
@@ -110,23 +110,23 @@
 <span>  rdata      <span class="op">=</span> <span class="st">"./stimuli/rcic_seed_1_time_....Rdata"</span>,</span>
 <span>  targetpath <span class="op">=</span> <span class="st">"./cis"</span>              <span class="co"># where to write the CI PNG</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Every function that writes files takes its destination explicitly: <code>stimulus_path</code>, <code>targetpath</code> and <code>zmaptargetpath</code> have no defaults, so nothing is ever written to a directory you did not name. Pass <code>save_as_png = FALSE</code> to compute a classification image without writing anything.</p>
+<p>Every function that writes files needs its destination spelled out: <code>stimulus_path</code>, <code>targetpath</code> and <code>zmaptargetpath</code> have no defaults, so nothing is ever written to a directory you did not name. Pass <code>save_as_png = FALSE</code> to compute a classification image without writing anything.</p>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>Everything below is also on the web at <strong><a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a></strong> — the function reference, both vignettes and the changelog — if you would rather read it before installing.</p>
+<p>The function reference, both vignettes and the changelog are also online at <strong><a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a></strong>, so you can read them before installing.</p>
 <p>Two vignettes ship with the package:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># shortest working example</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"reverse-correlation-walkthrough"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># the full method</span></span></code></pre></div>
-<p>The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs when the package is built, so it cannot drift out of date.</p>
+<p>The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version.</p>
 <p>For example datasets and analysis scripts, see <a href="https://github.com/rdotsch/rcicr_examples/" class="external-link">rcicr_examples</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
 </h2>
-<p>The package is two halves that run at different times — often months apart — and share no state except one file on disk.</p>
+<p>The package has two halves. They run at different times, often months apart, and share nothing except one file on disk.</p>
 <pre><code>base face image(s) ─┐
                     ├─&gt; generateStimuli2IFC() ─&gt; stimulus PNGs + &lt;label&gt;_seed_&lt;n&gt;_time_&lt;ts&gt;.Rdata
      random noise ──┘                                        │
@@ -138,15 +138,15 @@
                                         ┌────────────────────┼────────────────────┐
                                         ▼                    ▼                    ▼
                                   autoscale()      computeInfoVal2IFC()      plotZmap()</code></pre>
-<p><strong>1. Stimulus generation.</strong> <code><a href="reference/generateNoisePattern.html">generateNoisePattern()</a></code> builds the <em>noise basis</em> — a stack of sinusoid (or Gabor) patches at several orientations, phases and spatial scales. This is built once and reused for every trial. <code><a href="reference/generateNoiseImage.html">generateNoiseImage()</a></code> then combines one random contrast weight per patch into a single noise image, and <code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> runs that loop over trials, writing two PNGs per trial per base face: the noise blended with the base image, and its inverted counterpart.</p>
-<p><strong>2. Analysis.</strong> <code><a href="reference/generateCI.html">generateCI()</a></code> loads the stimulus file, looks up the parameters of the stimuli a participant actually saw, weights each by their response (<code>1</code> = original chosen, <code>-1</code> = inverted chosen), and averages them into one image — the classification image. From there, <code><a href="reference/autoscale.html">autoscale()</a></code> makes a batch of CIs visually comparable, <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> scores one against a simulated null distribution, and <code><a href="reference/plotZmap.html">plotZmap()</a></code> shows which regions carry reliable signal.</p>
-<p><strong>The <code>.Rdata</code> file is the only link between the two halves.</strong> Nothing about your stimuli is recoverable without it — not from the PNGs, not from the seed alone. Back it up with your response data, and keep it alongside anything you publish: recomputing a classification image years later needs this file and nothing else.</p>
-<p><strong>Compare numbers, not figures, across machines.</strong> Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system — the test suite pins them to fixed values and they hold on Linux and on macOS ARM64 alike. The one exception is the PNG written by <code><a href="reference/plotZmap.html">plotZmap()</a></code>, the only function here that draws through a graphics device: devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map yields visibly identical figures whose files are not byte-identical. A z-map image that differs pixel-for-pixel on a colleague’s machine is not a different result. Every other PNG the package writes comes straight from the pixel array via <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code> and is unaffected. See <code><a href="reference/plotZmap.html">?plotZmap</a></code>.</p>
+<p><strong>1. Stimulus generation.</strong> <code><a href="reference/generateNoisePattern.html">generateNoisePattern()</a></code> builds the <em>noise basis</em>: a stack of sinusoid (or Gabor) patches at several orientations, phases and spatial scales. It is built once and reused for every trial. <code><a href="reference/generateNoiseImage.html">generateNoiseImage()</a></code> combines one random contrast weight per patch into a single noise image. <code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> repeats that for every trial and writes two PNGs per trial per base face: the base image with the noise added, and with it subtracted.</p>
+<p><strong>2. Analysis.</strong> <code><a href="reference/generateCI.html">generateCI()</a></code> loads the stimulus file and looks up the parameters of the stimuli a participant saw. It weights each by the response (<code>1</code> = original chosen, <code>-1</code> = inverted chosen) and averages them into one image: the classification image. After that, <code><a href="reference/autoscale.html">autoscale()</a></code> puts a batch of CIs on one scale so they can be compared by eye, <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> scores a CI against a simulated null distribution, and <code><a href="reference/plotZmap.html">plotZmap()</a></code> shows which regions carry reliable signal.</p>
+<p><strong>The <code>.Rdata</code> file is the only link between the two halves.</strong> Without it, nothing about your stimuli can be recovered: not from the PNGs, and not from the seed alone. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else.</p>
+<p><strong>Compare numbers, not figures, across machines.</strong> Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system. The test suite pins them to fixed values, and they hold on Linux and macOS ARM64 alike. The one exception is the PNG that <code><a href="reference/plotZmap.html">plotZmap()</a></code> writes, because it is the only function here that draws through a graphics device. Devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map gives figures that look identical but are not byte-identical. A z-map image that differs pixel for pixel on a colleague’s machine is not a different result. Every other PNG the package writes comes straight from the pixel array via <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code>, so this does not apply to them. See <code><a href="reference/plotZmap.html">?plotZmap</a></code>.</p>
 <div class="section level3">
 <h3 id="where-the-code-lives">Where the code lives<a class="anchor" aria-label="anchor" href="#where-the-code-lives"></a>
 </h3>
-<p>Apart from <code><a href="reference/generateCI.html">generateCI()</a></code> itself, every function named in the table below is <strong>internal</strong> — not exported, and not callable from your own scripts. They are split by concern rather than by which exported function happens to call them. (The walkthrough above names only the exported functions it needed; for the full public API, see the function reference on the <a href="https://rdotsch.github.io/rcicr/">documentation site</a> or <code><a href="https://rdotsch.github.io/rcicr/reference">help(package = "rcicr")</a></code>.)</p>
-<p>The usual reason to look is <code><a href="reference/generateCI.html">generateCI()</a></code>, whose body reads as one call per step — validate, load, select, compute, present, return — with the steps themselves in these files:</p>
+<p>This section is for reading the source. Apart from <code><a href="reference/generateCI.html">generateCI()</a></code> itself, every function in the table below is <strong>internal</strong>: not exported, so your scripts cannot call it. For the public functions, see the <a href="https://rdotsch.github.io/rcicr/">function reference</a> or <code><a href="https://rdotsch.github.io/rcicr/reference">help(package = "rcicr")</a></code>.</p>
+<p>The usual starting point is <code><a href="reference/generateCI.html">generateCI()</a></code>. Its body is one call per step (validate, load, select, compute, present, return), and the steps live in these files, grouped by concern:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -176,7 +176,7 @@
 <tr>
 <td><code>R/ci-compute.R</code></td>
 <td>
-<code>computeParticipantCIs()</code> — one CI per participant, plus their average</td>
+<code>computeParticipantCIs()</code>: one CI per participant, plus their average</td>
 </tr>
 <tr>
 <td><code>R/zmap-compute.R</code></td>
@@ -191,13 +191,13 @@
 </tr>
 </tbody>
 </table>
-<p>The mask helpers live in <code>R/generateCI.R</code> rather than a file of their own because <code><a href="reference/plotZmap.html">plotZmap()</a></code> shares them — masking a z-map and masking a CI are the same operation.</p>
+<p>The mask helpers live in <code>R/generateCI.R</code> rather than in a file of their own because <code><a href="reference/plotZmap.html">plotZmap()</a></code> uses them too: masking a z-map and masking a CI are the same operation.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="anatomy-of-the-rdata-file">Anatomy of the <code>.Rdata</code> file<a class="anchor" aria-label="anchor" href="#anatomy-of-the-rdata-file"></a>
 </h2>
-<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> writes one file named <code>&lt;label&gt;_seed_&lt;seed&gt;_time_&lt;timestamp&gt;.Rdata</code>. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> it and you get these objects (sizes shown for a 3-trial, 32px, <code>nscales = 2</code> example):</p>
+<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> writes one file named <code>&lt;label&gt;_seed_&lt;seed&gt;_time_&lt;timestamp&gt;.Rdata</code>. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> it and you get these objects:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -214,7 +214,7 @@
 </tr>
 <tr>
 <td><code>stimuli_params</code></td>
-<td>Named list, one entry per base image, each an <code>n_trials × nparams</code> matrix of contrast weights in <code>[-1, 1]</code>. <strong>Row <em>i</em> is the noise of stimulus <em>i</em></strong> — this is what <code><a href="reference/generateCI.html">generateCI()</a></code> looks up and weights by responses.</td>
+<td>Named list, one entry per base image, each an <code>n_trials × nparams</code> matrix of contrast weights in <code>[-1, 1]</code>. <strong>Row <em>i</em> is the noise of stimulus <em>i</em></strong>: this is what <code><a href="reference/generateCI.html">generateCI()</a></code> looks up and weights by the responses.</td>
 </tr>
 <tr>
 <td><code>base_faces</code></td>
@@ -228,11 +228,11 @@
 <td>
 <code>img_size</code>, <code>n_trials</code>, <code>nscales</code>, <code>sigma</code>, <code>noise_type</code>
 </td>
-<td>The generation parameters. The reference distribution uses the saved <code>p</code> (legacy <code>s</code>) and <code>stimuli_params</code>, with <code>n_trials</code> selecting the trial rows; it does not reconstruct the basis from <code>nscales</code>, <code>sigma</code>, or <code>noise_type</code>.</td>
+<td>The generation parameters, for reference. The InfoVal reference distribution reads the saved <code>p</code> (or <code>s</code> in old files) and <code>stimuli_params</code> directly and uses <code>n_trials</code> to select trial rows; it never rebuilds the basis from these settings.</td>
 </tr>
 <tr>
 <td><code>seed</code></td>
-<td>The RNG seed. Reproducing the stimulus set from the seed also requires the same generation settings and <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>; the file does not record the kind.</td>
+<td>The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>, which the file does not record.</td>
 </tr>
 <tr>
 <td><code>use_same_parameters</code></td>
@@ -246,11 +246,11 @@
 </tr>
 <tr>
 <td><code>generator_version</code></td>
-<td>The rcicr version that wrote the file — see the caveat below.</td>
+<td>The rcicr version that wrote the file; see the caveat below.</td>
 </tr>
 </tbody>
 </table>
-<p><code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> and <code><a href="reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC()</a></code> <strong>add</strong> fields to the same file the first time you compute an informational value. Which ones depends on whether the base images share a parameter matrix:</p>
+<p>The first time you compute an informational value, <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> and <code><a href="reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC()</a></code> <strong>add</strong> fields to the same file. Which ones depends on whether the base images share one parameter matrix:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -263,52 +263,47 @@
 <tbody>
 <tr>
 <td><code>reference_norms</code></td>
-<td>The simulated null distribution — the norms of <code>iter</code> classification images built from random responses. Cached here because simulating it is expensive. Written when the base images share one parameter matrix.</td>
+<td>The simulated null distribution: the norms of <code>iter</code> classification images built from random responses. Stored because simulating it is slow. Written when the base images share one parameter matrix.</td>
 </tr>
 <tr>
 <td><code>reference_norms_seed</code></td>
-<td>The <code>response_seed</code> those norms were drawn with (<code>NULL</code> for the default stream). Added in 1.2.0.</td>
+<td>The <code>response_seed</code> those norms were drawn with, or <code>NULL</code> for the default stream. Added in 1.2.0.</td>
 </tr>
 <tr>
 <td><code>reference_norms_source</code></td>
-<td>What <code>reference_norms</code> was built from — <code>"saved_noise"</code> for a distribution computed from the file’s own saved parameters and basis. Without a matching marker and snapshot, a default-stream cache (<code>reference_norms_seed</code> absent or <code>NULL</code>) is regenerated and, when writable, saved for reuse. Deliberately seeded caches are retained; explicitly regenerate any seeded reference built from an incorrect reconstruction before recomputing InfoVal. Added after 1.3.0.</td>
+<td>What <code>reference_norms</code> was built from: <code>"saved_noise"</code> means the file’s own saved parameters and basis. A default-stream reference (<code>reference_norms_seed</code> absent or <code>NULL</code>) without this marker and a matching <code>reference_norms_fingerprint</code> is rebuilt and, if the file is writable, saved. A reference drawn with a <code>response_seed</code> is kept; if it was built from an incorrect reconstruction, regenerate it yourself before recomputing InfoVal. Added in 1.4.0.</td>
 </tr>
 <tr>
 <td><code>reference_norms_fingerprint</code></td>
-<td>A full copy of the reference vector in <code>list(norms = ...)</code>, compared with <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code>, rather than a digest. It adds about 80 KB of numeric data for 10,000 norms before file compression. An older rcicr can preserve the marker while replacing the norms; a mismatching copy invalidates the marker for default-stream caches. Added after 1.3.0.</td>
+<td>A full copy of the norms, as <code>list(norms = ...)</code>, compared with <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code>. It exists because an older rcicr can keep the marker while replacing the norms; if the copy no longer matches, a default-stream reference is rebuilt. It adds about 80 KB for 10,000 norms before compression. Added in 1.4.0.</td>
 </tr>
 <tr>
 <td><code>reference_norms_by_base</code></td>
-<td>Named list keyed by base image, each entry holding that base’s <code>norms</code>, the <code>response_seed</code> they were drawn with, and its own <code>source</code> and <code>fingerprint</code> carrying the same meaning as the two fields above. Written in place of the shared reference fields above when the base images carry <em>different</em> parameter matrices, since each base then needs a null built from its own saved noise. An unscoped <code>reference_norms</code> in such a file is left untouched and unread. Added after 1.3.0.</td>
+<td>Written instead of the fields above when the base images have <em>different</em> parameter matrices, because each base then needs a null built from its own saved noise. A named list, one entry per base, each holding that base’s <code>norms</code>, <code>response_seed</code>, <code>source</code> and <code>fingerprint</code> (same meaning as above). A <code>reference_norms</code> already in such a file is left in place and ignored. Added in 1.4.0.</td>
 </tr>
 </tbody>
 </table>
-<p>Two things worth knowing before you write code against this file:</p>
+<p>Before you write code against this file:</p>
 <ul>
 <li>
-<strong>The contract is append-only.</strong> Fields get added across versions and are never renamed or repurposed, so newer rcicr reads older files. <code>nscales</code> and <code>sigma</code> were only added in 1.1.0, and <code>noise_type</code> earlier still. Reference generation uses the saved basis even when those fields are absent, without the former fallback warnings.</li>
+<strong>Fields are only ever added.</strong> They are never renamed or given a new meaning, so newer rcicr reads older files. <code>nscales</code> and <code>sigma</code> arrived in 1.1.0 and <code>noise_type</code> earlier. The reference distribution uses the saved basis, so it works when those fields are missing.</li>
 <li>
-<strong><code>generator_version</code> is unreliable on older files.</strong> It was a hardcoded <code>'0.4.0'</code> string until 1.2.0, so any file written between 0.4.0 and 1.1.0 claims to be 0.4.0 whatever wrote it. <code>p$generator_version</code> has always held the real value. Compare versions with <code><a href="https://rdrr.io/r/base/numeric_version.html" class="external-link">numeric_version()</a></code> semantics, never as text.</li>
+<strong><code>generator_version</code> is unreliable in older files.</strong> It was hardcoded as <code>'0.4.0'</code> until 1.2.0, so every file written by 0.4.0 through 1.1.0 claims to be 0.4.0. <code>p$generator_version</code> has always held the real value. Compare versions with <code><a href="https://rdrr.io/r/base/numeric_version.html" class="external-link">numeric_version()</a></code>, never as text.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
 </h2>
-<p>On a fresh Ubuntu machine with no compiler or R package library yet, <code>tools/dev-setup.sh</code> builds one — see CONTRIBUTING.md → “Getting set up” for details.</p>
+<p>On a fresh Ubuntu machine without a compiler or R package library, <code>tools/dev-setup.sh</code> sets both up; see <a href="CONTRIBUTING.html"><code>CONTRIBUTING.md</code></a> → “Getting set up”.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span>   <span class="co"># load the package for interactive development</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span>       <span class="co"># run the test suite</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span>      <span class="co"># full CRAN-style check</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="maintenance">Maintenance<a class="anchor" aria-label="anchor" href="#maintenance"></a>
-</h2>
-<p><code>rcicr</code> is no longer actively maintained. If you use the package and would be interested in helping with maintenance, please email <a href="mailto:rdotsch@gmail.com">Ron Dotsch</a>.</p>
-</div>
-<div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
-<p>Contributions, thoughts, and criticisms are very welcome — please <a href="https://github.com/rdotsch/rcicr/issues/" class="external-link">open an issue</a>.</p>
+<p>Contributions, thoughts and criticisms are welcome: <a href="https://github.com/rdotsch/rcicr/issues/" class="external-link">open an issue</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

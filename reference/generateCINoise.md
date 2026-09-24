@@ -18,14 +18,14 @@ generateCINoise(stimuli, responses, p)
 
 - responses:
 
-  Vector containing the response to each trial (1 if participant
-  selected original, -1 if participant selected inverted; this can be
-  changed into a scale).
+  Vector with the response to each trial: 1 where the participant chose
+  the original, -1 where they chose the inverted image. Other values,
+  such as ratings on a scale, weight the trials accordingly.
 
 - p:
 
-  3D patch matrix (generated using
-  [`generateNoisePattern()`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md)).
+  Noise basis, as returned by
+  [`generateNoisePattern`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md).
 
 ## Value
 

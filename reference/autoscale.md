@@ -12,44 +12,42 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 
 - cis:
 
-  List of cis, each of which are a list containing the pixel matrices of
-  at least the noise pattern (`$ci`) and if the noise patterns need to
-  be written to PNGs, also the base image (`$base`).
+  List of classification images, each a list of pixel matrices holding
+  at least the noise (`$ci`), plus the base image (`$base`) if PNGs are
+  to be written.
 
 - save_as_pngs:
 
-  Boolean, when set to true, the autoscaled noise patterns will be
-  combined with their respective base images and saved as PNGs (using
-  the key of the list as name).
+  Boolean: combine each autoscaled noise pattern with its base image and
+  save it as a PNG, named after its key in `cis`.
 
 - targetpath:
 
-  String specifying the directory to save PNGs to. Required when
-  `save_as_pngs = TRUE`; there is no default path. It is created if it
-  does not exist. Use
-  [`tempdir()`](https://rdrr.io/r/base/tempfile.html) if you only want
-  to try the function out.
+  Directory to save PNGs to. Required when `save_as_pngs = TRUE`; there
+  is no default. The directory is created if it does not exist; to just
+  try the function out, use
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
 
 ## Value
 
-The input `cis` list, with the `$scaled` pixel matrix of each element
-replaced by its autoscaled version. The scaling constant that was
-determined is printed to the console, not returned.
+The input `cis` list, with each element's `$scaled` matrix replaced by
+its autoscaled version. The scaling constant is printed to the console,
+not returned.
 
-**Look at `$scaled`, not `$combined`.** `$combined` is left exactly as
-it was passed in: autoscaling deliberately does not disturb it, so a
-combination made before this call survives unchanged. Only `$scaled`
-reflects the autoscaled result. If you want the autoscaled noise shown
-over the base image, build it yourself with `(ci$scaled + ci$base) / 2`
-— that is exactly what `save_as_pngs = TRUE` writes to disk.
+**Look at `$scaled`, not `$combined`.** `$combined` is returned exactly
+as it was passed in, on purpose, so that existing scripts that plot it
+keep producing the same image. Only `$scaled` holds the autoscaled
+result. To show the autoscaled noise over the base image, compute
+`(ci$scaled + ci$base) / 2`: that is exactly what `save_as_pngs = TRUE`
+writes to disk.
 
-This matters most after
+This catches people out after
 [`batchGenerateCI`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
 or
-[`batchGenerateCI2IFC`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md),
-which scale with `'none'` before handing over to this function: their
-`$combined` is therefore an overlay of the *unscaled* noise and will
-look almost blank, while `$scaled` is the image you want.
+[`batchGenerateCI2IFC`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md).
+Both scale with `'none'` before calling this function, so their
+`$combined` overlays the *unscaled* noise and looks almost blank, while
+`$scaled` is the image you want.
 
 ## Examples
 

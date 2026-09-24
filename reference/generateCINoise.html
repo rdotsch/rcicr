@@ -51,12 +51,11 @@
 
 
 <dt id="arg-responses">responses<a class="anchor" aria-label="anchor" href="#arg-responses"></a></dt>
-<dd><p>Vector containing the response to each trial (1 if participant selected original, -1 if participant selected inverted;
-this can be changed into a scale).</p></dd>
+<dd><p>Vector with the response to each trial: 1 where the participant chose the original, -1 where they chose the inverted image. Other values, such as ratings on a scale, weight the trials accordingly.</p></dd>
 
 
 <dt id="arg-p">p<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
-<dd><p>3D patch matrix (generated using <code><a href="generateNoisePattern.html">generateNoisePattern()</a></code>).</p></dd>
+<dd><p>Noise basis, as returned by <code><a href="generateNoisePattern.html">generateNoisePattern</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

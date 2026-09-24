@@ -1,6 +1,6 @@
 # Computes Informational Value
 
-Computes Informational Value for a single CI in a 2IFC task.
+Computes the Informational Value of a single CI from a 2IFC task.
 
 ## Usage
 
@@ -19,85 +19,78 @@ computeInfoVal2IFC(
 
 - target_ci:
 
-  A classification image object (list-type) as returned by generateCI
+  A classification image, as the list returned by
+  [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
 
 - rdata:
 
-  String pointing to .RData file that was created when stimuli were
-  generated. This file contains the contrast parameters of all generated
-  stimuli and possibly its corresponding reference distribution
-  generated with generateReferenceDistribution().
+  Path to the `.Rdata` file written when the stimuli were generated. It
+  holds the contrast parameters of every stimulus and, once computed,
+  the reference distribution (see
+  [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)).
 
 - iter:
 
-  Number of iterations for the simulation of the reference distribution
-  (only used if reference distribution is not already pre-generated and
-  present in rdata file)
+  Number of simulated classification images in the reference
+  distribution. Used only when the reference distribution has to be
+  simulated.
 
 - force_gen_ref_dist:
 
-  Boolean specifying whether to override the default behavior to use
-  pre-computed values for the reference distribution for specific task
-  parameters and instead force to recompute the reference distribution
-  (default: FALSE).
+  Boolean: simulate the reference distribution again even if the `rdata`
+  file already holds one (default: `FALSE`).
 
 - response_seed:
 
-  Optional seed for the simulated random responses used to build the
-  reference distribution. The default (`NULL`) uses the reference
-  distribution stored in the `rdata` file, or generates the reproducible
-  default one described under Reproducibility in
+  Optional seed for the simulated random responses behind the reference
+  distribution. The default, `NULL`, uses the reference distribution
+  stored in the `rdata` file, or simulates the reproducible default one
+  described under Reproducibility in
   [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md).
-  Supplying a number forces a fresh reference distribution to be
-  simulated from an independent draw, which is how you check how much
-  Monte Carlo error `iter` leaves in this Informational Value. The
-  result is deliberately *not* written back to the `rdata` file, so a
-  one-off check cannot change the number every later analysis of that
-  stimulus set reports.
+  A number forces a fresh reference distribution from an independent
+  draw; use it to check how much Monte Carlo error `iter` leaves in the
+  Informational Value. That result is *not* written back to the `rdata`
+  file, so a one-off check cannot change the number every later analysis
+  of the stimulus set reports.
 
 - baseimage:
 
-  Saved base-image label used to generate `target_ci`. Required when
-  saved base images have different noise parameters; use the same label
-  passed to
+  The base-image label `target_ci` was computed for, the same one passed
+  to
   [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
-  With a single base or identical parameter matrices, the default `NULL`
-  retains the shared reference behavior. Independent-base caches are
-  separate for each label; old unscoped reference norms are ignored for
-  those files.
+  Required when the base images have different noise parameters; each
+  base then gets its own stored reference distribution, and a shared one
+  left by an older version is ignored. With a single base image, or base
+  images sharing one parameter set, leave it at `NULL`.
 
 ## Value
 
-Informational value (z-score)
+The Informational Value, a z-score.
 
 ## Details
 
-The Informational Value metric can be considered as a z-score that
-quantifies the signal present in a classification image. The higher the
-Informational Value, the more signal. It is possible to use a cut-off
-such as z = 1.96 to select classification images with significant signal
-under alpha = 0.05.
+The Informational Value is a z-score for the signal in a classification
+image: the higher it is, the more signal. A cut-off such as z = 1.96
+selects classification images with significant signal at alpha = 0.05.
 
-Informational Value is computed by simulating random responding under
-identical task parameters to an empirical dataset (called the reference
-distribution). The metric quantifies how unlikely it is to observe these
-data under the null-hypothesis that there is no signal (i.e., that there
-is only random responding).
+It is computed against a reference distribution: classification images
+simulated from random responses under the same task parameters as the
+real data. The Informational Value expresses how unlikely the observed
+CI is under the null hypothesis that the responses were random.
 
-The simulation to compute the reference distribution takes a long time,
-and is only run locally when pre-computed values for the reference
-distribution matching the stimulus set in the .Rdata file have not been
-supplied by the rcicr package.
+Simulating the reference distribution takes a long time. It is simulated
+whenever the `rdata` file does not already hold one, and then stored
+there for reuse. If the file cannot be written, the simulated reference
+is used for this call only: a note names the file (and, for independent
+base images, the base) that could not be updated, and the next call
+simulates it again. An archive on read-only media can therefore still be
+scored, at the cost of simulating each time.
 
-A reference the `rdata` file does not already carry is simulated and
-then stored there for reuse. Where that file cannot be written, the
-simulated reference is used for this call, a note names the file – and,
-for independent bases, the base – that could not be saved, and the next
-call simulates it again. An archive on read-only media is therefore
-still scoreable, at the cost of re-simulating each time.
-
-For more information see Brinkman, Goffin, Aarts, van Haren, & Dotsch
-(in prep).
+For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van
+Haren, N. E. M., Dotsch, R., & Aarts, H. (2019). Quantifying the
+informational value of classification images. *Behavior Research
+Methods*, *51*, 2059-2073.
+[doi:10.3758/s13428-019-01232-2](https://doi.org/10.3758/s13428-019-01232-2)
 
 ## Examples
 

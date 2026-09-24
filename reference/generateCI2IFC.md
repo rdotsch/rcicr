@@ -1,10 +1,11 @@
 # Generates 2IFC classification image
 
-Generate classification image for 2 images forced choice reverse
-correlation task. This function exists for backwards compatibility. You
-can also just use
-[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
-which this function wraps.
+Generate a classification image for a two-image forced-choice reverse
+correlation task. This function wraps
+[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+and is kept so that older scripts still run; new code can call
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+directly.
 
 ## Usage
 
@@ -27,98 +28,94 @@ generateCI2IFC(
 
 - stimuli:
 
-  Numeric vector of stimulus numbers in response order, with one finite,
-  positive whole number per response, within the trials saved for the
-  selected base image. Repeated and nonconsecutive numbers are allowed.
-  Factors, characters and logicals are rejected; verify imported labels
-  against the generated stimulus filenames before converting them to
-  numeric IDs.
+  Numeric vector of stimulus numbers, one per response and in the same
+  order. Each must be a positive whole number no larger than the number
+  of trials saved for the selected base image. Numbers may repeat and
+  need not be consecutive. Factors, characters and logicals are
+  rejected: if your data hold stimulus labels, check them against the
+  generated stimulus filenames before converting them to numbers.
 
 - responses:
 
-  Vector specifying the responses in the same order of the stimuli
-  vector, coded 1 for original stimulus selected and -1 for inverted
-  stimulus selected.
+  Vector of responses in the same order as `stimuli`: 1 where the
+  original stimulus was chosen, -1 where the inverted one was.
 
 - baseimage:
 
-  String specifying which base image was used. Not the file name, but
-  the key used in the list of base images at time of generating the
-  stimuli.
+  String naming the base image: not its file name, but its key in the
+  `base_face_files` list passed to
+  [`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md).
 
 - rdata:
 
-  String pointing to .RData file that was created when stimuli were
-  generated. This file contains the contrast parameters of all generated
-  stimuli.
+  Path to the `.Rdata` file written when the stimuli were generated. It
+  holds the contrast parameters of every stimulus.
 
 - save_as_png:
 
-  Boolean stating whether to additionally save the CI as PNG image.
+  Boolean: also save the CI as a PNG image.
 
 - filename:
 
-  Optional string to specify a file name for the PNG image.
+  Optional file name for the PNG image.
 
 - targetpath:
 
-  String specifying the directory to save PNGs to. Required when
-  `save_as_png = TRUE`; there is no default path. It is created if it
-  does not exist. Use
-  [`tempdir()`](https://rdrr.io/r/base/tempfile.html) if you only want
-  to try the function out.
+  Directory to save PNGs to. Required when `save_as_png = TRUE`; there
+  is no default. The directory is created if it does not exist; to just
+  try the function out, use
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
 
 - antiCI:
 
-  Optional boolean specifying whether antiCI instead of CI should be
-  computed.
+  Boolean: compute the anti-CI, the classification image with its sign
+  flipped, instead of the CI.
 
 - scaling:
 
-  Optional string specifying scaling method: `none`, `constant`,
-  `matched`, or `independent` (default).
+  Scaling method: `none`, `constant`, `matched` or `independent`
+  (default).
 
 - constant:
 
-  Optional number specifying the value used as constant scaling factor
-  for the noise (only works for `scaling='constant'`).
+  Scaling constant for the noise. Used only when `scaling = 'constant'`.
 
 ## Value
 
-List of pixel matrix of classification noise only, scaled classification
-noise only, base image only and combined.
+List of pixel matrices: the raw classification noise (`ci`), the scaled
+noise (`scaled`), the base image (`base`) and the two combined
+(`combined`).
 
 ## Details
 
-This function saves the classification image as PNG to a folder and
-returns the CI. Your choice of scaling matters. The default,
+This function returns the classification image (CI) and, by default,
+saves it as a PNG. How the CI is scaled for display decides what the
+image looks like and whether two images can be compared. The default,
 `'independent'`, picks the lowest scaling constant that avoids clipping
-this particular classification image (see `'constant'` scaling below for
-the formula), so it is not comparable across classification images with
-different noise ranges.
+this particular CI (see `'constant'` below for the formula). Each CI
+therefore gets its own constant, and CIs with different noise ranges
+cannot be compared by eye.
 
-`'matched'` scaling will match the range of the intensity of the pixels
-to the range of the base image pixels. This scaling is nonlinear and
-depends on the range of both base image and noise pattern. It is truly
-suboptimal, because it shifts the 0 point of the noise (that is, pixels
-that would not have changed the base image at all before scaling may
-change the base image after scaling and vice versa). It is however the
-quick and dirty way to see how the CI noise affects the base image.
+`'matched'` scaling matches the range of the CI's pixel intensities to
+the range of the base image's. This is nonlinear and depends on the
+ranges of both. It also shifts the zero point of the noise: a pixel that
+would not have changed the base image before scaling may change it
+afterwards, and the other way round. Use it as a quick look at how the
+noise affects the base image, not for reporting.
 
-For more control, use `'constant'` scaling, where the scaling is
-independent of the base image and noise range, but where the choice of
-constant is arbitrary (provided by the user with the `constant`
-parameter). The noise is then scale as follows:
-`scaled <- (ci + constant) / (2*constant)`. Note that pixels can take
-intensity values between 0 and 1. If your scaled noise exceeds those
-values, a warning will be given. You should pick a higher constant (but
-do so consistently for different classification images that you want to
-compare). The higher the constant, the less visible the noise will be in
-the resulting image.
+`'constant'` scaling does not depend on the base image or the noise
+range, but the constant is yours to choose, with the `constant`
+argument. The noise is scaled as
+`scaled <- (ci + constant) / (2 * constant)`. Pixel intensities must lie
+between 0 and 1; if the scaled noise falls outside that range you get a
+warning and should pick a higher constant. The higher the constant, the
+fainter the noise in the resulting image. Use the same constant for
+every classification image you want to compare.
 
-When creating multiple classification images a good strategy is to find
-the lowest constant that works for all classification images. This can
-be automatized using the `autoscale` function.
+For several classification images, the lowest constant that works for
+all of them is a good choice.
+[`autoscale`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
+finds it for you.
 
 ## Examples
 

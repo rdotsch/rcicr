@@ -12,12 +12,12 @@ generateNoiseImage(params, p)
 
 - params:
 
-  Vector with each value specifying the contrast of each patch in noise.
+  Vector of contrast weights, one per patch in the noise basis.
 
 - p:
 
-  3D patch matrix (generated using
-  [`generateNoisePattern()`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md)).
+  Noise basis, as returned by
+  [`generateNoisePattern`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md).
 
 ## Value
 

@@ -1,7 +1,7 @@
 # Generates multiple 2IFC classification images by participant or condition
 
-Generate classification image for 2 images forced choice reverse
-correlation task.
+Generate one classification image per participant or condition, for a
+two-image forced-choice reverse correlation task.
 
 ## Usage
 
@@ -26,78 +26,78 @@ batchGenerateCI2IFC(
 
 - data:
 
-  Data frame
+  Data frame with one row per trial.
 
 - by:
 
-  String specifying column name that specifies the smallest unit
-  (participant, condition) to subset the data on and calculate CIs for.
+  Name of the column that splits the data into units, such as
+  participants or conditions. One CI is computed per unit.
 
 - stimuli:
 
-  String specifying column name in data frame that contains the stimulus
-  numbers of the presented stimuli.
+  Name of the column holding the stimulus numbers of the presented
+  stimuli.
 
 - responses:
 
-  String specifying column name in data frame that contains the
-  responses coded 1 for original stimulus selected and -1 for inverted
-  stimulus selected.
+  Name of the column holding the responses: 1 where the original
+  stimulus was chosen, -1 where the inverted one was.
 
 - baseimage:
 
-  String specifying which base image was used. Not the file name, but
-  the key used in the list of base images at time of generating the
-  stimuli.
+  String naming the base image: not its file name, but its key in the
+  `base_face_files` list passed to
+  [`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md).
 
 - rdata:
 
-  String pointing to .RData file that was created when stimuli were
-  generated. This file contains the contrast parameters of all generated
-  stimuli.
+  Path to the `.Rdata` file written when the stimuli were generated. It
+  holds the contrast parameters of every stimulus.
 
 - save_as_png:
 
-  Boolean stating whether to additionally save the CI as PNG image.
+  Boolean: also save the CI as a PNG image.
 
 - targetpath:
 
-  String specifying the directory to save PNGs to. Required when
-  `save_as_png = TRUE`; there is no default path. It is created if it
-  does not exist. Use
-  [`tempdir()`](https://rdrr.io/r/base/tempfile.html) if you only want
-  to try the function out.
+  Directory to save PNGs to. Required when `save_as_png = TRUE`; there
+  is no default. The directory is created if it does not exist; to just
+  try the function out, use
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
 
 - antiCI:
 
-  Optional boolean specifying whether antiCI instead of CI should be
-  computed.
+  Boolean: compute the anti-CI, the classification image with its sign
+  flipped, instead of the CI.
 
 - scaling:
 
-  Optional string specifying scaling method: `none`, `constant`,
-  `matched`, `independent`, or `autoscale` (default).
+  Scaling method: `none`, `constant`, `matched`, `independent` or
+  `autoscale` (default). `autoscale` computes the CIs unscaled and then
+  puts them on one scale with
+  [`autoscale`](https://rdotsch.github.io/rcicr/reference/autoscale.md).
 
 - constant:
 
-  Optional number specifying the value used as constant scaling factor
-  for the noise (only works for `scaling='constant'`).
+  Scaling constant for the noise. Used only when `scaling = 'constant'`.
 
 - label:
 
-  Optional string to insert in file names of PNGs to make them easier to
+  Optional string added to the PNG file names to make them easier to
   identify.
 
 ## Value
 
-List of classification image data structures (which are themselves lists
-of pixel matrix of classification noise only, scaled classification
-noise only, base image only and combined).
+Named list with one classification image per unit. Each is itself a list
+of pixel matrices: the raw noise (`ci`), the scaled noise (`scaled`),
+the base image (`base`) and the two combined (`combined`).
 
 ## Details
 
-This function saves the classification images by participant or
-condition as PNG to a folder and returns the CIs.
+Splits `data` by the `by` column, calls
+[`generateCI2IFC`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
+for each part, and returns the CIs. By default each CI is also saved as
+a PNG.
 
 ## Examples
 

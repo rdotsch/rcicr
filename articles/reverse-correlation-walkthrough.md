@@ -1,21 +1,17 @@
 # A reverse correlation walkthrough
 
-This is the full walkthrough: designing a 2IFC reverse correlation
-study, generating stimuli, computing classification images for several
-participants, scaling them so they can be compared, and deciding whether
-what you are looking at is signal or noise.
+This walkthrough covers a whole 2IFC reverse correlation study:
+designing it, generating stimuli, computing classification images for
+several participants, scaling them so they can be compared, and deciding
+whether what you see is signal or noise.
 
-If you only want the shortest possible working example, read
+For the shortest working example, read
 [`vignette("getting-started", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/getting-started.md)
 instead.
 
-Every code chunk here runs when this vignette is built, so the code
-cannot silently drift out of date as the package changes. That matters:
-an earlier version of this walkthrough lived outside the package, and by
-the time it was brought in, two of its lines no longer worked —
-[`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)’s
-argument had been renamed, and the install instruction pointed at a
-branch that no longer exists.
+Every code chunk here runs when the vignette is built, so an example
+that stops working with the current package fails the build instead of
+reaching you.
 
 ``` r
 
@@ -28,7 +24,7 @@ library(rcicr)
 old_par <- par(no.readonly = TRUE)
 ```
 
-One small helper, used throughout to display an image matrix:
+One small helper displays an image matrix throughout:
 
 ``` r
 
@@ -68,31 +64,31 @@ remotes::install_github("rdotsch/rcicr")         # the development version
 remotes::install_github("rdotsch/rcicr@<commit-sha>") # pin an exact development snapshot
 ```
 
-Record the version in your analysis script; for an unreleased GitHub
-install, also record the commit SHA and pin that SHA when you return. A
-classification image is only reproducible against the exact code that
-computed it.
+Record the version in your analysis script. For an unreleased GitHub
+install, also record the commit SHA and install that SHA when you
+return. A classification image is only reproducible with the exact code
+that computed it.
 
 ## 2. What the method does
 
-On each trial a participant sees two images side by side. Both are the
-same base face, but one has random visual noise added and the other has
+On each trial a participant sees two images side by side. Both show the
+same base face: one with random visual noise added, the other with
 *exactly the same noise subtracted*. The participant picks whichever
-looks more like some category — more trustworthy, more masculine, more
-like their own group.
+looks more like some category, for example more trustworthy, more
+masculine, or more like their own group.
 
-Neither image contains any real signal. But if a participant reliably
-picks the image whose noise happens to resemble their internal idea of
-“trustworthy”, then averaging the noise from their chosen images — and
-subtracting the noise from the ones they rejected — makes that idea
+Neither image contains a real signal. But suppose a participant reliably
+picks the image whose noise happens to resemble their mental picture of
+“trustworthy”. Averaging the noise of the images they chose, and
+subtracting the noise of the ones they rejected, then makes that picture
 visible. That average is the **classification image**.
 
 ## 3. Generating stimuli
 
 [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
 needs one or more **square** base images. Here we draw a crude synthetic
-face so the vignette is self-contained and needs no image licence; in a
-real study you would pass paths to your face photos.
+face, so the vignette is self-contained and needs no image licence. In a
+real study you pass the paths to your face photos.
 
 ``` r
 
@@ -116,8 +112,8 @@ show(face, "synthetic base face", zlim = c(0, 1))
 
 ![](reverse-correlation-walkthrough_files/figure-html/base-face-1.png)
 
-The base image must be **square and already the size you want**: `rcicr`
-does not resize it, and will stop with an error if `img_size` disagrees.
+The base image must be **square and already the size you want**. `rcicr`
+does not resize it, and stops with an error if `img_size` disagrees.
 
 ``` r
 
@@ -138,37 +134,37 @@ generateStimuli2IFC(
 rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE)[1]
 ```
 
-**Real studies are much bigger than this.** The defaults —
-`n_trials = 770`, `img_size = 512`, `nscales = 5` — reflect published
+**Real studies are much bigger than this.** The defaults
+(`n_trials = 770`, `img_size = 512`, `nscales = 5`) follow published
 practice (Dotsch & Todorov, 2012). Everything here is shrunk so the
 vignette builds in seconds.
 
-With `save_as_png = TRUE` you get two PNGs per trial per base image:
-`..._ori.png` and `..._inv.png`. Those are what you show participants.
+With `save_as_png = TRUE` you get two PNGs per trial per base image,
+`..._ori.png` and `..._inv.png`. Those are what participants see.
 
 ### The `.Rdata` file is the important output
 
-That file records the random noise parameters behind every trial. **It
-is the only link between stimulus generation and analysis** — without
-it, the responses you collect are uninterpretable, because nothing else
-records which noise pattern trial 57 actually was.
+That file records the noise parameters behind every trial. **It is the
+only link between stimulus generation and analysis.** Nothing else
+records which noise pattern trial 57 actually showed, so without it the
+responses you collect cannot be analysed.
 
-Back it up alongside your data. Every analysis function below takes it
-as `rdata`.
+Back it up with your data. Every analysis function below takes it as
+`rdata`.
 
 ## 4. Collecting responses
 
-Run the task however you like (see “Running the task online” below).
-What you need back, per trial, is:
+Run the task however you like (see “Running the task online” below). Per
+trial you need back:
 
-- the **stimulus number** — which trial of the generated set was shown,
-  and
-- the **response** — `1` if the participant chose the original, `-1` if
+- the **stimulus number**: which trial of the generated set was shown;
+- the **response**: `1` if the participant chose the original, `-1` if
   they chose the inverted one.
 
-To make this walkthrough show a real result rather than a grey smudge,
-we simulate three participants who genuinely have an internal template
-and respond according to it, with different amounts of inconsistency.
+So that this walkthrough shows a real result rather than a grey smudge,
+we simulate three participants. All three have the same mental template
+and respond according to it, but with different amounts of
+inconsistency.
 
 ``` r
 
@@ -211,7 +207,7 @@ head(responses)
 #> 6         p01        6        1
 ```
 
-Real data goes in exactly this shape: one row per trial per participant.
+Real data takes exactly this shape: one row per trial per participant.
 
 ## 5. Computing one classification image
 
@@ -229,17 +225,16 @@ names(ci_p01)
 #> [1] "ci"       "scaled"   "base"     "combined"
 ```
 
-The returned list has four parts, and the distinction between the first
-two matters:
+The returned list has four parts. Keep the first two apart:
 
-- **`ci`** — the raw classification image. **This is the data.** Compute
+- **`ci`**: the raw classification image. **This is the data**; compute
   statistics from it.
-- **`scaled`** — `ci` rescaled into the 0–1 range a PNG can store. This
-  is a *display* transformation; which one you pick changes how the
+- **`scaled`**: `ci` rescaled into the 0–1 range a PNG can store. This
+  is a *display* transformation: the method you pick changes how the
   image looks, not what it means.
-- **`base`** — the base image.
-- **`combined`** — `scaled` overlaid on `base`. This is what gets
-  written to disk.
+- **`base`**: the base image.
+- **`combined`**: `scaled` overlaid on `base`. This is what gets written
+  to disk.
 
 Did we recover the template the simulated observer was using?
 
@@ -257,20 +252,20 @@ cor(as.vector(ci_p01$ci), as.vector(template))
 #> [1] 0.5453478
 ```
 
-With real participants you have no template to compare against — that is
-the entire point of the technique. Section 8 covers how to tell signal
-from noise when you cannot peek at the answer.
+With real participants there is no template to compare against; finding
+it is the whole point of the technique. Section 8 shows how to tell
+signal from noise when you cannot peek at the answer.
 
 [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
-does the same thing with an older argument list, kept so that analysis
-scripts written years ago still run. New code should use
+does the same with an older argument list, kept so that analysis scripts
+written years ago still run. New code should use
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
 
 ## 6. Scaling
 
 Scaling decides what the image looks like.
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-offers four methods, and the choice is a reporting decision, not a
+offers four methods, and choosing one is a reporting decision, not a
 cosmetic one.
 
 ``` r
@@ -291,40 +286,39 @@ for (method in c("none", "constant", "matched", "independent")) {
 
 ![](reverse-correlation-walkthrough_files/figure-html/scaling-demo-1.png)![](reverse-correlation-walkthrough_files/figure-html/scaling-demo-2.png)![](reverse-correlation-walkthrough_files/figure-html/scaling-demo-3.png)![](reverse-correlation-walkthrough_files/figure-html/scaling-demo-4.png)
 
-Those four panels are the argument for taking scaling seriously.
+The four panels differ as follows.
 
 **`none`** leaves the raw CI, whose values straddle zero and span only
-about ±0.04. Nothing in that range is displayable: negative pixels fall
-outside 0–1 entirely (shown blank above) and positive ones are so close
-to zero they render as near-black. Written to a PNG, where out-of-range
-values are clipped rather than dropped, almost the whole image would be
-black. Scaling is not optional.
+about ±0.04. Nothing in that range can be displayed: negative pixels
+fall outside 0–1 entirely (blank above), and positive ones are so close
+to zero that they render near-black. A PNG clips out-of-range values
+rather than dropping them, so written to disk almost the whole image
+would be black. You always need some scaling.
 
-**`constant`** with `scaling_constant = 0.5` gives a flat grey — the
+**`constant`** with `scaling_constant = 0.5` gives a flat grey. The
 constant is more than ten times the CI’s actual range, so every
-difference is compressed into a sliver of the palette. A constant has to
-be chosen with the data’s range in mind; too large destroys the signal
-just as surely as too small clips it.
+difference is squeezed into a sliver of the palette. Choose a constant
+with the data’s range in mind: too large destroys the signal just as
+surely as too small clips it.
 
-**`matched`** and **`independent`** both use the available range and
-look similar here, because the base image happens to span nearly 0–1
-already. On a real photograph with a narrower range they diverge.
+**`matched`** and **`independent`** both use the available range. They
+look similar here only because this base image already spans nearly 0–1;
+on a real photograph with a narrower range they diverge.
 
-- **`independent`** (default) picks, for each image separately, the
-  smallest constant that avoids clipping. Every CI uses its full dynamic
-  range — which means **two CIs scaled this way are not comparable to
-  each other**, because each got a different constant.
+- **`independent`** (the default) picks, for each image separately, the
+  smallest constant that avoids clipping. Every CI uses its full range,
+  so **two CIs scaled this way cannot be compared with each other**:
+  each got a different constant.
 - **`constant`** divides by a fixed constant you choose, so several CIs
   stay on one scale. Use this, or
   [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md),
   when comparing conditions.
 - **`matched`** matches the CI’s intensity range to the base image’s.
-  Nonlinear.
-- **`none`** does nothing, leaving values outside 0–1 to be clipped on
-  save.
+  This is nonlinear.
+- **`none`** does nothing; values outside 0–1 are clipped on save.
 
-Whichever you choose, `ci$ci` is untouched. Statistics computed from it
-are unaffected by the display choice.
+Whichever you choose, `ci$ci` is untouched, so statistics computed from
+it do not depend on the display choice.
 
 ## 7. Several participants at once
 
@@ -350,13 +344,17 @@ names(cis)
 #> [1] "face_participant_p01" "face_participant_p02" "face_participant_p03"
 ```
 
-Use the same `by` mechanism for conditions rather than participants when
-that is the comparison you care about.
+To compare conditions rather than participants, point `by` at the
+condition column.
 
-Because each of those was scaled independently, they cannot be compared
-by eye yet.
+These CIs are already on one scale: by default,
+[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+computes them unscaled and then calls
+[`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md),
+which finds one constant that fits all of them without clipping any. For
+CIs you computed separately, call
 [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
-finds one constant that works for all of them without clipping any:
+yourself. On this batch it gives the same result:
 
 ``` r
 
@@ -371,24 +369,22 @@ for (nm in names(scaled)) {
 
 ![](reverse-correlation-walkthrough_files/figure-html/autoscale-1.png)![](reverse-correlation-walkthrough_files/figure-html/autoscale-2.png)![](reverse-correlation-walkthrough_files/figure-html/autoscale-3.png)
 
-`p01` should look cleanest and `p03` weakest — they share a template but
+`p01` should look cleanest and `p03` weakest. They share a template but
 differ in how consistently they applied it, which is what internal noise
 means in practice.
 
 ### After `autoscale()`, look at `$scaled`
 
 [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
-rewrites `$scaled` and **deliberately leaves `$combined` exactly as it
-was**. That is by design: a combination you made before autoscaling
-survives the call untouched, so an existing analysis script that plots
-`$combined` keeps producing the same image.
+rewrites `$scaled` and **leaves `$combined` exactly as it was**, on
+purpose: an existing analysis script that plots `$combined` keeps
+producing the same image.
 
-It catches people out after
-[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md),
-though, because that function scales with `'none'` before handing over —
-so its `$combined` is an overlay of the *unscaled* noise and looks
-almost blank. If you want the autoscaled noise over the base image,
-build it yourself:
+This catches people out after
+[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md).
+That function scales with `'none'`, so its `$combined` overlays the
+*unscaled* noise and looks almost blank. To see the autoscaled noise
+over the base image, build the overlay yourself:
 
 ``` r
 
@@ -401,22 +397,21 @@ show((p01$scaled + p01$base) / 2, "p01 over base", zlim = c(0, 1))
 That expression is exactly what `autoscale(save_as_pngs = TRUE)` writes
 to disk.
 
-Note also that the argument is `save_as_pngs`. Older tutorials show
-`saveasjpegs`, which no longer exists — precisely the drift that keeping
-this walkthrough inside the package prevents.
+The argument is `save_as_pngs`. Older tutorials show `saveasjpegs`,
+which no longer exists.
 
 ## 8. Is there actually signal?
 
-Two tools, answering different questions.
+Two tools answer different questions.
 
 **[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)**
 gives one number per CI: a z-score for how much stronger this CI is than
-one built from random responding. Values above about 1.96 indicate
+one built from random responses. Values above about 1.96 indicate
 reliable signal.
 
 It needs a reference distribution simulated under the same task
-parameters, which takes a long time to build — so it is shown but not
-run here:
+parameters. That takes a long time to build, so the code is shown but
+not run here:
 
 ``` r
 
@@ -428,8 +423,8 @@ computeInfoVal2IFC(target_ci = ci_p01, rdata = rdata_file)
 ```
 
 **[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)**,
-or `generateCI(zmap = TRUE)`, answers the spatial question instead:
-*which regions* of the image carry reliable signal.
+or `generateCI(zmap = TRUE)`, answers the spatial question: *which
+regions* of the image carry reliable signal.
 
 ``` r
 
@@ -455,33 +450,32 @@ mean(!is.na(ci_z$zmap)) # fraction of the image flagged
 
 **Choose the threshold by looking at the range, not by habit.**
 `zmapmethod = "quick"` z-scores a blurred CI *across the pixels of that
-one image*, so its values are relative to the image’s own spatial
-structure — they are not z-scores against a null distribution, and their
-spread shrinks as the image gets smaller or the blur gets wider. Here
-the whole map spans roughly ±1.7, so the default `threshold = 3` would
-have returned an entirely blank map. That is not evidence of no signal;
-it is the wrong ruler.
+one image*. Its values are relative to the image’s own spatial
+structure, not z-scores against a null distribution, and their spread
+shrinks as the image gets smaller or the blur wider. Here the whole map
+spans roughly ±1.7, so the default `threshold = 3` would have returned a
+blank map. That is not evidence of no signal; it is the wrong ruler.
 
 `zmapmethod = "t.test"` is the inferential counterpart: a per-pixel
-t-test across trials, slower, but producing a statistic that does mean
-what it looks like. Neither method corrects for multiple comparisons
-across pixels, so treat both as exploratory.
+t-test across trials. It is slower, but its statistic means what it
+looks like. Neither method corrects for multiple comparisons across
+pixels, so treat both as exploratory.
 
 ## 9. Running the task online
 
 `rcicr` generates stimuli and analyses responses; it does not run
 experiments. The stimulus PNGs are ordinary image files, so any platform
-that can show two images and record a choice will do — Qualtrics,
-jsPsych, Gorilla, PsychoPy, or a custom page.
+that can show two images and record a choice will do: Qualtrics,
+jsPsych, Gorilla, PsychoPy, or a page of your own.
 
-Two things to get right:
+Get two things right:
 
 1.  **Record the stimulus number**, not the filename you happened to
     serve. The number is what indexes into the `.Rdata` file.
 2.  **Record which of the pair was chosen** as `1` (original) or `-1`
-    (inverted), and be certain which is which — a systematic flip
-    inverts every classification image you compute, and the result will
-    look like a plausible mental representation of the opposite trait.
+    (inverted), and be certain which is which. A systematic flip inverts
+    every classification image you compute, and the result looks like a
+    plausible mental representation of the opposite trait.
 
 Worked examples and analysis scripts:
 <https://github.com/rdotsch/rcicr_examples/>
@@ -493,6 +487,7 @@ Worked examples and analysis scripts:
 citation("rcicr")
 ```
 
-If you use the technique, cite the method papers as well as the software
-— see the package’s `CITATION` file and the README for the relevant
-references.
+`citation("rcicr")` cites the software. If you use the technique, also
+cite the method: Dotsch and Todorov (2012)
+<doi:10.1177/1948550611430272>, and for a practical primer Brinkman,
+Todorov and Dotsch (2017) <doi:10.1080/10463283.2017.1381469>.

@@ -1,6 +1,6 @@
 # Generates 2IFC stimuli
 
-Generate stimuli for 2 images forced choice reverse correlation task.
+Generate stimuli for a two-image forced-choice reverse correlation task.
 
 ## Usage
 
@@ -28,117 +28,103 @@ generateStimuli2IFC(
 
 - base_face_files:
 
-  Named list of base face file names used as base images for stimuli,
-  e.g. `list(aName = 'baseface.jpg')`. Accepts JPEG and PNG images,
-  recognised by a `.png`, `.jpg` or `.jpeg` extension. Each name labels
-  that base image's stimulus files and indexes the .Rdata file that
+  Named list of base image files, e.g. `list(aName = 'baseface.jpg')`.
+  JPEG and PNG images are accepted, recognised by a `.png`, `.jpg` or
+  `.jpeg` extension. Each name labels that base image's stimulus files
+  and is the key
   [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-  reads back, so every element must be named, and named uniquely. Each
-  image must be square and exactly `img_size` by `img_size` pixels:
+  uses to find it in the `.Rdata` file, so every element needs a unique
+  name. Each image must be square and exactly `img_size` pixels wide:
   rcicr does not resize base images. All of this is checked before any
-  stimuli are generated, and the message names the offending entry.
+  stimuli are generated, and an error names the offending entry.
 
 - n_trials:
 
-  Number specifying how many trials the task will have (function will
-  generate two images for each trial per base image: original and
-  inverted/negative noise).
+  Number of trials. Each trial gets two images per base image: one with
+  the noise added (original) and one with it subtracted (inverted).
 
 - img_size:
 
-  Number specifying the number of pixels that the stimulus image will
-  span horizontally and vertically (will be square, so only one integer
-  needed).
+  Width and height of the square stimulus images, in pixels.
 
 - stimulus_path:
 
-  String specifying the directory to save the stimuli and the .Rdata
-  file to. Required unless both `save_as_png` and `save_rdata` are
-  FALSE; there is no default path. It is created if it does not exist.
-  Use [`tempdir()`](https://rdrr.io/r/base/tempfile.html) if you only
-  want to try the function out.
+  Directory to save the stimuli and the `.Rdata` file to. Required
+  unless both `save_as_png` and `save_rdata` are FALSE; there is no
+  default. The directory is created if it does not exist; to just try
+  the function out, use
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
 
 - label:
 
-  Label to prepend to each file for your convenience.
+  Label put at the start of each file name.
 
 - use_same_parameters:
 
-  Boolean specifying whether for each base image the same set of
-  parameters is used (TRUE) or a unique set is created for each base
-  image (FALSE).
+  Boolean: all base images share one set of noise parameters (`TRUE`) or
+  each gets its own (`FALSE`).
 
 - seed:
 
-  Integer seeding the random number generator (for reproducibility).
+  Seed for the random number generator, for reproducibility.
 
 - maximize_baseimage_contrast:
 
-  Boolean specifying whether the pixel values of the base image should
-  be rescaled to maximize its contrast. A base image with no contrast at
-  all — every pixel the same value — has nothing to rescale, and is
-  rejected with an error rather than silently turned into an all-`NaN`
-  base image. Such an image is still usable with
-  `maximize_baseimage_contrast = FALSE`.
+  Boolean: rescale the base image's pixel values to maximize its
+  contrast. A base image with no contrast at all, every pixel the same
+  value, cannot be rescaled and is rejected with an error. It can still
+  be used with `maximize_baseimage_contrast = FALSE`.
 
 - noise_type:
 
-  String specifying noise pattern type (defaults to `sinusoid`; other
-  options: `gabor`).
+  Noise pattern type: `sinusoid` (default) or `gabor`.
 
 - nscales:
 
-  Integer specifying the number of incremental spatial scales. Defaults
-  to 5. Higher numbers will add higher spatial frequency scales.
+  Number of spatial scales (default: 5). Each additional scale adds a
+  higher spatial frequency.
 
 - sigma:
 
-  Number specifying the sigma of the Gabor patch if noise_type is set to
-  `gabor` (defaults to 25).
+  Sigma of the Gabor patches when `noise_type = 'gabor'` (default: 25).
 
 - ncores:
 
-  Number of CPU cores to use (default: `detectCores()-1`; 2 under
+  Number of CPU cores to use (default: `detectCores() - 1`; 2 under
   `R CMD check`, per CRAN policy).
 
 - return_as_dataframe:
 
-  Boolean specifying whether to return a data frame with the raw noise
-  of the stimuli that were generated (default: FALSE). Data frame
-  columns represent pixel values, data frame rows represent stimuli. The
-  frame holds one noise image per trial, so it is meaningful only under
-  the default `use_same_parameters = TRUE`, where every base image
-  shares a single parameter set and one noise image per trial is all
-  there is. With `use_same_parameters = FALSE` and more than one base
-  image, only the first base image's noise is returned; the frame's
-  shape cannot represent trial x base image. Stimuli are still written
-  to disk for every base image either way, and `save_rdata = TRUE`
-  records the full parameter set, so nothing is lost from the files
-  themselves.
+  Boolean: return a data frame with the raw noise of the generated
+  stimuli (default: `FALSE`), one row per pixel and one column per
+  trial. With the default `use_same_parameters = TRUE` every base image
+  shares the same noise, so that is all of it. With
+  `use_same_parameters = FALSE` and more than one base image, only the
+  first base image's noise is returned, because one column per trial
+  cannot hold several. The stimuli are still written for every base
+  image, and `save_rdata = TRUE` records every parameter set, so nothing
+  is missing from the files.
 
 - save_as_png:
 
-  Boolean specifying whether to write the stimuli as images to disk
-  (default: TRUE).
+  Boolean: write the stimuli to disk as PNG images (default: `TRUE`).
 
 - save_rdata:
 
-  Boolean specifying whether .RData file with stimulus parameters will
-  be saved (default: TRUE). Note: you always need to save the .RData
-  file so that you can retrieve the stimulus parameters to compute
-  classification images. This function argument exists primarily for
-  internal rcicr use.
+  Boolean: save the `.Rdata` file with the stimulus parameters (default:
+  `TRUE`). Computing classification images needs that file, so keep this
+  `TRUE`; the argument exists mainly for internal use.
 
 ## Value
 
-Nothing, everything is saved to files, unless return_as_dataframe is set
-to TRUE.
+Nothing: everything is saved to files. With
+`return_as_dataframe = TRUE`, the data frame described there.
 
 ## Details
 
-Will save the stimuli as PNGs to a folder, including .Rdata file needed
-for analysis of data after data collection. This .Rdata file contains
-the parameters that were used to generate each stimulus.
+Saves the stimuli as PNGs, together with an `.Rdata` file holding the
+parameters used to generate each stimulus. Analysing the responses later
+requires that file.
 
 ## Examples
 

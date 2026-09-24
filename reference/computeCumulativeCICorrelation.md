@@ -1,6 +1,7 @@
 # Computes cumulative trial CIs correlations with final/target CI
 
-Computes cumulative trial CIs correlations with final/target CI.
+Correlates the CI built from the first trials with the final or target
+CI, adding trials one step at a time.
 
 ## Usage
 
@@ -19,91 +20,89 @@ computeCumulativeCICorrelation(
 
 - stimuli:
 
-  Numeric vector of stimulus numbers in response order, with one finite,
-  positive whole number per response, within the trials saved for the
-  selected base image. Repeated and nonconsecutive numbers are allowed.
-  Factors, characters and logicals are rejected; verify imported labels
-  against the generated stimulus filenames before converting them to
-  numeric IDs.
+  Numeric vector of stimulus numbers, one per response and in the same
+  order. Each must be a positive whole number no larger than the number
+  of trials saved for the selected base image. Numbers may repeat and
+  need not be consecutive. Factors, characters and logicals are
+  rejected: if your data hold stimulus labels, check them against the
+  generated stimulus filenames before converting them to numbers.
 
 - responses:
 
-  Vector specifying the responses in the same order of the stimuli
-  vector, coded 1 for original stimulus selected and -1 for inverted
-  stimulus selected.
+  Vector of responses in the same order as `stimuli`: 1 where the
+  original stimulus was chosen, -1 where the inverted one was.
 
 - baseimage:
 
-  String specifying which base image was used. Not the file name, but
-  the key used in the list of base images at time of generating the
-  stimuli.
+  String naming the base image: not its file name, but its key in the
+  `base_face_files` list passed to
+  [`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md).
 
 - rdata:
 
-  String pointing to .RData file that was created when stimuli were
-  generated. This file contains the contrast parameters of all generated
-  stimuli.
+  Path to the `.Rdata` file written when the stimuli were generated. It
+  holds the contrast parameters of every stimulus.
 
 - targetci:
 
-  List Target CI object generated with rcicr functions to correlate
-  cumulative CIs with.
+  Optional target CI to correlate the cumulative CIs with, as returned
+  by
+  [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
+  Without it, the final CI of these trials is used.
 
 - step:
 
-  Step size in sequence of trials to compute correlations with.
+  Number of trials added between successive correlations.
 
 ## Value
 
-Vector containing correlation between cumulative CI and final/target CI.
+Vector of correlations between each cumulative CI and the final or
+target CI.
 
 ## Details
 
-Use for instance for plotting curves of trial-final/target CI
-correlations to estimate how many trials are necessary in your task
+Plot the resulting curve to estimate how many trials your task needs.
 
 ## Repeated presentations of the same stimulus
 
-This function walks trials in the order they were presented and does not
-aggregate repeated presentations of a stimulus, unlike
-[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
-which averages the responses to each unique stimulus before building its
-classification image. That is deliberate: collapsing repeats would
-discard the presentation order a cumulative curve is entirely about.
-
-One consequence is worth knowing. With no `targetci`, the final CI
-computed here is built from the same un-aggregated trials as the curve.
-Where the evaluated trials reach the last one – always so at the default
-`step = 1` – the curve's final point compares that CI with itself and is
-exactly 1: self-consistency, not evidence of convergence. A larger
-`step` can stop short, because trials are taken at
-`seq(1, length(responses), step)`: with six responses and `step = 2` the
-last one evaluated is the fifth, and the curve ends at whatever that
-partial CI correlates to – 0.97 in one such set, not 1.
-
-Both statements assume the CI being compared against varies at all.
-Responses that cancel exactly – every presentation of a stimulus
-answered both ways – average to a uniformly zero CI, and a correlation
-against a constant is undefined, so **every** point on the curve is `NA`
-rather than the last one being 1. Such a curve means the responses carry
-no net signal, not that the call failed.
-
-A `targetci` carrying masked pixels –
+This function takes the trials in the order they were presented and does
+not average repeated presentations of a stimulus.
 [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-stores `NA` in every pixel a `mask` excludes – is handled by correlating
-over the unmasked pixels only. If the mask covers *every* pixel, there
-are no complete pairs and the curve is all-`NA`, same as the
-zero-variance case above.
+does average them, per unique stimulus, before building its
+classification image. Averaging here would discard the presentation
+order that a cumulative curve is about.
 
-Where every stimulus was presented the same number of times, that final
-CI is identical to the one `generateCI` returns. Where repeat counts
-differ, the two weight the data differently – each trial equally here,
-each unique stimulus equally there – and they diverge: on an 8-trial set
-with counts 4/2/1/1 they correlate at 0.77.
+Without a `targetci`, the final CI is built here from the same trials as
+the curve. When the evaluated trials reach the last one, as they always
+do at the default `step = 1`, the curve's last point compares that CI
+with itself and is exactly 1. That shows self-consistency, not
+convergence. A larger `step` can stop short, because trials are taken at
+`seq(1, length(responses), step)`: with six responses and `step = 2`,
+the last trial evaluated is the fifth, and the curve ends at whatever
+that partial CI correlates to (0.97 in one such set, not 1).
 
-So to see how the CI approaches the one you will actually report, pass
-it as `targetci = generateCI(...)` rather than relying on the
-self-computed default – built without a `mask`, per the note above.
+This assumes the CI compared against varies at all. Responses that
+cancel exactly, with every presentation of a stimulus answered both
+ways, average to a CI that is zero everywhere. A correlation with a
+constant is undefined, so then **every** point on the curve is `NA`.
+Such a curve means the responses carry no net signal, not that the call
+failed.
+
+A `targetci` with masked pixels
+([`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+stores `NA` in every pixel a `mask` excludes) is correlated over the
+unmasked pixels only. If the mask covers *every* pixel, no pairs remain
+and the whole curve is `NA`, as above.
+
+If every stimulus was shown equally often, the final CI computed here is
+identical to the one `generateCI` returns. If not, the two weight the
+data differently (each trial equally here, each unique stimulus equally
+there) and they diverge: on an 8-trial set with counts 4/2/1/1 they
+correlate at 0.77.
+
+So to see how the CI approaches the one you will report, pass that CI as
+`targetci = generateCI(...)` instead of relying on the default, which is
+always built without a `mask`.
 
 ## Examples
 

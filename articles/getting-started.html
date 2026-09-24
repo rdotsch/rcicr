@@ -65,47 +65,45 @@
     
     
 <p><code>rcicr</code> implements <strong>reverse correlation image
-classification</strong>, a technique from psychophysics for visualizing
-internal mental representations (for example, of faces). It works in two
+classification</strong>, a psychophysics technique for visualizing
+mental representations, for example of faces. It works in two
 stages:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Stimulus generation</strong>: a base image (e.g. a face
-photo) is combined with random visual noise to create pairs of stimuli —
-an “original” and its pixel-inverted counterpart — for a
-two-image-forced-choice (2IFC) task. Participants pick, on each trial,
-whichever of the pair looks more like some target category
-(e.g. “trustworthy”, “happy”).</li>
+<strong>Stimulus generation.</strong> A base image, such as a face
+photo, is combined with random visual noise. Each trial shows a pair:
+the “original” (base plus noise) and its “inverted” counterpart (base
+minus the same noise). On each trial the participant picks whichever of
+the two looks more like a target category, such as “trustworthy” or
+“happy”. This is a two-image forced-choice (2IFC) task.</li>
 <li>
-<strong>Classification image (CI) computation</strong>: after data
-collection, the noise patterns from stimuli where the participant chose
-the “original” are averaged together (and subtracted for stimuli where
-the “inverted” version was chosen). The result — the classification
-image — visualizes which visual features were systematically associated
-with the participant’s choices.</li>
+<strong>Classification image (CI).</strong> After data collection,
+the noise of every chosen original is added up and the noise of every
+chosen inverted image is subtracted. The average is the classification
+image: it shows which visual features drove the participant’s
+choices.</li>
 </ol>
-<p>This vignette walks through both stages using a tiny synthetic
-example. For the full treatment — several participants, scaling choices,
-z-maps and informational value — see
+<p>This vignette runs both stages on a tiny synthetic example. For the
+full method, with several participants, scaling choices, z-maps and
+informational value, see
 <code><a href="../articles/reverse-correlation-walkthrough.html">vignette("reverse-correlation-walkthrough", package = "rcicr")</a></code>.
-For example datasets and analysis scripts, see <a href="https://github.com/rdotsch/rcicr_examples/" class="external-link">rcicr_examples</a>.</p>
+Example datasets and analysis scripts are in <a href="https://github.com/rdotsch/rcicr_examples/" class="external-link">rcicr_examples</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rdotsch.github.io/rcicr/">rcicr</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="generate-stimuli">1. Generate stimuli<a class="anchor" aria-label="anchor" href="#generate-stimuli"></a>
 </h2>
-<p><code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> needs a square base image. Here we
-generate a synthetic grayscale image instead of using a real photo,
-purely so this vignette is self-contained; in a real study you would
-pass the path to your base face photo(s) instead.</p>
+<p><code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> needs a square base image. To keep
+this vignette self-contained we make a synthetic greyscale one. In a
+real study you pass the path to your base face photo(s).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">base_face_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".png"</span><span class="op">)</span></span>
 <span><span class="fu">png</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">writePNG</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">64</span> <span class="op">*</span> <span class="fl">64</span><span class="op">)</span>, <span class="fl">64</span>, <span class="fl">64</span><span class="op">)</span>, <span class="va">base_face_path</span><span class="op">)</span></span></code></pre></div>
-<p>Now generate stimuli for a small task: 20 trials, one base image, at
-a small image size (kept small here so the vignette builds quickly — a
-real study would typically use <code>img_size = 512</code> and several
-hundred trials, following Dotsch &amp; Todorov, 2012).</p>
+<p>Now generate stimuli for a small task: 20 trials and one base image,
+at a small size so the vignette builds quickly. A real study typically
+uses <code>img_size = 512</code> and several hundred trials (Dotsch
+&amp; Todorov, 2012).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stimulus_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -121,29 +119,29 @@ hundred trials, following Dotsch &amp; Todorov, 2012).</p>
 <span></span>
 <span><span class="va">rdata_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">stimulus_path</span>, pattern <span class="op">=</span> <span class="st">"\\.Rdata$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span></code></pre></div>
 <p>This writes an <code>.Rdata</code> file to <code>stimulus_path</code>
-containing the random noise parameters used for every trial.
-<strong>That file is the only link between stimulus generation and CI
-computation</strong> — keep it, since every analysis function below
-needs it via the <code>rdata</code> argument.</p>
+holding the noise parameters of every trial. <strong>That file is the
+only link between stimulus generation and CI computation.</strong> Keep
+it: every analysis function below needs it as its <code>rdata</code>
+argument.</p>
 </div>
 <div class="section level2">
 <h2 id="collect-or-here-simulate-responses">2. Collect (or, here, simulate) responses<a class="anchor" aria-label="anchor" href="#collect-or-here-simulate-responses"></a>
 </h2>
-<p>In a real experiment, this is where you would run the 2IFC task and
-record which image (original = <code>1</code>, inverted =
-<code>-1</code>) each participant chose on each trial. Since this
-vignette has no real participant, we simulate random responses instead —
-a real analysis would never do this, as random responding contains no
-signal and yields an uninformative classification image.</p>
+<p>In a real experiment you now run the 2IFC task and record, per trial,
+which image each participant chose: <code>1</code> for the original,
+<code>-1</code> for the inverted one. This vignette has no participant,
+so it simulates random responses. Random responses carry no signal, so
+the resulting classification image shows nothing; never do this in a
+real analysis.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">responses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span>, <span class="fl">20</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="compute-the-classification-image">3. Compute the classification image<a class="anchor" aria-label="anchor" href="#compute-the-classification-image"></a>
 </h2>
-<p><code><a href="../reference/generateCI.html">generateCI()</a></code> looks up the noise parameters for the
+<p><code><a href="../reference/generateCI.html">generateCI()</a></code> looks up the noise parameters of the
 stimuli that were shown, weights them by the responses, and averages
-them into a single classification image.</p>
+them into one classification image.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ci</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generateCI.html">generateCI</a></span><span class="op">(</span></span>
 <span>  stimuli     <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
@@ -155,39 +153,48 @@ them into a single classification image.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ci</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "ci"       "scaled"   "base"     "combined"</span></span></code></pre></div>
-<p><code>ci$ci</code> is the raw noise, <code>ci$scaled</code> is that
-noise rescaled for display (see <code><a href="../reference/generateCI.html">?generateCI</a></code> for the
-available scaling methods — the default, <code>'independent'</code>,
-picks the lowest scaling constant that avoids clipping this particular
-image), and <code>ci$combined</code> overlays the scaled noise on the
-base image.</p>
+<p>The result holds four pixel matrices:</p>
+<ul>
+<li>
+<code>ci$ci</code> is the raw noise.</li>
+<li>
+<code>ci$scaled</code> is that noise rescaled for display. The
+default method, <code>'independent'</code>, picks the lowest scaling
+constant that avoids clipping this particular image;
+<code><a href="../reference/generateCI.html">?generateCI</a></code> describes the others.</li>
+<li>
+<code>ci$base</code> is the base image.</li>
+<li>
+<code>ci$combined</code> overlays the scaled noise on the base
+image.</li>
+</ul>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image</a></span><span class="op">(</span><span class="va">ci</span><span class="op">$</span><span class="va">combined</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/gray.colors.html" class="external-link">gray.colors</a></span><span class="op">(</span><span class="fl">256</span><span class="op">)</span>, axes <span class="op">=</span> <span class="cn">FALSE</span>, asp <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p><img src="getting-started_files/figure-html/plot-ci-1.png" class="r-plt" alt="" width="384"></p>
-<p>Because the responses above were random rather than real data, this
-classification image is just noise — with real experimental data,
-systematic patterns tied to participants’ choices would emerge here
-instead.</p>
+<p>Because the responses were random, this classification image is just
+noise. With real data, patterns tied to the participants’ choices emerge
+here.</p>
 </div>
 <div class="section level2">
 <h2 id="next-steps">Next steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
 </h2>
 <ul>
 <li>
-<code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> / <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code>
-compute one CI per participant or condition from a data frame,
-optionally followed by <code><a href="../reference/autoscale.html">autoscale()</a></code> to rescale a whole batch
-of CIs consistently so they stay visually comparable.</li>
+<code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> and
+<code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> compute one CI per participant or
+condition from a data frame. By default they put the whole batch on one
+scale with <code><a href="../reference/autoscale.html">autoscale()</a></code>, so the images can be compared by
+eye.</li>
 <li>
-<code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> computes an “Informational Value”
-(a z-score-like measure of how much signal is in a CI) by comparing it
-to a simulated null distribution.</li>
+<code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> computes the informational value:
+a z-score-like measure of how much signal a CI holds, compared with a
+simulated null distribution.</li>
 <li>
-<code><a href="../reference/plotZmap.html">plotZmap()</a></code> visualizes which regions of a CI carry
-statistically reliable signal.</li>
+<code><a href="../reference/plotZmap.html">plotZmap()</a></code> shows which regions of a CI carry reliable
+signal.</li>
 </ul>
-<p>See each function’s help page (e.g. <code><a href="../reference/generateCI.html">?generateCI</a></code>,
-<code><a href="../reference/batchGenerateCI.html">?batchGenerateCI</a></code>) for further options and runnable
+<p>Each function’s help page, such as <code><a href="../reference/generateCI.html">?generateCI</a></code> or
+<code><a href="../reference/batchGenerateCI.html">?batchGenerateCI</a></code>, lists its options and has runnable
 examples.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

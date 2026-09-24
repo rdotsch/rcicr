@@ -47,32 +47,30 @@
 
 
 <dl><dt id="arg-cis">cis<a class="anchor" aria-label="anchor" href="#arg-cis"></a></dt>
-<dd><p>List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (<code>$ci</code>) and if the noise patterns need to be written to PNGs, also the base image (<code>$base</code>).</p></dd>
+<dd><p>List of classification images, each a list of pixel matrices holding at least the noise (<code>$ci</code>), plus the base image (<code>$base</code>) if PNGs are to be written.</p></dd>
 
 
 <dt id="arg-save-as-pngs">save_as_pngs<a class="anchor" aria-label="anchor" href="#arg-save-as-pngs"></a></dt>
-<dd><p>Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as PNGs (using the key of the list as name).</p></dd>
+<dd><p>Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in <code>cis</code>.</p></dd>
 
 
 <dt id="arg-targetpath">targetpath<a class="anchor" aria-label="anchor" href="#arg-targetpath"></a></dt>
-<dd><p>String specifying the directory to save PNGs to. Required when <code>save_as_pngs = TRUE</code>; there is no default path. It is created if it does not exist. Use <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code> if you only want to try the function out.</p></dd>
+<dd><p>Directory to save PNGs to. Required when <code>save_as_pngs = TRUE</code>; there is no default. The directory is created if it does not exist; to just try the function out, use <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>The input <code>cis</code> list, with the <code>$scaled</code> pixel matrix of each element
-replaced by its autoscaled version. The scaling constant that was determined is printed
-to the console, not returned.</p>
-<p><strong>Look at <code>$scaled</code>, not <code>$combined</code>.</strong> <code>$combined</code> is left exactly
-as it was passed in: autoscaling deliberately does not disturb it, so a combination made
-before this call survives unchanged. Only <code>$scaled</code> reflects the autoscaled result.
-If you want the autoscaled noise shown over the base image, build it yourself with
-<code>(ci$scaled + ci$base) / 2</code> — that is exactly what <code>save_as_pngs = TRUE</code>
-writes to disk.</p>
-<p>This matters most after <code><a href="batchGenerateCI.html">batchGenerateCI</a></code> or
-<code><a href="batchGenerateCI2IFC.html">batchGenerateCI2IFC</a></code>, which scale with <code>'none'</code> before handing over to
-this function: their <code>$combined</code> is therefore an overlay of the <em>unscaled</em>
-noise and will look almost blank, while <code>$scaled</code> is the image you want.</p>
+    <p>The input <code>cis</code> list, with each element's <code>$scaled</code> matrix replaced by its
+autoscaled version. The scaling constant is printed to the console, not returned.</p>
+<p><strong>Look at <code>$scaled</code>, not <code>$combined</code>.</strong> <code>$combined</code> is returned exactly
+as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
+image. Only <code>$scaled</code> holds the autoscaled result. To show the autoscaled noise over the
+base image, compute <code>(ci$scaled + ci$base) / 2</code>: that is exactly what
+<code>save_as_pngs = TRUE</code> writes to disk.</p>
+<p>This catches people out after <code><a href="batchGenerateCI.html">batchGenerateCI</a></code> or
+<code><a href="batchGenerateCI2IFC.html">batchGenerateCI2IFC</a></code>. Both scale with <code>'none'</code> before calling this
+function, so their <code>$combined</code> overlays the <em>unscaled</em> noise and looks almost blank,
+while <code>$scaled</code> is the image you want.</p>
     </div>
 
     <div class="section level2">

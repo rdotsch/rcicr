@@ -12,15 +12,16 @@ and Todorov (2012)
 ## Details
 
 [`vignette("reverse-correlation-walkthrough")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md)
-works through a complete experiment end to end. In brief:
+works through a complete experiment. In brief:
 [`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
-creates the stimuli together with the `.Rdata` file recording how they
-were made, and
-[`generateCI2IFC`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
+creates the stimuli and the `.Rdata` file recording how they were made,
+and
+[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
 or
 [`batchGenerateCI`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
 turns participants' responses into classification images.
-`citation("rcicr")` prints the reference to cite.
+`citation("rcicr")` prints the reference for the software; cite the
+method papers below as well.
 
 ## References
 

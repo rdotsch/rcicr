@@ -1,7 +1,6 @@
 # Generates reference distribution
 
-Generates reference distribution of norms for a particular set of task
-parameters.
+Generates the reference distribution of norms for a stimulus set.
 
 ## Usage
 
@@ -20,102 +19,99 @@ generateReferenceDistribution2IFC(
 
 - rdata:
 
-  String pointing to .RData file that was created when stimuli were
-  generated. This file contains the contrast parameters of all generated
-  stimuli.
+  Path to the `.Rdata` file written when the stimuli were generated. It
+  holds the contrast parameters of every stimulus.
 
 - iter:
 
-  Number of iterations for the simulation (i.e., the number of norms
-  generated with classification images based on random responding).
+  Number of simulated classification images, each built from random
+  responses; the distribution holds one norm per image.
 
 - ncores:
 
-  Number of CPU cores to use when rebuilding the saved noise (default:
-  `detectCores()-1`; 2 under `R CMD check`, per CRAN policy).
+  Number of CPU cores used to rebuild the saved noise (default:
+  `detectCores() - 1`; 2 under `R CMD check`, per CRAN policy).
 
 - response_seed:
 
-  Optional seed for the simulated random responses. The default (`NULL`)
-  draws them from the state the stimulus generator left behind, which is
-  the reproducible behaviour described under Reproducibility. Supply a
-  number to obtain an independent draw of the null from the same
-  stimuli.
+  Optional seed for the simulated random responses. The default, `NULL`,
+  continues from the state the stimulus generator left behind, as
+  described under Reproducibility. A number gives an independent draw of
+  the null from the same stimuli.
 
 - save_rdata:
 
-  Boolean specifying whether the reference distribution should be
-  written back into the `rdata` file (default `TRUE`). Set to `FALSE` to
-  compute a distribution without changing what later calls to
+  Boolean: write the reference distribution into the `rdata` file
+  (default `TRUE`). With `FALSE`, later calls to
   [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-  will use – worth doing whenever `response_seed` is set, so a one-off
-  null does not become the file's permanent reference.
+  keep using what the file already holds. Set it to `FALSE` whenever you
+  set `response_seed`, so a one-off null does not become the file's
+  permanent reference.
 
 - baseimage:
 
-  Saved base-image label, using the same key as
+  Base-image label, the same key passed to
   [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
-  Required when the saved base images have different noise parameters.
-  With a single base or identical parameter matrices, `NULL` retains the
-  shared reference behavior.
+  Required when the base images have different noise parameters. With a
+  single base image, or base images sharing one parameter set, leave it
+  at `NULL`.
 
 ## Value
 
 The reference distribution, invisibly, as a numeric vector of `iter`
-norms. Unless `save_rdata = FALSE`, it is also added to the supplied
-`rdata` file as `reference_norms` (alongside `reference_norms_seed`,
-recording the `response_seed` it was generated with), so a later call to
+norms. Unless `save_rdata = FALSE`, it is also added to the `rdata` file
+as `reference_norms`, with `reference_norms_seed` recording the
+`response_seed` it was drawn with. A later
 [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-using the same file can reuse it instead of re-simulating.
-Independent-base references instead use `reference_norms_by_base`, as
+call on the same file then reuses it instead of simulating again. For
+independent base images it goes in `reference_norms_by_base` instead, as
 described above.
 
 ## Details
 
-In order to compute the Informational Value metric. Saves its results in
-the supplied rdata file for later reuse.
+[`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+scores a classification image against this distribution. By default the
+result is saved in the `rdata` file for later reuse.
 
 ## Reproducibility
 
-With the default `response_seed = NULL`, the reference distribution is
-determined by the stimulus `.Rdata` file and the session's
-[`RNGkind`](https://rdrr.io/r/base/Random.html). It does not depend on
-the ambient random number state, and it does not depend on `ncores`. Two
-researchers who compute InfoVal from the same stimulus file therefore
-get the same number, and the same reference distribution, on different
-machines and in different sessions – provided both sessions use the same
-RNG kind.
+With the default `response_seed = NULL`, the reference distribution
+depends only on the stimulus `.Rdata` file and the session's
+[`RNGkind`](https://rdrr.io/r/base/Random.html): not on the current
+random state, and not on `ncores`. Two researchers computing InfoVal
+from the same stimulus file get the same reference distribution, and the
+same number, on any machine and in any session, provided both use the
+same RNG kind.
 
+The RNG kind is the one gap.
 [`set.seed()`](https://rdrr.io/r/base/Random.html) keeps whatever kind
-the session already has rather than restoring one, and no stimulus file
-records which was in force, so a session that has changed
-[`RNGkind()`](https://rdrr.io/r/base/Random.html) changes the simulated
-response draws and therefore the null. The saved noise basis and
-stimulus parameters remain unchanged. To reproduce an earlier reference,
-use the RNG kind that built it; see
+the session already has, and no stimulus file records which kind was in
+use. A session with a different
+[`RNGkind()`](https://rdrr.io/r/base/Random.html) therefore draws
+different simulated responses, and so a different null; the saved noise
+basis and stimulus parameters stay the same. To reproduce an earlier
+reference, use the RNG kind that built it; see
 <https://github.com/rdotsch/rcicr/issues/315>.
 
-The noise is reconstructed from the basis and parameters the stimulus
-file saved, so the base images themselves are never reopened and an
-archived or moved experiment can still be scored. Responses are seeded
-from the state following one parameter matrix's draws at the saved
-stimulus seed, preserving the historical default response stream.
+The noise is rebuilt from the basis and parameters saved in the stimulus
+file, so the base images are never reopened and a moved or archived
+experiment can still be scored. The simulated responses continue the
+random stream from the saved stimulus seed, after the draws for one
+parameter matrix, which reproduces the historical default reference.
 
-Pass an explicit `response_seed` to draw a \*different\* null from the
-same stimuli – for instance to check how much Monte Carlo error a given
-`iter` leaves in your InfoVal. This changes only the simulated
-responses; the stimuli themselves, and so the noise basis the null is
-built on, are unaffected.
+Pass a `response_seed` to draw a *different* null from the same stimuli,
+for instance to check how much Monte Carlo error a given `iter` leaves
+in your InfoVal. This changes only the simulated responses, not the
+stimuli or the noise basis the null is built on.
 
 ## Independent base images
 
-When saved parameter matrices differ, supply `baseimage` explicitly to
-say which base's noise to use. Cached distributions are stored in
-`reference_norms_by_base`, keyed by base label, with `norms` and
-`response_seed` in each entry. Old unscoped `reference_norms` are
-neither reused nor overwritten for independent bases. Existing
-shared-parameter files continue using their unscoped cache and
-reconstruction.
+When the base images have different parameter matrices, `baseimage` says
+whose noise to use. The distributions are then stored in
+`reference_norms_by_base`, one entry per base label, each holding
+`norms` and `response_seed`. A shared `reference_norms` in such a file
+is neither used nor overwritten. Files whose base images share one
+parameter matrix keep using `reference_norms`.
 
 ## Examples
 

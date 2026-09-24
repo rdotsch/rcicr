@@ -64,18 +64,15 @@
 
     
     
-<p>This is the full walkthrough: designing a 2IFC reverse correlation
-study, generating stimuli, computing classification images for several
-participants, scaling them so they can be compared, and deciding whether
-what you are looking at is signal or noise.</p>
-<p>If you only want the shortest possible working example, read
+<p>This walkthrough covers a whole 2IFC reverse correlation study:
+designing it, generating stimuli, computing classification images for
+several participants, scaling them so they can be compared, and deciding
+whether what you see is signal or noise.</p>
+<p>For the shortest working example, read
 <code><a href="../articles/getting-started.html">vignette("getting-started", package = "rcicr")</a></code> instead.</p>
-<p>Every code chunk here runs when this vignette is built, so the code
-cannot silently drift out of date as the package changes. That matters:
-an earlier version of this walkthrough lived outside the package, and by
-the time it was brought in, two of its lines no longer worked —
-<code><a href="../reference/autoscale.html">autoscale()</a></code>’s argument had been renamed, and the install
-instruction pointed at a branch that no longer exists.</p>
+<p>Every code chunk here runs when the vignette is built, so an example
+that stops working with the current package fails the build instead of
+reaching you.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rdotsch.github.io/rcicr/">rcicr</a></span><span class="op">)</span></span>
 <span></span>
@@ -84,7 +81,7 @@ instruction pointed at a branch that no longer exists.</p>
 <span><span class="co"># restores the margins it sets, so this pair is a safety net -- and the pattern to</span></span>
 <span><span class="co"># copy into your own scripts.</span></span>
 <span><span class="va">old_par</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>no.readonly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>One small helper, used throughout to display an image matrix:</p>
+<p>One small helper displays an image matrix throughout:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># zlim matters more than it looks. image() stretches whatever range it is given</span></span>
 <span><span class="co"># across the full palette, so without a fixed zlim every linear rescaling of the</span></span>
@@ -113,32 +110,33 @@ tagged release or test the unreleased development version:</p>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@v1.3.0"</span><span class="op">)</span> <span class="co"># a specific release</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr"</span><span class="op">)</span>         <span class="co"># the development version</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@&lt;commit-sha&gt;"</span><span class="op">)</span> <span class="co"># pin an exact development snapshot</span></span></code></pre></div>
-<p>Record the version in your analysis script; for an unreleased GitHub
-install, also record the commit SHA and pin that SHA when you return. A
-classification image is only reproducible against the exact code that
-computed it.</p>
+<p>Record the version in your analysis script. For an unreleased GitHub
+install, also record the commit SHA and install that SHA when you
+return. A classification image is only reproducible with the exact code
+that computed it.</p>
 </div>
 <div class="section level2">
 <h2 id="what-the-method-does">2. What the method does<a class="anchor" aria-label="anchor" href="#what-the-method-does"></a>
 </h2>
-<p>On each trial a participant sees two images side by side. Both are
-the same base face, but one has random visual noise added and the other
-has <em>exactly the same noise subtracted</em>. The participant picks
-whichever looks more like some category — more trustworthy, more
-masculine, more like their own group.</p>
-<p>Neither image contains any real signal. But if a participant reliably
-picks the image whose noise happens to resemble their internal idea of
-“trustworthy”, then averaging the noise from their chosen images — and
-subtracting the noise from the ones they rejected — makes that idea
-visible. That average is the <strong>classification image</strong>.</p>
+<p>On each trial a participant sees two images side by side. Both show
+the same base face: one with random visual noise added, the other with
+<em>exactly the same noise subtracted</em>. The participant picks
+whichever looks more like some category, for example more trustworthy,
+more masculine, or more like their own group.</p>
+<p>Neither image contains a real signal. But suppose a participant
+reliably picks the image whose noise happens to resemble their mental
+picture of “trustworthy”. Averaging the noise of the images they chose,
+and subtracting the noise of the ones they rejected, then makes that
+picture visible. That average is the <strong>classification
+image</strong>.</p>
 </div>
 <div class="section level2">
 <h2 id="generating-stimuli">3. Generating stimuli<a class="anchor" aria-label="anchor" href="#generating-stimuli"></a>
 </h2>
 <p><code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> needs one or more
-<strong>square</strong> base images. Here we draw a crude synthetic face
-so the vignette is self-contained and needs no image licence; in a real
-study you would pass paths to your face photos.</p>
+<strong>square</strong> base images. Here we draw a crude synthetic
+face, so the vignette is self-contained and needs no image licence. In a
+real study you pass the paths to your face photos.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">64</span></span>
 <span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="va">n</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">n</span><span class="op">)</span></span>
@@ -158,8 +156,8 @@ study you would pass paths to your face photos.</p>
 <span><span class="fu">show</span><span class="op">(</span><span class="va">face</span>, <span class="st">"synthetic base face"</span>, zlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reverse-correlation-walkthrough_files/figure-html/base-face-1.png" class="r-plt" alt="" width="211.2"></p>
 <p>The base image must be <strong>square and already the size you
-want</strong>: <code>rcicr</code> does not resize it, and will stop with
-an error if <code>img_size</code> disagrees.</p>
+want</strong>. <code>rcicr</code> does not resize it, and stops with an
+error if <code>img_size</code> disagrees.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stimulus_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"stimuli"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">stimulus_path</span><span class="op">)</span></span>
@@ -177,39 +175,38 @@ an error if <code>img_size</code> disagrees.</p>
 <span></span>
 <span><span class="va">rdata_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">stimulus_path</span>, pattern <span class="op">=</span> <span class="st">"\\.Rdata$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span></code></pre></div>
 <p><strong>Real studies are much bigger than this.</strong> The defaults
-— <code>n_trials = 770</code>, <code>img_size = 512</code>,
-<code>nscales = 5</code> — reflect published practice (Dotsch &amp;
+(<code>n_trials = 770</code>, <code>img_size = 512</code>,
+<code>nscales = 5</code>) follow published practice (Dotsch &amp;
 Todorov, 2012). Everything here is shrunk so the vignette builds in
 seconds.</p>
 <p>With <code>save_as_png = TRUE</code> you get two PNGs per trial per
-base image: <code>..._ori.png</code> and <code>..._inv.png</code>. Those
-are what you show participants.</p>
+base image, <code>..._ori.png</code> and <code>..._inv.png</code>. Those
+are what participants see.</p>
 <div class="section level3">
 <h3 id="the--rdata-file-is-the-important-output">The <code>.Rdata</code> file is the important output<a class="anchor" aria-label="anchor" href="#the--rdata-file-is-the-important-output"></a>
 </h3>
-<p>That file records the random noise parameters behind every trial.
-<strong>It is the only link between stimulus generation and
-analysis</strong> — without it, the responses you collect are
-uninterpretable, because nothing else records which noise pattern trial
-57 actually was.</p>
-<p>Back it up alongside your data. Every analysis function below takes
-it as <code>rdata</code>.</p>
+<p>That file records the noise parameters behind every trial. <strong>It
+is the only link between stimulus generation and analysis.</strong>
+Nothing else records which noise pattern trial 57 actually showed, so
+without it the responses you collect cannot be analysed.</p>
+<p>Back it up with your data. Every analysis function below takes it as
+<code>rdata</code>.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="collecting-responses">4. Collecting responses<a class="anchor" aria-label="anchor" href="#collecting-responses"></a>
 </h2>
 <p>Run the task however you like (see “Running the task online” below).
-What you need back, per trial, is:</p>
+Per trial you need back:</p>
 <ul>
-<li>the <strong>stimulus number</strong> — which trial of the generated
-set was shown, and</li>
-<li>the <strong>response</strong> — <code>1</code> if the participant
+<li>the <strong>stimulus number</strong>: which trial of the generated
+set was shown;</li>
+<li>the <strong>response</strong>: <code>1</code> if the participant
 chose the original, <code>-1</code> if they chose the inverted one.</li>
 </ul>
-<p>To make this walkthrough show a real result rather than a grey
-smudge, we simulate three participants who genuinely have an internal
-template and respond according to it, with different amounts of
+<p>So that this walkthrough shows a real result rather than a grey
+smudge, we simulate three participants. All three have the same mental
+template and respond according to it, but with different amounts of
 inconsistency.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">e</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -249,7 +246,7 @@ inconsistency.</p>
 <span><span class="co">#&gt; 4         p01        4       -1</span></span>
 <span><span class="co">#&gt; 5         p01        5        1</span></span>
 <span><span class="co">#&gt; 6         p01        6        1</span></span></code></pre></div>
-<p>Real data goes in exactly this shape: one row per trial per
+<p>Real data takes exactly this shape: one row per trial per
 participant.</p>
 </div>
 <div class="section level2">
@@ -266,22 +263,21 @@ participant.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ci_p01</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "ci"       "scaled"   "base"     "combined"</span></span></code></pre></div>
-<p>The returned list has four parts, and the distinction between the
-first two matters:</p>
+<p>The returned list has four parts. Keep the first two apart:</p>
 <ul>
 <li>
-<strong><code>ci</code></strong> — the raw classification image.
-<strong>This is the data.</strong> Compute statistics from it.</li>
+<strong><code>ci</code></strong>: the raw classification image.
+<strong>This is the data</strong>; compute statistics from it.</li>
 <li>
-<strong><code>scaled</code></strong> — <code>ci</code> rescaled into
+<strong><code>scaled</code></strong>: <code>ci</code> rescaled into
 the 0–1 range a PNG can store. This is a <em>display</em>
-transformation; which one you pick changes how the image looks, not what
-it means.</li>
+transformation: the method you pick changes how the image looks, not
+what it means.</li>
 <li>
-<strong><code>base</code></strong> — the base image.</li>
+<strong><code>base</code></strong>: the base image.</li>
 <li>
-<strong><code>combined</code></strong> — <code>scaled</code>
-overlaid on <code>base</code>. This is what gets written to disk.</li>
+<strong><code>combined</code></strong>: <code>scaled</code> overlaid
+on <code>base</code>. This is what gets written to disk.</li>
 </ul>
 <p>Did we recover the template the simulated observer was using?</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -291,18 +287,18 @@ overlaid on <code>base</code>. This is what gets written to disk.</li>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">ci_p01</span><span class="op">$</span><span class="va">ci</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.5453478</span></span></code></pre></div>
-<p>With real participants you have no template to compare against — that
-is the entire point of the technique. Section 8 covers how to tell
-signal from noise when you cannot peek at the answer.</p>
-<p><code><a href="../reference/generateCI2IFC.html">generateCI2IFC()</a></code> does the same thing with an older
-argument list, kept so that analysis scripts written years ago still
-run. New code should use <code><a href="../reference/generateCI.html">generateCI()</a></code>.</p>
+<p>With real participants there is no template to compare against;
+finding it is the whole point of the technique. Section 8 shows how to
+tell signal from noise when you cannot peek at the answer.</p>
+<p><code><a href="../reference/generateCI2IFC.html">generateCI2IFC()</a></code> does the same with an older argument
+list, kept so that analysis scripts written years ago still run. New
+code should use <code><a href="../reference/generateCI.html">generateCI()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="scaling">6. Scaling<a class="anchor" aria-label="anchor" href="#scaling"></a>
 </h2>
 <p>Scaling decides what the image looks like. <code><a href="../reference/generateCI.html">generateCI()</a></code>
-offers four methods, and the choice is a reporting decision, not a
+offers four methods, and choosing one is a reporting decision, not a
 cosmetic one.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">method</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"constant"</span>, <span class="st">"matched"</span>, <span class="st">"independent"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -318,44 +314,42 @@ cosmetic one.</p>
 <span>  <span class="fu">show</span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">scaled</span>, <span class="va">method</span>, zlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p><img src="reverse-correlation-walkthrough_files/figure-html/scaling-demo-1.png" class="r-plt" alt="" width="201.6"><img src="reverse-correlation-walkthrough_files/figure-html/scaling-demo-2.png" class="r-plt" alt="" width="201.6"><img src="reverse-correlation-walkthrough_files/figure-html/scaling-demo-3.png" class="r-plt" alt="" width="201.6"><img src="reverse-correlation-walkthrough_files/figure-html/scaling-demo-4.png" class="r-plt" alt="" width="201.6"></p>
-<p>Those four panels are the argument for taking scaling seriously.</p>
+<p>The four panels differ as follows.</p>
 <p><strong><code>none</code></strong> leaves the raw CI, whose values
-straddle zero and span only about ±0.04. Nothing in that range is
-displayable: negative pixels fall outside 0–1 entirely (shown blank
-above) and positive ones are so close to zero they render as near-black.
-Written to a PNG, where out-of-range values are clipped rather than
-dropped, almost the whole image would be black. Scaling is not
-optional.</p>
+straddle zero and span only about ±0.04. Nothing in that range can be
+displayed: negative pixels fall outside 0–1 entirely (blank above), and
+positive ones are so close to zero that they render near-black. A PNG
+clips out-of-range values rather than dropping them, so written to disk
+almost the whole image would be black. You always need some scaling.</p>
 <p><strong><code>constant</code></strong> with
-<code>scaling_constant = 0.5</code> gives a flat grey — the constant is
+<code>scaling_constant = 0.5</code> gives a flat grey. The constant is
 more than ten times the CI’s actual range, so every difference is
-compressed into a sliver of the palette. A constant has to be chosen
-with the data’s range in mind; too large destroys the signal just as
-surely as too small clips it.</p>
+squeezed into a sliver of the palette. Choose a constant with the data’s
+range in mind: too large destroys the signal just as surely as too small
+clips it.</p>
 <p><strong><code>matched</code></strong> and
-<strong><code>independent</code></strong> both use the available range
-and look similar here, because the base image happens to span nearly 0–1
-already. On a real photograph with a narrower range they diverge.</p>
+<strong><code>independent</code></strong> both use the available range.
+They look similar here only because this base image already spans nearly
+0–1; on a real photograph with a narrower range they diverge.</p>
 <ul>
 <li>
-<strong><code>independent</code></strong> (default) picks, for each
-image separately, the smallest constant that avoids clipping. Every CI
-uses its full dynamic range — which means <strong>two CIs scaled this
-way are not comparable to each other</strong>, because each got a
-different constant.</li>
+<strong><code>independent</code></strong> (the default) picks, for
+each image separately, the smallest constant that avoids clipping. Every
+CI uses its full range, so <strong>two CIs scaled this way cannot be
+compared with each other</strong>: each got a different constant.</li>
 <li>
 <strong><code>constant</code></strong> divides by a fixed constant
 you choose, so several CIs stay on one scale. Use this, or
 <code><a href="../reference/autoscale.html">autoscale()</a></code>, when comparing conditions.</li>
 <li>
 <strong><code>matched</code></strong> matches the CI’s intensity
-range to the base image’s. Nonlinear.</li>
+range to the base image’s. This is nonlinear.</li>
 <li>
-<strong><code>none</code></strong> does nothing, leaving values
-outside 0–1 to be clipped on save.</li>
+<strong><code>none</code></strong> does nothing; values outside 0–1
+are clipped on save.</li>
 </ul>
-<p>Whichever you choose, <code>ci$ci</code> is untouched. Statistics
-computed from it are unaffected by the display choice.</p>
+<p>Whichever you choose, <code>ci$ci</code> is untouched, so statistics
+computed from it do not depend on the display choice.</p>
 </div>
 <div class="section level2">
 <h2 id="several-participants-at-once">7. Several participants at once<a class="anchor" aria-label="anchor" href="#several-participants-at-once"></a>
@@ -375,11 +369,14 @@ column and computes one CI per group.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">cis</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "face_participant_p01" "face_participant_p02" "face_participant_p03"</span></span></code></pre></div>
-<p>Use the same <code>by</code> mechanism for conditions rather than
-participants when that is the comparison you care about.</p>
-<p>Because each of those was scaled independently, they cannot be
-compared by eye yet. <code><a href="../reference/autoscale.html">autoscale()</a></code> finds one constant that
-works for all of them without clipping any:</p>
+<p>To compare conditions rather than participants, point <code>by</code>
+at the condition column.</p>
+<p>These CIs are already on one scale: by default,
+<code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> computes them unscaled and then calls
+<code><a href="../reference/autoscale.html">autoscale()</a></code>, which finds one constant that fits all of them
+without clipping any. For CIs you computed separately, call
+<code><a href="../reference/autoscale.html">autoscale()</a></code> yourself. On this batch it gives the same
+result:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scaled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/autoscale.html">autoscale</a></span><span class="op">(</span><span class="va">cis</span>, save_as_pngs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Using scaling factor constant:0.0384382346907274</span></span>
@@ -389,44 +386,40 @@ works for all of them without clipping any:</p>
 <span>  <span class="fu">show</span><span class="op">(</span><span class="va">scaled</span><span class="op">[[</span><span class="va">nm</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">scaled</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">".*_"</span>, <span class="st">""</span>, <span class="va">nm</span><span class="op">)</span>, zlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p><img src="reverse-correlation-walkthrough_files/figure-html/autoscale-1.png" class="r-plt" alt="" width="201.6"><img src="reverse-correlation-walkthrough_files/figure-html/autoscale-2.png" class="r-plt" alt="" width="201.6"><img src="reverse-correlation-walkthrough_files/figure-html/autoscale-3.png" class="r-plt" alt="" width="201.6"></p>
-<p><code>p01</code> should look cleanest and <code>p03</code> weakest —
-they share a template but differ in how consistently they applied it,
+<p><code>p01</code> should look cleanest and <code>p03</code> weakest.
+They share a template but differ in how consistently they applied it,
 which is what internal noise means in practice.</p>
 <div class="section level3">
 <h3 id="after-autoscale-look-at-scaled">After <code>autoscale()</code>, look at <code>$scaled</code><a class="anchor" aria-label="anchor" href="#after-autoscale-look-at-scaled"></a>
 </h3>
 <p><code><a href="../reference/autoscale.html">autoscale()</a></code> rewrites <code>$scaled</code> and
-<strong>deliberately leaves <code>$combined</code> exactly as it
-was</strong>. That is by design: a combination you made before
-autoscaling survives the call untouched, so an existing analysis script
-that plots <code>$combined</code> keeps producing the same image.</p>
-<p>It catches people out after <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code>, though,
-because that function scales with <code>'none'</code> before handing
-over — so its <code>$combined</code> is an overlay of the
-<em>unscaled</em> noise and looks almost blank. If you want the
-autoscaled noise over the base image, build it yourself:</p>
+<strong>leaves <code>$combined</code> exactly as it was</strong>, on
+purpose: an existing analysis script that plots <code>$combined</code>
+keeps producing the same image.</p>
+<p>This catches people out after <code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code>. That
+function scales with <code>'none'</code>, so its <code>$combined</code>
+overlays the <em>unscaled</em> noise and looks almost blank. To see the
+autoscaled noise over the base image, build the overlay yourself:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p01</span> <span class="op">&lt;-</span> <span class="va">scaled</span><span class="op">[[</span><span class="st">"face_participant_p01"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu">show</span><span class="op">(</span><span class="op">(</span><span class="va">p01</span><span class="op">$</span><span class="va">scaled</span> <span class="op">+</span> <span class="va">p01</span><span class="op">$</span><span class="va">base</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>, <span class="st">"p01 over base"</span>, zlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reverse-correlation-walkthrough_files/figure-html/autoscale-combined-1.png" class="r-plt" alt="" width="230.4"></p>
 <p>That expression is exactly what
 <code>autoscale(save_as_pngs = TRUE)</code> writes to disk.</p>
-<p>Note also that the argument is <code>save_as_pngs</code>. Older
-tutorials show <code>saveasjpegs</code>, which no longer exists —
-precisely the drift that keeping this walkthrough inside the package
-prevents.</p>
+<p>The argument is <code>save_as_pngs</code>. Older tutorials show
+<code>saveasjpegs</code>, which no longer exists.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="is-there-actually-signal">8. Is there actually signal?<a class="anchor" aria-label="anchor" href="#is-there-actually-signal"></a>
 </h2>
-<p>Two tools, answering different questions.</p>
+<p>Two tools answer different questions.</p>
 <p><strong><code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code></strong> gives one number
 per CI: a z-score for how much stronger this CI is than one built from
-random responding. Values above about 1.96 indicate reliable signal.</p>
+random responses. Values above about 1.96 indicate reliable signal.</p>
 <p>It needs a reference distribution simulated under the same task
-parameters, which takes a long time to build — so it is shown but not
-run here:</p>
+parameters. That takes a long time to build, so the code is shown but
+not run here:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Slow: simulates `iter` classification images from random responses. Do this once</span></span>
 <span><span class="co"># per stimulus set; the result is cached back into the .Rdata file.</span></span>
@@ -434,8 +427,8 @@ run here:</p>
 <span></span>
 <span><span class="fu"><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC</a></span><span class="op">(</span>target_ci <span class="op">=</span> <span class="va">ci_p01</span>, rdata <span class="op">=</span> <span class="va">rdata_file</span><span class="op">)</span></span></code></pre></div>
 <p><strong><code><a href="../reference/plotZmap.html">plotZmap()</a></code></strong>, or
-<code>generateCI(zmap = TRUE)</code>, answers the spatial question
-instead: <em>which regions</em> of the image carry reliable signal.</p>
+<code>generateCI(zmap = TRUE)</code>, answers the spatial question:
+<em>which regions</em> of the image carry reliable signal.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zmap_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"zmaps"</span><span class="op">)</span></span>
 <span></span>
@@ -454,25 +447,25 @@ instead: <em>which regions</em> of the image carry reliable signal.</p>
 <span><span class="co">#&gt; [1] 0.1337891</span></span></code></pre></div>
 <p><strong>Choose the threshold by looking at the range, not by
 habit.</strong> <code>zmapmethod = "quick"</code> z-scores a blurred CI
-<em>across the pixels of that one image</em>, so its values are relative
-to the image’s own spatial structure — they are not z-scores against a
-null distribution, and their spread shrinks as the image gets smaller or
-the blur gets wider. Here the whole map spans roughly ±1.7, so the
-default <code>threshold = 3</code> would have returned an entirely blank
-map. That is not evidence of no signal; it is the wrong ruler.</p>
+<em>across the pixels of that one image</em>. Its values are relative to
+the image’s own spatial structure, not z-scores against a null
+distribution, and their spread shrinks as the image gets smaller or the
+blur wider. Here the whole map spans roughly ±1.7, so the default
+<code>threshold = 3</code> would have returned a blank map. That is not
+evidence of no signal; it is the wrong ruler.</p>
 <p><code>zmapmethod = "t.test"</code> is the inferential counterpart: a
-per-pixel t-test across trials, slower, but producing a statistic that
-does mean what it looks like. Neither method corrects for multiple
-comparisons across pixels, so treat both as exploratory.</p>
+per-pixel t-test across trials. It is slower, but its statistic means
+what it looks like. Neither method corrects for multiple comparisons
+across pixels, so treat both as exploratory.</p>
 </div>
 <div class="section level2">
 <h2 id="running-the-task-online">9. Running the task online<a class="anchor" aria-label="anchor" href="#running-the-task-online"></a>
 </h2>
 <p><code>rcicr</code> generates stimuli and analyses responses; it does
 not run experiments. The stimulus PNGs are ordinary image files, so any
-platform that can show two images and record a choice will do —
-Qualtrics, jsPsych, Gorilla, PsychoPy, or a custom page.</p>
-<p>Two things to get right:</p>
+platform that can show two images and record a choice will do:
+Qualtrics, jsPsych, Gorilla, PsychoPy, or a page of your own.</p>
+<p>Get two things right:</p>
 <ol style="list-style-type: decimal">
 <li>
 <strong>Record the stimulus number</strong>, not the filename you
@@ -481,9 +474,9 @@ happened to serve. The number is what indexes into the
 <li>
 <strong>Record which of the pair was chosen</strong> as
 <code>1</code> (original) or <code>-1</code> (inverted), and be certain
-which is which — a systematic flip inverts every classification image
-you compute, and the result will look like a plausible mental
-representation of the opposite trait.</li>
+which is which. A systematic flip inverts every classification image you
+compute, and the result looks like a plausible mental representation of
+the opposite trait.</li>
 </ol>
 <p>Worked examples and analysis scripts: <a href="https://github.com/rdotsch/rcicr_examples/" class="external-link uri">https://github.com/rdotsch/rcicr_examples/</a></p>
 </div>
@@ -492,9 +485,9 @@ representation of the opposite trait.</li>
 </h2>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"rcicr"</span><span class="op">)</span></span></code></pre></div>
-<p>If you use the technique, cite the method papers as well as the
-software — see the package’s <code>CITATION</code> file and the README
-for the relevant references.</p>
+<p><code>citation("rcicr")</code> cites the software. If you use the
+technique, also cite the method: Dotsch and Todorov (2012) <a href="doi:10.1177/1948550611430272" class="uri">doi:10.1177/1948550611430272</a>, and for a practical primer
+Brinkman, Todorov and Dotsch (2017) <a href="doi:10.1080/10463283.2017.1381469" class="uri">doi:10.1080/10463283.2017.1381469</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

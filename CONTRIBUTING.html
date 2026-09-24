@@ -34,92 +34,93 @@
 
 <div id="contributing-to-rcicr" class="section level1">
 
-<p>Contributions, thoughts and criticisms are welcome. This file records the conventions specific to this package; the rest is ordinary R package practice. Releases are in <code>RELEASING.md</code>, the repository’s automation in <code>MAINTENANCE.md</code>, and why the package behaves as it does in <code>DECISIONS.md</code>.</p>
-<p><strong>Keep this file under 2800 words.</strong> A convention nobody reaches is not a convention; over budget, something comes out before something goes in.</p>
+<p>Contributions, thoughts and criticisms are welcome. This file holds the conventions specific to this package; everything else is ordinary R package practice. Releases are covered in <code>RELEASING.md</code>, the repository’s automation in <code>MAINTENANCE.md</code>, and why the package behaves as it does in <code>DECISIONS.md</code>.</p>
+<p><strong>Keep this file under 2800 words.</strong> Over budget, something comes out before something goes in.</p>
 <div class="section level2">
 <h2 id="the-one-constraint-that-shapes-everything-else">The one constraint that shapes everything else<a class="anchor" aria-label="anchor" href="#the-one-constraint-that-shapes-everything-else"></a></h2>
 <p><strong>Researchers re-run old analysis scripts years later, and publish the numbers that come out.</strong> A change that silently alters what <code><a href="reference/generateCI.html">generateCI()</a></code> or <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> returns can invalidate a published result without anyone noticing. So:</p>
-<ul><li>Do not change existing call syntax, argument meanings, or numeric output silently. Deprecate rather than delete.</li>
-<li>Treat the <code>.Rdata</code> file’s contents as <strong>append-only</strong>: add fields, never rename or repurpose them. (Its layout is documented in the README.)</li>
-<li>If a change <em>does</em> alter numeric output, that is not automatically wrong — but it must be deliberate, and it must be written up in <code>NEWS.md</code> under a “Reproducibility impact” heading saying who is affected and what to do about it.</li>
-</ul><p><code>tests/testthat/test-regression-baseline.R</code> is a golden master pinning the default pipeline’s output. <strong>If your change turns it red, that change alters researchers’ results.</strong> Document it; do not update the baseline to match.</p>
-<p><code>tools/compare-release-output.R</code> asks the same question from the outside: it installs a released version of the package from its own commit, runs both versions over a battery of configurations, and compares. Every release has to pass it — see <code>RELEASING.md</code>.</p>
+<ul><li>Do not change existing call syntax, argument meanings or numeric output silently. Deprecate rather than delete.</li>
+<li>Treat the <code>.Rdata</code> file’s contents as <strong>append-only</strong>: add fields, never rename them or change their meaning. The README documents its layout.</li>
+<li>A change that <em>does</em> alter numeric output is not automatically wrong, but it must be deliberate and described in <code>NEWS.md</code> under a “Reproducibility impact” heading: who is affected, and what they should do.</li>
+</ul><p><code>tests/testthat/test-regression-baseline.R</code> is a golden master that pins the default pipeline’s output. <strong>If your change turns it red, your change alters researchers’ results.</strong> Document it; do not update the baseline to match.</p>
+<p><code>tools/compare-release-output.R</code> asks the same question from outside. It installs a released version of the package from its own commit, runs both versions over a battery of configurations, and compares the results. Every release has to pass it; see <code>RELEASING.md</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="getting-set-up">Getting set up<a class="anchor" aria-label="anchor" href="#getting-set-up"></a></h2>
-<p><code>tools/dev-setup.sh</code> sets up a fresh machine that has only R. It is Ubuntu-specific, shelling out to <code>apt-get</code> for the system toolchain, then installs every Imports/Suggests package from source and the package itself. Idempotent – rerun it after a dependency change.</p>
+<p><code>tools/dev-setup.sh</code> sets up a fresh Ubuntu machine that has only R. It installs the system toolchain with <code>apt-get</code>, then every Imports and Suggests package from source, then the package itself. It is safe to re-run after a dependency change.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span>      <span class="co"># not load_all() -- see below</span></span>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span>      <span class="co"># not load_all(); see below</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">roxygen2</span><span class="fu">::</span><span class="fu"><a href="https://roxygen2.r-lib.org/reference/roxygenize.html" class="external-link">roxygenise</a></span><span class="op">(</span><span class="op">)</span>   <span class="co"># after editing any roxygen comment; commit man/ and NAMESPACE</span></span></code></pre></div>
-<p><code>man/</code> and <code>NAMESPACE</code> are generated and tracked, and <code>ubuntu-latest (release)</code> regenerates them and fails on a difference. Use the roxygen2 version in <code>DESCRIPTION</code>’s <code>RoxygenNote</code>; the CI step is pinned to it and says so when they disagree.</p>
-<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> spawns parallel workers that each call <code><a href="https://rdotsch.github.io/rcicr/">library(rcicr)</a></code>, so anything touching it needs the package <strong>actually installed</strong>. Under <code>devtools::load_all()</code> alone the workers fail with <code>there is no package called 'rcicr'</code>.</p>
+<p><code>man/</code> and <code>NAMESPACE</code> are generated and tracked. <code>ubuntu-latest (release)</code> regenerates them and fails on any difference. Use the roxygen2 version named in <code>DESCRIPTION</code>’s <code>RoxygenNote</code>; the CI step is pinned to it and says so when they disagree.</p>
+<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> starts parallel workers that each call <code><a href="https://rdotsch.github.io/rcicr/">library(rcicr)</a></code>, so anything that reaches it needs the package <strong>actually installed</strong>. Under <code>devtools::load_all()</code> alone the workers fail with <code>there is no package called 'rcicr'</code>.</p>
 <p><strong>An <code>--as-cran</code> run needs a complete check environment, or it reports failures the package does not have.</strong> Install <code>texlive</code> and <code>tidy</code>, and set both incoming variables:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="va">_R_CHECK_CRAN_INCOMING_</span><span class="op">=</span>TRUE <span class="va">_R_CHECK_CRAN_INCOMING_REMOTE_</span><span class="op">=</span>TRUE <span class="dt">\</span></span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="ex">R</span> CMD check <span class="at">--as-cran</span> rcicr_X.Y.Z.tar.gz</span></code></pre></div>
-<p>Without the toolchain a run here reported 1 ERROR + 1 WARNING + 4 NOTEs that were entirely the sandbox; installing it was the only change needed to reach 2. <strong>Do not reach for <code>--no-manual</code> to make the manual checks go away</strong>: it skips them rather than passing them. A clean run shows <code>checking PDF version of manual ... OK</code> and the HTML equivalent; without those two lines you have not checked the manual.</p>
+<p>Without that toolchain, a run reported 1 ERROR, 1 WARNING and 4 NOTEs that all came from the environment; installing it brought the result down to 2 NOTEs. <strong>Do not use <code>--no-manual</code> to make the manual checks go away</strong>: it skips them rather than passing them. A clean run shows <code>checking PDF version of manual ... OK</code> and its HTML equivalent; without those two lines, the manual has not been checked.</p>
 </div>
 <div class="section level2">
 <h2 id="reporting-a-bug">Reporting a bug<a class="anchor" aria-label="anchor" href="#reporting-a-bug"></a></h2>
-<p>The most useful report includes the <code>.Rdata</code> file’s <code>img_size</code>, <code>nscales</code>, <code>noise_type</code> and the rcicr version, plus a reproducible snippet. A synthetic base image works fine as a stand- in — <code>png::writePNG(matrix(runif(32*32), 32, 32), "base.png")</code> — and is preferable to attaching a real face photo.</p>
+<p>The most useful report gives the <code>.Rdata</code> file’s <code>img_size</code>, <code>nscales</code> and <code>noise_type</code>, the rcicr version, and a reproducible snippet. A synthetic base image works fine as a stand-in and is better than attaching a real face photo: <code>png::writePNG(matrix(runif(32*32), 32, 32), "base.png")</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="pull-requests">Pull requests<a class="anchor" aria-label="anchor" href="#pull-requests"></a></h2>
 <ul><li>
-<strong>Branch from <code>main</code></strong>, one self-contained change per PR: the fix, its test, and its <code>NEWS.md</code> entry together. There is no <code>develop</code> branch.</li>
+<strong>Branch from <code>main</code></strong>, one self-contained change per PR: the fix, its test and its <code>NEWS.md</code> entry together. There is no <code>develop</code> branch.</li>
 <li>
-<strong>Tests are expected.</strong> Every pure function has unit tests; the I/O-heavy ones have lighter targeted tests. A bug fix should come with a test that fails without it — check this, rather than assuming, with <code>git stash push -- R/</code> (a plain <code>git stash</code> reverts your new tests too, so the suite passes vacuously and proves nothing).</li>
+<strong>Tests are expected.</strong> Every pure function has unit tests; the I/O-heavy ones have lighter, targeted tests. A bug fix comes with a test that fails without it. Check that with <code>git stash push -- R/</code>; a plain <code>git stash</code> also stashes your new tests, so the suite passes without testing anything.</li>
 <li>
-<strong>A test’s title is a claim; make the assertions actually support it.</strong> Asserting that a result has the right shape is not the same as asserting it is correct. Where it is cheap, also assert that the <em>wrong</em> answer differs, so the test cannot pass vacuously.</li>
+<strong>A test’s title is a claim; make the assertions support it.</strong> Asserting that a result has the right shape is not asserting that it is correct. Where it is cheap, also assert that the <em>wrong</em> answer differs, so the test cannot pass vacuously.</li>
 <li>
-<strong><code>NEWS.md</code> entries go largest-impact first</strong> within each section: changes to numeric output or return values, then behaviour changes, then bug fixes that only ever produced errors, then message-only fixes. Someone who stops reading after three bullets should have read the three that could change their results.</li>
+<strong>Order <code>NEWS.md</code> entries largest impact first</strong> within each section: changes to numeric output or return values, then behaviour changes, then fixes for bugs that only ever produced errors, then message-only fixes. Someone who stops after three bullets should have read the three that could change their results.</li>
 <li>
-<strong>Any new top-level file must be added to <code>.Rbuildignore</code></strong> unless it genuinely belongs in the built package, or <code>R CMD check</code> raises a “non-standard file/directory found at top level” NOTE. It holds <code>^</code>-anchored <em>regexes</em>, not globs.</li>
-<li>Run <code>git diff --stat main...HEAD</code> before opening the PR: <code>R CMD check</code> leaves a full copy of the package behind, which has been committed by accident.</li>
-<li>PRs are merged to <code>main</code> with <strong>squash merges</strong>, so put anything a future reader needs (measurements, rejected alternatives, reproducibility impact) in the PR description or <code>NEWS.md</code>, not only in individual branch commits, written with the same prose rules below.</li>
+<strong>Add every new top-level file to <code>.Rbuildignore</code></strong> unless it belongs in the built package, or <code>R CMD check</code> NOTEs “non-standard file/directory found at top level”. The file holds <code>^</code>-anchored <em>regular expressions</em>, not globs.</li>
 <li>
-<strong>Write for the state the change ends in, not the route you took to it.</strong> Commit messages, PR comments and code comments describe what the change is and why it is right. How many attempts it took, and what each one got wrong, is invisible in the squashed history and in the merged code — nobody arrives at the file that way. Keep a rejected alternative only when someone would otherwise retry it, and give it a line, not a chronology.</li>
+<strong>Run <code>git diff --stat main...HEAD</code> before opening the PR.</strong> <code>R CMD check</code> leaves a full copy of the package behind, and one has been committed by accident.</li>
+<li>PRs are <strong>squash-merged</strong> to <code>main</code>, so put what a future reader needs (measurements, rejected alternatives, reproducibility impact) in the PR description or <code>NEWS.md</code>, not only in branch commits.</li>
+<li>
+<strong>Write for the state the change ends in, not the route you took.</strong> Commit messages, PR descriptions and code comments say what the change is and why it is right. How many attempts it took, and what each got wrong, disappears in the squash and cannot be seen in the merged code. Keep a rejected alternative only when someone would otherwise try it again, and give it one line.</li>
 </ul><div class="section level3">
 <h3 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h3>
 <ul><li>
-<strong><code>skip_if_not_installed()</code> is for <code>Suggests</code> only.</strong> <code>withr</code> may genuinely be absent, so skipping on it is honest. A package in <code>Imports</code> — <code>png</code>, <code>jpeg</code>, <code>matlab</code> — cannot be: the package will not load without it. The skip can never fire for a real reason, and if it somehow did it would hide the test rather than fail it. A skip reads as “this passed” at a glance, which is the opposite of what you want to know.</li>
+<strong><code>skip_if_not_installed()</code> is for <code>Suggests</code> packages only.</strong> <code>withr</code> may genuinely be absent, so skipping on it is honest. A package in <code>Imports</code> (<code>png</code>, <code>jpeg</code>, <code>matlab</code>) cannot be absent, because the package will not load without it. Such a skip never fires for a real reason, and if it somehow did, it would hide the test instead of failing it. At a glance a skip reads as “passed”, which is the opposite of what you need to know.</li>
 <li>
-<strong>Mutating the code repeatedly, beyond the one-off check above: keep <code>cp</code> backups in a scratchpad, and never restore with <code>git checkout &lt;file&gt;</code></strong>, which discards unstaged work and has destroyed an in-progress implementation here. The checklist’s <code>git stash push -- R/</code> is right for proving a single fix; it is the <em>restore</em> that bites. Guard each mutation with a <code>grep -q MUTANT</code> check too — one that silently failed to apply looks like a surviving mutant.</li>
+<strong>When mutating the code repeatedly, keep backups with <code>cp</code> in a scratch directory, and never restore with <code>git checkout &lt;file&gt;</code>.</strong> That discards unstaged work, and it has destroyed an in-progress implementation here. <code>git stash push -- R/</code> is right for proving a single fix; it is the restore that bites. Guard each mutation with a <code>grep -q MUTANT</code> check too: a mutation that silently failed to apply looks like a surviving mutant.</li>
 <li>
-<strong>When a test reads pixels back from a graphics device, assert only relationships between renders.</strong> Every absolute property of those pixels belongs to the device: the channel count (cairo writes RGB, macOS quartz writes RGBA) and the values alike (quartz renders a 0.5 background at roughly 0.573 where cairo gives 0.502). Render onto a <em>uniform</em> background so “drew nothing” becomes “the image is one flat value”, count distinct values over the colour channels only, and compare two renders rather than pinning a number. <a href="DECISIONS.html#pixel-assertions-have-measured-the-graphics-device-twice"><code>DECISIONS.md</code></a> has the two failures that taught this.</li>
+<strong>When a test reads pixels back from a graphics device, assert only relationships between renders.</strong> Every absolute property of those pixels belongs to the device: the channel count (cairo writes RGB, macOS quartz RGBA) and the values (quartz renders a 0.5 background at about 0.573 where cairo gives 0.502). Render onto a <em>uniform</em> background, so “drew nothing” becomes “the image is one flat value”; count distinct values over the colour channels only; and compare two renders instead of pinning a number. <a href="DECISIONS.html#pixel-assertions-have-measured-the-graphics-device-twice"><code>DECISIONS.md</code></a> has the two failures behind this rule.</li>
 <li>
-<strong>Check figures by looking at them.</strong> Three problems in the walkthrough vignette were invisible to every assertion and obvious on sight; they are listed in <a href="DECISIONS.html#three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed"><code>DECISIONS.md</code></a>.</li>
+<strong>Check figures by looking at them.</strong> Three problems in the walkthrough vignette passed every assertion and were obvious on sight; <a href="DECISIONS.html#three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed"><code>DECISIONS.md</code></a> lists them.</li>
 <li>
-<strong>Base images in tests and vignettes are always synthetic</strong>, never a real photograph. Avoiding licensing and consent questions entirely is worth more than a realistic-looking figure.</li>
+<strong>Base images in tests and vignettes are always synthetic</strong>, never a real photograph. Avoiding licensing and consent questions entirely is better than a realistic-looking figure.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="the-codex-review">The Codex review<a class="anchor" aria-label="anchor" href="#the-codex-review"></a></h3>
-<p>Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes you notice it: it submits as <code>COMMENTED</code>, so <code>gh pr checks</code> stays green and <code>gh pr view --comments</code> shows only the wrapper, never the findings.</p>
-<p><strong>It must not become something that can block.</strong> If it is switched off, erroring, or simply not answering, merge on the other checks.</p>
-<p>Push everything first — a push never re-triggers the review, and <strong>marking a draft ready cannot be relied on</strong>: measured once firing within four minutes and once not at all in thirty-five, after which this comment did. Post it rather than waiting. Keep its timestamp:</p>
+<p>Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes you notice it: it submits as <code>COMMENTED</code>, so <code>gh pr checks</code> stays green, and <code>gh pr view --comments</code> shows only the wrapper, never the findings.</p>
+<p><strong>It must never become something that blocks.</strong> If it is switched off, erroring or not answering, merge on the other checks.</p>
+<p>Push everything first; a push never re-triggers the review. <strong>Marking a draft ready cannot be relied on either</strong>: once it triggered a review within four minutes, and once not at all in thirty-five. Post the request yourself and keep its timestamp:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="va">trig</span><span class="op">=</span><span class="va">$(</span><span class="ex">gh</span> api repos/rdotsch/rcicr/issues/<span class="op">&lt;</span>n<span class="op">&gt;</span>/comments <span class="at">-f</span> body=<span class="st">'@codex review'</span> <span class="at">--jq</span> <span class="st">'.created_at'</span><span class="va">)</span></span></code></pre></div>
-<p>Two conditions clear a squash.</p>
+<p>Two conditions clear a squash:</p>
 <ol style="list-style-type: decimal"><li>
-<p><strong>A 👍 newer than <code>$trig</code>.</strong> The reaction tracks the latest run: 👀 running, 👍 clean, none when it has findings. Filter on the numeric account id — reactions are open to anyone with read access, and an id survives a rename.</p>
+<p><strong>A 👍 newer than <code>$trig</code>.</strong> Codex’s reaction tracks its latest run: 👀 while running, 👍 when clean, none when it has findings. Filter on the numeric account id: anyone with read access can add reactions, and an id survives a rename.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">gh</span> api repos/rdotsch/rcicr/issues/<span class="op">&lt;</span>n<span class="op">&gt;</span>/reactions <span class="dt">\</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">--jq</span> <span class="st">'.[] | select(.user.id == 199175422) | "\(.content) \(.created_at)"'</span></span></code></pre></div>
-<p>Anything else — 👀, nothing, an older <code>+1</code> — means read the findings and answer each. <code>--paginate</code> is not optional; that endpoint pages at 30 and truncates silently.</p>
+<p>Anything else (👀, nothing, an older <code>+1</code>) means: read the findings and answer each one. Use <code>--paginate</code>: the endpoint pages at 30 and truncates silently.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">gh</span> api <span class="at">--paginate</span> repos/rdotsch/rcicr/pulls/<span class="op">&lt;</span>n<span class="op">&gt;</span>/comments <span class="at">--jq</span> <span class="st">'.[] | "\(.path): \(.body)"'</span></span></code></pre></div>
 </li>
-<li><p><strong>Every answered thread resolved</strong>, via the <code>resolveReviewThread</code> mutation. This half is <strong>enforced rather than checked</strong>: the <code>main</code> ruleset sets <code>required_review_thread_resolution</code>, so an unresolved thread blocks the squash server-side.</p></li>
-</ol><p>Do not compute “is this safe to merge” client-side. Earlier versions derived it from review objects and <code>commit_id</code> and were wrong six separate ways, each failing <em>open</em>. The reaction is the one signal Codex sets deliberately; thread resolution is GitHub’s to enforce.</p>
+<li><p><strong>Every answered thread resolved</strong>, with the <code>resolveReviewThread</code> mutation. GitHub <strong>enforces</strong> this half: the <code>main</code> ruleset sets <code>required_review_thread_resolution</code>, so an unresolved thread blocks the squash.</p></li>
+</ol><p>Do not work out “is this safe to merge” on the client side. Earlier attempts derived it from review objects and <code>commit_id</code> and were wrong in six ways, each of which let a merge through. The reaction is the one signal Codex sets on purpose, and thread resolution is GitHub’s to enforce.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="code-conventions">Code conventions<a class="anchor" aria-label="anchor" href="#code-conventions"></a></h2>
-<p>These describe what the code already does. <strong>They apply to new and modified code</strong>; there is no expectation that anyone reformats untouched files to match, and no sweep is planned — see issue #194 for the one that would be, and why it needs a major version.</p>
-<p><strong>Two of these are frozen by the constraint above, not chosen:</strong></p>
+<p>These describe what the code already does. <strong>They apply to new and modified code.</strong> Nobody is expected to reformat untouched files, and no sweep is planned; issue #194 describes the one that would be, and why it needs a major version.</p>
+<p><strong>Two conventions are frozen by the constraint above, not chosen:</strong></p>
 <ul><li>
-<strong>Exported functions are camelCase</strong> — <code><a href="reference/generateCI.html">generateCI()</a></code>, <code><a href="reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code>, <code><a href="reference/plotZmap.html">plotZmap()</a></code>. This is <em>not</em> what a modern R style guide would say, and it cannot be changed: these names are in researchers’ stored scripts and in published methods sections.</li>
+<strong>Exported functions are camelCase</strong>: <code><a href="reference/generateCI.html">generateCI()</a></code>, <code><a href="reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code>, <code><a href="reference/plotZmap.html">plotZmap()</a></code>. A modern R style guide would say otherwise, but these names are in researchers’ stored scripts and in published methods sections.</li>
 <li>
-<strong>Arguments and list fields are snake_case</strong> — <code>img_size</code>, <code>n_trials</code>, <code>noise_type</code>, <code>save_as_png</code>. Also frozen; people call them by name. Note this means arguments already match tidyverse style and only function names diverge.</li>
-</ul><p>The rest are ordinary consistency, and internal helpers are free to change because nothing outside the package can call them:</p>
+<strong>Arguments and list fields are snake_case</strong>: <code>img_size</code>, <code>n_trials</code>, <code>noise_type</code>, <code>save_as_png</code>. Also frozen, since people call them by name. Arguments therefore already match tidyverse style; only function names differ.</li>
+</ul><p>The rest is ordinary consistency. Internal helpers are free to change, because nothing outside the package can call them.</p>
 <table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th></th>
 <th>Convention</th>
 <th>Notes</th>
@@ -127,78 +128,79 @@
 <td>
 <code>&lt;-</code>, never <code>=</code>
 </td>
-<td>Already universal — there are zero <code>=</code> assignments in <code>R/</code>.</td>
+<td>Already universal in <code>R/</code>.</td>
 </tr><tr><td>Internal helpers</td>
-<td>camelCase, matching the exported style</td>
-<td>Currently 7 camelCase (<code>applyMask</code>, <code>saveToImage</code>, <code>startBackend</code>, …) against one snake_case (<code>default_ncores</code>). New helpers follow the majority.</td>
+<td>camelCase, like the exported functions</td>
+<td>All but <code>default_ncores()</code> follow this; new helpers follow the majority.</td>
 </tr><tr><td>Strings</td>
 <td>single quotes</td>
-<td>Roughly 3:2 in favour today; not worth churn to unify, but write new code single-quoted.</td>
+<td>Mixed today; not worth the churn to unify, but write new code with single quotes.</td>
 </tr><tr><td>Indentation</td>
 <td>2 spaces, no tabs</td>
-<td>Already consistent; there are no tabs in <code>R/</code>.</td>
+<td>Already consistent.</td>
 </tr><tr><td>Booleans</td>
 <td>
 <code>TRUE</code>/<code>FALSE</code>, never <code>T</code>/<code>F</code>
 </td>
 <td>
-<code>T</code> and <code>F</code> are rebindable. In package code they resolve through the namespace, so this is style rather than a hazard, but it is free and the reasoning otherwise gets re-derived every time. All occurrences were replaced in 1.2.2.</td>
+<code>T</code> and <code>F</code> can be reassigned. Inside the package they resolve through the namespace, so this is style rather than a hazard, but it costs nothing and settles the question.</td>
 </tr><tr><td>Sequences</td>
 <td>
 <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len()</a></code>/<code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along()</a></code>, not <code>1:n</code>
 </td>
 <td>
-<code>1:0</code> counts <em>backwards</em>, so <code>1:length(x)</code> on an empty vector iterates twice.</td>
+<code>1:0</code> counts <em>backwards</em>, so <code>1:length(x)</code> on an empty vector runs twice.</td>
 </tr><tr><td>Returns</td>
 <td>explicit <code><a href="https://rdrr.io/r/base/function.html" class="external-link">return()</a></code> at the end of exported functions</td>
 <td>The existing style throughout.</td>
 </tr><tr><td>Files</td>
 <td>one file per exported function, named after it</td>
 <td>
-<code>R/generateCI.R</code> holds <code><a href="reference/generateCI.html">generateCI()</a></code>. <code>zzz.R</code> holds the <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code> declarations.</td>
+<code>R/generateCI.R</code> holds <code><a href="reference/generateCI.html">generateCI()</a></code>; <code>zzz.R</code> holds the <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code> declarations.</td>
 </tr><tr><td>Roxygen</td>
 <td>exported functions only</td>
 <td>
-<code>man/</code> holds exactly the 17 exports plus the package doc; internal helpers use plain <code>#</code> comments, including those sharing a file with an export. Roxygen on a non-exported function either publishes a page no user can reach or needs <code>@noRd</code>, a comment in stricter syntax. There are none.</td>
+<code>man/</code> holds exactly the exports plus the package page. Internal helpers use plain <code>#</code> comments, even when they share a file with an export: roxygen on an unexported function either publishes a page no user can reach or needs <code>@noRd</code>.</td>
 </tr><tr><td>Namespacing</td>
-<td>prefer <code>@importFrom pkg fn</code> over <code>@import pkg</code>
+<td>
+<code>pkg::fn()</code> or <code>@importFrom pkg fn</code>, not <code>@import pkg</code>
 </td>
 <td>
-<code>@import matlab</code> masks <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files — a live trap, issue #182.</td>
-</tr></tbody></table><p>Line length is not enforced; 35 lines in <code>R/</code> already exceed 100 characters. Wrap new code at something reasonable rather than reflowing what is there.</p>
-<p><strong>Markdown prose isn’t line-wrapped: write one line per paragraph and let the reader’s editor wrap it, and skip em dashes</strong> for a period, comma, colon or parenthesis.</p>
-<p><strong>Show why something matters, never assert that it does.</strong> “It is worth …”, “it matters because”, “in ways that matter”, or anything similar: cut it and state the consequence. Not “worth running first” but “a <code>TRUE</code> ends the matter”.</p>
-<p><strong>Comments: as few as will do, and only where the code cannot speak for itself.</strong> Write one when the reason would otherwise have to be re-derived — a rejected alternative, a constraint, a measured number, a trap. Never narrate what the next line does, restate the error message below it, or re-tell an issue’s history. The long comments already in <code>R/</code> are the first kind and earn their length; the test is whether a reader would otherwise get it wrong, not whether the code looks bare. Where the explanation is about the package rather than about the line, it belongs in <a href="DECISIONS.html"><code>DECISIONS.md</code></a>.</p>
-<p><strong>If the package is ever run through <code>styler</code>, it goes in as a commit of its own</strong> — never as a side effect of other work, so <code>git blame</code> survives it. Why the pre-commit hooks stay minimal and language-agnostic is above.</p>
-<p>Three rules that are about this package rather than about R:</p>
+<code>@import matlab</code> once masked <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files (#182); the package now calls <code>matlab::</code> explicitly.</td>
+</tr></tbody></table><p>Line length is not enforced, and some lines in <code>R/</code> exceed 100 characters. Wrap new code at something reasonable instead of reflowing what is there.</p>
+<p><strong>Do not line-wrap Markdown prose: write one line per paragraph and let the reader’s editor wrap it. Avoid em dashes</strong>; use a full stop, comma, colon or parentheses instead.</p>
+<p><strong>Show why something matters; never just say that it does.</strong> Cut “It is worth …”, “it matters because”, “in ways that matter” and similar, and state the consequence. Not “worth running first” but “a <code>TRUE</code> ends the matter”.</p>
+<p><strong>Comments: as few as will do, and only where the code cannot speak for itself.</strong> Write one when the reason would otherwise have to be worked out again: a rejected alternative, a constraint, a measured number, a trap. Never narrate what the next line does, repeat the error message below it, or retell an issue’s history. The long comments already in <code>R/</code> are of the first kind and earn their length; the test is whether a reader would otherwise get it wrong, not whether the code looks bare. An explanation about the package rather than the line belongs in <a href="DECISIONS.html"><code>DECISIONS.md</code></a>.</p>
+<p><strong>If the package is ever run through <code>styler</code>, that is a commit of its own</strong>, never a side effect of other work, so <code>git blame</code> stays useful. <code>MAINTENANCE.md</code> explains why <code>styler</code> is not a pre-commit hook.</p>
+<p>Three rules about this package rather than about R:</p>
 <ul><li>
-<strong>Do not write a package-qualified call as code — in backticks or <code>\code{}</code> — for a package the docs only <em>mention</em>.</strong> The pkgdown site resolves such a link by loading that package, and a package that is installed but cannot load takes the whole site build down with it. This is not hypothetical: after <code>raster</code> was dropped in #186 the runners kept it in their restored library while the sysreqs scan stopped installing its GDAL/PROJ system libraries, so the build died with <code>libproj.so.25: cannot open shared object file</code> — once from the roxygen, then again from the <code>NEWS.md</code> entry describing the same change. Name it in prose instead: “the raster package’s plot method”. A package that is simply absent is fine, which is why <code>rhub::</code> and <code>gitcreds::</code> appear above without trouble. <code>README.md</code>, <code>NEWS.md</code>, <code>DECISIONS.md</code>, this file and the vignettes are all rendered.</li>
+<strong>Do not write a package-qualified call as code (in backticks or <code>\code{}</code>) for a package the docs only <em>mention</em>.</strong> The pkgdown site resolves such a link by loading that package, and a package that is installed but cannot load takes the whole site build down. After <code>raster</code> was dropped in #186, the CI runners kept it in their cached library but stopped installing its GDAL/PROJ system libraries, and the build died with <code>libproj.so.25: cannot open shared object file</code>: once from the roxygen, and again from the <code>NEWS.md</code> entry describing the change. Name it in prose instead: “the raster package’s plot method”. A package that is simply absent is fine. <code>README.md</code>, <code>NEWS.md</code>, <code>DECISIONS.md</code>, this file and the vignettes are all rendered.</li>
 <li>
-<strong>Add new names loaded from an <code>.Rdata</code> file to <code>R/zzz.R</code>’s <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code></strong>, or <code>R CMD check</code> NOTEs about undefined globals.</li>
+<strong>Add new names loaded from an <code>.Rdata</code> file to <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code> in <code>R/zzz.R</code></strong>, or <code>R CMD check</code> NOTEs about undefined globals.</li>
 <li>
-<strong>Check any new function argument against the names saved in the <code>.Rdata</code></strong>, and any new saved field against existing argument names. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> assigns into the calling frame, so a collision silently overwrites the argument — this has caused three separate bugs, most recently a saved <code>sigma</code> capturing <code><a href="reference/generateCI.html">generateCI()</a></code>’s z-map blur <code>sigma</code>. <a href="DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names"><code>DECISIONS.md</code></a> has the details.</li>
+<strong>Check every new function argument against the names saved in the <code>.Rdata</code> file</strong>, and every new saved field against existing argument names. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> assigns into the calling frame, so a name collision silently overwrites the argument. This has caused three separate bugs, most recently a saved <code>sigma</code> replacing <code><a href="reference/generateCI.html">generateCI()</a></code>’s z-map blur <code>sigma</code>. <a href="DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names"><code>DECISIONS.md</code></a> has the details.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="larger-changes">Larger changes<a class="anchor" aria-label="anchor" href="#larger-changes"></a></h2>
-<p>Known work lives in <a href="https://github.com/rdotsch/rcicr/issues" class="external-link">GitHub Issues</a>, prioritized with the <code>P0</code>–<code>P3</code> labels: P0 correctness and availability, P1 dependencies and toolchain, P2 usability and maintainability, P3 user-requested features. Each carries the evidence behind it. Read the tracker before starting anything substantial, and comment on the issue before you begin so the work is not duplicated.</p>
-<p><code>DECISIONS.md</code> is the companion: it records decisions already taken, <strong>including things that look like bugs and are intentional and must not be “fixed”</strong>. Check it before changing something that looks wrong.</p>
+<p>Known work lives in <a href="https://github.com/rdotsch/rcicr/issues" class="external-link">GitHub Issues</a>, prioritised with the <code>P0</code>–<code>P3</code> labels: P0 correctness and availability, P1 dependencies and toolchain, P2 usability and maintainability, P3 user-requested features. Each issue carries the evidence behind it. Read the tracker before starting anything substantial, and comment on the issue before you begin so the work is not duplicated.</p>
+<p><code>DECISIONS.md</code> records decisions already taken, <strong>including things that look like bugs, are intentional, and must not be “fixed”</strong>. Check it before changing something that looks wrong.</p>
 <div class="section level3">
 <h3 id="plan-first-in-the-same-pull-request">Plan first, in the same pull request<a class="anchor" aria-label="anchor" href="#plan-first-in-the-same-pull-request"></a></h3>
-<p><strong>When a change touches behaviour, numbers or a contract, the first commit on the branch is a plan, and it gets reviewed before any of the change is written.</strong> That means anything altering <code>R/</code> behaviour, numeric output, the <code>.Rdata</code> contract, test fixtures, or the release and CI machinery. It does <em>not</em> mean prose, <code>man/</code>, <code>NEWS.md</code> wording or comment-only edits — roughly the inert set <code>.github/workflows/reproducibility.yaml</code> already allowlists.</p>
-<ol style="list-style-type: decimal"><li>Branch from <code>main</code> and commit the plan to <code>notes/plan-&lt;topic&gt;.md</code>. <code>notes/</code> is already <code>.Rbuildignore</code>d via <code>^notes$</code> and on that same inert allowlist, so a plan-only diff needs no <code>.Rbuildignore</code> entry and the gate reports green without doing work.</li>
+<p><strong>When a change touches behaviour, numbers or a contract, the branch’s first commit is a plan, reviewed before any of the change is written.</strong> That covers changes to <code>R/</code> behaviour, numeric output, the <code>.Rdata</code> contract, test fixtures, and the release and CI machinery. It does <em>not</em> cover prose, <code>man/</code>, <code>NEWS.md</code> wording or comment-only edits: roughly the inert set that <code>.github/workflows/reproducibility.yaml</code> already allowlists.</p>
+<ol style="list-style-type: decimal"><li>Branch from <code>main</code> and commit the plan as <code>notes/plan-&lt;topic&gt;.md</code>. <code>notes/</code> is already <code>.Rbuildignore</code>d (<code>^notes$</code>) and on the inert allowlist, so a plan-only diff needs no <code>.Rbuildignore</code> entry and the gate passes without running.</li>
 <li>
-<strong>Open the PR as a draft</strong> and request the review, exactly as in “The Codex review” above. The same two conditions clear it.</li>
-<li>Implement on that same branch, and <strong>delete the plan file there</strong> as part of the work.</li>
+<strong>Open the PR as a draft</strong> and request the review as described in “The Codex review” above. The same two conditions clear it.</li>
+<li>Implement on the same branch, and <strong>delete the plan file there</strong> as part of the work.</li>
 <li>
-<strong>Mark the draft ready</strong>, then post the <code>@codex review</code> comment — see above.</li>
+<strong>Mark the draft ready</strong>, then post the <code>@codex review</code> comment.</li>
 <li>Squash as usual.</li>
-</ol><p>Because the plan file is added and deleted within the branch, the squash gives <code>main</code> one commit — the change itself, carrying no plan file — while the plan and both review rounds stay on the PR thread. The plan does not outlive the work and cannot become a second, drifting source of status; <code>NEWS.md</code>, <code>DECISIONS.md</code> and the tracker hold what survives.</p>
-<p>A plan is worth reviewing only if it can be wrong. State what you verified and how, name the step most likely to fail, and where the change rests on a claim about behaviour, measure it rather than asserting it — an issue’s proposed fix is a hypothesis until it has been run.</p>
+</ol><p>Because the plan file is added and deleted on the branch, the squash leaves <code>main</code> one commit, the change itself, with no plan file. The plan and both review rounds stay on the PR thread. The plan cannot outlive the work or become a second source of status that drifts; <code>NEWS.md</code>, <code>DECISIONS.md</code> and the tracker hold what lasts.</p>
+<p>A plan is worth reviewing only if it can be wrong. State what you verified and how, and name the step most likely to fail. Where the change rests on a claim about behaviour, measure it: an issue’s proposed fix is a hypothesis until it has been run.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="code-of-conduct">Code of conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a></h2>
-<p>Be decent to each other. Problems can be raised privately with the maintainer at the address in <code>DESCRIPTION</code>.</p>
+<p>Be decent to each other. Raise problems privately with the maintainer at the address in <code>DESCRIPTION</code>.</p>
 </div>
 </div>
 

@@ -18,35 +18,32 @@ generateNoisePattern(
 
 - img_size:
 
-  Integer specifying size of the noise pattern in number of pixels.
+  Width and height of the noise pattern, in pixels.
 
 - nscales:
 
-  Integer specifying the number of incremental spatial scales. Defaults
-  to 5. Higher numbers will add higher spatial frequency scales.
+  Number of spatial scales (default: 5). Each additional scale adds a
+  higher spatial frequency.
 
 - noise_type:
 
-  String specifying noise pattern type (defaults to `sinusoid`; other
-  options: `gabor`).
+  Noise pattern type: `sinusoid` (default) or `gabor`.
 
 - sigma:
 
-  Number specifying the sigma of the Gabor patch if noise_type is set to
-  `gabor` (defaults to 25).
+  Sigma of the Gabor patches when `noise_type = 'gabor'` (default: 25).
 
 - pre_0.3.0:
 
-  Boolean specifying whether the noise pattern should be created in a
-  way compatible with older versions of rcicr (\< 0.3.0). If you are
-  starting a new project, you should keep this at the default setting
-  (FALSE). There is no reason to set this to TRUE, with the sole
-  exception to recreate behavior of rcicr prior to version 0.3.0.
+  Boolean: build the noise pattern the way rcicr did before version
+  0.3.0. Leave it at `FALSE` unless you need to recreate that old
+  behaviour.
 
 ## Value
 
-List with two elements: the 3D noise matrix with size `img_size`, and an
-indexing matrix with the same size to easily change contrasts.
+The noise basis: a list holding the 3D array of patches (`patches`), an
+index array of the same size mapping each pixel to its contrast
+parameter (`patchIdx`), and the `noise_type` and `generator_version`.
 
 ## Examples
 
