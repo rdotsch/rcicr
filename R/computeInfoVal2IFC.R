@@ -17,9 +17,10 @@
 #' simulates it again. An archive on read-only media can therefore still be scored, at the cost of
 #' simulating each time.
 #'
-#' For the method, see Brinkman, Goffin, van de Schoot et al. (2019), Quantifying the informational
-#' value of classification images, \emph{Behavior Research Methods}, 51, 2059-2073,
-#' \doi{10.3758/s13428-019-01232-2}.
+#' For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van Haren, N. E. M.,
+#' Dotsch, R., & Aarts, H. (2019). Quantifying the informational value of classification
+#' images. \emph{Behavior Research Methods}, \emph{51}, 2059-2073.
+#' \doi{10.3758/s13428-019-01232-2}
 #'
 #' @export
 #' @importFrom stats mad median
