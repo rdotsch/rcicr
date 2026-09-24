@@ -600,6 +600,15 @@ It cost nothing to verify: the gate reports `max|d| = 0` across 135
 checks, because `tools/compare-harness.R` already passed every path
 explicitly.
 
+### A stimulus file is saved in place behind a backup, not replaced by a rename
+
+Renaming a copy over the original (#333) was **rejected**: it changes
+the file’s owner, group and ACLs, which base R cannot restore. Where it
+can, `saveRdataSafely()` keeps a verified backup until
+[`save()`](https://rdrr.io/r/base/save.html) completes. Barring
+concurrent saves, rcicr never deletes or overwrites a `.rcicr-backup` it
+cannot prove it made; restoring needs a check first.
+
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 
 The [`load()`](https://rdrr.io/r/base/load.html) guard copies a
