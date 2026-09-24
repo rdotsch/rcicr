@@ -81,10 +81,11 @@ ci <- generateCI(
 names(ci)
 ```
 
-The result has three images:
+The result holds four pixel matrices:
 
 - `ci$ci` is the raw noise.
 - `ci$scaled` is that noise rescaled for display. The default method, `'independent'`, picks the lowest scaling constant that avoids clipping this particular image; `?generateCI` describes the others.
+- `ci$base` is the base image.
 - `ci$combined` overlays the scaled noise on the base image.
 
 ```{r plot-ci}
@@ -95,7 +96,7 @@ Because the responses were random, this classification image is just noise. With
 
 ## Next steps
 
-- `batchGenerateCI()` and `batchGenerateCI2IFC()` compute one CI per participant or condition from a data frame. Follow them with `autoscale()` to put the whole batch on one scale, so the images can be compared by eye.
+- `batchGenerateCI()` and `batchGenerateCI2IFC()` compute one CI per participant or condition from a data frame. By default they put the whole batch on one scale with `autoscale()`, so the images can be compared by eye.
 - `computeInfoVal2IFC()` computes the informational value: a z-score-like measure of how much signal a CI holds, compared with a simulated null distribution.
 - `plotZmap()` shows which regions of a CI carry reliable signal.
 

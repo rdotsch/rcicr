@@ -266,7 +266,7 @@ names(cis)
 
 To compare conditions rather than participants, point `by` at the condition column.
 
-Each of these CIs was scaled on its own, so they cannot be compared by eye yet. `autoscale()` finds one constant that fits all of them without clipping any:
+These CIs are already on one scale: by default, `batchGenerateCI()` computes them unscaled and then calls `autoscale()`, which finds one constant that fits all of them without clipping any. For CIs you computed separately, call `autoscale()` yourself. On this batch it gives the same result:
 
 ```{r autoscale, fig.show = "hold", fig.width = 2.1, fig.height = 2.1}
 scaled <- autoscale(cis, save_as_pngs = FALSE)
