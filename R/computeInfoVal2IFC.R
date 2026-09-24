@@ -89,7 +89,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
   # Old files may contain argument names, including a stale rdata path.
   .args <- captureArgs(environment())
-  load(rdata)
+  loadRdata(rdata, environment())
   list2env(.args, envir = environment())
 
   if (!is.null(response_seed)) force_gen_ref_dist <- TRUE

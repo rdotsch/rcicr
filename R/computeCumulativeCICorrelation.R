@@ -89,7 +89,7 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   .args <- captureArgs(environment())
 
   # Load parameter file (created when generating stimuli)
-  load(rdata)
+  loadRdata(rdata, environment())
 
   list2env(.args, envir = environment())
 
