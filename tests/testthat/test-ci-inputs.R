@@ -58,6 +58,49 @@ test_that("coerceTrialVectors rejects mismatched stimuli and responses", {
   )
 })
 
+test_that("coerceTrialVectors rejects partly missing participant IDs, of any type", {
+  ids <- list(
+    character = c("p1", "p1", NA, "p2"),
+    numeric = c(1, 1, NA, 2),
+    factor = factor(c("p1", "p1", NA, "p2"))
+  )
+  for (pp in ids) {
+    expect_error(rcicr:::coerceTrialVectors(1:4, c(1, -1, 1, -1), pp),
+      "no ID for 1 of 4 trials (trial 3)", fixed = TRUE
+    )
+  }
+  many <- c(rep(NA, 6), "p1", "p2")
+  expect_error(rcicr:::coerceTrialVectors(1:8, rep(1, 8), many),
+    "no ID for 6 of 8 trials (trials 1, 2, 3, 4, 5, ...)", fixed = TRUE
+  )
+})
+
+test_that("coerceTrialVectors still treats an all-NA vector as no grouping", {
+  out <- rcicr:::coerceTrialVectors(1:3, c(1, -1, 1), c(NA, NA, NA))
+  expect_true(all(is.na(out$participants)))
+})
+
+test_that("generateCI stops on partly missing IDs before computing or writing", {
+  dir <- withr::local_tempdir()
+  out <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(dir, img_size = 32, n_trials = 8)
+  responses <- c(1, -1, 1, 1, -1, 1, -1, -1)
+  pp <- c("p1", "p1", "p1", "p1", NA, "p2", "p2", "p2")
+
+  expect_error(
+    generateCI(1:8, responses, "base", rdata, participants = pp,
+               targetpath = out, n_cores = 1),
+    "no ID for 1 of 8 trials (trial 5)", fixed = TRUE
+  )
+  expect_identical(list.files(out), character(0))
+
+  # Complete IDs still give a finite group CI.
+  pp[5] <- "p2"
+  ci <- generateCI(1:8, responses, "base", rdata, participants = pp,
+                   save_as_png = FALSE, n_cores = 1)
+  expect_true(all(is.finite(ci$ci)))
+})
+
 # --------------------------------------------------------------------------
 # selectBaseImage
 # --------------------------------------------------------------------------

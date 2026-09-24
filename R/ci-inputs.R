@@ -32,6 +32,19 @@ coerceTrialVectors <- function(stimuli, responses, participants) {
     ))
   }
 
+  # A missing ID made every participant's CI NA (#337). Dropping those trials
+  # instead would guess what the gap means.
+  missing_ids <- which(is.na(participants))
+  if (length(missing_ids) > 0 && length(missing_ids) < length(participants)) {
+    shown <- paste(utils::head(missing_ids, 5), collapse = ', ')
+    if (length(missing_ids) > 5) shown <- paste0(shown, ', ...')
+    stop(paste0('participants has no ID for ', length(missing_ids), ' of ',
+      length(participants), ' trials (', if (length(missing_ids) == 1) 'trial ' else 'trials ',
+      shown, '). Give every trial an ID, or remove those trials from stimuli, ',
+      'responses and participants alike.'
+    ))
+  }
+
   validateStimulusIds(stimuli)
 
   return(list(stimuli = stimuli, responses = responses,
