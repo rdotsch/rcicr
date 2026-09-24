@@ -9,11 +9,10 @@
 1. **Both functions read columns as vectors**, with `data[[by]]`, `unitdata[[stimuli]]` and `unitdata[[responses]]`, in all six places that now use `[, col]`: the `NA` filter, the progress bar length, the loop, the row selection, the file name and the two arguments passed on. For a `data.frame` these return exactly what `[, col]` returns today, so its results do not change.
 2. **Rows are selected by comparing a vector with a single value**: `data[data[[by]] == unit, , drop = FALSE]`, after the existing `NA` filter.
 3. **`NEWS.md`, under "Reproducibility impact"**, first in the section:
-   - who is affected: `batchGenerateCI()` or `batchGenerateCI2IFC()` called on a tibble with more than one group, on 1.1.0 to 1.4.1;
+   - who is affected: `batchGenerateCI()` or `batchGenerateCI2IFC()` called on a tibble with more than one group, on 1.1.0 to 1.4.1. Of these, only 1.3.0 (published 2026-09-02) and 1.4.1 (accepted 2026-09-20) reached CRAN; the rest were GitHub releases (`notes/cran-review-1.3.0-acceptance.md`, `notes/cran-review-1.4.1-acceptance.md`);
    - how to tell: the returned list had one element although the data held several groups;
    - what to do: recompute with this version, or on an older one convert with `as.data.frame()` first. Nothing needs recollecting.
    - It also says that 1.1.0's statement that these functions accept tibble columns was true only for a single group. The released 1.1.0 section itself stays as it is.
-4. **README**: a short callout beside the existing 1.3.0 one, since this changes published numbers for the people it affects.
 
 ## Verified before planning
 
@@ -39,9 +38,9 @@ Each tibble test must fail on the current code, checked with `git stash push -- 
 
 The `NA` filter is not a risk: `data[!is.na(data[, by]), ]` already keeps the same rows for a tibble as for a `data.frame` (measured: rows 1, 3 and 4 of `c("p1", NA, "p2", "p2", NA)` in both).
 
-## Open question for review
+## No advisory
 
-Is a `NEWS.md` entry plus a README callout enough, or should this get an advisory article like the individual-CI one (`vignettes/articles/rcicr-individual-ci-advisory.Rmd`)? The individual-CI case needed one because telling whether you were affected took work. Here the tell is a single glance at the length of the returned list.
+The `NEWS.md` entry is the whole notice: no advisory article and no README callout. Telling whether you were affected takes one glance at the length of the returned list, and the affected versions were on CRAN for weeks, not years.
 
 ## Out of scope
 
