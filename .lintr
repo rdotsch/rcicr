@@ -1,12 +1,12 @@
 linters: linters_with_defaults(
     # Not enforced -- CONTRIBUTING.md "Code conventions": "Line length is not
-    # enforced; 35 lines in R/ already exceed 100 characters."
+    # enforced, and some lines in R/ exceed 100 characters."
     line_length_linter = NULL,
     # This codebase requires explicit return() at the end of exported
     # functions -- the opposite of lintr's default (implicit return).
     return_linter = NULL,
-    # CONTRIBUTING.md: "single quotes... not worth churn to unify, but write
-    # new code single-quoted." The maintainer already declined to enforce
+    # CONTRIBUTING.md: "not worth the churn to unify, but write new code with
+    # single quotes." The maintainer already declined to enforce
     # this either way; flipping the linter's default direction to single
     # only makes it worse (tests/ idiomatically uses double-quoted
     # expect_*() arguments).
@@ -14,9 +14,8 @@ linters: linters_with_defaults(
     # Exported functions are frozen camelCase, arguments/list fields frozen
     # snake_case (CONTRIBUTING.md) -- both are intentional, not debt.
     object_name_linter = object_name_linter(styles = c("camelCase", "snake_case", "symbols")),
-    # Not a default linter. CONTRIBUTING.md: "TRUE/FALSE, never T/F... All
-    # occurrences were replaced in 1.2.2." Nothing else guards against
-    # reintroducing it.
+    # Not a default linter. CONTRIBUTING.md: "TRUE/FALSE, never T/F". No T or
+    # F remains in R/, and nothing else guards against reintroducing it.
     T_and_F_symbol_linter = T_and_F_symbol_linter(),
     # The package uses %>% seven times and |> never, so it is already
     # consistent -- the linter merely defaults to preferring native. %>% comes

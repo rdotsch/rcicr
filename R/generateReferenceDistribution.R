@@ -1,63 +1,60 @@
 #' Generates reference distribution
 #'
-#' Generates reference distribution of norms for a particular set of task parameters.
+#' Generates the reference distribution of norms for a stimulus set.
 #'
-#' In order to compute the Informational Value metric. Saves its results in the supplied rdata file for later reuse.
+#' \code{\link{computeInfoVal2IFC}} scores a classification image against this distribution. By
+#' default the result is saved in the \code{rdata} file for later reuse.
 #'
 #' @section Reproducibility:
-#' With the default \code{response_seed = NULL}, the reference distribution is determined by
-#' the stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}. It does not
-#' depend on the ambient random number state, and it does not depend on \code{ncores}. Two
-#' researchers who compute InfoVal from the same stimulus file therefore get the same number,
-#' and the same reference distribution, on different machines and in different sessions --
-#' provided both sessions use the same RNG kind.
+#' With the default \code{response_seed = NULL}, the reference distribution depends only on the
+#' stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}: not on the current
+#' random state, and not on \code{ncores}. Two researchers computing InfoVal from the same
+#' stimulus file get the same reference distribution, and the same number, on any machine and in
+#' any session, provided both use the same RNG kind.
 #'
-#' \code{set.seed()} keeps whatever kind the session already has rather than restoring one,
-#' and no stimulus file records which was in force, so a session that has changed
-#' \code{RNGkind()} changes the simulated response draws and therefore the null. The saved
-#' noise basis and stimulus parameters remain unchanged. To reproduce an earlier reference,
-#' use the RNG kind that built it; see \url{https://github.com/rdotsch/rcicr/issues/315}.
+#' The RNG kind is the one gap. \code{set.seed()} keeps whatever kind the session already has,
+#' and no stimulus file records which kind was in use. A session with a different
+#' \code{RNGkind()} therefore draws different simulated responses, and so a different null; the
+#' saved noise basis and stimulus parameters stay the same. To reproduce an earlier reference, use
+#' the RNG kind that built it; see \url{https://github.com/rdotsch/rcicr/issues/315}.
 #'
-#' The noise is reconstructed from the basis and parameters the stimulus file saved, so the
-#' base images themselves are never reopened and an archived or moved experiment can still be
-#' scored. Responses are seeded from the state following one parameter matrix's draws at the
-#' saved stimulus seed, preserving the historical default response stream.
+#' The noise is rebuilt from the basis and parameters saved in the stimulus file, so the base
+#' images are never reopened and a moved or archived experiment can still be scored. The simulated
+#' responses continue the random stream from the saved stimulus seed, after the draws for one
+#' parameter matrix, which reproduces the historical default reference.
 #'
-#' Pass an explicit \code{response_seed} to draw a *different* null from the same stimuli --
-#' for instance to check how much Monte Carlo error a given \code{iter} leaves in your
-#' InfoVal. This changes only the simulated responses; the stimuli themselves, and so the
-#' noise basis the null is built on, are unaffected.
+#' Pass a \code{response_seed} to draw a \emph{different} null from the same stimuli, for
+#' instance to check how much Monte Carlo error a given \code{iter} leaves in your InfoVal. This
+#' changes only the simulated responses, not the stimuli or the noise basis the null is built on.
 #'
 #' @export
 #' @importFrom stats runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
-#' @param rdata String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.
-#' @param iter Number of iterations for the simulation (i.e., the number of norms generated with classification images based on random responding).
-#' @param ncores Number of CPU cores to use when rebuilding the saved noise (default: \code{detectCores()-1}; 2 under \code{R CMD check}, per CRAN policy).
-#' @param response_seed Optional seed for the simulated random responses. The default
-#' (\code{NULL}) draws them from the state the stimulus generator left behind, which is the
-#' reproducible behaviour described under Reproducibility. Supply a number to obtain an
-#' independent draw of the null from the same stimuli.
-#' @param save_rdata Boolean specifying whether the reference distribution should be written
-#' back into the \code{rdata} file (default \code{TRUE}). Set to \code{FALSE} to compute a
-#' distribution without changing what later calls to \code{\link{computeInfoVal2IFC}} will
-#' use -- worth doing whenever \code{response_seed} is set, so a one-off null does not become
-#' the file's permanent reference.
-#' @param baseimage Saved base-image label, using the same key as \code{generateCI()}.
-#' Required when the saved base images have different noise parameters. With a single base
-#' or identical parameter matrices, \code{NULL} retains the shared reference behavior.
+#' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
+#' @param iter Number of simulated classification images, each built from random responses; the distribution holds one norm per image.
+#' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param response_seed Optional seed for the simulated random responses. The default,
+#' \code{NULL}, continues from the state the stimulus generator left behind, as described under
+#' Reproducibility. A number gives an independent draw of the null from the same stimuli.
+#' @param save_rdata Boolean: write the reference distribution into the \code{rdata} file
+#' (default \code{TRUE}). With \code{FALSE}, later calls to \code{\link{computeInfoVal2IFC}}
+#' keep using what the file already holds. Set it to \code{FALSE} whenever you set
+#' \code{response_seed}, so a one-off null does not become the file's permanent reference.
+#' @param baseimage Base-image label, the same key passed to \code{generateCI()}. Required when
+#' the base images have different noise parameters. With a single base image, or base images
+#' sharing one parameter set, leave it at \code{NULL}.
 #' @section Independent base images:
-#' When saved parameter matrices differ, supply \code{baseimage} explicitly to say which
-#' base's noise to use. Cached distributions are stored in \code{reference_norms_by_base},
-#' keyed by base label, with \code{norms} and \code{response_seed} in each entry. Old unscoped
-#' \code{reference_norms} are neither reused nor overwritten for independent bases.
-#' Existing shared-parameter files continue using their unscoped cache and reconstruction.
+#' When the base images have different parameter matrices, \code{baseimage} says whose noise to
+#' use. The distributions are then stored in \code{reference_norms_by_base}, one entry per base
+#' label, each holding \code{norms} and \code{response_seed}. A shared \code{reference_norms}
+#' in such a file is neither used nor overwritten. Files whose base images share one parameter
+#' matrix keep using \code{reference_norms}.
 #' @return The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
-#' Unless \code{save_rdata = FALSE}, it is also added to the supplied \code{rdata} file as
-#' \code{reference_norms} (alongside \code{reference_norms_seed}, recording the
-#' \code{response_seed} it was generated with), so a later call to
-#' \code{\link{computeInfoVal2IFC}} using the same file can reuse it instead of re-simulating.
-#' Independent-base references instead use \code{reference_norms_by_base}, as described above.
+#' Unless \code{save_rdata = FALSE}, it is also added to the \code{rdata} file as
+#' \code{reference_norms}, with \code{reference_norms_seed} recording the \code{response_seed}
+#' it was drawn with. A later \code{\link{computeInfoVal2IFC}} call on the same file then reuses
+#' it instead of simulating again. For independent base images it goes in
+#' \code{reference_norms_by_base} instead, as described above.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")

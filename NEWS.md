@@ -6,6 +6,18 @@
 
   You were affected if the list these functions returned had one element although your data held several participants or conditions; data read with readr or processed with dplyr is a tibble. Recompute those CIs with this version, or with an older one after `as.data.frame()`. No stimuli need regenerating or responses recollecting. Of the affected versions, only 1.3.0 and 1.4.1 were released on CRAN; the others were GitHub releases. The 1.1.0 entry below saying these functions accept tibble columns held only for a single group.
 
+## Documentation
+
+- Corrected help pages that disagreed with the code:
+  - `generateStimuli2IFC(return_as_dataframe = TRUE)` returns one row per pixel and one column per trial, not the reverse.
+  - `generateCI()` takes its scaling constant as `scaling_constant`, not `constant`.
+  - `batchGenerateCI()` also accepts `scaling = "matched"`.
+  - `plotZmap()` takes a background image matrix, not an `.Rdata` file.
+  - `generateNoisePattern()` returns four elements, not two.
+  - `?computeInfoVal2IFC` cites the published InfoVal paper (Brinkman et al., 2019) instead of a manuscript in preparation.
+  - `computeInfoVal2IFC()` always simulates a reference distribution the `.Rdata` file does not hold; rcicr ships no precomputed ones.
+- Rewrote the README, both vignettes and the help pages for readability. The "no longer actively maintained" notice is removed from the README.
+
 # rcicr 1.4.1 (2026-09-15)
 
 ## Documentation

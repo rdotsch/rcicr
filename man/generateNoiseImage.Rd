@@ -7,9 +7,9 @@
 generateNoiseImage(params, p)
 }
 \arguments{
-\item{params}{Vector with each value specifying the contrast of each patch in noise.}
+\item{params}{Vector of contrast weights, one per patch in the noise basis.}
 
-\item{p}{3D patch matrix (generated using \code{generateNoisePattern()}).}
+\item{p}{Noise basis, as returned by \code{\link{generateNoisePattern}}.}
 }
 \value{
 The noise pattern as pixel matrix.
