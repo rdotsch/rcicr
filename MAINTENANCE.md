@@ -1,8 +1,6 @@
 # Maintaining the repository
 
-How this repository's automation is wired, and why. `CONTRIBUTING.md` is how to contribute,
-`RELEASING.md` how to cut a release, `DECISIONS.md` why the package behaves as it does — this
-file is the machinery around them.
+How this repository's automation is wired, and why; `AGENTS.md` says which doc owns what.
 
 **Keep this file under 1800 words.**
 
@@ -29,7 +27,8 @@ write agents here cannot make, so a newly added workflow's check reports on PRs 
 until the maintainer adds it by hand via GitHub → Settings → Rules → Rulesets — a UI edit, since
 a malformed `PUT` risks dropping unrelated ruleset fields.
 A separate **Tags** ruleset blocks creating, moving and deleting tags; the maintainer
-(Repository admin role) bypasses it to tag releases.
+(Repository admin role) bypasses it to tag releases. A ruleset refused a force-push to a `claude/*`
+branch: expect to catch a stale branch up by merging `main` in, not rebasing.
 
 Two consequences worth knowing before editing a workflow. **Required checks are matched by
 name**, so rows can be added to a matrix freely but never renamed — a renamed check reads as
