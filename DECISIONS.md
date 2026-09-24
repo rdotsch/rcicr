@@ -49,9 +49,9 @@ rcicr 0.3.0 (2015-01-23) cut the random draws per trial from 4096 to 4092. 4092 
 
 The same release fixed `sinIdx` counting from 0 instead of 1, an independent change that the `pre_0.3.0` flag handles.
 
-**The 0-based path in `generateNoiseImage()` looks as if it corrupts the whole image, and does not.** When `min(patchIdx) == 0`, `params[p$patchIdx]` drops every cell indexed 0 (R drops a 0 subscript rather than returning `NA`). The result is too short for the patch array, and `array()` recycles it, which would normally misalign everything. It is harmless because the same counting from 0 leaves the *last* patch layer unwritten, so every cell with `patchIdx == 0` also has `patches == 0`. (Masking needs only that direction, not an equivalence.) Those cells come last in column-major order, so the recycled values land only where the patch is zero and are multiplied away. Measured: identical to the honest "one patch not shown" result (maximum absolute difference 0) across 36 combinations of size, `nscales` and seed.
+**The 0-based path in `generateNoiseImage()` looks as if it corrupts the whole image, and does not.** When `min(patchIdx) == 0`, `params[p$patchIdx]` drops every cell indexed 0 (R drops a 0 subscript rather than returning `NA`). The result is too short for the patch array, and `array()` recycles it, which would normally misalign everything. It is harmless because the same counting from 0 leaves the *last* patch layer unwritten, so every cell with `patchIdx == 0` also has `patches == 0`. Those cells come last in column-major order, so the recycled values land only where the patch is zero and are multiplied away. Measured: identical to the honest "one patch not shown" result (maximum absolute difference 0) across 36 combinations of size, `nscales` and seed.
 
-This is not a reconstruction that confirms itself. A stimulus file stores the patch array its own generator wrote, and the genuine pre-0.3.0 generator is the same `co = 0` / `idx = 0` loop that the `pre_0.3.0` flag runs. That was verified against the R-Forge source (`git show 7d0d9e6:pkg/R/rcicr.R`): 0.3.0 only flipped the default and added the flag. Do **not** "fix" the recycling by offsetting the index by one: that changes which sinusoid is dropped and alters the CI of every genuine pre-0.3.0 file. `test-generateNoiseImage.R` pins both properties.
+A stimulus file stores the patch array its own generator wrote, and the genuine pre-0.3.0 generator is the same `co = 0` / `idx = 0` loop that the `pre_0.3.0` flag runs. That was verified against the R-Forge source (`git show 7d0d9e6:pkg/R/rcicr.R`): 0.3.0 only flipped the default and added the flag. Do **not** "fix" the recycling by offsetting the index by one: that changes which sinusoid is dropped and alters the CI of every genuine pre-0.3.0 file. `test-generateNoiseImage.R` pins both properties.
 
 **A backward-compatibility path that nothing exercises cannot be told apart from one that works.** The truncation left one broken in `generateCI()` for eleven years, untested until 2026-07-28; so was the `sinusoids`/`sinIdx` path.
 
@@ -59,7 +59,7 @@ This is not a reconstruction that confirms itself. A stimulus file stores the pa
 An object in an `.Rdata` file silently overwrites a function argument of the same name. `generateReferenceDistribution2IFC()` re-saved its whole frame, so the files it wrote contained `rdata` and `ncores`. A second call then ignored the caller's `ncores` and wrote back to the path recorded by the first. It is fixed at the source, by leaving the function's own arguments out of the save, *and* defensively on read, for files older versions already wrote.
 
 ### The InfoVal formula is already correct — do not "fix" it
-It matches the erratum to Schmitz et al. (2019): the Euclidean norm, with *k* supplied by R's `mad()` (`constant = 1.4826`). A regression test pins it.
+It is equations 2 and 3 of Brinkman et al. (2019, *Behavior Research Methods* 51, 2059-2073): `(norm - median) / (k * MAD)`, with `k = 1.4826`. Schmitz, Rougier and Yzerbyt (2019, <https://doi.org/10.3758/s13428-019-01295-1>) reported two miscomputations in rcicr: the one norm instead of the Euclidean norm, and a missing `k`. Their erratum (Schmitz et al., 2020, *Behavior Research Methods* 52, 1800-1801, <https://doi.org/10.3758/s13428-020-01367-7>) withdraws the second, because R's `mad()` already applies `constant = 1.4826`. The code uses the Euclidean norm (`norm(x, "f")`) and plain `mad()`. **Do not add a `k`**: it would be applied twice. A regression test pins the result.
 
 ---
 
@@ -123,7 +123,7 @@ Two `batchGenerateCI*` tests asserted only length, names and `dim`, so **groupin
 ### `computeInfoVal2IFC`'s test oracle mirrors the implementation, and is kept anyway
 `test-computeInfoVal2IFC.R` recomputes `(norm(ci, "f") - median(reference_norms)) / mad(reference_norms)`, the implementation's own expression. So it pins the *implementation*, not the published definition: a formula wrong in both places passes.
 
-It stays, because the risk is covered from two other directions: the formula was checked by hand against the erratum, and the golden master pins the resulting number. The suite's genuinely independent oracle is in `test-generateNoiseImage.R`. If this is revisited, the replacement is a worked example from the paper, or a hand-computed 2×2 CI with a known reference vector, not a tidier restatement of the same expression.
+It stays: the formula was checked against the papers (see "The InfoVal formula" above), and the golden master pins the resulting number. The suite's genuinely independent oracle is in `test-generateNoiseImage.R`. A real replacement is a hand-computed 2×2 CI with a known reference vector.
 
 ### Pixel assertions have measured the graphics device twice
 The practice is in `CONTRIBUTING.md`; both measurements behind it came from one fix.
@@ -202,10 +202,10 @@ The `load()` guard copies a function's arguments and restores them after reading
 ## Documentation
 
 ### The Medium walkthrough moved into a vignette, and the post stays up
-A tutorial outside the repository cannot run at build time, so it goes stale unnoticed, as this one had: `saveasjpegs` is now `save_as_pngs`, and `install_github(..., ref = "development")` names a branch that does not exist. The post stays up for its nine years of inbound links; the vignette is now the canonical copy.
+A tutorial outside the repository cannot run at build time, so it goes stale unnoticed, as this one had: `saveasjpegs` is now `save_as_pngs`, and `install_github(..., ref = "development")` names a branch that does not exist. The post stays up for its inbound links; the vignette is the canonical copy.
 
 ### Three vignette figures were wrong in ways only viewing them showed
-Looking at the figures caught three failures the assertions missed:
+Viewing caught what assertions missed:
 
 - `image()` stretched each rescaling to look identical, until `zlim = c(0, 1)` fixed the palette.
 - The quick z-map's scores, relative to the image's own pixels, spanned only ±1.65 at small sizes, so the default threshold returned a misleading blank map.

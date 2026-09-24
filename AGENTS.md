@@ -93,7 +93,7 @@ Trunk-based with tags, the standard R package layout. There is **no `develop` br
 
 **Researchers re-run old analysis scripts years later.** Never silently change existing call syntax, argument meanings or a function's numeric output. Deprecate rather than delete, and treat the `.Rdata` contract as append-only. When output does change, it goes in `NEWS.md` under "Reproducibility impact", and the release gate has to agree (see "Testing and CI" above).
 
-Some things **are already correct and must not be "re-fixed"**, notably the infoVal formula, which matches the published Schmitz et al. erratum. [`DECISIONS.md`](DECISIONS.md) records them with the reasoning; read it before changing something that looks wrong.
+Some things **are already correct and must not be "re-fixed"**, notably the infoVal formula, which matches Brinkman et al. (2019) as corrected by Schmitz et al.'s comment and its erratum (2020). [`DECISIONS.md`](DECISIONS.md) records them with the reasoning; read it before changing something that looks wrong.
 
 ## Work is tracked in GitHub Issues
 
