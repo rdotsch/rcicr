@@ -5,7 +5,7 @@
 #' @importFrom stats runif
 #' @importFrom graphics boxplot
 #' @param nrep Number of replications
-#' @param img_size Size of noise pattern in pixels (one value equal for width and height)
+#' @param img_size Size of noise pattern in pixels (one value equal for width and height). The pattern has five scales, so it must be a multiple of 16.
 #' @return Matrix with range of noise intensities for each replication
 #' @examples
 #' # nrep and img_size are kept small here so the example is fast; the defaults

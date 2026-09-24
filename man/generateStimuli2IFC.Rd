@@ -27,7 +27,7 @@ generateStimuli2IFC(
 
 \item{n_trials}{Number of trials. Each trial gets two images per base image: one with the noise added (original) and one with it subtracted (inverted).}
 
-\item{img_size}{Width and height of the square stimulus images, in pixels.}
+\item{img_size}{Width and height of the square stimulus images, in pixels. It must be divisible by \code{2^(nscales - 1)}, because the finest scale tiles the image with that many patches per side.}
 
 \item{stimulus_path}{Directory to save the stimuli and the \code{.Rdata} file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.}
 
@@ -41,7 +41,7 @@ generateStimuli2IFC(
 
 \item{noise_type}{Noise pattern type: \code{sinusoid} (default) or \code{gabor}.}
 
-\item{nscales}{Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.}
+\item{nscales}{Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency. \code{img_size} must be divisible by \code{2^(nscales - 1)}.}
 
 \item{sigma}{Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).}
 

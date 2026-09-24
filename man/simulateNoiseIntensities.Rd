@@ -9,7 +9,7 @@ simulateNoiseIntensities(nrep = 1000, img_size = 512)
 \arguments{
 \item{nrep}{Number of replications}
 
-\item{img_size}{Size of noise pattern in pixels (one value equal for width and height)}
+\item{img_size}{Size of noise pattern in pixels (one value equal for width and height). The pattern has five scales, so it must be a multiple of 16.}
 }
 \value{
 Matrix with range of noise intensities for each replication

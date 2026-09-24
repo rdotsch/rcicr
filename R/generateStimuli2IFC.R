@@ -14,14 +14,14 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param base_face_files Named list of base image files, e.g. \code{list(aName = 'baseface.jpg')}. JPEG and PNG images are accepted, recognised by a \code{.png}, \code{.jpg} or \code{.jpeg} extension. Each name labels that base image's stimulus files and is the key \code{\link{generateCI}} uses to find it in the \code{.Rdata} file, so every element needs a unique name. Each image must be square and exactly \code{img_size} pixels wide: rcicr does not resize base images. All of this is checked before any stimuli are generated, and an error names the offending entry.
 #' @param n_trials Number of trials. Each trial gets two images per base image: one with the noise added (original) and one with it subtracted (inverted).
-#' @param img_size Width and height of the square stimulus images, in pixels.
+#' @param img_size Width and height of the square stimulus images, in pixels. It must be divisible by \code{2^(nscales - 1)}, because the finest scale tiles the image with that many patches per side.
 #' @param stimulus_path Directory to save the stimuli and the \code{.Rdata} file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @param label Label put at the start of each file name.
 #' @param use_same_parameters Boolean: all base images share one set of noise parameters (\code{TRUE}) or each gets its own (\code{FALSE}).
 #' @param seed Seed for the random number generator, for reproducibility. It is saved in the \code{.Rdata} file, where the default InfoVal reference replays it. With \code{seed = NULL} there is nothing to replay, so InfoVal references for that file need an explicit \code{response_seed}.
 #' @param maximize_baseimage_contrast Boolean: rescale the base image's pixel values to maximize its contrast. A base image with no contrast at all, every pixel the same value, cannot be rescaled and is rejected with an error. It can still be used with \code{maximize_baseimage_contrast = FALSE}.
 #' @param noise_type Noise pattern type: \code{sinusoid} (default) or \code{gabor}.
-#' @param nscales Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.
+#' @param nscales Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency. \code{img_size} must be divisible by \code{2^(nscales - 1)}.
 #' @param sigma Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).
 #' @param ncores Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @param return_as_dataframe Boolean: return a data frame with the raw noise of the generated stimuli (default: \code{FALSE}), one row per pixel and one column per trial. With the default \code{use_same_parameters = TRUE} every base image shares the same noise, so that is all of it. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned, because one column per trial cannot hold several. The stimuli are still written for every base image, and \code{save_rdata = TRUE} records every parameter set, so nothing is missing from the files.
