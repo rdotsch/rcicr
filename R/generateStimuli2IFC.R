@@ -44,6 +44,10 @@
 #' )
 generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512, stimulus_path, label = 'rcic', use_same_parameters = TRUE, seed = 1, maximize_baseimage_contrast = TRUE, noise_type = 'sinusoid', nscales = 5, sigma = 25, ncores = default_ncores(), return_as_dataframe = FALSE, save_as_png = TRUE, save_rdata = TRUE) {
 
+  # Read before any setup, which can cross a minute boundary: two calls started
+  # in the same minute must reach the same lock.
+  started <- stimulusTime()
+
   # stimulus_path is required, not defaulted: a default path writes to the
   # user's filespace uninvited, which CRAN policy does not allow.
   writes_to_disk <- save_as_png || save_rdata
@@ -152,7 +156,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   }
 
   if (save_rdata) {
-    started <- stimulusTime()
     rdata_file <- stimulusRdataPath(stimulus_path, label, seed, started)
     rdata_lock <- acquireStimulusLock(rdata_file, seed, started)
     on.exit(unlink(rdata_lock, recursive = TRUE), add = TRUE)

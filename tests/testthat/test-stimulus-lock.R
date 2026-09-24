@@ -109,3 +109,20 @@ test_that("the lock's folder follows the host's path rules, even for text dirnam
     expect_identical(rcicr:::targetDir("C:/x.Rdata"), "C:")
   }
 })
+
+test_that("the minute is read before any setup, so slow setup cannot split two calls' locks", {
+  read_at <- NULL
+  local_mocked_bindings(
+    stimulusTime = function() {
+      read_at <<- c(read_at, "clock")
+      fixed_minute
+    },
+    generateNoisePattern = function(...) {
+      read_at <<- c(read_at, "setup")
+      stop("stop after setup")
+    }
+  )
+  dir <- withr::local_tempdir()
+  expect_error(generate(dir), "stop after setup")
+  expect_identical(read_at, c("clock", "setup"))
+})
