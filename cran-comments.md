@@ -2,72 +2,31 @@
 
 ## Submission type
 
-Resubmission of rcicr 1.4.1 as an update to 1.3.0, published on 2026-09-02. The maintainer address `rdotsch@gmail.com` is unchanged.
-
-## Resubmission
-
-CRAN reviewed the 1.4.0 submission and reported that an obsolete Medium tutorial URL in `README.md` returned a permanent redirect. That link has been removed. No package code or computed result changed in response to the review. The version has been incremented because the declined 1.4.0 submission is not reused.
+Update of rcicr 1.4.1, which CRAN's auto-check service accepted on 2026-09-20. The maintainer address `rdotsch@gmail.com` is unchanged.
 
 ## What changed
 
 `NEWS.md` carries the full list. Its "Reproducibility impact" section describes changes to existing results, who is affected and what to do.
 
-**The informational-value statistic is scored against the right reference distribution.** With
-several base images and per-base noise parameters, base images after the first were scored
-against the *first* base's reference. Classification images, z-maps, stimuli and responses were
-never affected, and the default single-base case is unchanged. Where the saved parameter
-matrices differ, `computeInfoVal2IFC()` now requires the `baseimage` label, so a call that
-would previously have returned a figure from the wrong reference reports an error instead.
+**`batchGenerateCI()` and `batchGenerateCI2IFC()` group a tibble correctly.** Called on a tibble with more than one group, versions 1.1.0 to 1.4.1 returned a single classification image built from alternating trials of different groups. A `data.frame`, and a tibble with one group, are unaffected.
 
-**Reference distributions are built from the noise the file saved** rather than reconstructed
-by reopening the base images. Archived experiments whose base images have moved can therefore
-be scored at all. Where a reference changes, the returned value is reported as superseding the
-earlier one rather than changing silently.
+**The default InfoVal reference needs the stimulus seed saved in the file.** For a stimulus file without one, the reference was seeded from the clock and could not be reproduced. Such a file now stops with an error that gives the call storing a reproducible, seeded reference. Files with a seed are unaffected.
 
-**Read-only archived experiment files can now be scored without modification.** When an InfoVal
-reference is missing or must be refreshed, `computeInfoVal2IFC()` computes it in memory if the
-stimulus archive is not writable and leaves the file unchanged. Previously these calls could
-fail while trying to save an otherwise successfully computed reference. Numerical results are
-unchanged relative to the same calculation on a writable copy.
+**Stimulus `.Rdata` files are protected.** Saving a reference distribution into one keeps a verified backup until the save completes, so an interrupted save no longer leaves it unloadable. `generateStimuli2IFC()` never overwrites an existing one, and reserves its name with a lock beside it before generating anything.
 
-**Malformed trial input is rejected instead of silently changing trial assignments.**
-`generateCI()` requires one participant identifier per trial when grouping, and empty, missing,
-nonfinite, fractional or out-of-range stimulus identifiers now error. Valid numeric input is
-unaffected.
-
-**A classification image with no range renders as a uniform neutral image** instead of `NaN`.
-Every value that changes was `NaN` before; no finite number moves.
-
-**Stimuli are written for every base image** when the call also returns a data frame. Only the
-first base image's PNGs were written before, though the call succeeded.
-
-Also: an image's alpha channel is ignored when reading a base face; parallel workers start
-under any `OutDec` and `scipen` setting, where a comma decimal separator combined with scientific notation previously prevented startup; and reference simulation no longer re-copies its stimulus matrix per
-iteration.
+**Clearer errors instead of unusable results.** `generateCI()` stops on partly missing participant IDs, which returned an all-`NA` image. An `img_size` that the noise scales cannot tile now gets an error naming the constraint.
 
 ## Test environments
 
-Checked release-branch package sources at commit `4df2c53fb3cd516768d6e0774018b85960feaf5b` (squashed onto `main` as `9945bc505823d7b9a24ecf1133f1e1d6efd1d907`) on 2026-09-15 — after the NEWS.md release date was corrected, which changed the tarball checked below relative to the commit recorded in an earlier draft of this file. The Linux R-hub artifact contains `rcicr_1.4.1.tar.gz` with SHA-256 `1a6c143cfb63911ce0b8156bc0c871d92dbb29a7ee91da6328ad4557ccf2879a`.
-
-* GitHub Actions, R 4.6.1 (2026-06-24): Ubuntu 24.04.5 LTS (x86_64), macOS Tahoe 26.6.2 (arm64), and Windows Server 2025 (build 26100) (x86_64, ucrt).
-* GitHub Actions, R-devel (2026-09-13 r90534): Ubuntu 24.04.5 LTS (x86_64).
-* R-hub, R-devel (2026-09-13 r90534): Ubuntu 24.04.5 LTS (x86_64), Windows Server 2025 (build 26100) (x86_64, ucrt), and macOS Sequoia 15.7.9 (x86_64).
-* win-builder, R 4.6.1 (2026-06-24): Windows Server 2022 x64 (build 20348, ucrt).
-* win-builder, R-devel (2026-09-14 r90539): Windows Server 2022 x64 (build 20348, ucrt).
+Pending: filled in from the checks in `RELEASING.md` step 2, on the release branch.
 
 ## R CMD check results
 
-All four GitHub Actions jobs report `Status: OK`: 0 errors, 0 warnings, 0 notes. These runs used `--no-manual --as-cran`. The documentation and citation-source checks also pass. [Run 34932516971](https://github.com/rdotsch/rcicr/actions/runs/34932516971).
-
-All three R-hub artifact `00check.log` files report `Status: OK`: 0 errors, 0 warnings, 0 notes. R-hub used `--no-manual --as-cran` and did not run incoming feasibility, so these results do not establish either check. [Run 34933377343](https://github.com/rdotsch/rcicr/actions/runs/34933377343).
-
-The repository's full reproducibility gate passes against both v1.0.1, the published baseline, and v1.4.0, the previous release. [Run 34932516883](https://github.com/rdotsch/rcicr/actions/runs/34932516883).
-
-Both win-builder checks report `Status: OK`: 0 errors, 0 warnings, 0 notes. Their CRAN incoming-feasibility, PDF-manual and HTML-manual checks all pass. [R-release result](https://win-builder.r-project.org/S41XJxH9tKMy/) and [R-devel result](https://win-builder.r-project.org/GsIeMjSU1qnn/).
+Pending: as above.
 
 ## Downstream dependencies
 
-No reverse dependencies are listed on the [CRAN package page, ETH Zurich mirror](https://stat.ethz.ch/CRAN/web/packages/rcicr/index.html), checked on 2026-09-13. This is a listing check, not a revdepcheck run.
+Pending: to be checked against the CRAN package page before submission.
 
 ## Notes
 
