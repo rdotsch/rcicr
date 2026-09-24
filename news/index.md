@@ -2,6 +2,29 @@
 
 ## rcicr (development version)
 
+### Reproducibility impact
+
+- **[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+  and
+  [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+  now group a tibble correctly.** Called on a tibble with more than one
+  group in `by`, rcicr 1.1.0 through 1.4.1 returned a single
+  classification image instead of one per group. That image was built
+  from alternating trials of different groups and named after the first
+  group. A `data.frame`, or a tibble with one group, was never affected,
+  and its results do not change.
+  ([\#336](https://github.com/rdotsch/rcicr/issues/336))
+
+  You were affected if the list these functions returned had one element
+  although your data held several participants or conditions; data read
+  with readr or processed with dplyr is a tibble. Recompute those CIs
+  with this version, or with an older one after
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html). No
+  stimuli need regenerating or responses recollecting. Of the affected
+  versions, only 1.3.0 and 1.4.1 were released on CRAN; the others were
+  GitHub releases. The 1.1.0 entry below saying these functions accept
+  tibble columns held only for a single group.
+
 ### Documentation
 
 - Corrected help pages that disagreed with the code:
