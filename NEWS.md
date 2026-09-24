@@ -20,6 +20,8 @@
 
 - **`generateCI()` stops when some, but not all, `participants` IDs are `NA`.** It used to return a CI in which every pixel was `NA`, with only `min`/`max` warnings, and write it as a solid black PNG; every version since 1.0.1 did this. The error names the trials without an ID. Give them one, or remove them from `stimuli`, `responses` and `participants` alike. An all-`NA` `participants` still means no grouping, and no valid result changes. (#337)
 
+- **`generateStimuli2IFC()` never overwrites a stimulus `.Rdata` file.** Its file name records the minute, so two calls into one folder with the same `label` and `seed` in the same minute used to write one file, and the first set's PNGs lost the only record of their noise parameters. The name is now reserved before anything is generated, and the call stops, having written nothing, if that file exists or if another call into the same folder with the same seed, started in the same minute, is still running. The error says to use a different `label` or `stimulus_path`, or to delete the file if the set is being regenerated on purpose. The time in the name is now the start of the call rather than its end. (#338)
+
 ## Documentation
 
 - Corrected help pages that disagreed with the code:

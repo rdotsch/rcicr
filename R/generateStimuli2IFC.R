@@ -26,7 +26,7 @@
 #' @param ncores Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @param return_as_dataframe Boolean: return a data frame with the raw noise of the generated stimuli (default: \code{FALSE}), one row per pixel and one column per trial. With the default \code{use_same_parameters = TRUE} every base image shares the same noise, so that is all of it. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned, because one column per trial cannot hold several. The stimuli are still written for every base image, and \code{save_rdata = TRUE} records every parameter set, so nothing is missing from the files.
 #' @param save_as_png Boolean: write the stimuli to disk as PNG images (default: \code{TRUE}).
-#' @param save_rdata Boolean: save the \code{.Rdata} file with the stimulus parameters (default: \code{TRUE}). Computing classification images needs that file, so keep this \code{TRUE}; the argument exists mainly for internal use.
+#' @param save_rdata Boolean: save the \code{.Rdata} file with the stimulus parameters (default: \code{TRUE}). Computing classification images needs that file, so keep this \code{TRUE}; the argument exists mainly for internal use. The file is named \code{<label>_seed_<seed>_time_<month>_<day>_<year>_<hour>_<minute>.Rdata}, for the minute the call started. An existing file of that name is never overwritten: the call stops before generating anything. So does a call into the same folder with the same seed, started in the same minute, while another is still running.
 #' @return Nothing: everything is saved to files. With \code{return_as_dataframe = TRUE}, the data frame described there.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
@@ -37,7 +37,7 @@
 #'   base_face_files = list(face = base_face),
 #'   n_trials = 4,
 #'   img_size = 32,
-#'   stimulus_path = tempdir(),
+#'   stimulus_path = tempfile("stimuli"),
 #'   seed = 1,
 #'   ncores = 1,
 #'   nscales = 1
@@ -149,6 +149,13 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     # means get()ting it, and a missing argument aborts there even though the
     # branch that uses it cannot run. Never read.
     stimulus_path <- NA_character_
+  }
+
+  if (save_rdata) {
+    started <- stimulusTime()
+    rdata_file <- stimulusRdataPath(stimulus_path, label, seed, started)
+    rdata_lock <- acquireStimulusLock(rdata_file, seed, started)
+    on.exit(unlink(rdata_lock, recursive = TRUE), add = TRUE)
   }
 
   # Reference generation replays these parameter draws to preserve the historical
@@ -293,7 +300,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     # set later (notably generateReferenceDistribution2IFC(), which builds the
     # infoVal null distribution) reproduces the same noise basis. They were
     # previously omitted, so re-generation silently fell back to the defaults.
-    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, use_same_parameters, generator_version, file = paste(stimulus_path, paste(label, "seed", seed, "time", format(Sys.time(), format = "%b_%d_%Y_%H_%M.Rdata"), sep = "_"), sep = '/'), envir = environment())
+    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, use_same_parameters, generator_version, file = rdata_file, envir = environment())
   }
 
   # Return CIs
