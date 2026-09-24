@@ -71,7 +71,7 @@
 
 
 <dt id="arg-img-size">img_size<a class="anchor" aria-label="anchor" href="#arg-img-size"></a></dt>
-<dd><p>Width and height of the square stimulus images, in pixels.</p></dd>
+<dd><p>Width and height of the square stimulus images, in pixels. It must be divisible by <code>2^(nscales - 1)</code>, because the finest scale tiles the image with that many patches per side.</p></dd>
 
 
 <dt id="arg-stimulus-path">stimulus_path<a class="anchor" aria-label="anchor" href="#arg-stimulus-path"></a></dt>
@@ -99,7 +99,7 @@
 
 
 <dt id="arg-nscales">nscales<a class="anchor" aria-label="anchor" href="#arg-nscales"></a></dt>
-<dd><p>Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.</p></dd>
+<dd><p>Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency. <code>img_size</code> must be divisible by <code>2^(nscales - 1)</code>.</p></dd>
 
 
 <dt id="arg-sigma">sigma<a class="anchor" aria-label="anchor" href="#arg-sigma"></a></dt>

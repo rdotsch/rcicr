@@ -112,6 +112,21 @@
   time in the name is now the start of the call rather than its end.
   ([\#338](https://github.com/rdotsch/rcicr/issues/338))
 
+- **An `img_size` the noise scales cannot tile now gets an error that
+  says so.** The finest of `nscales` scales tiles the image with
+  `2^(nscales - 1)` patches per side, so `img_size` must be divisible by
+  that.
+  [`generateNoisePattern()`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md),
+  and through it
+  [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  and
+  [`simulateNoiseIntensities()`](https://rdotsch.github.io/rcicr/reference/simulateNoiseIntensities.md),
+  used to fail with “number of items to replace is not a multiple of
+  replacement length”. The error now names the constraint, the nearest
+  valid sizes and the largest `nscales` that fits. Every size that
+  worked still works.
+  ([\#339](https://github.com/rdotsch/rcicr/issues/339))
+
 ### Documentation
 
 - Corrected help pages that disagreed with the code:
