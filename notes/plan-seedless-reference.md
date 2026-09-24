@@ -18,7 +18,8 @@ Without a `response_seed`, the reference distribution replays the stimulus strea
 3. **Warn when a stored reference was drawn from the clock.** A file without `seed` (absent or `NULL`) whose stored reference has no `response_seed` got it from a clock-seeded draw. It is still used, so no number changes, but `computeInfoVal2IFC()` warns that it cannot be reproduced from the stimuli, and how to replace it (the call in 1).
 4. **`NEWS.md`, under "Reproducibility impact"**, since forced and direct calls used to return numbers and now stop: the three rows above, for 1.4.0 and 1.4.1; what happens now; how to get a reproducible reference; and that files with `seed` are unaffected.
 
-No `DECISIONS.md` entry: this applies the existing "Trial alignment errors stop computation" reasoning, and the file has 2 words of headroom.
+5. **`DECISIONS.md`, "The stimulus seed's stream is load-bearing", edited in place.** It says the default null depends on the file; it gains that a file without a stimulus seed has no stream to continue, so the default stops and asks for a `response_seed`, because a clock-seeded null cannot be reproduced. The file has 2 words of headroom, so the same entry is trimmed to pay for it, and `LC_ALL=C.UTF-8 wc -w` stays under 5200.
+6. **Help pages.** `?generateReferenceDistribution2IFC`'s Reproducibility section promises the default reference depends only on the stimulus file, and both functions' `response_seed` documentation says `NULL` continues the saved stream. Each gains that this needs a saved stimulus seed, and what to pass without one. `man/` is regenerated with roxygen.
 
 ## Verified before planning
 
