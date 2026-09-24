@@ -28,14 +28,16 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 
    **Phase 3, committed.** Remove the backup. **A committed save is never rolled back**: the new file and the backup differ by design, so treating a cleanup failure like a save failure would restore the old contents over the new ones. If the removal fails, warn that the save succeeded and name the backup; the next save's phase 0 finds that the original loads and removes it.
 
-2. **A hard kill** (the R process killed, or crashing) skips `on.exit()`. Phase 0 of the next save handles every case:
+2. **Every `load()` of a stimulus file goes through one internal `loadRdata(file, envir)`**, which adds the recovery guidance to a failed load. There are five such calls on `main`: `loadStimulusParams()` (`R/rdata.R:84`), `selectReferenceBase()` (`R/reference-base.R:3`), and the in-frame loads in `computeInfoVal2IFC()`, `computeCumulativeCICorrelation()` and `generateReferenceDistribution2IFC()` (each at line 92 or 103). Each of these runs before the save helper does, so without this a damaged file would stop every entry point, the next save included, with a bare load error and never reach phase 0. When `load()` fails and `<file>.rcicr-backup` exists, the error says an interrupted save left a backup and gives the restore command. When the load succeeds, `loadRdata()` does nothing more; phase 0 of the next save removes a stale backup.
+
+3. **A hard kill** (the R process killed, or crashing) skips `on.exit()`. The next load or save handles every case:
    - in phase 1, only a staging file is left, beside an untouched original: it is reported;
-   - in phase 2, the backup is left beside a possibly damaged original: if the original loads it is complete and the backup is removed; if not, the save stops with the restore command;
+   - in phase 2, the backup is left beside a possibly damaged original: if the original loads it is complete, and the next save removes the backup; if not, any call that loads it (`generateCI()`, `computeInfoVal2IFC()` and the rest) stops with the restore command;
    - in phase 3, the original is complete, so the backup is removed.
 
    The restore **copies the backup's contents into the existing file**, never renames it over the original, which would replace the file and change its owner, group, ACLs and hard links: `file.copy("<file>.rcicr-backup", "<file>", overwrite = TRUE, copy.mode = FALSE)`, then delete the backup. `NEWS.md` and the error message both give this command, and say to use it only when the original no longer loads.
-3. **Read-only targets behave as today.** `save()` fails to open a read-only file without truncating it (measured as an unprivileged user: the file's checksum is unchanged), the checksums then match, and the backup is removed.
-4. **`NEWS.md`**, under Bug fixes: an interrupted or failed save of a reference distribution no longer destroys the stimulus file. The entry states every exception and change, so it claims no more than the code does:
+4. **Read-only targets behave as today.** `save()` fails to open a read-only file without truncating it (measured as an unprivileged user: the file's checksum is unchanged), the checksums then match, and the backup is removed.
+5. **`NEWS.md`**, under Bug fixes: an interrupted or failed save of a reference distribution no longer destroys the stimulus file. The entry states every exception and change, so it claims no more than the code does:
    - **not protected, saved as before with a warning:** a writable file in a read-only directory (Unix), and a file name over 228 bytes;
    - **a new error:** on Windows, a writable file in a folder that refuses new files, which saves today; also, on any platform, when the backup cannot be made for another reason, such as a full disk;
    - on Windows the backup has its folder's permissions rather than being private to the user;
@@ -60,6 +62,7 @@ Writing a temporary file and renaming it over the original was rejected: a renam
 - **Interruption:** a mocked writer that writes part of the file and then errors. The original loads with its original contents, has the same mode, and the backup is gone.
 - A leftover backup beside an original that loads is removed with a message, and the save proceeds.
 - A leftover backup beside an original that does not load stops the save with an error that gives the restore command, and neither file changes.
+- A damaged original beside a backup: `generateCI()`, `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` each stop with an error that gives the restore command, not a bare load error.
 - An interrupt during the backup copy (phase 1) removes the staging file, leaves the original unchanged and attempts no restore (mocked).
 - A failing backup copy stops before the original is touched, and leaves neither a staging file nor a backup (mocked).
 - A `Sys.chmod()` that leaves the staging file at another mode stops before any data is copied (mocked; Unix only).
