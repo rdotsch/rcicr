@@ -29,12 +29,19 @@ vouchedReference <- function(norms, marker, fingerprint) {
 
 # Both cache layouts use this policy; their generators own the storage details.
 resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
-                                  response_seed, baseimage = NULL) {
+                                  response_seed, baseimage = NULL, seedless = FALSE) {
   forced <- force_gen_ref_dist || !is.null(response_seed)
   stale <- !is.null(entry) && is.null(entry$response_seed) &&
     !vouchedReference(entry$norms, entry$source, entry$fingerprint)
   if (!forced && !stale && !is.null(entry)) {
     write('Using reference distribution found in rdata file.', stdout())
+    # A message, not a warning: under warn = 2 the notice must not cost the
+    # caller the value (see "A cached reference is trusted only on positive
+    # evidence" in DECISIONS.md).
+    if (seedless && is.null(entry$response_seed)) {
+      message(rdata, ' has no stimulus seed, so its stored reference distribution cannot ',
+              'be regenerated from it. It is used as stored. ', seededReferenceAdvice(rdata, baseimage))
+    }
     return(entry$norms)
   }
 
@@ -133,6 +140,25 @@ referenceNoise <- function(source, baseimage, ncores) {
   matrix(noise, ncol = n_trials)
 }
 
+# A missing or NULL stimulus seed leaves no stream to replay: set.seed(NULL)
+# reseeds from the clock, so the default reference could never be reproduced
+# (#334). Checked before referenceNoise(), the slow step.
+requireStimulusSeed <- function(seed, rdata, baseimage = NULL) {
+  if (is.null(seed)) {
+    stop(rdata, ' has no stimulus seed to replay, so its default reference distribution ',
+         'could not be reproduced. ', seededReferenceAdvice(rdata, baseimage), call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+seededReferenceAdvice <- function(rdata, baseimage = NULL) {
+  base_arg <- if (is.null(baseimage)) '' else paste0(', baseimage = ', encodeString(baseimage, quote = '"'))
+  paste0('Store a reproducible one with generateReferenceDistribution2IFC(',
+         encodeString(rdata, quote = '"'), ', response_seed = <n>', base_arg,
+         '); later computeInfoVal2IFC() calls reuse it. If the file cannot be written, ',
+         'pass response_seed = <n> to computeInfoVal2IFC() instead.')
+}
+
 # Replay one normalized parameter matrix's draws to preserve the historical response stream.
 # selectStimulusParams() removes the four unused columns of pre-0.3.0 files.
 seedResponseStream <- function(source, baseimage, response_seed) {
@@ -151,6 +177,7 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
   if (length(iter) != 1L || !is.finite(iter) || iter < 1 || iter != trunc(iter)) {
     stop('iter must be a positive integer.')
   }
+  if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, selection$baseimage)
   stimuli <- referenceNoise(source, selection$baseimage, ncores)
   seedResponseStream(source, selection$baseimage, response_seed)
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
@@ -181,7 +208,8 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
   cache <- selection$source$reference_norms_by_base
   if (!is.null(cache) && !is.list(cache)) stop('reference_norms_by_base must be a list.')
   norms <- resolveReferenceNorms(cache[[selection$baseimage]], rdata, iter,
-                                 force_gen_ref_dist, response_seed, selection$baseimage)
+                                 force_gen_ref_dist, response_seed, selection$baseimage,
+                                 seedless = is.null(selection$source$seed))
   if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
     stop('Invalid cached reference for baseimage ', selection$baseimage,
          '. Use force_gen_ref_dist = TRUE to regenerate it.')

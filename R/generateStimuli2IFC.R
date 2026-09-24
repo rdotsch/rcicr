@@ -18,7 +18,7 @@
 #' @param stimulus_path Directory to save the stimuli and the \code{.Rdata} file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @param label Label put at the start of each file name.
 #' @param use_same_parameters Boolean: all base images share one set of noise parameters (\code{TRUE}) or each gets its own (\code{FALSE}).
-#' @param seed Seed for the random number generator, for reproducibility.
+#' @param seed Seed for the random number generator, for reproducibility. It is saved in the \code{.Rdata} file, where the default InfoVal reference replays it. With \code{seed = NULL} there is nothing to replay, so InfoVal references for that file need an explicit \code{response_seed}.
 #' @param maximize_baseimage_contrast Boolean: rescale the base image's pixel values to maximize its contrast. A base image with no contrast at all, every pixel the same value, cannot be rescaled and is rejected with an error. It can still be used with \code{maximize_baseimage_contrast = FALSE}.
 #' @param noise_type Noise pattern type: \code{sinusoid} (default) or \code{gabor}.
 #' @param nscales Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.

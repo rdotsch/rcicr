@@ -34,7 +34,8 @@
 #' @param response_seed Optional seed for the simulated random responses behind the reference
 #' distribution. The default, \code{NULL}, uses the reference distribution stored in the
 #' \code{rdata} file, or simulates the reproducible default one described under Reproducibility
-#' in \code{\link{generateReferenceDistribution2IFC}}. A number forces a fresh reference
+#' in \code{\link{generateReferenceDistribution2IFC}}, which needs the stimulus seed saved in the
+#' file. For a file without one, pass a number. A number forces a fresh reference
 #' distribution from an independent draw; use it to check how much Monte Carlo error \code{iter}
 #' leaves in the Informational Value. That result is \emph{not} written back to the \code{rdata}
 #' file, so a one-off check cannot change the number every later analysis of the stimulus set
@@ -106,6 +107,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
   # Check whether reference norms are present or can be looked up from table. If not, re-generate.
   if (!force_gen_ref_dist && !exists("reference_norms", envir = environment(), inherits = FALSE)) {
+    # Before the lookup, whose filter on `seed` fails without one.
+    requireStimulusSeed(get0('seed', envir = environment(), inherits = FALSE), rdata)
 
     # Pre-computed reference distribution table (TODO: read from external file).
     #
@@ -180,7 +183,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   if (!exists("ref_median", envir = environment(), inherits = FALSE)) {
 
     reference_norms <- resolveReferenceNorms(cached_reference, rdata, iter,
-                                             force_gen_ref_dist, response_seed)
+                                             force_gen_ref_dist, response_seed,
+                                             seedless = is.null(get0('seed', envir = environment(), inherits = FALSE)))
 
     # Compute reference values
     ref_median <- median(reference_norms)

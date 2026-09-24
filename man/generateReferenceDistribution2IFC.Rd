@@ -22,12 +22,15 @@ generateReferenceDistribution2IFC(
 
 \item{response_seed}{Optional seed for the simulated random responses. The default,
 \code{NULL}, continues from the state the stimulus generator left behind, as described under
-Reproducibility. A number gives an independent draw of the null from the same stimuli.}
+Reproducibility; it needs the stimulus seed saved in the file. A number gives an independent
+draw of the null from the same stimuli.}
 
 \item{save_rdata}{Boolean: write the reference distribution into the \code{rdata} file
 (default \code{TRUE}). With \code{FALSE}, later calls to \code{\link{computeInfoVal2IFC}}
 keep using what the file already holds. Set it to \code{FALSE} whenever you set
-\code{response_seed}, so a one-off null does not become the file's permanent reference.}
+\code{response_seed}, so a one-off null does not become the file's permanent reference. The
+exception is a file without a stimulus seed: there the seeded reference is the one to keep, as
+the file's reproducible reference.}
 
 \item{baseimage}{Base-image label, the same key passed to \code{generateCI()}. Required when
 the base images have different noise parameters. With a single base image, or base images
@@ -55,6 +58,10 @@ stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}: not on the 
 random state, and not on \code{ncores}. Two researchers computing InfoVal from the same
 stimulus file get the same reference distribution, and the same number, on any machine and in
 any session, provided both use the same RNG kind.
+
+This needs the stimulus seed saved in the file. A file without one (made with
+\code{generateStimuli2IFC(seed = NULL)}, or with the field removed) has no stream to continue,
+so the default stops with an error; pass a \code{response_seed} instead.
 
 The RNG kind is the one gap. \code{set.seed()} keeps whatever kind the session already has,
 and no stimulus file records which kind was in use. A session with a different
