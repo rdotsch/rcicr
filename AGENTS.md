@@ -55,7 +55,7 @@ Each document has one job and **a word budget**; over budget, something comes ou
 | `MAINTENANCE.md` | how the repository's CI, gates and generated files are wired | 1800 |
 | `SECURITY.md` | vulnerability reporting and dependency posture | 600 |
 | `DECISIONS.md` | why the **package** behaves as it does | 5200 |
-| `NEWS.md` | what changed for users | none; trimmed at each release |
+| `NEWS.md` | what changed for users | none; never trimmed |
 
 Check word counts with `LC_ALL=C.UTF-8 wc -w` (Unicode whitespace counts as a separator).
 

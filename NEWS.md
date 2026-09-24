@@ -8,6 +8,7 @@
   - `batchGenerateCI()` also accepts `scaling = "matched"`.
   - `plotZmap()` takes a background image matrix, not an `.Rdata` file.
   - `generateNoisePattern()` returns four elements, not two.
+  - `?computeInfoVal2IFC` cites the published InfoVal paper (Brinkman et al., 2019) instead of a manuscript in preparation.
   - `computeInfoVal2IFC()` always simulates a reference distribution the `.Rdata` file does not hold; rcicr ships no precomputed ones.
 - Rewrote the README, both vignettes and the help pages for readability. The "no longer actively maintained" notice is removed from the README.
 
