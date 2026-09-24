@@ -1,6 +1,6 @@
 selectReferenceBase <- function(rdata, baseimage) {
   source <- new.env(parent = emptyenv())
-  load(rdata, envir = source)
+  loadRdata(rdata, source)
   params <- source$stimuli_params
   labels <- names(params)
   if (!is.null(baseimage) && (!is.character(baseimage) || length(baseimage) != 1L ||
@@ -172,7 +172,7 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
       source = 'saved_noise', fingerprint = referenceSnapshot(norms)
     )
     source$reference_norms_by_base <- cache
-    save(list = ls(source, all.names = TRUE), file = rdata, envir = source)
+    saveRdataSafely(ls(source, all.names = TRUE), rdata, source)
   }
   invisible(norms)
 }

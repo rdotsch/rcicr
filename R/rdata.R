@@ -81,7 +81,7 @@ rdataWriterNote <- function(env) {
 # rather than removed.
 loadStimulusParams <- function(rdata) {
   env <- new.env(parent = emptyenv())
-  load(rdata, envir = env)
+  loadRdata(rdata, env)
 
   has <- function(name) exists(name, envir = env, inherits = FALSE)
   take <- function(name) get(name, envir = env, inherits = FALSE)
@@ -116,3 +116,135 @@ loadStimulusParams <- function(rdata) {
     stimuli_params = take('stimuli_params'), img_size = take('img_size')
   ))
 }
+
+# load() for a stimulus file, which is only ever damaged by a save that was
+# interrupted. Every read of one goes through here, so that such a file points
+# to the backup saveRdataSafely() left instead of failing with a bare load
+# error before any save could reach its own recovery.
+loadRdata <- function(file, envir) {
+  tryCatch(load(file, envir = envir), error = function(e) {
+    backup <- rdataBackupPath(file)
+    if (file.exists(backup)) {
+      stop(conditionMessage(e), '\n', restoreAdvice(file, backup), call. = FALSE)
+    }
+    stop(e)
+  })
+}
+
+# Write a stimulus file in place, keeping a verified backup until the write is
+# complete. The file is never replaced by renaming a new one over it: that
+# would give it the R process's owner and group and drop its ACLs, which base R
+# cannot restore. Power loss is not covered; base R has no fsync().
+#
+# The phases matter because an interruption must undo different things in
+# each: before the backup exists there is nothing to restore, and once save()
+# has returned there is nothing to roll back.
+saveRdataSafely <- function(names, file, envir) {
+  backup <- rdataBackupPath(file)
+
+  # Phase 0: checks; nothing has been written.
+  prefix <- paste0(basename(file), '.rcicr-staging-')
+  leftovers <- list.files(dirname(file), all.files = TRUE)
+  leftovers <- leftovers[startsWith(leftovers, prefix)]
+  if (length(leftovers) > 0) {
+    # Not deleted: one could belong to another session saving right now.
+    warning('Incomplete copies of ', file, ' left by an interrupted save can be deleted: ',
+            paste(file.path(dirname(file), leftovers), collapse = ', '), call. = FALSE)
+  }
+  if (file.exists(backup)) {
+    if (!rdataLoads(file)) {
+      stop(file, ' does not load. ', restoreAdvice(file, backup), call. = FALSE)
+    }
+    # The file is complete, possibly already the newer version, so the
+    # backup is stale; restoring it could put older contents back.
+    unlink(backup)
+    message('Removed ', backup, ', left by an earlier save of a file that loads.')
+  }
+  staging <- tempfile(pattern = prefix, tmpdir = dirname(file))
+  if (nchar(basename(staging), type = 'bytes') > 255) {
+    warning(file, ' was saved without a backup: its name is too long to add one beside it.',
+            call. = FALSE)
+    return(invisible(writeRdata(names, file, envir)))
+  }
+
+  # Phase 1: back up. An interruption removes the staging copy; the original is untouched.
+  if (!createStaging(staging)) {
+    if (.Platform$OS.type == 'unix' && !writableDir(dirname(file))) {
+      warning(file, ' was saved without a backup: its directory does not allow new files.',
+              call. = FALSE)
+      return(invisible(writeRdata(names, file, envir)))
+    }
+    stop('Could not create a backup beside ', file, ' (the disk may be full), ',
+         'so it was not saved and is unchanged.', call. = FALSE)
+  }
+  phase <- 1
+  on.exit(if (phase == 1) unlink(staging), add = TRUE)
+  # Owner-only, whatever the original allows: the copy takes this process's
+  # group. On Windows this sets only the read-only attribute, so the copy has
+  # its folder's permissions.
+  makePrivate(staging)
+  if (.Platform$OS.type == 'unix' && file.mode(staging) != as.octmode('600')) {
+    stop('Could not restrict the backup of ', file, ' to its owner, so it was not saved ',
+         'and is unchanged.', call. = FALSE)
+  }
+  if (!isTRUE(copyInto(file, staging)) || !sameContents(file, staging)) {
+    stop('Could not back up ', file, ' (the disk may be full), so it was not saved ',
+         'and is unchanged.', call. = FALSE)
+  }
+  if (!renameFile(staging, backup)) {
+    stop('Could not back up ', file, ', so it was not saved and is unchanged.', call. = FALSE)
+  }
+
+  # Phase 2: save. An error or interrupt restores the original from the backup.
+  phase <- 2
+  on.exit(if (phase == 2) restoreFromBackup(file, backup), add = TRUE)
+  writeRdata(names, file, envir)
+
+  # Phase 3: committed, so never rolled back.
+  phase <- 3
+  if (!removeFile(backup)) {
+    warning(file, ' was saved, but its backup could not be deleted: ', backup,
+            '. Delete it; it holds the previous contents.', call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+rdataBackupPath <- function(file) paste0(file, '.rcicr-backup')
+
+restoreAdvice <- function(file, backup) {
+  paste0('An interrupted save left a backup of it at ', backup, '. Restore it with ',
+         'file.copy("', backup, '", "', file, '", overwrite = TRUE, copy.mode = FALSE), ',
+         'then delete the backup. Copy rather than rename, which would change the ',
+         'file\'s owner and permissions.')
+}
+
+restoreFromBackup <- function(file, backup) {
+  if (!sameContents(file, backup)) copyInto(backup, file)
+  if (sameContents(file, backup)) {
+    unlink(backup)
+  } else {
+    warning(file, ' could not be restored after the failed save. ', restoreAdvice(file, backup),
+            call. = FALSE)
+  }
+}
+
+rdataLoads <- function(file) {
+  tryCatch({
+    suppressWarnings(load(file, envir = new.env(parent = emptyenv())))
+    TRUE
+  }, error = function(e) FALSE)
+}
+
+sameContents <- function(a, b) {
+  isTRUE(unname(tools::md5sum(a)) == unname(tools::md5sum(b)))
+}
+
+# Named so tests can model a full disk, a refused rename, a partial write or a
+# held file, none of which can be produced on demand.
+writeRdata <- function(names, file, envir) save(list = names, file = file, envir = envir)
+createStaging <- function(path) suppressWarnings(file.create(path))
+makePrivate <- function(path) Sys.chmod(path, '600', use_umask = FALSE)
+copyInto <- function(from, to) file.copy(from, to, overwrite = TRUE, copy.mode = FALSE)
+renameFile <- function(from, to) file.rename(from, to)
+removeFile <- function(path) suppressWarnings(file.remove(path))
+writableDir <- function(path) unname(file.access(path, mode = 2)) == 0L

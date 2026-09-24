@@ -100,7 +100,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   )
 
   # Load parameter file (created when generating stimuli)
-  load(rdata)
+  loadRdata(rdata, environment())
 
   rdata <- .args$rdata
   iter <- .args$iter
@@ -168,9 +168,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
       "rdata", "iter", "ncores", "response_seed", "save_rdata",
       "outfile", "internals", "reference_selection", "baseimage"
     )
-    save(list = setdiff(ls(all.names = TRUE), internals), file = outfile,
-      envir = environment()
-    )
+    saveRdataSafely(setdiff(ls(all.names = TRUE), internals), outfile, environment())
 
   }
 
