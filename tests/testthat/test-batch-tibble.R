@@ -13,8 +13,8 @@ batch_both <- function(fn, df, rdata_path, by = "pid") {
 }
 
 expect_same_cis <- function(res) {
-  expect_named(res$tbl, names(res$df))
-  expect_identical(lapply(res$tbl, `[[`, "ci"), lapply(res$df, `[[`, "ci"))
+  expect_named(res$tbl, names(res$df)) # nolint: object_usage_linter.
+  expect_identical(lapply(res$tbl, `[[`, "ci"), lapply(res$df, `[[`, "ci")) # nolint: object_usage_linter.
 }
 
 for (fn_name in c("batchGenerateCI", "batchGenerateCI2IFC")) {
