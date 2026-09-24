@@ -94,3 +94,18 @@ test_that("the file is named for the minute the call started", {
   expect_identical(list.files(dir, "\\.Rdata$"),
                    basename(rcicr:::stimulusRdataPath(dir, "rcic", 1, fixed_minute)))
 })
+
+test_that("the lock's folder follows the host's path rules, even for text dirname() cannot translate", {
+  for (p in c("/a/b/x.Rdata", "/x.Rdata", "a/x.Rdata", "x.Rdata", "./x.Rdata")) {
+    expect_identical(rcicr:::targetDir(p), dirname(p))
+  }
+  expect_identical(rcicr:::targetDir("/a/\u00e9_seed.Rdata"), "/a")
+  if (.Platform$OS.type == "windows") {
+    expect_identical(rcicr:::targetDir("C:/x.Rdata"), "C:/")
+    expect_identical(rcicr:::targetDir("C:\\a\\x.Rdata"), "C:\\a")
+  } else {
+    # A backslash is part of a file name here, not a separator.
+    expect_identical(rcicr:::targetDir("/a/b\\c_seed.Rdata"), "/a")
+    expect_identical(rcicr:::targetDir("C:/x.Rdata"), "C:")
+  }
+})

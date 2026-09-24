@@ -17,9 +17,17 @@ stimulusLockPath <- function(rdata_file, seed, time) {
   holder <- tempfile()
   on.exit(unlink(holder), add = TRUE)
   writeLines(key, holder, useBytes = TRUE)
-  # Not dirname(), which fails on a label the native encoding cannot represent.
-  target_dir <- sub("[/\\\\][^/\\\\]*$", "", rdata_file)
-  file.path(target_dir, paste0(".rcicr-lock-", unname(tools::md5sum(holder))))
+  file.path(targetDir(rdata_file), paste0(".rcicr-lock-", unname(tools::md5sum(holder))))
+}
+
+# dirname() with the host's separators and roots, without its translation to the
+# native encoding, which fails on a label that encoding cannot represent.
+targetDir <- function(path) {
+  windows <- .Platform$OS.type == "windows"
+  seps <- if (windows) "/\\\\" else "/"
+  if (!grepl(sprintf("[%s]", seps), path)) return(".")
+  dir <- sub(sprintf("[%s][^%s]*$", seps, seps), "", path)
+  if (!nzchar(dir) || (windows && grepl("^[A-Za-z]:$", dir))) paste0(dir, "/") else dir
 }
 
 # Returns the lock, which the caller removes once the file is written or the call fails.
