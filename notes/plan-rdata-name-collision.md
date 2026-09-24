@@ -14,6 +14,7 @@ Holding it, the call checks that the `.Rdata` file itself does not exist yet, ge
 3. **Only when `save_rdata = TRUE`.** Without an `.Rdata` file there is nothing to lose.
 4. **`NEWS.md`, under "Bug fixes"**: what used to happen, what happens now, and that the time in the name is the start of the call.
 5. **`?generateStimuli2IFC`**: the file name, and that an existing one stops the call.
+6. **Examples and vignette get a folder of their own.** Eight help-page examples (`generateStimuli2IFC`, `generateCI`, `generateCI2IFC`, `batchGenerateCI`, `batchGenerateCI2IFC`, `computeCumulativeCICorrelation`, `computeInfoVal2IFC`, `generateReferenceDistribution2IFC`) and the getting-started vignette generate into `tempdir()` with the default label and seed 1. `R CMD check` runs all examples in one session, so two of them in the same minute would now stop. Each uses `stimulus_path <- tempfile("stimuli")` instead, as the walkthrough vignette already does; `generateStimuli2IFC()` creates the folder. That also ends a latent example bug: across a minute boundary the shared `tempdir()` held several `.Rdata` files, and `list.files(...)[1]` picked the first by name, not the newest; the `generateStimuli2IFC` example makes its file with 4 trials where the others use 6.
 
 **Rejected: adding a suffix (`_2`) on collision.** It loses nothing, but a script that picks the file with `list.files(pattern = "Rdata$")[1]` would then silently get the *older* file, since `..._13_24.Rdata` sorts before `..._13_24_2.Rdata`. With identically named base images that older file no longer matches the PNGs on disk. A stop is loud; a suffix can hand a CI the wrong parameters. Adding seconds to the name only makes a collision rarer.
 
@@ -23,7 +24,7 @@ Holding it, the call checks that the `.Rdata` file itself does not exist yet, ge
 - `dir.create()` on an existing directory returns `FALSE` (measured: `TRUE`, then `FALSE`), as `?dir.create` documents for a directory that already exists; the underlying `mkdir` is a single atomic operation on every OS CI checks.
 - Every example in the repository finds the output with `list.files(stimulus_path, pattern = "\\.Rdata$")[1]`; a `.rcicr-lock-<md5>` name matches neither that nor a bare `"Rdata"`, even with `ignore.case = TRUE` and `all.files = TRUE` (measured with `label = "myRdata"`).
 - A lock created through `sub/../` (with `sub` existing) lands in the same physical directory as one created directly, so a second `dir.create()` there fails.
-- Every caller in the repository tolerates the stop: with `generateStimuli2IFC()` temporarily made to stop whenever its `.Rdata` name already existed, `testthat::test_local()` had no failures. `tools/compare-harness.R` empties its directory before each call.
+- The test suite tolerates the stop: with `generateStimuli2IFC()` temporarily made to stop whenever its `.Rdata` name already existed, `testthat::test_local()` had no failures. `tools/compare-harness.R` empties its directory before each call. The examples and the getting-started vignette do not tolerate it (item 6); `test_local()` runs neither, so the change is verified with `R CMD check`, which runs every example in one session and builds the vignettes.
 
 ## Tests
 
@@ -38,7 +39,7 @@ The failure test must fail on the current code; checked with `git stash push -- 
 
 ## The step most likely to fail
 
-**Quick reruns.** Rerunning an identical script into the same folder within the same minute now stops, where it used to overwrite the file with identical contents. That is the cost of the stop, and the message says what to do. The suite measures how common it is in practice: nothing in it does this.
+**Quick reruns.** Rerunning an identical script into the same folder within the same minute now stops, where it used to overwrite the file with identical contents. That is the cost of the stop, and the message says what to do. In the repository, only the examples and one vignette do it, and item 6 changes them.
 
 ## Out of scope
 
