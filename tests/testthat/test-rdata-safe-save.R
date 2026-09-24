@@ -213,13 +213,27 @@ test_that("a reference distribution is still saved into the stimulus file", {
   expect_identical(sidecars(dir), character(0))
 })
 
-test_that("the restore command is valid R for any path, and deletes nothing unchecked", {
+test_that("the restore commands are valid R for any path, and restore nothing unchecked", {
   file <- "C:\\Users\\ron\\stim \"v2\".Rdata"
   backup <- rdataBackupPath(file)
+  local_mocked_bindings(rdataLoads = function(file) TRUE)
   advice <- restoreAdvice(file, backup)
+  inspect <- regmatches(advice, regexpr("load\\(.*new\\.env\\(\\)\\)", advice))
+  expect_identical(parse(text = inspect)[[1]][[2]], backup)
   cmd <- regmatches(advice, regexpr("file\\.copy\\(.*copy\\.mode = FALSE\\)", advice))
   call <- parse(text = cmd)[[1]]
   expect_identical(call[[2]], backup)
   expect_identical(call[[3]], file)
+  expect_match(advice, "Check it holds this experiment", fixed = TRUE)
   expect_match(advice, "loads again, and only then delete the backup", fixed = TRUE)
+})
+
+test_that("a backup that does not load is never offered as a restore", {
+  dir <- withr::local_tempdir()
+  path <- stim_file(dir)
+  writeLines("unrelated", rdataBackupPath(path))
+  writeLines("partial", path)
+  expect_error(suppressWarnings(loadRdata(path, new.env())), "does not load either")
+  expect_error(save_x(path, 2), "does not load either")
+  expect_identical(readLines(path), "partial")
 })

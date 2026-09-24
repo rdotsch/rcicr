@@ -216,9 +216,14 @@ rdataBackupPath <- function(file) paste0(file, '.rcicr-backup')
 
 # The command is shown to be pasted into R, so both paths are encoded as R
 # string literals: a quote or a Windows backslash would otherwise break it.
+# rcicr cannot prove it wrote the backup, so the command comes with a check.
 restoreAdvice <- function(file, backup) {
+  if (!rdataLoads(backup)) {
+    return(paste0(backup, ' exists but does not load either, so it cannot restore the file.'))
+  }
   lit <- function(x) encodeString(x, quote = '"')
-  paste0('An interrupted save left a backup of it at ', backup, '. Restore it with ',
+  paste0(backup, ' may be a backup left by an interrupted save. Check it holds this experiment ',
+         '(load(', lit(backup), ', e <- new.env()); ls(e)). If it does, restore it with ',
          'file.copy(', lit(backup), ', ', lit(file), ', overwrite = TRUE, copy.mode = FALSE), ',
          'check that the file loads again, and only then delete the backup. Copy rather ',
          'than rename, which would change the file\'s owner and permissions.')
