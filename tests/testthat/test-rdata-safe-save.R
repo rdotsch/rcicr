@@ -202,3 +202,14 @@ test_that("a reference distribution is still saved into the stimulus file", {
   expect_identical(e$reference_norms, norms)
   expect_identical(sidecars(dir), character(0))
 })
+
+test_that("the restore command is valid R for any path, and deletes nothing unchecked", {
+  file <- "C:\\Users\\ron\\stim \"v2\".Rdata"
+  backup <- rdataBackupPath(file)
+  advice <- restoreAdvice(file, backup)
+  cmd <- regmatches(advice, regexpr("file\\.copy\\(.*copy\\.mode = FALSE\\)", advice))
+  call <- parse(text = cmd)[[1]]
+  expect_identical(call[[2]], backup)
+  expect_identical(call[[3]], file)
+  expect_match(advice, "loads again, and only then delete the backup", fixed = TRUE)
+})

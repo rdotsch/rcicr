@@ -211,11 +211,14 @@ saveRdataSafely <- function(names, file, envir) {
 
 rdataBackupPath <- function(file) paste0(file, '.rcicr-backup')
 
+# The command is shown to be pasted into R, so both paths are encoded as R
+# string literals: a quote or a Windows backslash would otherwise break it.
 restoreAdvice <- function(file, backup) {
+  lit <- function(x) encodeString(x, quote = '"')
   paste0('An interrupted save left a backup of it at ', backup, '. Restore it with ',
-         'file.copy("', backup, '", "', file, '", overwrite = TRUE, copy.mode = FALSE), ',
-         'then delete the backup. Copy rather than rename, which would change the ',
-         'file\'s owner and permissions.')
+         'file.copy(', lit(backup), ', ', lit(file), ', overwrite = TRUE, copy.mode = FALSE), ',
+         'check that the file loads again, and only then delete the backup. Copy rather ',
+         'than rename, which would change the file\'s owner and permissions.')
 }
 
 restoreFromBackup <- function(file, backup) {
