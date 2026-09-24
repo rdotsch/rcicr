@@ -1,8 +1,8 @@
 #' Generate single noise image based on parameter vector
 #'
 #' @export
-#' @param params Vector with each value specifying the contrast of each patch in noise.
-#' @param p 3D patch matrix (generated using \code{generateNoisePattern()}).
+#' @param params Vector of contrast weights, one per patch in the noise basis.
+#' @param p Noise basis, as returned by \code{\link{generateNoisePattern}}.
 #' @return The noise pattern as pixel matrix.
 #' @examples
 #' p <- generateNoisePattern(img_size = 32, nscales = 2)

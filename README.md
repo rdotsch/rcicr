@@ -4,7 +4,7 @@
 [![R-CMD-check](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml)
 [![Documentation](https://img.shields.io/badge/docs-rdotsch.github.io%2Frcicr-blue)](https://rdotsch.github.io/rcicr/)
 
-`rcicr` implements **reverse correlation image classification**, a technique from psychophysics for visualizing internal mental representations (for example, of faces). It generates noise-based stimuli for two-image-forced-choice (2IFC) perceptual tasks, and computes "classification images" from participants' responses that reveal what visual features drove their choices.
+`rcicr` implements **reverse correlation image classification**, a psychophysics technique for visualizing mental representations, for example of faces. It generates noise-based stimuli for two-image forced-choice (2IFC) tasks. From participants' responses it then computes "classification images", which show the visual features that drove their choices.
 
 ## Installation
 
@@ -14,7 +14,7 @@ Install the current release from CRAN:
 install.packages('rcicr')
 ```
 
-Use GitHub when you need to reproduce an analysis with a specific tagged release or test the unreleased development version:
+Install from GitHub to reproduce an analysis with a specific release, or to try the unreleased development version:
 
 ``` r
 install.packages('remotes')
@@ -29,17 +29,11 @@ remotes::install_github('rdotsch/rcicr')
 remotes::install_github('rdotsch/rcicr@<commit-sha>')
 ```
 
-Every release is tagged, and the tags are listed on the
-[releases page](https://github.com/rdotsch/rcicr/releases). Record the version you ran in
-your analysis script, and install it by tag when you come back to that analysis. For an
-unreleased GitHub install, also record the commit SHA and pin that SHA when you return: a
-classification image is only reproducible against the exact code that computed it, and any
-release that changes numeric output says so in [`NEWS.md`](NEWS.md) under "Reproducibility
-impact".
+Every release is tagged; the [releases page](https://github.com/rdotsch/rcicr/releases) lists them. Record the version you ran in your analysis script, and install that tag when you come back to the analysis. For an unreleased GitHub install, record the commit SHA instead and install that. A classification image is only reproducible with the exact code that computed it. Any release that changes numeric output says so in [`NEWS.md`](NEWS.md) under "Reproducibility impact".
 
-> **If you saved per-participant classification images before 1.3.0, check them.** `generateCI(participants = ..., save_individual_cis = TRUE)` wrote an image under another participant's filename at each position where appearance order and sorted order differed (for text identifiers that means lexical order, which includes the ordinary case of `p1 ... p10` in collection order). The images were correct; only the names were wrong, and correcting them is a rename rather than a re-run. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) is the full version: how to tell whether you are affected, what it did to an analysis, and the recovery. A shorter form is in [`NEWS.md`](NEWS.md) under "Reproducibility impact", and [which version you had](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) if you need to work out what a stored analysis actually ran. `batchGenerateCI()`, `batchGenerateCI2IFC()` and `generateCI2IFC()` were never affected.
+> **Saved per-participant classification images before 1.3.0? Check their filenames.** With `generateCI(participants = ..., save_individual_cis = TRUE)`, an image could be saved under another participant's name. This happened wherever the order in which participants appear in your data differs from their sorted order. For text IDs that includes the ordinary case of `p1` to `p10` in collection order, which sort as `p1, p10, p2, ...`. The images themselves are correct, so the fix is renaming files, not re-running anything. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected, what it did to an analysis, and how to recover. [`NEWS.md`](NEWS.md) has a shorter version under "Reproducibility impact", and [this note](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md) helps you work out which version a stored analysis actually ran. `batchGenerateCI()`, `batchGenerateCI2IFC()` and `generateCI2IFC()` were never affected.
 
-Version 1.3.0 returned `rcicr` to CRAN after the package was archived in 2021 because email to an old maintainer address was undeliverable. The archival was administrative, not caused by a problem with the package.
+Version 1.3.0 returned `rcicr` to CRAN. The package had been archived in 2021 because email to an old maintainer address bounced; nothing was wrong with the package itself.
 
 ## Quick example
 
@@ -69,15 +63,11 @@ generateCI(
 )
 ```
 
-Every function that writes files takes its destination explicitly: `stimulus_path`,
-`targetpath` and `zmaptargetpath` have no defaults, so nothing is ever written to a
-directory you did not name. Pass `save_as_png = FALSE` to compute a classification
-image without writing anything.
+Every function that writes files needs its destination spelled out: `stimulus_path`, `targetpath` and `zmaptargetpath` have no defaults, so nothing is ever written to a directory you did not name. Pass `save_as_png = FALSE` to compute a classification image without writing anything.
 
 ## Documentation
 
-Everything below is also on the web at **<https://rdotsch.github.io/rcicr/>** — the function
-reference, both vignettes and the changelog — if you would rather read it before installing.
+The function reference, both vignettes and the changelog are also online at **<https://rdotsch.github.io/rcicr/>**, so you can read them before installing.
 
 Two vignettes ship with the package:
 
@@ -86,14 +76,13 @@ vignette("getting-started", package = "rcicr")  # shortest working example
 vignette("reverse-correlation-walkthrough", package = "rcicr")  # the full method
 ```
 
-The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs when the package is built, so it cannot drift out of date.
+The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version.
 
 For example datasets and analysis scripts, see [rcicr_examples](https://github.com/rdotsch/rcicr_examples/).
 
 ## How it works
 
-The package is two halves that run at different times — often months apart — and share no
-state except one file on disk.
+The package has two halves. They run at different times, often months apart, and share nothing except one file on disk.
 
 ```
 base face image(s) ─┐
@@ -109,104 +98,65 @@ base face image(s) ─┐
                                   autoscale()      computeInfoVal2IFC()      plotZmap()
 ```
 
-**1. Stimulus generation.** `generateNoisePattern()` builds the *noise basis* — a stack of
-sinusoid (or Gabor) patches at several orientations, phases and spatial scales. This is
-built once and reused for every trial. `generateNoiseImage()` then combines one random
-contrast weight per patch into a single noise image, and `generateStimuli2IFC()` runs that
-loop over trials, writing two PNGs per trial per base face: the noise blended with the base
-image, and its inverted counterpart.
+**1. Stimulus generation.** `generateNoisePattern()` builds the *noise basis*: a stack of sinusoid (or Gabor) patches at several orientations, phases and spatial scales. It is built once and reused for every trial. `generateNoiseImage()` combines one random contrast weight per patch into a single noise image. `generateStimuli2IFC()` repeats that for every trial and writes two PNGs per trial per base face: the base image with the noise added, and with it subtracted.
 
-**2. Analysis.** `generateCI()` loads the stimulus file, looks up the parameters of the
-stimuli a participant actually saw, weights each by their response (`1` = original chosen,
-`-1` = inverted chosen), and averages them into one image — the classification image. From
-there, `autoscale()` makes a batch of CIs visually comparable, `computeInfoVal2IFC()` scores
-one against a simulated null distribution, and `plotZmap()` shows which regions carry
-reliable signal.
+**2. Analysis.** `generateCI()` loads the stimulus file and looks up the parameters of the stimuli a participant saw. It weights each by the response (`1` = original chosen, `-1` = inverted chosen) and averages them into one image: the classification image. After that, `autoscale()` puts a batch of CIs on one scale so they can be compared by eye, `computeInfoVal2IFC()` scores a CI against a simulated null distribution, and `plotZmap()` shows which regions carry reliable signal.
 
-**The `.Rdata` file is the only link between the two halves.** Nothing about your stimuli is
-recoverable without it — not from the PNGs, not from the seed alone. Back it up with your
-response data, and keep it alongside anything you publish: recomputing a classification
-image years later needs this file and nothing else.
+**The `.Rdata` file is the only link between the two halves.** Without it, nothing about your stimuli can be recovered: not from the PNGs, and not from the seed alone. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else.
 
-**Compare numbers, not figures, across machines.** Classification images, scaling,
-informational value and z-scores are ordinary R arithmetic and do not depend on your
-operating system — the test suite pins them to fixed values and they hold on Linux and on
-macOS ARM64 alike. The one exception is the PNG written by `plotZmap()`, the only function
-here that draws through a graphics device: devices differ between platforms in colour
-management and in whether they write an alpha channel, so the same z-map yields visibly
-identical figures whose files are not byte-identical. A z-map image that differs
-pixel-for-pixel on a colleague's machine is not a different result. Every other PNG the
-package writes comes straight from the pixel array via `png::writePNG()` and is unaffected.
-See `?plotZmap`.
+**Compare numbers, not figures, across machines.** Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system. The test suite pins them to fixed values, and they hold on Linux and macOS ARM64 alike. The one exception is the PNG that `plotZmap()` writes, because it is the only function here that draws through a graphics device. Devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map gives figures that look identical but are not byte-identical. A z-map image that differs pixel for pixel on a colleague's machine is not a different result. Every other PNG the package writes comes straight from the pixel array via `png::writePNG()`, so this does not apply to them. See `?plotZmap`.
 
 ### Where the code lives
 
-Apart from `generateCI()` itself, every function named in the table below is **internal** —
-not exported, and not callable from your own scripts. They are split by concern rather than
-by which exported function happens to call them. (The walkthrough above names only the
-exported functions it needed; for the full public API, see the function reference on the
-[documentation site](https://rdotsch.github.io/rcicr/) or `help(package = "rcicr")`.)
+This section is for reading the source. Apart from `generateCI()` itself, every function in the table below is **internal**: not exported, so your scripts cannot call it. For the public functions, see the [function reference](https://rdotsch.github.io/rcicr/) or `help(package = "rcicr")`.
 
-The usual reason to look is `generateCI()`, whose body reads as one call per step — validate,
-load, select, compute, present, return — with the steps themselves in these files:
+The usual starting point is `generateCI()`. Its body is one call per step (validate, load, select, compute, present, return), and the steps live in these files, grouped by concern:
 
 | file | what is in it |
 |---|---|
 | `R/generateCI.R` | `generateCI()` itself, plus the presentation helpers `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
 | `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
 | `R/ci-inputs.R` | turning the caller's arguments into a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
-| `R/ci-compute.R` | `computeParticipantCIs()` — one CI per participant, plus their average |
+| `R/ci-compute.R` | `computeParticipantCIs()`: one CI per participant, plus their average |
 | `R/zmap-compute.R` | `computeZmapQuick()` and `computeZmapTTest()` |
 | `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
 
-The mask helpers live in `R/generateCI.R` rather than a file of their own because
-`plotZmap()` shares them — masking a z-map and masking a CI are the same operation.
+The mask helpers live in `R/generateCI.R` rather than in a file of their own because `plotZmap()` uses them too: masking a z-map and masking a CI are the same operation.
 
 ## Anatomy of the `.Rdata` file
 
-`generateStimuli2IFC()` writes one file named
-`<label>_seed_<seed>_time_<timestamp>.Rdata`. `load()` it and you get these objects
-(sizes shown for a 3-trial, 32px, `nscales = 2` example):
+`generateStimuli2IFC()` writes one file named `<label>_seed_<seed>_time_<timestamp>.Rdata`. `load()` it and you get these objects:
 
 | Object | What it is |
 |---|---|
 | `p` | The noise basis. A list of `patches` (an `img_size × img_size × 12·nscales` array of sinusoid/Gabor layers), `patchIdx` (which parameter drives each pixel of each layer), `noise_type`, and `generator_version`. This is the expensive part and the reason the file exists. |
-| `stimuli_params` | Named list, one entry per base image, each an `n_trials × nparams` matrix of contrast weights in `[-1, 1]`. **Row *i* is the noise of stimulus *i*** — this is what `generateCI()` looks up and weights by responses. |
+| `stimuli_params` | Named list, one entry per base image, each an `n_trials × nparams` matrix of contrast weights in `[-1, 1]`. **Row *i* is the noise of stimulus *i***: this is what `generateCI()` looks up and weights by the responses. |
 | `base_faces` | Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained. |
 | `base_face_files` | The paths they were read from, for reference. |
-| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters. The reference distribution uses the saved `p` (legacy `s`) and `stimuli_params`, with `n_trials` selecting the trial rows; it does not reconstruct the basis from `nscales`, `sigma`, or `noise_type`. |
-| `seed` | The RNG seed. Reproducing the stimulus set from the seed also requires the same generation settings and `RNGkind()`; the file does not record the kind. |
+| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters, for reference. The InfoVal reference distribution reads the saved `p` (or `s` in old files) and `stimuli_params` directly and uses `n_trials` to select trial rows; it never rebuilds the basis from these settings. |
+| `seed` | The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same `RNGkind()`, which the file does not record. |
 | `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
 | `label`, `stimulus_path` | What the files were called and where they were written. |
-| `generator_version` | The rcicr version that wrote the file — see the caveat below. |
+| `generator_version` | The rcicr version that wrote the file; see the caveat below. |
 
-`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** fields to the same
-file the first time you compute an informational value. Which ones depends on whether the
-base images share a parameter matrix:
+The first time you compute an informational value, `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** fields to the same file. Which ones depends on whether the base images share one parameter matrix:
 
 | Object | What it is |
 |---|---|
-| `reference_norms` | The simulated null distribution — the norms of `iter` classification images built from random responses. Cached here because simulating it is expensive. Written when the base images share one parameter matrix. |
-| `reference_norms_seed` | The `response_seed` those norms were drawn with (`NULL` for the default stream). Added in 1.2.0. |
-| `reference_norms_source` | What `reference_norms` was built from — `"saved_noise"` for a distribution computed from the file's own saved parameters and basis. Without a matching marker and snapshot, a default-stream cache (`reference_norms_seed` absent or `NULL`) is regenerated and, when writable, saved for reuse. Deliberately seeded caches are retained; explicitly regenerate any seeded reference built from an incorrect reconstruction before recomputing InfoVal. Added after 1.3.0. |
-| `reference_norms_fingerprint` | A full copy of the reference vector in `list(norms = ...)`, compared with `identical()`, rather than a digest. It adds about 80 KB of numeric data for 10,000 norms before file compression. An older rcicr can preserve the marker while replacing the norms; a mismatching copy invalidates the marker for default-stream caches. Added after 1.3.0. |
-| `reference_norms_by_base` | Named list keyed by base image, each entry holding that base's `norms`, the `response_seed` they were drawn with, and its own `source` and `fingerprint` carrying the same meaning as the two fields above. Written in place of the shared reference fields above when the base images carry *different* parameter matrices, since each base then needs a null built from its own saved noise. An unscoped `reference_norms` in such a file is left untouched and unread. Added after 1.3.0. |
+| `reference_norms` | The simulated null distribution: the norms of `iter` classification images built from random responses. Stored because simulating it is slow. Written when the base images share one parameter matrix. |
+| `reference_norms_seed` | The `response_seed` those norms were drawn with, or `NULL` for the default stream. Added in 1.2.0. |
+| `reference_norms_source` | What `reference_norms` was built from: `"saved_noise"` means the file's own saved parameters and basis. A default-stream reference (`reference_norms_seed` absent or `NULL`) without this marker and a matching `reference_norms_fingerprint` is rebuilt and, if the file is writable, saved. A reference drawn with a `response_seed` is kept; if it was built from an incorrect reconstruction, regenerate it yourself before recomputing InfoVal. Added in 1.4.0. |
+| `reference_norms_fingerprint` | A full copy of the norms, as `list(norms = ...)`, compared with `identical()`. It exists because an older rcicr can keep the marker while replacing the norms; if the copy no longer matches, a default-stream reference is rebuilt. It adds about 80 KB for 10,000 norms before compression. Added in 1.4.0. |
+| `reference_norms_by_base` | Written instead of the fields above when the base images have *different* parameter matrices, because each base then needs a null built from its own saved noise. A named list, one entry per base, each holding that base's `norms`, `response_seed`, `source` and `fingerprint` (same meaning as above). A `reference_norms` already in such a file is left in place and ignored. Added in 1.4.0. |
 
-Two things worth knowing before you write code against this file:
+Before you write code against this file:
 
-- **The contract is append-only.** Fields get added across versions and are never renamed or
-  repurposed, so newer rcicr reads older files. `nscales` and `sigma` were only added in
-  1.1.0, and `noise_type` earlier still. Reference generation uses the saved basis even when
-  those fields are absent, without the former fallback warnings.
-- **`generator_version` is unreliable on older files.** It was a hardcoded `'0.4.0'` string
-  until 1.2.0, so any file written between 0.4.0 and 1.1.0 claims to be
-  0.4.0 whatever wrote it. `p$generator_version` has always held the real value. Compare
-  versions with `numeric_version()` semantics, never as text.
+- **Fields are only ever added.** They are never renamed or given a new meaning, so newer rcicr reads older files. `nscales` and `sigma` arrived in 1.1.0 and `noise_type` earlier. The reference distribution uses the saved basis, so it works when those fields are missing.
+- **`generator_version` is unreliable in older files.** It was hardcoded as `'0.4.0'` until 1.2.0, so every file written by 0.4.0 through 1.1.0 claims to be 0.4.0. `p$generator_version` has always held the real value. Compare versions with `numeric_version()`, never as text.
 
 ## Development
 
-On a fresh Ubuntu machine with no compiler or R package library yet, `tools/dev-setup.sh` builds
-one — see CONTRIBUTING.md → "Getting set up" for details.
+On a fresh Ubuntu machine without a compiler or R package library, `tools/dev-setup.sh` sets both up; see [`CONTRIBUTING.md`](CONTRIBUTING.md) → "Getting set up".
 
 ``` r
 devtools::load_all()   # load the package for interactive development
@@ -214,13 +164,9 @@ devtools::test()       # run the test suite
 devtools::check()      # full CRAN-style check
 ```
 
-## Maintenance
-
-`rcicr` is no longer actively maintained. If you use the package and would be interested in helping with maintenance, please email [Ron Dotsch](mailto:rdotsch@gmail.com).
-
 ## Contributing
 
-Contributions, thoughts, and criticisms are very welcome — please [open an issue](https://github.com/rdotsch/rcicr/issues/).
+Contributions, thoughts and criticisms are welcome: [open an issue](https://github.com/rdotsch/rcicr/issues/).
 
 ## License
 

@@ -20,38 +20,38 @@ batchGenerateCI2IFC(
 )
 }
 \arguments{
-\item{data}{Data frame}
+\item{data}{Data frame with one row per trial.}
 
-\item{by}{String specifying column name that specifies the smallest unit (participant, condition) to subset the data on and calculate CIs for.}
+\item{by}{Name of the column that splits the data into units, such as participants or conditions. One CI is computed per unit.}
 
-\item{stimuli}{String specifying column name in data frame that contains the stimulus numbers of the presented stimuli.}
+\item{stimuli}{Name of the column holding the stimulus numbers of the presented stimuli.}
 
-\item{responses}{String specifying column name in data frame that contains the responses coded 1 for original stimulus selected and -1 for inverted stimulus selected.}
+\item{responses}{Name of the column holding the responses: 1 where the original stimulus was chosen, -1 where the inverted one was.}
 
-\item{baseimage}{String specifying which base image was used. Not the file name, but the key used in the list of base images at time of generating the stimuli.}
+\item{baseimage}{String naming the base image: not its file name, but its key in the \code{base_face_files} list passed to \code{\link{generateStimuli2IFC}}.}
 
-\item{rdata}{String pointing to .RData file that was created when stimuli were generated. This file contains the contrast parameters of all generated stimuli.}
+\item{rdata}{Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.}
 
-\item{save_as_png}{Boolean stating whether to additionally save the CI as PNG image.}
+\item{save_as_png}{Boolean: also save the CI as a PNG image.}
 
-\item{targetpath}{String specifying the directory to save PNGs to. Required when \code{save_as_png = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.}
+\item{targetpath}{Directory to save PNGs to. Required when \code{save_as_png = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.}
 
-\item{antiCI}{Optional boolean specifying whether antiCI instead of CI should be computed.}
+\item{antiCI}{Boolean: compute the anti-CI, the classification image with its sign flipped, instead of the CI.}
 
-\item{scaling}{Optional string specifying scaling method: \code{none}, \code{constant}, \code{matched}, \code{independent}, or \code{autoscale} (default).}
+\item{scaling}{Scaling method: \code{none}, \code{constant}, \code{matched}, \code{independent} or \code{autoscale} (default). \code{autoscale} computes the CIs unscaled and then puts them on one scale with \code{\link{autoscale}}.}
 
-\item{constant}{Optional number specifying the value used as constant scaling factor for the noise (only works for \code{scaling='constant'}).}
+\item{constant}{Scaling constant for the noise. Used only when \code{scaling = 'constant'}.}
 
-\item{label}{Optional string to insert in file names of PNGs to make them easier to identify.}
+\item{label}{Optional string added to the PNG file names to make them easier to identify.}
 }
 \value{
-List of classification image data structures (which are themselves lists of pixel matrix of classification noise only, scaled classification noise only, base image only and combined).
+Named list with one classification image per unit. Each is itself a list of pixel matrices: the raw noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
 }
 \description{
-Generate classification image for 2 images forced choice reverse correlation task.
+Generate one classification image per participant or condition, for a two-image forced-choice reverse correlation task.
 }
 \details{
-This function saves the classification images by participant or condition as PNG to a folder and returns the CIs.
+Splits \code{data} by the \code{by} column, calls \code{\link{generateCI2IFC}} for each part, and returns the CIs. By default each CI is also saved as a PNG.
 }
 \examples{
 # a synthetic square grayscale image stands in for a real base face photo

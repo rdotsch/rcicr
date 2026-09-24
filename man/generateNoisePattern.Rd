@@ -13,19 +13,20 @@ generateNoisePattern(
 )
 }
 \arguments{
-\item{img_size}{Integer specifying size of the noise pattern in number of pixels.}
+\item{img_size}{Width and height of the noise pattern, in pixels.}
 
-\item{nscales}{Integer specifying the number of incremental spatial scales. Defaults to 5. Higher numbers will add higher spatial frequency scales.}
+\item{nscales}{Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency.}
 
-\item{noise_type}{String specifying noise pattern type (defaults to \code{sinusoid}; other options: \code{gabor}).}
+\item{noise_type}{Noise pattern type: \code{sinusoid} (default) or \code{gabor}.}
 
-\item{sigma}{Number specifying the sigma of the Gabor patch if noise_type is set to \code{gabor} (defaults to 25).}
+\item{sigma}{Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).}
 
-\item{pre_0.3.0}{Boolean specifying whether the noise pattern should be created in a way compatible with older versions of rcicr (< 0.3.0). If you are starting a new project, you should keep this at the default setting (FALSE). There is no reason to set this to TRUE, with the sole exception to recreate behavior of rcicr prior to version 0.3.0.}
+\item{pre_0.3.0}{Boolean: build the noise pattern the way rcicr did before version 0.3.0. Leave it at \code{FALSE} unless you need to recreate that old behaviour.}
 }
 \value{
-List with two elements: the 3D noise matrix with size \code{img_size}, and an indexing
-matrix with the same size to easily change contrasts.
+The noise basis: a list holding the 3D array of patches (\code{patches}), an index
+array of the same size mapping each pixel to its contrast parameter (\code{patchIdx}), and
+the \code{noise_type} and \code{generator_version}.
 }
 \description{
 Generate sinusoid noise pattern

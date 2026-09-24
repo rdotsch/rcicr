@@ -2,24 +2,22 @@
 #'
 #' @export
 #' @import png
-#' @param cis List of cis, each of which are a list containing the pixel matrices of at least the noise pattern (\code{$ci}) and if the noise patterns need to be written to PNGs, also the base image (\code{$base}).
-#' @param save_as_pngs Boolean, when set to true, the autoscaled noise patterns will be combined with their respective base images and saved as PNGs (using the key of the list as name).
-#' @param targetpath String specifying the directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default path. It is created if it does not exist. Use \code{tempdir()} if you only want to try the function out.
-#' @return The input \code{cis} list, with the \code{$scaled} pixel matrix of each element
-#' replaced by its autoscaled version. The scaling constant that was determined is printed
-#' to the console, not returned.
+#' @param cis List of classification images, each a list of pixel matrices holding at least the noise (\code{$ci}), plus the base image (\code{$base}) if PNGs are to be written.
+#' @param save_as_pngs Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in \code{cis}.
+#' @param targetpath Directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
+#' @return The input \code{cis} list, with each element's \code{$scaled} matrix replaced by its
+#' autoscaled version. The scaling constant is printed to the console, not returned.
 #'
-#' \strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is left exactly
-#' as it was passed in: autoscaling deliberately does not disturb it, so a combination made
-#' before this call survives unchanged. Only \code{$scaled} reflects the autoscaled result.
-#' If you want the autoscaled noise shown over the base image, build it yourself with
-#' \code{(ci$scaled + ci$base) / 2} — that is exactly what \code{save_as_pngs = TRUE}
-#' writes to disk.
+#' \strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is returned exactly
+#' as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
+#' image. Only \code{$scaled} holds the autoscaled result. To show the autoscaled noise over the
+#' base image, compute \code{(ci$scaled + ci$base) / 2}: that is exactly what
+#' \code{save_as_pngs = TRUE} writes to disk.
 #'
-#' This matters most after \code{\link{batchGenerateCI}} or
-#' \code{\link{batchGenerateCI2IFC}}, which scale with \code{'none'} before handing over to
-#' this function: their \code{$combined} is therefore an overlay of the \emph{unscaled}
-#' noise and will look almost blank, while \code{$scaled} is the image you want.
+#' This catches people out after \code{\link{batchGenerateCI}} or
+#' \code{\link{batchGenerateCI2IFC}}. Both scale with \code{'none'} before calling this
+#' function, so their \code{$combined} overlays the \emph{unscaled} noise and looks almost blank,
+#' while \code{$scaled} is the image you want.
 #' @examples
 #' cis <- list(
 #'   participant1 = list(ci = matrix(runif(64, -0.2, 0.2), 8, 8), base = matrix(0.5, 8, 8)),
