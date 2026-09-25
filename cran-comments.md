@@ -4,6 +4,8 @@
 
 Update of rcicr 1.4.1, which CRAN's auto-check service accepted on 2026-09-20. The maintainer address `rdotsch@gmail.com` is unchanged.
 
+This update follows 1.4.1 closely because it fixes incorrect results: `batchGenerateCI()` and `batchGenerateCI2IFC()` returned a wrong classification image for grouped tibbles in versions 1.1.0 to 1.4.1.
+
 ## What changed
 
 `NEWS.md` carries the full list. Its "Reproducibility impact" section describes changes to existing results, who is affected and what to do.
@@ -18,34 +20,30 @@ Update of rcicr 1.4.1, which CRAN's auto-check service accepted on 2026-09-20. T
 
 ## Test environments
 
-All checks below used the release package tree at commit `2ef6c7683df0321310de12429e04205ce45b72fa`.
+The package checks below used commit `662cce416aa9dc96d57301ed67331e2acc6b4edc`, except the local check, which used `2ef6c7683df0321310de12429e04205ce45b72fa`; the only package change between them is the date in the `NEWS.md` release heading.
 
 * Local: R 4.3.3, Ubuntu 24.04.3 LTS, x86_64.
-* GitHub Actions (run 36054795045):
-  * R 4.6.1, Ubuntu 24.04.5 LTS, x86_64.
-  * R-devel 4.7.0, Ubuntu 24.04.5 LTS, x86_64.
-  * R 4.6.1, Windows Server 2022, x86_64.
-  * R 4.6.1, macOS Tahoe 26.6.2, arm64.
-* win-builder:
-  * R 4.6.1 (2026-06-24 ucrt), Windows Server 2022, x86_64.
-  * R-devel (2026-09-21 r90579 ucrt), Windows Server 2022, x86_64.
-* R-hub (run 36095296000):
-  * R-devel (2026-09-23 r90586), Ubuntu 24.04.5 LTS, x86_64.
-  * R-devel (2026-09-24 r90588 ucrt), Windows Server 2022, x86_64.
-  * R-devel (2026-09-23 r90587), macOS Sequoia 15.7.9, x86_64.
+* GitHub Actions (run 36100586167): R 4.6.1 and R-devel on Ubuntu 24.04.5 LTS, R 4.6.1 on Windows and on macOS.
+* win-builder, Windows Server 2022 x64 (build 20348):
+  * R 4.6.1 (2026-06-24 ucrt).
+  * R-devel (2026-09-21 r90579 ucrt).
+* R-hub (run 36103799444): R-devel on Linux, Windows and macOS.
 
 ## R CMD check results
 
-* GitHub Actions: `Status: OK` on all four environments.
-* R-hub: `Status: OK` on all three environments.
 * win-builder: 0 errors, 0 warnings, 1 NOTE on each environment:
-  `Days since last update: 4`.
+  `Days since last update: 5`. CRAN incoming feasibility and both manuals
+  passed. [R 4.6.1](https://win-builder.r-project.org/8h08Tr92o1Jx/),
+  [R-devel](https://win-builder.r-project.org/PtX771ROH14R/).
+* GitHub Actions: all four jobs passed; `--no-manual`.
+* R-hub: all three jobs passed; R-hub uses `--no-manual` and skips the incoming
+  feasibility checks.
 * Local `R CMD check --as-cran`: 0 errors, 0 warnings, 2 NOTEs. This
   environment could not verify the current time and retained the installation
   lock directory `00LOCK-rcicr`; the package checks, tests, examples,
   vignettes, and PDF and HTML manuals completed successfully.
 
-The full reproducibility gate (run 36054795013) also passed. Against the
+The full reproducibility gate (run 36100586164) also passed. Against the
 published v1.0.1 baseline, 211 checks were identical within tolerance, 22
 documented expected deviations fired, and there were 0 unexpected deviations.
 Against v1.4.1, 243 checks were identical within tolerance, with 0 expected and
