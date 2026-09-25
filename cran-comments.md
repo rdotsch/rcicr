@@ -18,15 +18,44 @@ Update of rcicr 1.4.1, which CRAN's auto-check service accepted on 2026-09-20. T
 
 ## Test environments
 
-Pending: filled in from the checks in `RELEASING.md` step 2, on the release branch.
+All checks below used the release package tree at commit `2ef6c7683df0321310de12429e04205ce45b72fa`.
+
+* Local: R 4.3.3, Ubuntu 24.04.3 LTS, x86_64.
+* GitHub Actions (run 36054795045):
+  * R 4.6.1, Ubuntu 24.04.5 LTS, x86_64.
+  * R-devel 4.7.0, Ubuntu 24.04.5 LTS, x86_64.
+  * R 4.6.1, Windows Server 2022, x86_64.
+  * R 4.6.1, macOS Tahoe 26.6.2, arm64.
+* win-builder:
+  * R 4.6.1 (2026-06-24 ucrt), Windows Server 2022, x86_64.
+  * R-devel (2026-09-21 r90579 ucrt), Windows Server 2022, x86_64.
+* R-hub (run 36095296000):
+  * R-devel (2026-09-23 r90586), Ubuntu 24.04.5 LTS, x86_64.
+  * R-devel (2026-09-24 r90588 ucrt), Windows Server 2022, x86_64.
+  * R-devel (2026-09-23 r90587), macOS Sequoia 15.7.9, x86_64.
 
 ## R CMD check results
 
-Pending: as above.
+* GitHub Actions: `Status: OK` on all four environments.
+* R-hub: `Status: OK` on all three environments.
+* win-builder: 0 errors, 0 warnings, 1 NOTE on each environment:
+  `Days since last update: 4`.
+* Local `R CMD check --as-cran`: 0 errors, 0 warnings, 2 NOTEs. This
+  environment could not verify the current time and retained the installation
+  lock directory `00LOCK-rcicr`; the package checks, tests, examples,
+  vignettes, and PDF and HTML manuals completed successfully.
+
+The full reproducibility gate (run 36054795013) also passed. Against the
+published v1.0.1 baseline, 211 checks were identical within tolerance, 22
+documented expected deviations fired, and there were 0 unexpected deviations.
+Against v1.4.1, 243 checks were identical within tolerance, with 0 expected and
+0 unexpected deviations.
 
 ## Downstream dependencies
 
-Pending: to be checked against the CRAN package page before submission.
+There are no reverse dependencies in the current CRAN package index, checked
+with `tools::package_dependencies(..., reverse = TRUE)` against
+`https://cloud.r-project.org`.
 
 ## Notes
 
