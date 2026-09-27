@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rcicr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,9 +33,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="rcicr-development-version">rcicr (development version)<a class="anchor" aria-label="anchor" href="#rcicr-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.5.0" id="rcicr-150-2026-09-25">rcicr 1.5.0 (2026-09-25)<a class="anchor" aria-label="anchor" href="#rcicr-150-2026-09-25"></a></h2>
 <div class="section level3">
-<h3 id="reproducibility-impact-development-version">Reproducibility impact<a class="anchor" aria-label="anchor" href="#reproducibility-impact-development-version"></a></h3>
+<h3 id="reproducibility-impact-1-5-0">Reproducibility impact<a class="anchor" aria-label="anchor" href="#reproducibility-impact-1-5-0"></a></h3>
 <ul><li>
 <p><strong><code><a href="../reference/batchGenerateCI.html">batchGenerateCI()</a></code> and <code><a href="../reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> now group a tibble correctly.</strong> Called on a tibble with more than one group in <code>by</code>, rcicr 1.1.0 through 1.4.1 returned a single classification image instead of one per group. That image was built from alternating trials of different groups and named after the first group. A <code>data.frame</code>, or a tibble with one group, was never affected, and its results do not change. (<a href="https://github.com/rdotsch/rcicr/issues/336" class="external-link">#336</a>)</p>
 <p>You were affected if the list these functions returned had one element although your data held several participants or conditions; data read with readr or processed with dplyr is a tibble. Recompute those CIs with this version, or with an older one after <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>. No stimuli need regenerating or responses recollecting. Of the affected versions, only 1.3.0 and 1.4.1 were released on CRAN; the others were GitHub releases. The 1.1.0 entry below saying these functions accept tibble columns held only for a single group.</p>
@@ -46,7 +46,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-1-5-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-5-0"></a></h3>
 <ul><li>
 <p><strong>Saving a reference distribution no longer risks the stimulus <code>.Rdata</code> file.</strong> <code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> and <code><a href="../reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC()</a></code> store the reference in that file, and a save that was interrupted (Esc, an error, R killed or crashing) could leave it unloadable, losing the only record of the stimuli. The file is now backed up beside itself for the duration of the save, as <code>&lt;file&gt;.rcicr-backup</code>, and restored automatically if the save fails. It keeps its owner, group and permissions. (<a href="https://github.com/rdotsch/rcicr/issues/333" class="external-link">#333</a>)</p>
 <p>If R is killed during the save, the backup remains, and any function that reads the damaged file says so. If the file still loads, the next save stops and asks you to delete the backup, since rcicr does not delete a file it cannot prove it made. If the file no longer loads, check that the backup holds this experiment (the error shows how), restore it with <code>file.copy("&lt;file&gt;.rcicr-backup", "&lt;file&gt;", overwrite = TRUE, copy.mode = FALSE)</code>, check that the file loads again, and only then delete the backup. Leftover <code>&lt;file&gt;.rcicr-staging-*</code> files are incomplete copies and can be deleted.</p>
@@ -57,7 +57,7 @@
 <li><p><strong>An <code>img_size</code> the noise scales cannot tile now gets an error that says so.</strong> The finest of <code>nscales</code> scales tiles the image with <code>2^(nscales - 1)</code> patches per side, so <code>img_size</code> must be divisible by that. <code><a href="../reference/generateNoisePattern.html">generateNoisePattern()</a></code>, and through it <code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> and <code><a href="../reference/simulateNoiseIntensities.html">simulateNoiseIntensities()</a></code>, used to fail with “number of items to replace is not a multiple of replacement length”. The error now names the constraint, the nearest valid sizes and the largest <code>nscales</code> that fits. Every size that worked still works. (<a href="https://github.com/rdotsch/rcicr/issues/339" class="external-link">#339</a>)</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<h3 id="documentation-1-5-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-5-0"></a></h3>
 <ul><li>Corrected help pages that disagreed with the code:
 <ul><li>
 <code>generateStimuli2IFC(return_as_dataframe = TRUE)</code> returns one row per pixel and one column per trial, not the reverse.</li>

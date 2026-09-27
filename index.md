@@ -275,8 +275,8 @@ Before you write code against this file:
 
 On a fresh Ubuntu machine without a compiler or R package library,
 `tools/dev-setup.sh` sets both up; see
-[`CONTRIBUTING.md`](https://rdotsch.github.io/rcicr/CONTRIBUTING.md) →
-“Getting set up”.
+[`CONTRIBUTING.md`](https://github.com/rdotsch/rcicr/blob/main/CONTRIBUTING.md)
+→ “Getting set up”.
 
 ``` r
 

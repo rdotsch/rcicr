@@ -1,6 +1,6 @@
 # Changelog
 
-## rcicr (development version)
+## rcicr 1.5.0 (2026-09-25)
 
 ### Reproducibility impact
 
