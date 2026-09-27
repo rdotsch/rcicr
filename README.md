@@ -156,7 +156,7 @@ Before you write code against this file:
 
 ## Development
 
-On a fresh Ubuntu machine without a compiler or R package library, `tools/dev-setup.sh` sets both up; see [`CONTRIBUTING.md`](CONTRIBUTING.md) → "Getting set up".
+On a fresh Ubuntu machine without a compiler or R package library, `tools/dev-setup.sh` sets both up; see [`CONTRIBUTING.md`](https://github.com/rdotsch/rcicr/blob/main/CONTRIBUTING.md) → "Getting set up".
 
 ``` r
 devtools::load_all()   # load the package for interactive development
