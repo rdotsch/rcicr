@@ -6,8 +6,6 @@ Why `rcicr` behaves as it does: the measurement that ruled an option out, the al
 
 **Keep this file under 5200 words**; over budget, something comes out before something goes in. Write the decision and the evidence, not the route to it: an entry earns its length from a measurement or a rejected alternative.
 
-> Until 2026-07-27 this was a chronological session log (`.session-log.md`). The original narrative, with dates and intermediate states, is in git history up to `887aea4`.
-
 ---
 
 ## The constraint that shapes everything
@@ -53,10 +51,8 @@ The same release fixed `sinIdx` counting from 0 instead of 1, an independent cha
 
 The genuine pre-0.3.0 generator is the same `co = 0` / `idx = 0` loop the `pre_0.3.0` flag runs (verified against `git show 7d0d9e6:pkg/R/rcicr.R`: 0.3.0 only flipped the default and added the flag), and a file stores the patch array its generator wrote. Do **not** "fix" the recycling by offsetting the index: that changes which sinusoid is dropped and alters the CI of every genuine pre-0.3.0 file. `test-generateNoiseImage.R` pins both properties.
 
-**A backward-compatibility path that nothing exercises cannot be told apart from one that works.** The truncation left one broken in `generateCI()` for eleven years, untested until 2026-07-28; so was the `sinusoids`/`sinIdx` path.
-
 ### `load()` assigns into the calling frame — check every new argument against saved names
-An object in an `.Rdata` file silently overwrites a function argument of the same name. `generateReferenceDistribution2IFC()` re-saved its whole frame, so the files it wrote contained `rdata` and `ncores`. A second call then ignored the caller's `ncores` and wrote back to the path recorded by the first. It is fixed at the source, by leaving the function's own arguments out of the save, *and* defensively on read, for files older versions already wrote. Arguments the default path no longer needs, like `reference_stimuli`, are removed *before* `load()`, so a file's own object of that name survives.
+An object in an `.Rdata` file silently overwrites a function argument of the same name. `generateReferenceDistribution2IFC()` re-saved its whole frame, so the files it wrote contained `rdata` and `ncores`. A second call then ignored the caller's `ncores` and wrote back to the path recorded by the first. It is fixed at the source, by leaving the function's own arguments out of the save, *and* defensively on read, for files older versions already wrote. `reference_stimuli` is removed *before* `load()`, so a file's own object of that name survives.
 
 ### The InfoVal formula is already correct — do not "fix" it
 It is equations 2 and 3 of Brinkman et al. (2019, *Behavior Research Methods* 51, 2059-2073): `(norm - median) / (k * MAD)`, with `k = 1.4826`. Schmitz, Rougier and Yzerbyt (2019, <https://doi.org/10.3758/s13428-019-01295-1>) reported two miscomputations in rcicr: the one norm instead of the Euclidean norm, and a missing `k`. Their erratum (Schmitz et al., 2020, *Behavior Research Methods* 52, 1800-1801, <https://doi.org/10.3758/s13428-020-01367-7>) withdraws the second, because R's `mad()` already applies `constant = 1.4826`. The code uses the Euclidean norm (`norm(x, "f")`) and plain `mad()`. **Do not add a `k`**: it would be applied twice. A regression test pins the result.
@@ -93,7 +89,7 @@ The frame has one column per trial, so it cannot hold trial × base image and ca
 With `use_same_parameters = FALSE`, base images after the first were scored against the first one's null ([#299](https://github.com/rdotsch/rcicr/issues/299)), at a cost measured in [`analyses/infoval-reference-impact.md`](analyses/infoval-reference-impact.md). Independent-base references now take a `baseimage` label and are stored per base. Shared-parameter numbers, and the first base's numbers from 0.3.0 on, are unchanged (maximum absolute difference 0), because the first base's parameters come from the same leading block of the random stream. A *pre-0.3.0* independent file is the exception: its trials cannot be rebuilt from the seed (see "4096 → 4092" above), so its first base moves too.
 
 ### A subset CI is scored against the full stimulus set by default
-Brinkman et al. (2019) require the reference to use the CI's own stimuli. A new default would move every InfoVal reported for a subset CI, so matching is the researcher's call: `reference_stimuli` builds the paper's reference, and `generateCI()`'s `trial_design` attribute lets `computeInfoVal2IFC()` flag a mismatch. Repeats and participant averages get no reference, since the paper defines none. The cost of a mismatch is measured in [`analyses/infoval-design-mismatch.md`](analyses/infoval-design-mismatch.md).
+Brinkman et al. (2019) require the reference to use the CI's own stimuli. A new default would move every InfoVal reported for a subset CI, so matching is the researcher's call: `reference_stimuli` builds the paper's reference, and `generateCI()`'s `trial_design` attribute lets `computeInfoVal2IFC()` flag a mismatch. Repeats and participant averages get no reference, since the paper defines none. Cost measured in [`analyses/infoval-design-mismatch.md`](analyses/infoval-design-mismatch.md).
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 `generateCI()` averages the responses to each unique stimulus before building its CI (`aggregateResponses()` in `R/ci-inputs.R`). `computeCumulativeCICorrelation()` does not: it takes trials in presentation order, and averaging repeats would discard the order a cumulative curve is about.
@@ -150,7 +146,7 @@ Both directions of the compatibility promise have a test. The gate checks that t
 
 Generating the fixtures needs the old version *installed*: each builds a cluster whose workers call `library(rcicr)`, so sourcing its R files is not enough, and v1.0.1 also needs `raster`, dropped in #186. Doing that at test time would put a package install and a network round trip inside the suite. Instead, `tools/make-legacy-rdata.R` installs each tag into a throwaway library once, and the files are committed, so the check runs in every CI job, on every platform, with no network. A red test here means this version can no longer read a file a researcher already has; do not regenerate the fixture to fix it.
 
-Each fixture is generated at its era's **defaults** (`nscales = 5`, `sigma = 25` for 1.0.1), the situation a returning researcher is actually in. The gabor fixture is the only one whose saved basis is not sinusoidal. It was written to exercise the fallbacks for missing fields, which [#301](https://github.com/rdotsch/rcicr/issues/301) removed by reading the saved basis instead of rebuilding it; it now checks that basis being read back.
+Each fixture is generated at its era's **defaults** (`nscales = 5`, `sigma = 25` for 1.0.1), the situation a returning researcher is actually in. The gabor fixture is the only one whose saved basis is not sinusoidal.
 
 ### The v1.0.1 reference is pinned; the previous release is a *second* run, not a replacement
 The obvious move once a release is green is to make it the new reference. It is wrong. Each release would then be compared only with its predecessor, and the code could walk away from the published numbers one tolerated epsilon at a time, every step "identical to the last release". The literature was produced with v1.0.1, so that comparison is the one that protects it, and it stays pinned at `v1.0.1` (tagged retroactively at `b6ab269`, so the default reads as a version rather than a bare SHA).
