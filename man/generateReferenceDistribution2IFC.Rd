@@ -10,7 +10,8 @@ generateReferenceDistribution2IFC(
   ncores = default_ncores(),
   response_seed = NULL,
   save_rdata = TRUE,
-  baseimage = NULL
+  baseimage = NULL,
+  reference_stimuli = NULL
 )
 }
 \arguments{
@@ -35,6 +36,13 @@ the file's reproducible reference.}
 \item{baseimage}{Base-image label, the same key passed to \code{generateCI()}. Required when
 the base images have different noise parameters. With a single base image, or base images
 sharing one parameter set, leave it at \code{NULL}.}
+
+\item{reference_stimuli}{Optional stimulus numbers, each once, to build the reference over
+instead of every saved stimulus: the stimuli a classification image was built from, when that
+is not all of them. See "Matching the reference to the classification image" in
+\code{\link{computeInfoVal2IFC}}. The simulated responses continue the same stream as the
+default, so the reference is reproducible from the file. Passing every saved stimulus is the
+same as the default, \code{NULL}.}
 }
 \value{
 The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
@@ -42,7 +50,10 @@ Unless \code{save_rdata = FALSE}, it is also added to the \code{rdata} file as
 \code{reference_norms}, with \code{reference_norms_seed} recording the \code{response_seed}
 it was drawn with. A later \code{\link{computeInfoVal2IFC}} call on the same file then reuses
 it instead of simulating again. For independent base images it goes in
-\code{reference_norms_by_base} instead, as described above.
+\code{reference_norms_by_base} instead, as described above. A reference over
+\code{reference_stimuli} goes in \code{reference_norms_by_stimuli}, a list with one entry per
+stimulus set (and base image, where the bases have different noise), leaving the default
+reference untouched.
 }
 \description{
 Generates the reference distribution of norms for a stimulus set.

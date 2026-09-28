@@ -10,7 +10,8 @@ computeInfoVal2IFC(
   iter = 10000,
   force_gen_ref_dist = FALSE,
   response_seed = NULL,
-  baseimage = NULL
+  baseimage = NULL,
+  reference_stimuli = NULL
 )
 }
 \arguments{
@@ -37,6 +38,13 @@ to \code{generateCI()}. Required when the base images have different noise param
 base then gets its own stored reference distribution, and a shared one left by an older version
 is ignored. With a single base image, or base images sharing one parameter set, leave it at
 \code{NULL}.}
+
+\item{reference_stimuli}{Optional stimulus numbers the classification image was built from,
+each once, when that is not every saved stimulus. The reference is then built over exactly
+those stimuli and stored in the \code{rdata} file apart from the default one, as described in
+\code{\link{generateReferenceDistribution2IFC}}. The default, \code{NULL}, uses every saved
+stimulus, as does passing all of them. See "Matching the reference to the classification
+image" below.}
 }
 \value{
 The Informational Value, a z-score.
@@ -59,12 +67,35 @@ cannot be written, the simulated reference is used for this call only: a note na
 (and, for independent base images, the base) that could not be updated, and the next call
 simulates it again. An archive on read-only media can therefore still be scored, at the cost of
 simulating each time.
+}
+\section{Matching the reference to the classification image}{
+
+The reference must be built from the same stimuli as the classification image (Brinkman et
+al., 2019, Part I). By default it uses every saved stimulus, with one response each. Matching
+it to your design is your responsibility, because the default cannot know which trials you
+dropped. A CI built from fewer stimuli (after removing missed trials, say, or from part of the
+set) has a larger norm under random responding, and the default reference inflates its
+InfoVal. At 512 pixels, in the stimulus sets measured, the median InfoVal of a pure-noise CI
+was 0.09 to 0.11 with 1\% of trials missing and 0.51 to 0.58 with 5\%
+(\url{https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-design-mismatch.md}).
+
+Pass the stimuli the CI was built from as \code{reference_stimuli}. \code{\link{generateCI}}
+records them on its result, so
+\code{computeInfoVal2IFC(ci, rdata, reference_stimuli = attr(ci, "trial_design")$stimuli)}
+does it, and a message says when a CI is scored against a reference over different stimuli.
+The message never changes the number returned.
+
+No reference is defined for a CI that averages repeated presentations of a stimulus or several
+participants: every reference here assumes one response per stimulus from one responder. For
+participants who each saw every stimulus once, compute the InfoVal of each participant's own
+CI instead.
 
 For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van Haren, N. E. M.,
 Dotsch, R., & Aarts, H. (2019). Quantifying the informational value of classification
 images. \emph{Behavior Research Methods}, \emph{51}, 2059-2073.
 \doi{10.3758/s13428-019-01232-2}
 }
+
 \examples{
 # a synthetic square grayscale image stands in for a real base face photo
 base_face <- tempfile(fileext = ".png")

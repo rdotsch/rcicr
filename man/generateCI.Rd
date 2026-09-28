@@ -78,7 +78,7 @@ generateCI(
 \item{zmappointsize}{Text size of the z-map decoration, in points (default: 12). Passed to \code{\link{plotZmap}}, which makes the z-map image \code{img_size} pixels wide. The decoration needs roughly \code{12.3 * zmappointsize} pixels on a 72 ppi device and \code{16.4 * zmappointsize} on a 96 ppi one. At the default, a stimulus set smaller than about 160 to 200 pixels is too small for it, and \code{generateCI()} stops with an error naming the minimum for your device. Lower this value to fit the decoration on a small z-map, or set \code{zmapdecoration = FALSE}.}
 }
 \value{
-List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
+List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from (\code{stimuli}), whether any was presented more than once (\code{repeated}), and the number of participants (\code{n_participants}); \code{\link{computeInfoVal2IFC}} uses it to check that its reference matches the CI.
 }
 \description{
 Generate a classification image for any reverse correlation task.

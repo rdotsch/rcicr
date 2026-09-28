@@ -109,6 +109,24 @@ aggregateResponses <- function(stimuli, responses) {
   return(list(stimuli = aggregated$stimuli, responses = aggregated$x))
 }
 
+# What computeInfoVal2IFC() needs to tell whether a reference matches this CI.
+# Recorded before aggregateResponses() collapses repeats, which it must see.
+#
+# Input: stimuli and participants as validated, before aggregation
+# Output: list of the sorted distinct stimuli, whether any stimulus was
+# presented more than once (pooled, or within one participant), and the
+# number of participants (1 when none were given)
+trialDesign <- function(stimuli, participants) {
+  pooled <- all(is.na(participants))
+  repeated <- if (pooled) {
+    anyDuplicated(stimuli) > 0L
+  } else {
+    anyDuplicated(data.frame(participants, stimuli)) > 0L
+  }
+  list(stimuli = sort(unique(as.integer(stimuli))), repeated = repeated,
+       n_participants = if (pooled) 1L else length(unique(participants)))
+}
+
 # Retrieve the noise parameters of the stimuli that were actually presented.
 # Indexing by the stimulus numbers works for non-consecutive stimuli too.
 #

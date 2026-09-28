@@ -72,7 +72,7 @@
 #' @param threshold Threshold z-score (default: 3). Z-scores below it are not drawn on the z-map.
 #' @param zmaptargetpath Directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @param n_cores Number of CPU cores used to create the z-map (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
-#' @return List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
+#' @return List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from (\code{stimuli}), whether any was presented more than once (\code{repeated}), and the number of participants (\code{n_participants}); \code{\link{computeInfoVal2IFC}} uses it to check that its reference matches the CI.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
@@ -160,6 +160,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   base <- selectBaseImage(base_faces, baseimage)
 
   validateStimulusIds(stimuli, nrow(stimuli_params[[baseimage]]))
+  design <- trialDesign(stimuli, participants)
 
   if (all(is.na(participants))) {
     aggregated <- aggregateResponses(stimuli, responses)
@@ -235,11 +236,14 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     )
   }
 
-  # Return data
+  # Return data. The design is an attribute, not a field: scripts iterate the
+  # fields and expect pixel matrices.
   if (zmapbool) {
-    return(list(ci = ci, scaled = scaled, base = base, combined = combined, zmap = zmap))
+    return(structure(list(ci = ci, scaled = scaled, base = base, combined = combined, zmap = zmap),
+                     trial_design = design))
   } else {
-    return(list(ci = ci, scaled = scaled, base = base, combined = combined))
+    return(structure(list(ci = ci, scaled = scaled, base = base, combined = combined),
+                     trial_design = design))
   }
 }
 

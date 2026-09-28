@@ -29,7 +29,8 @@ vouchedReference <- function(norms, marker, fingerprint) {
 
 # Both cache layouts use this policy; their generators own the storage details.
 resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
-                                  response_seed, baseimage = NULL, seedless = FALSE) {
+                                  response_seed, baseimage = NULL, seedless = FALSE,
+                                  reference_stimuli = NULL) {
   forced <- force_gen_ref_dist || !is.null(response_seed)
   stale <- !is.null(entry) && is.null(entry$response_seed) &&
     !vouchedReference(entry$norms, entry$source, entry$fingerprint)
@@ -40,7 +41,8 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     # evidence" in DECISIONS.md).
     if (seedless && is.null(entry$response_seed)) {
       message(rdata, ' has no stimulus seed, so its stored reference distribution cannot ',
-              'be regenerated from it. It is used as stored. ', seededReferenceAdvice(rdata, baseimage))
+              'be regenerated from it. It is used as stored. ',
+              seededReferenceAdvice(rdata, baseimage, !is.null(reference_stimuli)))
     }
     return(entry$norms)
   }
@@ -61,7 +63,7 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     withCallingHandlers(
       generateReferenceDistribution2IFC(
         rdata, iter = iter, response_seed = response_seed,
-        save_rdata = save_rdata, baseimage = baseimage
+        save_rdata = save_rdata, baseimage = baseimage, reference_stimuli = reference_stimuli
       ),
       warning = function(cond) {
         # The inherited count is not a new choice the caller can act on.
@@ -122,9 +124,10 @@ savedReferenceParams <- function(source, baseimage) {
 # built from the stored parameters and basis. Re-generating the stimuli instead
 # reopened every base image, which an archived or moved experiment no longer has
 # (#301), and rebuilt the basis from fields older files do not carry.
-referenceNoise <- function(source, baseimage, ncores) {
-  n_trials <- source$n_trials
+referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) {
   params <- savedReferenceParams(source, baseimage)
+  if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
+  n_trials <- nrow(params)
   p <- if (exists('s', envir = source, inherits = FALSE)) source$s else source$p
   if (is.null(p)) stop('The stimulus file does not contain its saved noise basis (p or s).')
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
@@ -143,16 +146,17 @@ referenceNoise <- function(source, baseimage, ncores) {
 # A missing or NULL stimulus seed leaves no stream to replay: set.seed(NULL)
 # reseeds from the clock, so the default reference could never be reproduced
 # (#334). Checked before referenceNoise(), the slow step.
-requireStimulusSeed <- function(seed, rdata, baseimage = NULL) {
+requireStimulusSeed <- function(seed, rdata, baseimage = NULL, subset = FALSE) {
   if (is.null(seed)) {
     stop(rdata, ' has no stimulus seed to replay, so its default reference distribution ',
-         'could not be reproduced. ', seededReferenceAdvice(rdata, baseimage), call. = FALSE)
+         'could not be reproduced. ', seededReferenceAdvice(rdata, baseimage, subset), call. = FALSE)
   }
   invisible(NULL)
 }
 
-seededReferenceAdvice <- function(rdata, baseimage = NULL) {
+seededReferenceAdvice <- function(rdata, baseimage = NULL, subset = FALSE) {
   base_arg <- if (is.null(baseimage)) '' else paste0(', baseimage = ', encodeString(baseimage, quote = '"'))
+  if (subset) base_arg <- paste0(base_arg, ', reference_stimuli = <the same stimuli>')
   paste0('Store a reproducible one with generateReferenceDistribution2IFC(',
          encodeString(rdata, quote = '"'), ', response_seed = <n>', base_arg,
          '); later computeInfoVal2IFC() calls reuse it. If the file cannot be written, ',
@@ -205,6 +209,7 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
 }
 
 computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed, selection) {
+  reportTrialDesign(target_ci, selection$source$n_trials, NULL)
   cache <- selection$source$reference_norms_by_base
   if (!is.null(cache) && !is.list(cache)) stop('reference_norms_by_base must be a list.')
   norms <- resolveReferenceNorms(cache[[selection$baseimage]], rdata, iter,
