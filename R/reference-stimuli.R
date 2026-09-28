@@ -130,6 +130,13 @@ computeSubsetInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, res
     stop('Invalid cached reference for these reference_stimuli. ',
          'Use force_gen_ref_dist = TRUE to regenerate it.')
   }
+  # Few stimuli give few distinct norms: one gives one, so the MAD is 0 and the
+  # InfoVal would be infinite or NaN rather than a number.
+  if (mad(norms) == 0) {
+    stop('The reference over these ', length(reference_stimuli), ' stimuli has a MAD of 0, ',
+         'so no InfoVal can be computed from it: too few stimuli for random responses to ',
+         'give distinct norms.', call. = FALSE)
+  }
   cinorm <- norm(matrix(target_ci[['ci']]), 'f')
   info_val <- (cinorm - median(norms)) / mad(norms)
   base_note <- if (is.null(base_key)) '' else paste0('baseimage = ', base_key, '; ')
@@ -165,7 +172,7 @@ reportTrialDesign <- function(target_ci, n_trials, reference_stimuli) {
             n_trials, ' saved stimuli, but the reference is built over ', length(used),
             '. Brinkman et al. (2019) require the reference to use the stimuli the CI was ',
             'built from. To score it that way, pass ',
-            'reference_stimuli = attr(target_ci, "trial_design")$stimuli.')
+            'reference_stimuli = attr(<your CI>, "trial_design")$stimuli.')
   }
   invisible(NULL)
 }

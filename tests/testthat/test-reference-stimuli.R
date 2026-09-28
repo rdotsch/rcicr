@@ -106,6 +106,16 @@ test_that("a subset CI is scored against the reference over its own stimuli", {
   expect_false(isTRUE(all.equal(default, matched)))
 })
 
+test_that("a subset too small for the reference to have a spread is refused", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, n_trials = 6)
+  ci <- ci_of(rdata, 4)
+
+  expect_error(quiet(computeInfoVal2IFC(ci, rdata, iter = 20, response_seed = 1,
+                                        reference_stimuli = 4)),
+               "over these 1 stimuli has a MAD of 0")
+})
+
 test_that("a subset reference is cached apart from the default one", {
   tmp <- withr::local_tempdir()
   rdata <- make_fixture_rdata(tmp, n_trials = 12)
@@ -214,8 +224,8 @@ test_that("the guard names a subset mismatch and recommends reference_stimuli", 
   unmatched <- score(subset_ci)
   expect_length(unmatched, 1)
   expect_match(unmatched, "built from 3 of the 6 saved stimuli, but the reference is built over 6")
-  expect_match(unmatched, "reference_stimuli", fixed = TRUE)
-  expect_match(score(subset_ci, reference_stimuli = c(1, 3)), "built over 2")
+  expect_match(unmatched, 'reference_stimuli = attr(<your CI>, "trial_design")$stimuli', fixed = TRUE)
+  expect_match(score(subset_ci, reference_stimuli = c(1, 2, 3, 5, 6)), "built over 5")
 
   expect_length(score(subset_ci, reference_stimuli = c(4, 1, 3)), 0)
   expect_length(score(ci_of(rdata, 1:6)), 0)

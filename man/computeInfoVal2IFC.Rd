@@ -43,8 +43,9 @@ is ignored. With a single base image, or base images sharing one parameter set, 
 each once, when that is not every saved stimulus. The reference is then built over exactly
 those stimuli and stored in the \code{rdata} file apart from the default one, as described in
 \code{\link{generateReferenceDistribution2IFC}}. The default, \code{NULL}, uses every saved
-stimulus, as does passing all of them. See "Matching the reference to the classification
-image" below.}
+stimulus, as does passing all of them. A set too small for random responses to give distinct
+norms (one stimulus, and usually two) is refused, since its MAD is 0 and the InfoVal would not
+be a number. See "Matching the reference to the classification image" below.}
 }
 \value{
 The Informational Value, a z-score.
@@ -75,8 +76,8 @@ al., 2019, Part I). By default it uses every saved stimulus, with one response e
 it to your design is your responsibility, because the default cannot know which trials you
 dropped. A CI built from fewer stimuli (after removing missed trials, say, or from part of the
 set) has a larger norm under random responding, and the default reference inflates its
-InfoVal. At 512 pixels, in the stimulus sets measured, the median InfoVal of a pure-noise CI
-was 0.09 to 0.11 with 1\% of trials missing and 0.51 to 0.58 with 5\%
+InfoVal. At 512 pixels, in the stimulus sets measured, pure-noise CIs had a median InfoVal of
+0.09 to 0.11 with 1\% of trials missing and 0.51 to 0.58 with 5\%
 (\url{https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-design-mismatch.md}).
 
 Pass the stimuli the CI was built from as \code{reference_stimuli}. \code{\link{generateCI}}

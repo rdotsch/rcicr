@@ -70,8 +70,9 @@
 #' each once, when that is not every saved stimulus. The reference is then built over exactly
 #' those stimuli and stored in the \code{rdata} file apart from the default one, as described in
 #' \code{\link{generateReferenceDistribution2IFC}}. The default, \code{NULL}, uses every saved
-#' stimulus, as does passing all of them. See "Matching the reference to the classification
-#' image" below.
+#' stimulus, as does passing all of them. A set too small for random responses to give distinct
+#' norms (one stimulus, and usually two) is refused, since its MAD is 0 and the InfoVal would not
+#' be a number. See "Matching the reference to the classification image" below.
 #' @return The Informational Value, a z-score.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
