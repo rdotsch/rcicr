@@ -4,6 +4,8 @@
 
 ## rcicr 1.5.0 (2026-09-25)
 
+CRAN release: 2026-09-27
+
 ### Reproducibility impact
 
 - **[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
