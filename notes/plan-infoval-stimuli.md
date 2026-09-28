@@ -3,7 +3,7 @@
 ## Position
 
 Matching the reference to the target CI's design is the **researcher's responsibility**. The package
-makes the paper-covered case easy to ask for and changes no default. Schmitz et al. (2020, <https://doi.org/10.3758/s13428-019-01232-2>, Part I,
+makes the paper-covered case easy to ask for and changes no default. Brinkman et al. (2019, <https://doi.org/10.3758/s13428-019-01232-2>, Part I,
 after Eq. 1) require the reference to use the identical stimulus set, including its number of
 stimuli. `analyses/infoval-design-mismatch.md` measures what ignoring that costs: at 512px, the median pure-noise CI's InfoVal was 0.09 to 0.11 with 1% of trials missing and 0.51 to
 0.58 with 5%. Each range spans the four stimulus sets measured, two with 770 trials and two with 300.
