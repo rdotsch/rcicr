@@ -56,18 +56,32 @@ stimuli.
 
 ## Message guard
 
-`generateCI()` records the sorted distinct saved stimuli it used as **an attribute** on its return
-value, `attr(ci, "reference_stimuli")`, not as a list field. The list's names are pinned
+`generateCI()` records its trial design as **an attribute** on its return value,
+`attr(ci, "trial_design")`, not as a list field. The list's names are pinned
 (`test-generateCI.R:29`, `test-batchGenerateCI.R:20`), and scripts may iterate its fields expecting
 matrices. `generateCI2IFC()` and `batchGenerateCI()` return `generateCI()`'s value, so they carry
-the attribute too.
+the attribute too. The attribute holds three things:
 
-`computeInfoVal2IFC()` prints a `message()` when the attribute exists and differs from the stimuli
-the reference is built over: every saved stimulus when `reference_stimuli` is omitted, otherwise
-the ones passed. The message names the number of stimuli in each and the one-line use. It never
-warns or errors and changes no number, so a researcher who knows their design can ignore it or
-silence it with `suppressMessages()`. A CI without the attribute (from an older version, or built
-by hand) gets no message, because there is nothing to compare.
+- `stimuli`: the sorted distinct saved stimuli used;
+- `repeated`: whether any stimulus was presented more than once, pooled or within a participant;
+- `n_participants`: 1 when `participants` is not given.
+
+Distinct IDs alone would not be enough. A repeats or participant-average design would look like a
+subset, and the guard would recommend `reference_stimuli` for a design no reference covers.
+
+`computeInfoVal2IFC()` prints one `message()`, in one of two forms:
+
+- **One responder, no repeats, and a stimulus set that differs from the reference's.** The
+  reference's set is every saved stimulus when `reference_stimuli` is omitted, otherwise the ones
+  passed. The message names the number of stimuli in each and shows the one-line use.
+- **Repeats, or more than one participant.** Whatever `reference_stimuli` says, the message states
+  that every reference here assumes one response per stimulus from one responder, and that the
+  package defines none for this design. It points to per-participant InfoVal and never recommends
+  `reference_stimuli`.
+
+It never warns or errors and changes no number, so a researcher who knows their design can ignore
+it or silence it with `suppressMessages()`. A CI without the attribute (from an older version, or
+built by hand) gets no message, because there is nothing to compare.
 
 ## Risk: the step most likely to fail
 
@@ -79,11 +93,21 @@ not the other two ways the argument can go wrong:
 - a same-named object in a file could override it;
 - it could be written back into the user's file as if it were stimulus metadata.
 
+Excluding the name from the save would fix the second, but it would silently delete any
+`reference_stimuli` object a file already holds, which breaks the append-only `.Rdata` contract.
 Mitigation:
-- restore the argument from `.args` after `load()`, as every `load()` site does;
-- add it to `internals`;
-- test that a file carrying a `reference_stimuli` object does not override the argument, and that a
-  save adds only the cache field.
+- read the argument only from `.args`, which is captured before `load()`;
+- decide from `load()`'s return value, the names it loaded (`loadRdata()` passes it through):
+  - if the file supplied `reference_stimuli`, the frame keeps the file's value and the save writes
+    it back unchanged;
+  - otherwise the formal is removed from the frame before the save;
+- test both cases:
+  - a file carrying a `reference_stimuli` object: the argument is unaffected and the object is
+    saved back `identical()`;
+  - a file without one: the save adds only the cache field.
+
+The independent-bases path (`generateBaseReference()`) already loads into and saves from a separate
+environment, `selection$source` (`R/reference-base.R:202`), so it needs only the cache field.
 
 ## Verification
 
@@ -97,7 +121,12 @@ Mitigation:
 - **Cache isolation:** a subset call never alters `reference_norms`; a second identical call hits
   the cache; a different subset misses it.
 - **Validation errors:** duplicates, out-of-range values, non-integers, and an empty vector.
-- **Guard:** the message fires on a subset CI scored without `reference_stimuli`, and on one scored
-  with a different set. It stays silent for a full-set CI, when the sets match, and on a CI without
-  the attribute. The attribute survives `generateCI2IFC()` and `batchGenerateCI()`, and does not
-  change `names()` of the returned list.
+- **Guard:**
+  - the subset form fires for a one-responder subset CI scored without `reference_stimuli` or with a
+    different set;
+  - the unsupported-design form fires for pooled repeats, for a participant average over the full
+    set, and for either scored with `reference_stimuli`, and never mentions the argument;
+  - it stays silent for a one-responder full-set CI, when the sets match, and on a CI without the
+    attribute;
+  - the attribute survives `generateCI2IFC()` and `batchGenerateCI()`, and does not change
+    `names()` of the returned list.
