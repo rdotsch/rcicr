@@ -5,8 +5,8 @@
 Matching the reference to the target CI's design is the **researcher's responsibility**. The package
 makes the paper-covered case easy to ask for and changes no default. Schmitz et al. (2020, <https://doi.org/10.3758/s13428-019-01232-2>, Part I,
 after Eq. 1) require the reference to use the identical stimulus set, including its number of
-stimuli. `analyses/infoval-design-mismatch.md` measures what ignoring that costs: at 770 trials and
-512px, a pure-noise CI scores 0.11 with 1% of trials missing and 0.53 with 5%.
+stimuli. `analyses/infoval-design-mismatch.md` measures what ignoring that costs: at 512px, the median pure-noise CI's InfoVal was 0.09 to 0.11 with 1% of trials missing and 0.51 to
+0.58 with 5%. Each range spans the four stimulus sets measured, two with 770 trials and two with 300.
 
 ## Scope
 
@@ -46,7 +46,7 @@ stimuli.
    full-set `reference_norms` and `reference_norms_by_base` are never read or written on the subset
    path. The empty `ref_lookup` table, keyed on `n_trials`, is skipped for subsets.
 3. **Docs.** `?computeInfoVal2IFC` and `?generateReferenceDistribution2IFC` state the matching
-   requirement with the citation, give the measured sizes from the analysis, and show the one-line
+   requirement with the citation, give the measured sizes from the analysis as it states them (medians, as ranges over the stimulus sets measured), and show the one-line
    use:
    `computeInfoVal2IFC(ci, rdata, reference_stimuli = unique(my_stimuli))`.
    The README's InfoVal section gets one paragraph.
