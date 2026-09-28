@@ -30,10 +30,14 @@ stimuli.
 
 1. **`generateReferenceDistribution2IFC(..., reference_stimuli = NULL)` and
    `computeInfoVal2IFC(..., reference_stimuli = NULL)`**, added last, so positional calls are unaffected.
-   - `NULL`, or exactly `seq_len(n_trials)` after sorting, takes today's path unchanged.
-   - Otherwise the value must be distinct integers in `1..n_trials`. Duplicates are an error that
-     says repeats are outside what the reference covers. The value is sorted to a canonical form,
-     since the null does not depend on stimulus order.
+   - The value must be distinct whole numbers in `1..n_trials`, validated as `generateCI()`
+     validates its `stimuli` (`validateStimulusIds()`). Duplicates are an error that says repeats
+     are outside what the reference covers.
+   - The validated value is then made canonical, `sort(as.integer(x))`, before any comparison. IDs
+     often arrive as doubles (`unique()` of a numeric column), and `c(1, 2, 3)` is not `identical()`
+     to `seq_len(3)`. The canonical form serves the full-set check, cache matching and the guard's
+     attribute alike. The order does not matter, since the null does not depend on stimulus order.
+   - `NULL`, or a canonical value equal to `seq_len(n_trials)`, takes today's path unchanged.
    - The reference is built exactly as today (`referenceNoise()` then `seedResponseStream()`), but
      from the selected columns only. Each iteration draws `length(reference_stimuli)` responses. Without a
      `response_seed`, the stream replays the generator's parameter draws for all `n_trials` first,
@@ -62,7 +66,7 @@ stimuli.
 matrices. `generateCI2IFC()` and `batchGenerateCI()` return `generateCI()`'s value, so they carry
 the attribute too. The attribute holds three things:
 
-- `stimuli`: the sorted distinct saved stimuli used;
+- `stimuli`: the sorted distinct saved stimuli used, in the same canonical integer form;
 - `repeated`: whether any stimulus was presented more than once, pooled or within a participant;
 - `n_participants`: 1 when `participants` is not given.
 
@@ -121,6 +125,8 @@ environment, `selection$source` (`R/reference-base.R:202`), so it needs only the
 - **Cache isolation:** a subset call never alters `reference_norms`; a second identical call hits
   the cache; a different subset misses it.
 - **Validation errors:** duplicates, out-of-range values, non-integers, and an empty vector.
+- **Canonical form:** `c(3, 1, 2)` as doubles takes the full-set path with `n_trials = 3`, and a
+  subset given once as doubles and once as integers hits the same cache entry.
 - **Guard:**
   - the subset form fires for a one-responder subset CI scored without `reference_stimuli` or with a
     different set;
