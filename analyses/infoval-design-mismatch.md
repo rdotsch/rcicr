@@ -18,7 +18,7 @@ random +1/-1 response ([issue
 \#349](https://github.com/rdotsch/rcicr/issues/349)). `generateCI()`
 also accepts a subset of the saved stimuli, repeated presentations, and
 participant IDs. The CI it returns records none of that, so the
-reference cannot follow the design. Schmitz et al. (2020, Part I, after
+reference cannot follow the design. Brinkman et al. (2019, Part I, after
 Eq. 1) require the reference to use the identical stimulus set,
 including its number of stimuli.
 
@@ -186,6 +186,7 @@ agreement
 6.661338e-16 1.110223e-16 2.775558e-17 
 
 invisible(capture.output(package_z <- computeInfoVal2IFC(target_ci$subset, small$rdata)))
+This classification image was built from 25 of the 60 saved stimuli, but the reference is built over 60. Brinkman et al. (2019) require the reference to use the stimuli the CI was built from. To score it that way, pass reference_stimuli = attr(<your CI>, "trial_design")$stimuli.
 gram_z <- (norm(matrix(target_ci$subset$ci), "f") - median(gram_reference)) / mad(gram_reference)
 c(package = package_z, gram = gram_z, difference = package_z - gram_z)
      package         gram   difference 
@@ -314,6 +315,8 @@ measure_set <- function(name, set, design_seed) {
 results <- do.call(rbind, Map(measure_set, names(sets), sets, seq_along(sets)))
 ```
 
+Set 770a, the first 770-trial set:
+
 ``` r
 shown <- results
 shown[, 3:5] <- lapply(shown[, 3:5], round, 2)
@@ -402,23 +405,26 @@ above are not sharper than that.
 
 ## What this shows and what it does not
 
-At 770 trials and 512 pixels, the median random-responder CI built from
-all but a random half percent of the saved stimuli gets an InfoVal of
-0.05, not 0. That is 3.3 times the Monte Carlo standard deviation of a
-10,000-draw reference. With 5% missing it is 0.53, with 20% missing 2.5,
-and a CI from 100 of the 770 stimuli gets 37.3. The direction is always
-upward, because fewer stimuli average away less noise. Against the
-package’s reference, 10.3% of pure-noise CIs with 5% of trials missing
-score above 1.96, against 4.4% under their own null.
+In set 770a (770 trials, 512 pixels), the median random-responder CI
+built from all but a random half percent of the saved stimuli gets an
+InfoVal of 0.05, not 0. That is 3.3 times the Monte Carlo standard
+deviation of a 10,000-draw reference. With 5% missing it is 0.53, with
+20% missing 2.5, and a CI from 100 of the 770 stimuli gets 37.3. Across
+all four sets, the median ranges from 0.09 to 0.11 with 1% missing and
+from 0.51 to 0.58 with 5%. The direction is upward in every subset
+design and every set, because fewer stimuli average away less noise. In
+set 770a, against the package’s reference, 10.3% of pure-noise CIs with
+5% of trials missing score above 1.96, against 4.4% under their own
+null.
 
-Participant averages move the other way and further. Two participants
-who each saw every stimulus put their median random-responder average at
--6.2. A group CI that would sit at 1.96 on the two-responder null is
-reported as -4.7. With thirty participants that becomes -16.9. Whether
-the design-matched null is the right reference for a group CI is the
-methodological question this document leaves open. What it establishes
-is that the full-set, single-responder reference is not calibrated for
-this null either.
+Participant averages move the other way and further. In set 770a, two
+participants who each saw every stimulus put their median
+random-responder average at -6.2. A group CI that would sit at 1.96 on
+the two-responder null is reported as -4.7. With thirty participants
+that becomes -16.9. Whether the design-matched null is the right
+reference for a group CI is the methodological question this document
+leaves open. What it establishes is that the full-set, single-responder
+reference is not calibrated for this null either.
 
 The disjoint-block control reads 0.01, within the Monte Carlo spread of
 zero, as its construction requires. The 300-trial sets and the second
