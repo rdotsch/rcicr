@@ -125,9 +125,10 @@ ci_norms <- function(rdata, n) {
 ## Measurements
 
 InfoVal is linear in the CI norm: `z = (norm - median) / MAD`. For one pair of references, the norms
-whose call at 1.96 differs between them therefore form a single interval, whose width in InfoVal
-units is `dz_at_cutoff`: the difference between the two routes' InfoVals for a CI at exactly 1.96.
-A CI's call can change only if its InfoVal lies within that distance of the cut-off. The table also
+whose call at 1.96 differs between them therefore form a single interval, between the norm each
+route puts at exactly 1.96. `dz_at_cutoff` is that interval's width on the rendered route's InfoVal
+scale, the scale `near_cutoff` also uses. A CI's call can change only if its rendered-route InfoVal
+lies within that distance of the cut-off. The table also
 counts the calls that actually changed among the `r n_cis` CIs.
 
 ```{r measure}
@@ -148,7 +149,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
   norms <- ci_norms(rdata, n)
   z_rendered <- z_of(norms, rendered)
   z_gram <- z_of(norms, gram)
-  at_cutoff <- median(rendered) + cutoff * mad(rendered)
+  gram_cutoff <- median(gram) + cutoff * mad(gram)
 
   data.frame(
     config = sprintf("%dpx, %d trials, %s, nscales %d", size, n, noise_type, nscales),
@@ -158,7 +159,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
     d_median = abs(median(gram) - median(rendered)),
     d_mad = abs(mad(gram) - mad(rendered)),
     max_dz = max(abs(z_gram - z_rendered)),
-    dz_at_cutoff = abs(z_of(at_cutoff, gram) - cutoff),
+    dz_at_cutoff = abs(z_of(gram_cutoff, rendered) - cutoff),
     near_cutoff = sum(abs(z_rendered - cutoff) < 0.5),
     flips = sum((z_rendered > cutoff) != (z_gram > cutoff)),
     speedup = rendered_time[["elapsed"]] / gram_time[["elapsed"]],
@@ -248,8 +249,8 @@ None of the tested configurations gave bit-identical references. The largest rel
 `r sprintf("%.1e", max(results$rel_norm))`. The largest InfoVal difference among
 `r nrow(results) * n_cis` CIs is `r sprintf("%.1e", max(results$max_dz))`, at
 `r worst$config`. At 1.96 the largest difference is
-`r sprintf("%.1e", largest)`: under these references, a CI's call can change only if its InfoVal
-lies within that distance of the cut-off. None of the `r sum(results$near_cutoff)` CIs within 0.5 of 1.96 changed its call
+`r sprintf("%.1e", largest)` on the rendered route's scale: under these references, a CI's call can
+change only if its rendered-route InfoVal lies within that distance of the cut-off. None of the `r sum(results$near_cutoff)` CIs within 0.5 of 1.96 changed its call
 (`r sum(results$flips)` of `r nrow(results) * n_cis` overall).
 
 That distance is `r format(signif(spread / largest, 2), big.mark = ",")` times smaller than the

@@ -136,11 +136,12 @@ ci_norms <- function(rdata, n) {
 
 InfoVal is linear in the CI norm: `z = (norm - median) / MAD`. For one
 pair of references, the norms whose call at 1.96 differs between them
-therefore form a single interval, whose width in InfoVal units is
-`dz_at_cutoff`: the difference between the two routes’ InfoVals for a CI
-at exactly 1.96. A CI’s call can change only if its InfoVal lies within
-that distance of the cut-off. The table also counts the calls that
-actually changed among the 400 CIs.
+therefore form a single interval, between the norm each route puts at
+exactly 1.96. `dz_at_cutoff` is that interval’s width on the rendered
+route’s InfoVal scale, the scale `near_cutoff` also uses. A CI’s call
+can change only if its rendered-route InfoVal lies within that distance
+of the cut-off. The table also counts the calls that actually changed
+among the 400 CIs.
 
 ``` r
 z_of <- function(norms, reference) (norms - median(reference)) / mad(reference)
@@ -160,7 +161,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
   norms <- ci_norms(rdata, n)
   z_rendered <- z_of(norms, rendered)
   z_gram <- z_of(norms, gram)
-  at_cutoff <- median(rendered) + cutoff * mad(rendered)
+  gram_cutoff <- median(gram) + cutoff * mad(gram)
 
   data.frame(
     config = sprintf("%dpx, %d trials, %s, nscales %d", size, n, noise_type, nscales),
@@ -170,7 +171,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
     d_median = abs(median(gram) - median(rendered)),
     d_mad = abs(mad(gram) - mad(rendered)),
     max_dz = max(abs(z_gram - z_rendered)),
-    dz_at_cutoff = abs(z_of(at_cutoff, gram) - cutoff),
+    dz_at_cutoff = abs(z_of(gram_cutoff, rendered) - cutoff),
     near_cutoff = sum(abs(z_rendered - cutoff) < 0.5),
     flips = sum((z_rendered > cutoff) != (z_gram > cutoff)),
     speedup = rendered_time[["elapsed"]] / gram_time[["elapsed"]],
@@ -209,12 +210,12 @@ knitr::kable(shown, row.names = FALSE)
 
 | config | iter | identical | rel_norm | d_median | d_mad | max_dz | dz_at_cutoff | near_cutoff | flips |
 |:---|---:|:---|:---|:---|:---|:---|:---|---:|---:|
-| 64px, 100 trials, sinusoid, nscales 5 | 10000 | FALSE | 3.8e-15 | 3.9e-16 | 1.7e-16 | 5.2e-14 | 4.4e-15 | 13 | 0 |
-| 64px, 100 trials, sinusoid, nscales 3 | 10000 | FALSE | 5.4e-15 | 4.4e-16 | 1.3e-15 | 1.3e-13 | 8.7e-14 | 21 | 0 |
-| 64px, 100 trials, gabor, nscales 5 | 10000 | FALSE | 3.6e-15 | 5.6e-17 | 2.9e-16 | 1.4e-13 | 8.8e-14 | 23 | 0 |
+| 64px, 100 trials, sinusoid, nscales 5 | 10000 | FALSE | 3.8e-15 | 3.9e-16 | 1.7e-16 | 5.2e-14 | 2.9e-15 | 13 | 0 |
+| 64px, 100 trials, sinusoid, nscales 3 | 10000 | FALSE | 5.4e-15 | 4.4e-16 | 1.3e-15 | 1.3e-13 | 8.9e-14 | 21 | 0 |
+| 64px, 100 trials, gabor, nscales 5 | 10000 | FALSE | 3.6e-15 | 5.6e-17 | 2.9e-16 | 1.4e-13 | 8.9e-14 | 23 | 0 |
 | 128px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.1e-14 | 2.2e-16 | 9.1e-16 | 2.1e-13 | 1.1e-13 | 49 | 0 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 3.7e-15 | 3.3e-16 | 1.2e-13 | 8.2e-14 | 47 | 0 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 1.4e-15 | 1.3e-15 | 2.0e-13 | 5.2e-14 | 28 | 0 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 3.7e-15 | 3.3e-16 | 1.2e-13 | 8.3e-14 | 47 | 0 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 1.4e-15 | 1.3e-15 | 2.0e-13 | 5.1e-14 | 28 | 0 |
 | 512px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 4.8e-14 | 2.5e-14 | 8.1e-15 | 7.9e-13 | 5.6e-13 | 47 | 0 |
 
 `rel_norm` is the largest relative difference in any single norm.
@@ -246,7 +247,7 @@ spread
 
 largest <- max(results$dz_at_cutoff)
 spread / largest
-[1] 55558662879
+[1] 55580527760
 ```
 
 ## Time and memory
@@ -268,12 +269,12 @@ knitr::kable(cost, row.names = FALSE)
 | config                                 |  iter | speedup | rendered_mb | gram_mb |
 |:---------------------------------------|------:|--------:|------------:|--------:|
 | 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.4 |         3.1 |     0.1 |
-| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    32.7 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    33.6 |         3.1 |     0.1 |
 | 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
 | 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.1 |        37.5 |     0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.7 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.9 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   106.1 |       600.0 |     0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.4 |       150.0 |     0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.8 |       385.0 |     4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   107.1 |       600.0 |     0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -284,10 +285,11 @@ cross-product for five scales is 128 MB.
 None of the tested configurations gave bit-identical references. The
 largest relative difference in any single norm is 4.8e-14. The largest
 InfoVal difference among 2800 CIs is 7.9e-13, at 512px, 300 trials,
-sinusoid, nscales 5. At 1.96 the largest difference is 5.6e-13: under
-these references, a CI’s call can change only if its InfoVal lies within
-that distance of the cut-off. None of the 228 CIs within 0.5 of 1.96
-changed its call (0 of 2800 overall).
+sinusoid, nscales 5. At 1.96 the largest difference is 5.6e-13 on the
+rendered route’s scale: under these references, a CI’s call can change
+only if its rendered-route InfoVal lies within that distance of the
+cut-off. None of the 228 CIs within 0.5 of 1.96 changed its call (0 of
+2800 overall).
 
 That distance is 5.6e+10 times smaller than the estimated standard
 deviation of InfoVal at 1.96 across 10,000-draw references, 0.031,
