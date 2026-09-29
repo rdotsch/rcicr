@@ -201,7 +201,7 @@ difference among the CIs, and `near_cutoff` how many of them lie within 0.5 of 1
 ## Against the Monte Carlo error InfoVal already carries
 
 A reference of 10,000 draws is itself a sample, so a second draw of the same size moves InfoVal. The
-yardstick is the spread of InfoVal at 1.96 across 40 independent 10,000-draw references for one
+yardstick is the standard deviation of InfoVal at 1.96 across 40 independent 10,000-draw references for one
 stimulus set, with a 200,000-draw reference standing in for the population. It is computed with the
 Gram route, whose values the table above shows agree with the rendered route to rounding.
 
@@ -253,9 +253,8 @@ lies within that distance of the cut-off. None of the `r sum(results$near_cutoff
 (`r sum(results$flips)` of `r nrow(results) * n_cis` overall).
 
 That distance is `r format(signif(spread / largest, 2), big.mark = ",")` times smaller than the
-Monte Carlo spread of InfoVal at 1.96 for a 10,000-draw reference, `r signif(spread, 2)`. So the
-band of InfoVals whose call the route can change is that many times narrower than the band a fresh
-draw of the reference already moves.
+estimated standard deviation of InfoVal at 1.96 across 10,000-draw references,
+`r signif(spread, 2)`, estimated from 40 of them.
 
 This document does not measure:
 

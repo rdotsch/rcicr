@@ -21,12 +21,14 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
 - **Accuracy.** The largest relative difference in a single norm was 4.8e-14. The largest InfoVal
   difference among 2,800 CIs was 7.9e-13, at 512px.
 - **Decisions.** At 1.96 the InfoVal difference was at most 5.6e-13, so only a CI within that
-  distance of the cut-off can change its call. That distance is 5.6e10 times smaller than the Monte
-  Carlo spread of InfoVal at 1.96 for a 10,000-draw reference (0.031). No call changed among the
+  distance of the cut-off can change its call. That distance is 5.6e10 times smaller than the
+  estimated standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call changed among the
   2,800 CIs, 228 of them within 0.5 of 1.96.
-- **Speed.** 13x to 107x faster at 128px or more.
-- **Memory.** At the 512px, 770-trial default, the rendered noise matrix is 1.5 GB; the Gram matrix
-  is 4.5 MB, plus a 128 MB basis cross-product.
+- **Speed.** 13x to 106x faster at 128px or more.
+- **Memory.** At the 512px, 770-trial default, as component sizes: the rendered noise matrix is
+  1.5 GB; the Gram matrix is 4.5 MB, plus a 128 MB basis cross-product. The Gram route's measured
+  peak is larger: 1.4 GB of R heap in a Gram-only run, mostly the sparse basis and the loaded file
+  (see Risks). The rendered route's peak was not measured at that size.
 
 ## Changes
 

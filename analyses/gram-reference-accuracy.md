@@ -226,11 +226,11 @@ difference among the CIs, and `near_cutoff` how many of them lie within
 ## Against the Monte Carlo error InfoVal already carries
 
 A reference of 10,000 draws is itself a sample, so a second draw of the
-same size moves InfoVal. The yardstick is the spread of InfoVal at 1.96
-across 40 independent 10,000-draw references for one stimulus set, with
-a 200,000-draw reference standing in for the population. It is computed
-with the Gram route, whose values the table above shows agree with the
-rendered route to rounding.
+same size moves InfoVal. The yardstick is the standard deviation of
+InfoVal at 1.96 across 40 independent 10,000-draw references for one
+stimulus set, with a 200,000-draw reference standing in for the
+population. It is computed with the Gram route, whose values the table
+above shows agree with the rendered route to rounding.
 
 ``` r
 rdata <- stimulus_set(512, 300, "sinusoid", 5)
@@ -270,10 +270,10 @@ knitr::kable(cost, row.names = FALSE)
 | 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.4 |         3.1 |     0.1 |
 | 64px, 100 trials, sinusoid, nscales 3  | 10000 |    32.7 |         3.1 |     0.1 |
 | 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.0 |        37.5 |     0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.5 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    41.0 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   106.6 |       600.0 |     0.7 |
+| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.1 |        37.5 |     0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.7 |       150.0 |     0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.9 |       385.0 |     4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   106.1 |       600.0 |     0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -289,10 +289,9 @@ these references, a CI’s call can change only if its InfoVal lies within
 that distance of the cut-off. None of the 228 CIs within 0.5 of 1.96
 changed its call (0 of 2800 overall).
 
-That distance is 5.6e+10 times smaller than the Monte Carlo spread of
-InfoVal at 1.96 for a 10,000-draw reference, 0.031. So the band of
-InfoVals whose call the route can change is that many times narrower
-than the band a fresh draw of the reference already moves.
+That distance is 5.6e+10 times smaller than the estimated standard
+deviation of InfoVal at 1.96 across 10,000-draw references, 0.031,
+estimated from 40 of them.
 
 This document does not measure:
 
