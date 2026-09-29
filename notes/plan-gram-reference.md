@@ -16,15 +16,15 @@ kept after the merge.
 ## What the analysis measured
 
 From the knitted `analyses/gram-reference-accuracy.md`: seven configurations, from 64px with 100
-trials to 512px with 300 trials, sinusoid and gabor.
+trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference draws.
 
-- **Accuracy.** The largest relative difference in a single norm was 3.3e-14. The largest InfoVal
-  difference among 2,800 CIs was 1.4e-12, and it grows with image size.
-- **Decisions.** At 1.96 the InfoVal difference was at most 7.4e-13, so only a CI within that
-  distance of the cut-off can change its call. That distance is 4.3e10 times smaller than the Monte
+- **Accuracy.** The largest relative difference in a single norm was 4.8e-14. The largest InfoVal
+  difference among 2,800 CIs was 7.9e-13, at 512px.
+- **Decisions.** At 1.96 the InfoVal difference was at most 5.6e-13, so only a CI within that
+  distance of the cut-off can change its call. That distance is 5.6e10 times smaller than the Monte
   Carlo spread of InfoVal at 1.96 for a 10,000-draw reference (0.031). No call changed among the
-  2,800 CIs, 237 of them within 0.5 of 1.96.
-- **Speed.** 13x to 25x faster at 128px or more.
+  2,800 CIs, 228 of them within 0.5 of 1.96.
+- **Speed.** 13x to 105x faster at 128px or more.
 - **Memory.** At the 512px, 770-trial default, the rendered noise matrix is 1.5 GB; the Gram matrix
   is 4.5 MB, plus a 128 MB basis cross-product.
 

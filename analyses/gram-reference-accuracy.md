@@ -89,10 +89,11 @@ gram_route <- function(params, p, iter, seed, block = 1000L) {
 
 ## Stimulus sets and classification images
 
-Each configuration generates its own stimulus set. The rendered route is
-slow at 512 pixels, so the larger configurations use fewer iterations.
-The comparison is per norm, so fewer iterations only make the median and
-MAD comparisons noisier; they do not shrink the differences.
+Each configuration generates its own stimulus set, and every
+configuration draws 10,000 references, the package default. The largest
+difference is a maximum over draws, and the median and MAD are sampled,
+so a smaller draw count would measure less, not the same thing more
+cheaply.
 
 The CIs scored against each pair of references come from `generateCI()`.
 Each responder follows a fixed template on a random share of trials,
@@ -183,9 +184,9 @@ results <- rbind(
   measure(64, 100, 10000, nscales = 3),
   measure(64, 100, 10000, noise_type = "gabor"),
   measure(128, 300, 10000),
-  measure(256, 300, 2000),
-  measure(256, 770, 2000),
-  measure(512, 300, 1000)
+  measure(256, 300, 10000),
+  measure(256, 770, 10000),
+  measure(512, 300, 10000)
 )
 ```
 
@@ -195,7 +196,7 @@ is not measuring the package.
 
 ``` r
 max(results$package_vs_routes)
-[1] 3.291346e-14
+[1] 4.784245e-14
 stopifnot(max(results$package_vs_routes) < 1e-12)
 ```
 
@@ -212,9 +213,9 @@ knitr::kable(shown, row.names = FALSE)
 | 64px, 100 trials, sinusoid, nscales 3 | 10000 | FALSE | 5.4e-15 | 4.4e-16 | 1.3e-15 | 1.3e-13 | 8.7e-14 | 21 | 0 |
 | 64px, 100 trials, gabor, nscales 5 | 10000 | FALSE | 3.6e-15 | 5.6e-17 | 2.9e-16 | 1.4e-13 | 8.8e-14 | 23 | 0 |
 | 128px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.1e-14 | 2.2e-16 | 9.1e-16 | 2.1e-13 | 1.1e-13 | 49 | 0 |
-| 256px, 300 trials, sinusoid, nscales 5 | 2000 | FALSE | 1.9e-14 | 8.9e-16 | 2.5e-15 | 3.2e-13 | 1.7e-13 | 49 | 0 |
-| 256px, 770 trials, sinusoid, nscales 5 | 2000 | FALSE | 1.7e-14 | 8.3e-16 | 2.7e-15 | 3.3e-13 | 1.9e-13 | 32 | 0 |
-| 512px, 300 trials, sinusoid, nscales 5 | 1000 | FALSE | 3.3e-14 | 1.2e-14 | 2.1e-14 | 1.4e-12 | 7.4e-13 | 50 | 0 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 3.7e-15 | 3.3e-16 | 1.2e-13 | 8.2e-14 | 47 | 0 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 1.4e-15 | 1.3e-15 | 2.0e-13 | 5.2e-14 | 28 | 0 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 4.8e-14 | 2.5e-14 | 8.1e-15 | 7.9e-13 | 5.6e-13 | 47 | 0 |
 
 `rel_norm` is the largest relative difference in any single norm.
 `d_median` and `d_mad` are the absolute differences in the two
@@ -245,7 +246,7 @@ spread
 
 largest <- max(results$dz_at_cutoff)
 spread / largest
-[1] 42590506947
+[1] 55558662879
 ```
 
 ## Time and memory
@@ -266,13 +267,13 @@ knitr::kable(cost, row.names = FALSE)
 
 | config                                 |  iter | speedup | rendered_mb | gram_mb |
 |:---------------------------------------|------:|--------:|------------:|--------:|
-| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.5 |         3.1 |     0.1 |
-| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    33.4 |         3.1 |     0.1 |
-| 64px, 100 trials, gabor, nscales 5     | 10000 |     3.3 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.6 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    32.7 |         3.1 |     0.1 |
+| 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
 | 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.1 |        37.5 |     0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 |  2000 |    15.1 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 |  2000 |    16.7 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 |  1000 |    25.4 |       600.0 |     0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.8 |       150.0 |     0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.8 |       385.0 |     4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   104.9 |       600.0 |     0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -281,14 +282,13 @@ cross-product for five scales is 128 MB.
 ## What this shows and what it does not
 
 The two routes are never bit-identical. The largest relative difference
-in any single norm is 3.3e-14. The largest InfoVal difference among 2800
-CIs is 1.4e-12, at 512px, 300 trials, sinusoid, nscales 5, and grows
-with image size. At 1.96 the largest difference is 7.4e-13: a CI’s call
-can change only if its InfoVal lies within that distance of the cut-off.
-None of the 237 CIs within 0.5 of 1.96 changed its call (0 of 2800
-overall).
+in any single norm is 4.8e-14. The largest InfoVal difference among 2800
+CIs is 7.9e-13, at 512px, 300 trials, sinusoid, nscales 5. At 1.96 the
+largest difference is 5.6e-13: a CI’s call can change only if its
+InfoVal lies within that distance of the cut-off. None of the 228 CIs
+within 0.5 of 1.96 changed its call (0 of 2800 overall).
 
-That distance is 4.3e+10 times smaller than the Monte Carlo spread of
+That distance is 5.6e+10 times smaller than the Monte Carlo spread of
 InfoVal at 1.96 for a 10,000-draw reference, 0.031. So the band of
 InfoVals whose call the route can change is that many times narrower
 than the band a fresh draw of the reference already moves.

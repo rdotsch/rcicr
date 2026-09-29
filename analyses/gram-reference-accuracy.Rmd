@@ -83,9 +83,9 @@ gram_route <- function(params, p, iter, seed, block = 1000L) {
 
 ## Stimulus sets and classification images
 
-Each configuration generates its own stimulus set. The rendered route is slow at 512 pixels, so the
-larger configurations use fewer iterations. The comparison is per norm, so fewer iterations only make
-the median and MAD comparisons noisier; they do not shrink the differences.
+Each configuration generates its own stimulus set, and every configuration draws 10,000 references,
+the package default. The largest difference is a maximum over draws, and the median and MAD are
+sampled, so a smaller draw count would measure less, not the same thing more cheaply.
 
 The CIs scored against each pair of references come from `generateCI()`. Each responder follows a
 fixed template on a random share of trials, between 0 and 60%, and responds at random on the rest.
@@ -173,9 +173,9 @@ results <- rbind(
   measure(64, 100, 10000, nscales = 3),
   measure(64, 100, 10000, noise_type = "gabor"),
   measure(128, 300, 10000),
-  measure(256, 300, 2000),
-  measure(256, 770, 2000),
-  measure(512, 300, 1000)
+  measure(256, 300, 10000),
+  measure(256, 770, 10000),
+  measure(512, 300, 10000)
 )
 ```
 
@@ -247,7 +247,7 @@ worst <- results[which.max(results$max_dz), ]
 The two routes are never bit-identical. The largest relative difference in any single norm is
 `r sprintf("%.1e", max(results$rel_norm))`. The largest InfoVal difference among
 `r nrow(results) * n_cis` CIs is `r sprintf("%.1e", max(results$max_dz))`, at
-`r worst$config`, and grows with image size. At 1.96 the largest difference is
+`r worst$config`. At 1.96 the largest difference is
 `r sprintf("%.1e", largest)`: a CI's call can change only if its InfoVal lies within that distance
 of the cut-off. None of the `r sum(results$near_cutoff)` CIs within 0.5 of 1.96 changed its call
 (`r sum(results$flips)` of `r nrow(results) * n_cis` overall).
