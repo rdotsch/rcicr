@@ -1,5 +1,11 @@
 # rcicr (development version)
 
+## New features
+
+- **`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` can build the InfoVal reference over the stimuli a classification image was actually built from.** Brinkman et al. (2019) require the reference to use the same stimuli as the CI, but the reference has always used every saved stimulus. A CI built from fewer, for example after dropping missed trials, therefore got an inflated InfoVal: at 512 pixels, pure-noise CIs had a median InfoVal of 0.09 to 0.11 with 1% of trials missing and 0.51 to 0.58 with 5%, in the stimulus sets measured in `analyses/infoval-design-mismatch.md`. Pass those stimuli as the new `reference_stimuli` argument, each once. The reference is reproducible from the stimulus file and stored in it, as `reference_norms_by_stimuli`, apart from the default reference. No default changes, so every existing call returns the same number. (#349)
+
+  `generateCI()` now records which stimuli it used, whether any was repeated, and how many participants it averaged, as a `trial_design` attribute. `computeInfoVal2IFC()` reads it and prints a message when a CI is scored against a reference over different stimuli, giving the call that matches them: `reference_stimuli = attr(ci, "trial_design")$stimuli`. For a CI that averages repeated presentations or several participants, the message says instead that no reference is defined for that design, and suggests an InfoVal for each participant's CI. The message never changes the number returned. A CI from an older version has no attribute and gets no message. The attribute leaves the list's fields unchanged.
+
 # rcicr 1.5.0 (2026-09-25)
 
 ## Reproducibility impact

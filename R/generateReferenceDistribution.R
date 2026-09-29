@@ -50,6 +50,12 @@
 #' @param baseimage Base-image label, the same key passed to \code{generateCI()}. Required when
 #' the base images have different noise parameters. With a single base image, or base images
 #' sharing one parameter set, leave it at \code{NULL}.
+#' @param reference_stimuli Optional stimulus numbers, each once, to build the reference over
+#' instead of every saved stimulus: the stimuli a classification image was built from, when that
+#' is not all of them. See "Matching the reference to the classification image" in
+#' \code{\link{computeInfoVal2IFC}}. The simulated responses continue the same stream as the
+#' default, so the reference is reproducible from the file. Passing every saved stimulus is the
+#' same as the default, \code{NULL}.
 #' @section Independent base images:
 #' When the base images have different parameter matrices, \code{baseimage} says whose noise to
 #' use. The distributions are then stored in \code{reference_norms_by_base}, one entry per base
@@ -61,7 +67,10 @@
 #' \code{reference_norms}, with \code{reference_norms_seed} recording the \code{response_seed}
 #' it was drawn with. A later \code{\link{computeInfoVal2IFC}} call on the same file then reuses
 #' it instead of simulating again. For independent base images it goes in
-#' \code{reference_norms_by_base} instead, as described above.
+#' \code{reference_norms_by_base} instead, as described above. A reference over
+#' \code{reference_stimuli} goes in \code{reference_norms_by_stimuli}, a list with one entry per
+#' stimulus set (and base image, where the bases have different noise), leaving the default
+#' reference untouched.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
@@ -82,9 +91,16 @@
 #'
 #' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 #' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL) { # nolint: object_length_linter.
+generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL, reference_stimuli = NULL) { # nolint: object_length_linter.
 
   reference_selection <- selectReferenceBase(rdata, baseimage)
+  # Only a proper subset leaves here; an explicit full set takes the default path.
+  subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
+  if (!is.null(subset)) {
+    return(invisible(generateSubsetReference(subset$source, rdata, reference_selection,
+                                             subset$reference_stimuli, iter, ncores,
+                                             response_seed, save_rdata)))
+  }
   if (reference_selection$independent) {
     return(invisible(generateBaseReference(reference_selection, rdata, iter,
                                            ncores, response_seed, save_rdata)))
@@ -105,6 +121,10 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   .args <- list(rdata = rdata, iter = iter, ncores = ncores,
     response_seed = response_seed, save_rdata = save_rdata, baseimage = baseimage
   )
+
+  # Neither is needed below. Removed before load() so the frame re-saved at the
+  # end holds the file's own objects of these names, if any, and nothing else.
+  rm(reference_stimuli, subset)
 
   # Load parameter file (created when generating stimuli)
   loadRdata(rdata, environment())

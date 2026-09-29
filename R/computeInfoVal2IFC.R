@@ -17,6 +17,27 @@
 #' simulates it again. An archive on read-only media can therefore still be scored, at the cost of
 #' simulating each time.
 #'
+#' @section Matching the reference to the classification image:
+#' The reference must be built from the same stimuli as the classification image (Brinkman et
+#' al., 2019, Part I). By default it uses every saved stimulus, with one response each. Matching
+#' it to your design is your responsibility, because the default cannot know which trials you
+#' dropped. A CI built from fewer stimuli (after removing missed trials, say, or from part of the
+#' set) has a larger norm under random responding, and the default reference inflates its
+#' InfoVal. At 512 pixels, in the stimulus sets measured, pure-noise CIs had a median InfoVal of
+#' 0.09 to 0.11 with 1\% of trials missing and 0.51 to 0.58 with 5\%
+#' (\url{https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-design-mismatch.md}).
+#'
+#' Pass the stimuli the CI was built from as \code{reference_stimuli}. \code{\link{generateCI}}
+#' records them on its result, so
+#' \code{computeInfoVal2IFC(ci, rdata, reference_stimuli = attr(ci, "trial_design")$stimuli)}
+#' does it, and a message says when a CI is scored against a reference over different stimuli.
+#' The message never changes the number returned.
+#'
+#' No reference is defined for a CI that averages repeated presentations of a stimulus or several
+#' participants: every reference here assumes one response per stimulus from one responder. For
+#' participants who each saw every stimulus once, compute the InfoVal of each participant's own
+#' CI instead.
+#'
 #' For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van Haren, N. E. M.,
 #' Dotsch, R., & Aarts, H. (2019). Quantifying the informational value of classification
 #' images. \emph{Behavior Research Methods}, \emph{51}, 2059-2073.
@@ -45,6 +66,13 @@
 #' base then gets its own stored reference distribution, and a shared one left by an older version
 #' is ignored. With a single base image, or base images sharing one parameter set, leave it at
 #' \code{NULL}.
+#' @param reference_stimuli Optional stimulus numbers the classification image was built from,
+#' each once, when that is not every saved stimulus. The reference is then built over exactly
+#' those stimuli and stored in the \code{rdata} file apart from the default one, as described in
+#' \code{\link{generateReferenceDistribution2IFC}}. The default, \code{NULL}, uses every saved
+#' stimulus, as does passing all of them, with the same result in every case. A subset too small
+#' for random responses to give distinct norms (one stimulus, and usually two) is refused, since
+#' its MAD is 0 and the InfoVal would not be a number. See "Matching the reference to the classification image" below.
 #' @return The Informational Value, a z-score.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
@@ -75,9 +103,14 @@
 #' )
 #'
 #' computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
-computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL) {
+computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL, reference_stimuli = NULL) {
 
   reference_selection <- selectReferenceBase(rdata, baseimage)
+  subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
+  if (!is.null(subset)) {
+    return(computeSubsetInfoVal(target_ci, rdata, iter, force_gen_ref_dist, response_seed,
+                                subset$source, reference_selection, subset$reference_stimuli))
+  }
   if (reference_selection$independent) {
     return(computeBaseInfoVal(target_ci, rdata, iter, force_gen_ref_dist,
                               response_seed, reference_selection))
@@ -92,6 +125,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   .args <- captureArgs(environment())
   loadRdata(rdata, environment())
   list2env(.args, envir = environment())
+
+  reportTrialDesign(target_ci, get0('n_trials', envir = environment(), inherits = FALSE), NULL)
 
   if (!is.null(response_seed)) force_gen_ref_dist <- TRUE
   cached_reference <- if (exists('reference_norms', envir = environment(), inherits = FALSE)) {
