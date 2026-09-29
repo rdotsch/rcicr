@@ -18,7 +18,8 @@ by each simulated response vector ([issue
 \#354](https://github.com/rdotsch/rcicr/issues/354)). The same norms
 follow from the stimulus Gram matrix, a trials-by-trials matrix of dot
 products between the noise images, without rendering any image. The two
-routes sum in a different order, so their results are not bit-identical.
+routes sum in a different order, so their results need not be
+bit-identical.
 
 This document measures by how much they differ, and how often the
 difference changes a decision at the conventional cut-off of 1.96. It
@@ -190,9 +191,8 @@ results <- rbind(
 )
 ```
 
-The package’s own reference must agree with both routes: exactly with
-the one it uses, and to rounding with the other. Otherwise this document
-is not measuring the package.
+The package’s own reference must agree with both routes, to a relative
+1e-12. Otherwise this document is not measuring the package.
 
 ``` r
 max(results$package_vs_routes)
@@ -267,13 +267,13 @@ knitr::kable(cost, row.names = FALSE)
 
 | config                                 |  iter | speedup | rendered_mb | gram_mb |
 |:---------------------------------------|------:|--------:|------------:|--------:|
-| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.6 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.4 |         3.1 |     0.1 |
 | 64px, 100 trials, sinusoid, nscales 3  | 10000 |    32.7 |         3.1 |     0.1 |
 | 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.1 |        37.5 |     0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.8 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.8 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   104.9 |       600.0 |     0.7 |
+| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.0 |        37.5 |     0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.5 |       150.0 |     0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    41.0 |       385.0 |     4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   106.6 |       600.0 |     0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -281,12 +281,13 @@ cross-product for five scales is 128 MB.
 
 ## What this shows and what it does not
 
-The two routes are never bit-identical. The largest relative difference
-in any single norm is 4.8e-14. The largest InfoVal difference among 2800
-CIs is 7.9e-13, at 512px, 300 trials, sinusoid, nscales 5. At 1.96 the
-largest difference is 5.6e-13: a CI’s call can change only if its
-InfoVal lies within that distance of the cut-off. None of the 228 CIs
-within 0.5 of 1.96 changed its call (0 of 2800 overall).
+None of the tested configurations gave bit-identical references. The
+largest relative difference in any single norm is 4.8e-14. The largest
+InfoVal difference among 2800 CIs is 7.9e-13, at 512px, 300 trials,
+sinusoid, nscales 5. At 1.96 the largest difference is 5.6e-13: under
+these references, a CI’s call can change only if its InfoVal lies within
+that distance of the cut-off. None of the 228 CIs within 0.5 of 1.96
+changed its call (0 of 2800 overall).
 
 That distance is 5.6e+10 times smaller than the Monte Carlo spread of
 InfoVal at 1.96 for a 10,000-draw reference, 0.031. So the band of

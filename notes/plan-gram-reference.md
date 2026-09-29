@@ -7,7 +7,7 @@ saved stimulus into a pixels-by-trials matrix and multiplies it by each response
 norms follow from the trials-by-trials Gram matrix, `norm(S r / n) = sqrt(t(r) G r) / n`, where `G`
 is built from the saved parameters and the sparse basis without rendering any image.
 
-The two routes sum in a different order, so the results are not bit-identical. That relaxes an
+The two routes sum in a different order, and none of the configurations measured gave bit-identical results. That relaxes an
 exactness contract the repository holds today. `test-generateReferenceDistribution2IFC.R:255` pins
 the reference norms bit-for-bit to the rendered arithmetic. The maintainer accepted the trade on
 #354, on the measurements in `analyses/gram-reference-accuracy.Rmd`, committed on this branch and
@@ -24,7 +24,7 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
   distance of the cut-off can change its call. That distance is 5.6e10 times smaller than the Monte
   Carlo spread of InfoVal at 1.96 for a 10,000-draw reference (0.031). No call changed among the
   2,800 CIs, 228 of them within 0.5 of 1.96.
-- **Speed.** 13x to 105x faster at 128px or more.
+- **Speed.** 13x to 107x faster at 128px or more.
 - **Memory.** At the 512px, 770-trial default, the rendered noise matrix is 1.5 GB; the Gram matrix
   is 4.5 MB, plus a 128 MB basis cross-product.
 

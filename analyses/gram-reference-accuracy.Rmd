@@ -16,7 +16,7 @@ responses. rcicr has always computed them by rendering every saved stimulus into
 matrix and multiplying it by each simulated response vector
 ([issue #354](https://github.com/rdotsch/rcicr/issues/354)). The same norms follow from the stimulus
 Gram matrix, a trials-by-trials matrix of dot products between the noise images, without rendering
-any image. The two routes sum in a different order, so their results are not bit-identical.
+any image. The two routes sum in a different order, so their results need not be bit-identical.
 
 This document measures by how much they differ, and how often the difference changes a decision at
 the conventional cut-off of 1.96. It implements both routes itself, so it measures the same thing
@@ -179,8 +179,8 @@ results <- rbind(
 )
 ```
 
-The package's own reference must agree with both routes: exactly with the one it uses, and to
-rounding with the other. Otherwise this document is not measuring the package.
+The package's own reference must agree with both routes, to a relative 1e-12. Otherwise this
+document is not measuring the package.
 
 ```{r package-check}
 max(results$package_vs_routes)
@@ -244,12 +244,12 @@ the basis cross-product for five scales is `r round(4092^2 * 8 / 2^20)` MB.
 worst <- results[which.max(results$max_dz), ]
 ```
 
-The two routes are never bit-identical. The largest relative difference in any single norm is
+None of the tested configurations gave bit-identical references. The largest relative difference in any single norm is
 `r sprintf("%.1e", max(results$rel_norm))`. The largest InfoVal difference among
 `r nrow(results) * n_cis` CIs is `r sprintf("%.1e", max(results$max_dz))`, at
 `r worst$config`. At 1.96 the largest difference is
-`r sprintf("%.1e", largest)`: a CI's call can change only if its InfoVal lies within that distance
-of the cut-off. None of the `r sum(results$near_cutoff)` CIs within 0.5 of 1.96 changed its call
+`r sprintf("%.1e", largest)`: under these references, a CI's call can change only if its InfoVal
+lies within that distance of the cut-off. None of the `r sum(results$near_cutoff)` CIs within 0.5 of 1.96 changed its call
 (`r sum(results$flips)` of `r nrow(results) * n_cis` overall).
 
 That distance is `r format(signif(spread / largest, 2), big.mark = ",")` times smaller than the
