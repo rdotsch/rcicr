@@ -19,3 +19,9 @@ docs/
 # and were once committed by accident (~75k lines).
 *.Rcheck/
 *.tar.gz
+
+# testthat writes these beside the tests when a test fails: the failing test's
+# source and a failure database holding local paths. Committed by accident
+# twice in #355.
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds
