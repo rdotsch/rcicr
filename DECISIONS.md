@@ -15,10 +15,6 @@ before something goes in. Write the decision and the evidence, not the
 route to it: an entry earns its length from a measurement or a rejected
 alternative.
 
-> Until 2026-07-27 this was a chronological session log
-> (`.session-log.md`). The original narrative, with dates and
-> intermediate states, is in git history up to `887aea4`.
-
 ------------------------------------------------------------------------
 
 ## The constraint that shapes everything
@@ -149,12 +145,6 @@ Do **not** “fix” the recycling by offsetting the index: that changes
 which sinusoid is dropped and alters the CI of every genuine pre-0.3.0
 file. `test-generateNoiseImage.R` pins both properties.
 
-**A backward-compatibility path that nothing exercises cannot be told
-apart from one that works.** The truncation left one broken in
-[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-for eleven years, untested until 2026-07-28; so was the
-`sinusoids`/`sinIdx` path.
-
 ### `load()` assigns into the calling frame — check every new argument against saved names
 
 An object in an `.Rdata` file silently overwrites a function argument of
@@ -164,7 +154,9 @@ re-saved its whole frame, so the files it wrote contained `rdata` and
 `ncores`. A second call then ignored the caller’s `ncores` and wrote
 back to the path recorded by the first. It is fixed at the source, by
 leaving the function’s own arguments out of the save, *and* defensively
-on read, for files older versions already wrote.
+on read, for files older versions already wrote. `reference_stimuli` is
+removed *before* [`load()`](https://rdrr.io/r/base/load.html), so a
+file’s own object of that name survives.
 
 ### The InfoVal formula is already correct — do not “fix” it
 
@@ -285,6 +277,19 @@ first base’s parameters come from the same leading block of the random
 stream. A *pre-0.3.0* independent file is the exception: its trials
 cannot be rebuilt from the seed (see “4096 → 4092” above), so its first
 base moves too.
+
+### A subset CI is scored against the full stimulus set by default
+
+Brinkman et al. (2019) require the reference to use the CI’s own
+stimuli. A new default would move every InfoVal reported for a subset
+CI, so matching is the researcher’s call: `reference_stimuli` builds the
+paper’s reference, and
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
+`trial_design` attribute lets
+[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+flag a mismatch. Repeats and participant averages get no reference,
+since the paper defines none. Cost measured in
+[`analyses/infoval-design-mismatch.md`](https://rdotsch.github.io/rcicr/analyses/infoval-design-mismatch.md).
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 
@@ -463,10 +468,7 @@ already has; do not regenerate the fixture to fix it.
 Each fixture is generated at its era’s **defaults** (`nscales = 5`,
 `sigma = 25` for 1.0.1), the situation a returning researcher is
 actually in. The gabor fixture is the only one whose saved basis is not
-sinusoidal. It was written to exercise the fallbacks for missing fields,
-which [\#301](https://github.com/rdotsch/rcicr/issues/301) removed by
-reading the saved basis instead of rebuilding it; it now checks that
-basis being read back.
+sinusoidal.
 
 ### The v1.0.1 reference is pinned; the previous release is a *second* run, not a replacement
 

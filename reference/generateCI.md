@@ -173,7 +173,12 @@ generateCI(
 
 List of pixel matrices: the raw classification noise (`ci`), the scaled
 noise (`scaled`), the base image (`base`) and the two combined
-(`combined`).
+(`combined`), plus the z-map (`zmap`) when `zmap = TRUE`. Its
+`trial_design` attribute records which saved stimuli the CI was built
+from (`stimuli`), whether any was presented more than once (`repeated`),
+and the number of participants (`n_participants`);
+[`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+uses it to check that its reference matches the CI.
 
 ## Details
 

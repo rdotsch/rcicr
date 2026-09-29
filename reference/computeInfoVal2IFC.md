@@ -11,7 +11,8 @@ computeInfoVal2IFC(
   iter = 10000,
   force_gen_ref_dist = FALSE,
   response_seed = NULL,
-  baseimage = NULL
+  baseimage = NULL,
+  reference_stimuli = NULL
 )
 ```
 
@@ -64,6 +65,20 @@ computeInfoVal2IFC(
   left by an older version is ignored. With a single base image, or base
   images sharing one parameter set, leave it at `NULL`.
 
+- reference_stimuli:
+
+  Optional stimulus numbers the classification image was built from,
+  each once, when that is not every saved stimulus. The reference is
+  then built over exactly those stimuli and stored in the `rdata` file
+  apart from the default one, as described in
+  [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md).
+  The default, `NULL`, uses every saved stimulus, as does passing all of
+  them, with the same result in every case. A subset too small for
+  random responses to give distinct norms (one stimulus, and usually
+  two) is refused, since its MAD is 0 and the InfoVal would not be a
+  number. See "Matching the reference to the classification image"
+  below.
+
 ## Value
 
 The Informational Value, a z-score.
@@ -86,6 +101,32 @@ is used for this call only: a note names the file (and, for independent
 base images, the base) that could not be updated, and the next call
 simulates it again. An archive on read-only media can therefore still be
 scored, at the cost of simulating each time.
+
+## Matching the reference to the classification image
+
+The reference must be built from the same stimuli as the classification
+image (Brinkman et al., 2019, Part I). By default it uses every saved
+stimulus, with one response each. Matching it to your design is your
+responsibility, because the default cannot know which trials you
+dropped. A CI built from fewer stimuli (after removing missed trials,
+say, or from part of the set) has a larger norm under random responding,
+and the default reference inflates its InfoVal. At 512 pixels, in the
+stimulus sets measured, pure-noise CIs had a median InfoVal of 0.09 to
+0.11 with 1% of trials missing and 0.51 to 0.58 with 5%
+(<https://github.com/rdotsch/rcicr/blob/main/analyses/infoval-design-mismatch.md>).
+
+Pass the stimuli the CI was built from as `reference_stimuli`.
+[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+records them on its result, so
+`computeInfoVal2IFC(ci, rdata, reference_stimuli = attr(ci, "trial_design")$stimuli)`
+does it, and a message says when a CI is scored against a reference over
+different stimuli. The message never changes the number returned.
+
+No reference is defined for a CI that averages repeated presentations of
+a stimulus or several participants: every reference here assumes one
+response per stimulus from one responder. For participants who each saw
+every stimulus once, compute the InfoVal of each participant's own CI
+instead.
 
 For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van
 Haren, N. E. M., Dotsch, R., & Aarts, H. (2019). Quantifying the

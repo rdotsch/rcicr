@@ -281,6 +281,10 @@
 <td><code>reference_norms_by_base</code></td>
 <td>Written instead of the fields above when the base images have <em>different</em> parameter matrices, because each base then needs a null built from its own saved noise. A named list, one entry per base, each holding that base’s <code>norms</code>, <code>response_seed</code>, <code>source</code> and <code>fingerprint</code> (same meaning as above). A <code>reference_norms</code> already in such a file is left in place and ignored. Added in 1.4.0.</td>
 </tr>
+<tr>
+<td><code>reference_norms_by_stimuli</code></td>
+<td>References built over a subset of the saved stimuli, with <code>reference_stimuli</code>, for a CI that did not use them all. A list with one entry per stimulus set, each holding its <code>reference_stimuli</code>, <code>baseimage</code> (<code>NULL</code> when the bases share one parameter matrix), <code>norms</code>, <code>response_seed</code>, <code>source</code> and <code>fingerprint</code>. The default reference is never read or written for these. Added in the development version.</td>
+</tr>
 </tbody>
 </table>
 <p>Before you write code against this file:</p>

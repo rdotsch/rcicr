@@ -34,6 +34,13 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="rcicr-development-version">rcicr (development version)<a class="anchor" aria-label="anchor" href="#rcicr-development-version"></a></h2>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li>
+<p><strong><code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> and <code><a href="../reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC()</a></code> can build the InfoVal reference over the stimuli a classification image was actually built from.</strong> Brinkman et al. (2019) require the reference to use the same stimuli as the CI, but the reference has always used every saved stimulus. A CI built from fewer, for example after dropping missed trials, therefore got an inflated InfoVal: at 512 pixels, pure-noise CIs had a median InfoVal of 0.09 to 0.11 with 1% of trials missing and 0.51 to 0.58 with 5%, in the stimulus sets measured in <code>analyses/infoval-design-mismatch.md</code>. Pass those stimuli as the new <code>reference_stimuli</code> argument, each once. The reference is reproducible from the stimulus file and stored in it, as <code>reference_norms_by_stimuli</code>, apart from the default reference. No default changes, so every existing call returns the same number. (<a href="https://github.com/rdotsch/rcicr/issues/349" class="external-link">#349</a>)</p>
+<p><code><a href="../reference/generateCI.html">generateCI()</a></code> now records which stimuli it used, whether any was repeated, and how many participants it averaged, as a <code>trial_design</code> attribute. <code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> reads it and prints a message when a CI is scored against a reference over different stimuli, giving the call that matches them: <code>reference_stimuli = attr(ci, "trial_design")$stimuli</code>. For a CI that averages repeated presentations or several participants, the message says instead that no reference is defined for that design, and suggests an InfoVal for each participant’s CI. The message never changes the number returned. A CI from an older version has no attribute and gets no message. The attribute leaves the list’s fields unchanged.</p>
+</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.5.0" id="rcicr-150-2026-09-25">rcicr 1.5.0 (2026-09-25)<a class="anchor" aria-label="anchor" href="#rcicr-150-2026-09-25"></a></h2><p class="text-muted">CRAN release: 2026-09-27</p>

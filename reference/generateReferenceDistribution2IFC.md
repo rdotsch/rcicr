@@ -11,7 +11,8 @@ generateReferenceDistribution2IFC(
   ncores = default_ncores(),
   response_seed = NULL,
   save_rdata = TRUE,
-  baseimage = NULL
+  baseimage = NULL,
+  reference_stimuli = NULL
 )
 ```
 
@@ -59,6 +60,17 @@ generateReferenceDistribution2IFC(
   single base image, or base images sharing one parameter set, leave it
   at `NULL`.
 
+- reference_stimuli:
+
+  Optional stimulus numbers, each once, to build the reference over
+  instead of every saved stimulus: the stimuli a classification image
+  was built from, when that is not all of them. See "Matching the
+  reference to the classification image" in
+  [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md).
+  The simulated responses continue the same stream as the default, so
+  the reference is reproducible from the file. Passing every saved
+  stimulus is the same as the default, `NULL`.
+
 ## Value
 
 The reference distribution, invisibly, as a numeric vector of `iter`
@@ -68,7 +80,10 @@ as `reference_norms`, with `reference_norms_seed` recording the
 [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
 call on the same file then reuses it instead of simulating again. For
 independent base images it goes in `reference_norms_by_base` instead, as
-described above.
+described above. A reference over `reference_stimuli` goes in
+`reference_norms_by_stimuli`, a list with one entry per stimulus set
+(and base image, where the bases have different noise), leaving the
+default reference untouched.
 
 ## Details
 

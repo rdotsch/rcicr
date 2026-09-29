@@ -45,7 +45,8 @@
 <span>  ncores <span class="op">=</span> <span class="fu">default_ncores</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  response_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save_rdata <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  baseimage <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  baseimage <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  reference_stimuli <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -86,6 +87,15 @@ the file's reproducible reference.</p></dd>
 the base images have different noise parameters. With a single base image, or base images
 sharing one parameter set, leave it at <code>NULL</code>.</p></dd>
 
+
+<dt id="arg-reference-stimuli">reference_stimuli<a class="anchor" aria-label="anchor" href="#arg-reference-stimuli"></a></dt>
+<dd><p>Optional stimulus numbers, each once, to build the reference over
+instead of every saved stimulus: the stimuli a classification image was built from, when that
+is not all of them. See "Matching the reference to the classification image" in
+<code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code>. The simulated responses continue the same stream as the
+default, so the reference is reproducible from the file. Passing every saved stimulus is the
+same as the default, <code>NULL</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -94,7 +104,10 @@ Unless <code>save_rdata = FALSE</code>, it is also added to the <code>rdata</cod
 <code>reference_norms</code>, with <code>reference_norms_seed</code> recording the <code>response_seed</code>
 it was drawn with. A later <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> call on the same file then reuses
 it instead of simulating again. For independent base images it goes in
-<code>reference_norms_by_base</code> instead, as described above.</p>
+<code>reference_norms_by_base</code> instead, as described above. A reference over
+<code>reference_stimuli</code> goes in <code>reference_norms_by_stimuli</code>, a list with one entry per
+stimulus set (and base image, where the bases have different noise), leaving the default
+reference untouched.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

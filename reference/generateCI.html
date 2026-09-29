@@ -164,7 +164,7 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>List of pixel matrices: the raw classification noise (<code>ci</code>), the scaled noise (<code>scaled</code>), the base image (<code>base</code>) and the two combined (<code>combined</code>).</p>
+    <p>List of pixel matrices: the raw classification noise (<code>ci</code>), the scaled noise (<code>scaled</code>), the base image (<code>base</code>) and the two combined (<code>combined</code>), plus the z-map (<code>zmap</code>) when <code>zmap = TRUE</code>. Its <code>trial_design</code> attribute records which saved stimuli the CI was built from (<code>stimuli</code>), whether any was presented more than once (<code>repeated</code>), and the number of participants (<code>n_participants</code>); <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> uses it to check that its reference matches the CI.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
