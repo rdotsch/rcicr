@@ -25,11 +25,24 @@ reach again, and deleting files is an explicit act the user already controls.
 
 ## Changes
 
-1. **Preflight, before any generation or write.** Compute every PNG path the call will write: each
-   base label and trial, `_ori` and `_inv`. If any exists, stop, releasing the `.Rdata` lock. The
-   lookup is `file.exists()` on the real paths, so the file system decides what counts as the same
-   name, including case and Unicode spellings. That is the concern that kept #338's lock off `label`.
-   The message gives the number of existing files and the first few paths.
+1. **Reserve every PNG before any generation.** Walk the PNG paths the call will write, in order:
+   each base label and trial, `_ori` and `_inv`. For each one:
+   - if it already exists, that is a collision, and the call stops;
+   - otherwise, create it empty to reserve it.
+
+   A file can exist either because an earlier run wrote it, or because this same call just reserved
+   it under a spelling the file system treats as equal. For example, base labels `face` and `Face`
+   on a case-insensitive or Unicode-normalising file system name the same file. Nothing is compared
+   as strings, so what counts as the same name is always the file system's decision, which is the
+   concern that kept #338's lock off `label`.
+
+   The collision message gives the number of paths taken and the first few. It also says when the
+   clash is inside the call itself, so it names equivalent base labels rather than an earlier run.
+   On a collision, or on any error before the call completes, every file this call created is
+   removed (placeholders and PNGs alike), and so is the `.Rdata` lock. A failed call therefore
+   never leaves a partial set, or placeholders that would block the next run. The check goes through
+   a small helper so that tests can model a case-insensitive file system on a case-sensitive CI
+   runner.
 2. **A lock for concurrent runs.** A preflight alone still races: two same-seed calls into one folder
    in different minutes both pass it, then write together. With `save_as_png = TRUE`, the call also
    takes an atomic `dir.create()` lock keyed on the seed alone, not the minute and not the label, for
@@ -68,8 +81,16 @@ reach again, and deleting files is an explicit act the user already controls.
 - Regenerating on purpose, after deleting the earlier PNGs and `.Rdata`, succeeds.
 - `save_as_png = FALSE` into a folder holding the PNGs succeeds, unchanged.
 - With a planted seed lock, the call stops with the lock message, and nothing is written.
-- Mutations that must fail a test: skipping the preflight; checking only the first base label; taking
-  the lock after writing.
+- Base labels that alias each other within one call stop it, with nothing left behind:
+  - a mocked case-insensitive file system (the existence helper), which runs everywhere;
+  - `face` and `Face` for real where the file system is found to be case-insensitive, which the
+    macOS runner normally is. The test checks for that by creating `a` and looking up `A`.
+- An error part-way through generation leaves no placeholder and no PNG from the failed call.
+- Mutations that must fail a test:
+  - skipping the reservation;
+  - checking only the first base label;
+  - not removing reservations on failure;
+  - taking the lock after writing.
 
 ## Risk
 
