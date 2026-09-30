@@ -24,7 +24,7 @@ bash tools/setup-container-r.sh      # toolchain + rcicr; safe to re-run
 After that the ordinary workflow applies, including the release gate.
 Measured here:
 [`testthat::test_local()`](https://testthat.r-lib.org/reference/test_package.html)
-gives 1141 passing and 1 skip.
+gives 1498 passing and no skips, as uid 1000.
 
 Three things to know before trusting or editing that script:
 
@@ -45,14 +45,14 @@ Three things to know before trusting or editing that script:
   for CRAN. `raster` also pulls in the GDAL/GEOS/PROJ system libraries
   it links against.
 
-Two differences from CI will mislead you if you forget them. Sessions
-run as **root**, so a file made read-only is still writable, and the one
-test that depends on that skips instead of running. And the full release
-gate needs about 20 minutes per reference plus about 1.5 GB of RAM at
-512px, so prefer running it in CI: a `workflow_dispatch` of
-`reproducibility.yaml` runs the **full** battery against both
-references, because the `--quick` choice depends on a `pull_request`
-event.
+Two differences from CI will mislead you if you forget them. A session
+may run as **root** (check with `id -u`). Then a file made read-only is
+still writable, and the one test that depends on that skips instead of
+running. And the full release gate needs about 20 minutes per reference
+plus about 1.5 GB of RAM at 512px, so prefer running it in CI: a
+`workflow_dispatch` of `reproducibility.yaml` runs the **full** battery
+against both references, because the `--quick` choice depends on a
+`pull_request` event.
 
 ### Isolating one change from what its base branch already carries
 
