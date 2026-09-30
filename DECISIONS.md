@@ -72,16 +72,17 @@ short result. A first version did: deviation 0.21, not ~1e-17.
 [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
 seeds with the stimulus seed and draws one
 [`runif()`](https://rdrr.io/r/stats/Uniform.html) value per parameter
-per trial. The simulated reference responses continue that stream, so
-the null depends on the file and the session’s
-[`RNGkind()`](https://rdrr.io/r/base/Random.html), not on the current
-random state or `ncores`. Files do not record the RNG kind
-([\#315](https://github.com/rdotsch/rcicr/issues/315)).
-[`?generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
-documents the historical stream, and tests pin it. A `NULL` or missing
-stimulus seed leaves none, so the default stops and asks for a
-`response_seed` ([\#334](https://github.com/rdotsch/rcicr/issues/334))
-rather than reseed from the clock.
+per trial. The reference responses continue that stream, so the null
+depends on the file, not on the random state or `ncores`. The replay
+uses the kind the file records as `rng_kind`
+([\#315](https://github.com/rdotsch/rcicr/issues/315)); older files use
+the session’s. Pinning one kind at generation was rejected: it changes
+the stimuli of anyone generating under another. Across kinds the
+caller’s stream is restored, not left on the file’s. Tests pin the
+stream. A `NULL` or missing stimulus seed leaves none, so the default
+stops and asks for a `response_seed`
+([\#334](https://github.com/rdotsch/rcicr/issues/334)) rather than
+reseed from the clock.
 
 `seedResponseStream()` **replays** the stimulus draws instead of
 regenerating the stimuli
@@ -491,16 +492,13 @@ the other.
 ### The battery stops where the reference version crashes
 
 Measured on 2026-07-28 against v1.0.1 on R 4.3.3: it can produce a z-map
-**only** at 512px with `zmapdecoration = TRUE`. Undecorated, it dies in
-`if (bgimage != '')` (“the condition has length \> 1”); at 64 and 128px
-it dies in [`plot.new()`](https://rdrr.io/r/graphics/frame.html)
-(“figure margins too large”), and at 64px decorated even earlier, on the
-`plt` graphical parameter. `mask` fails for the same kind of reason. All
-are fixed here, and none can be compared with v1.0.1: **a fix that turns
-a crash into a number has no old number to compare with.** The test
-suite covers those paths, and the gate does from v1.1.0 on; the `SINCE`
-table in `tools/compare-harness.R` records which extras need which
-reference.
+**only** at 512px with `zmapdecoration = TRUE`. Otherwise it dies in
+`if (bgimage != '')` (undecorated) or setting up the plot at 64 and
+128px, and `mask` fails similarly. All are fixed here, and none can be
+compared with v1.0.1: **a fix that turns a crash into a number has no
+old number to compare with.** The test suite covers those paths, and the
+gate does from v1.1.0 on; the `SINCE` table in `tools/compare-harness.R`
+records which extras need which reference.
 
 ### Tolerances: 8 ULP scaled to the values, plus an 8-bit pixel count
 

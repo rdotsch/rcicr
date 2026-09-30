@@ -232,7 +232,12 @@
 </tr>
 <tr>
 <td><code>seed</code></td>
-<td>The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>, which the file does not record.</td>
+<td>The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>.</td>
+</tr>
+<tr>
+<td><code>rng_kind</code></td>
+<td>
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> when the stimuli were drawn. InfoVal references replay the seed’s stream under it, so they do not depend on the kind of the session that computes them. Files without it replay under the session’s kind. Added in the development version.</td>
 </tr>
 <tr>
 <td><code>use_same_parameters</code></td>

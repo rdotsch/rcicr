@@ -69,9 +69,13 @@ generateStimuli2IFC(
 - seed:
 
   Seed for the random number generator, for reproducibility. It is saved
-  in the `.Rdata` file, where the default InfoVal reference replays it.
-  With `seed = NULL` there is nothing to replay, so InfoVal references
-  for that file need an explicit `response_seed`.
+  in the `.Rdata` file with the session's
+  [`RNGkind()`](https://rdrr.io/r/base/Random.html), and the default
+  InfoVal reference replays it under that kind. With `seed = NULL` there
+  is nothing to replay, so InfoVal references for that file need an
+  explicit `response_seed`. The caller's own random stream is left as it
+  was: the next random number drawn after this call is the one that
+  would have been drawn without it.
 
 - maximize_baseimage_contrast:
 

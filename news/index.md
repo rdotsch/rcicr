@@ -45,6 +45,39 @@
   naming `"images"` as the way to reproduce earlier references. The
   method is never switched for you.
 
+- **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  now leaves your random stream where it was.** It seeds with its `seed`
+  argument and used to leave the stream wherever stimulus generation
+  ended. Now the next random number your script draws after the call is
+  the one it would have drawn without it, and a session that had no
+  `.Random.seed` before has none after. A script that draws random
+  numbers after generating stimuli without calling
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) first therefore
+  gets different draws. Nothing rcicr computes changes: stimuli,
+  classification images, z-maps and InfoVal are all drawn from their own
+  seeds. ([\#189](https://github.com/rdotsch/rcicr/issues/189))
+
+- **InfoVal references for new stimulus files no longer depend on the
+  scoring session’s [`RNGkind()`](https://rdrr.io/r/base/Random.html).**
+  [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  saves the session’s [`RNGkind()`](https://rdrr.io/r/base/Random.html)
+  in the `.Rdata` file as `rng_kind`, and reference responses, with or
+  without a `response_seed`, are drawn under it. A file scored under the
+  kind it was generated with gives the same reference as before. Scored
+  under another kind, it used to give a different reference and now
+  gives that same one. Stimuli are unchanged under every kind, and files
+  written before this version still draw under the session’s kind, with
+  the message on an automatic refresh that says when values changed.
+  ([\#315](https://github.com/rdotsch/rcicr/issues/315))
+
+  In that cross-kind case, an explicit regeneration
+  (`force_gen_ref_dist = TRUE`, a `response_seed`, or
+  [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md))
+  now leaves your random stream untouched, kind and position, instead of
+  advancing it; advancing it would leave your session on the file’s
+  generator. Under the session’s own kind it still advances the stream
+  as before.
+
 ### Performance and dependencies
 
 - **Reference distributions are much faster and need less memory.** At

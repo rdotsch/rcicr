@@ -87,7 +87,7 @@
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Seed for the random number generator, for reproducibility. It is saved in the <code>.Rdata</code> file, where the default InfoVal reference replays it. With <code>seed = NULL</code> there is nothing to replay, so InfoVal references for that file need an explicit <code>response_seed</code>.</p></dd>
+<dd><p>Seed for the random number generator, for reproducibility. It is saved in the <code>.Rdata</code> file with the session's <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>, and the default InfoVal reference replays it under that kind. With <code>seed = NULL</code> there is nothing to replay, so InfoVal references for that file need an explicit <code>response_seed</code>. The caller's own random stream is left as it was: the next random number drawn after this call is the one that would have been drawn without it.</p></dd>
 
 
 <dt id="arg-maximize-baseimage-contrast">maximize_baseimage_contrast<a class="anchor" aria-label="anchor" href="#arg-maximize-baseimage-contrast"></a></dt>

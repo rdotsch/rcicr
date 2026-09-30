@@ -238,7 +238,8 @@ objects:
 | `base_faces` | Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained. |
 | `base_face_files` | The paths they were read from, for reference. |
 | `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters, for reference. The InfoVal reference distribution reads the saved `p` (or `s` in old files) and `stimuli_params` directly and uses `n_trials` to select trial rows; it never rebuilds the basis from these settings. |
-| `seed` | The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same [`RNGkind()`](https://rdrr.io/r/base/Random.html), which the file does not record. |
+| `seed` | The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same [`RNGkind()`](https://rdrr.io/r/base/Random.html). |
+| `rng_kind` | [`RNGkind()`](https://rdrr.io/r/base/Random.html) when the stimuli were drawn. InfoVal references replay the seed’s stream under it, so they do not depend on the kind of the session that computes them. Files without it replay under the session’s kind. Added in the development version. |
 | `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
 | `label`, `stimulus_path` | What the files were called and where they were written. |
 | `generator_version` | The rcicr version that wrote the file; see the caveat below. |
