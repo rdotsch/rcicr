@@ -19,7 +19,7 @@ generateReferenceDistribution2IFC(
 
 \item{iter}{Number of simulated classification images, each built from random responses; the distribution holds one norm per image.}
 
-\item{ncores}{Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).}
+\item{ncores}{Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). The noise is rebuilt only for a stimulus set with at least as many stimuli as the image has pixels; for any other set, the reference renders nothing and \code{ncores} is not used.}
 
 \item{response_seed}{Optional seed for the simulated random responses. The default,
 \code{NULL}, continues from the state the stimulus generator left behind, as described under
@@ -84,6 +84,14 @@ The noise is rebuilt from the basis and parameters saved in the stimulus file, s
 images are never reopened and a moved or archived experiment can still be scored. The simulated
 responses continue the random stream from the saved stimulus seed, after the draws for one
 parameter matrix, which reproduces the historical default reference.
+
+When the stimuli are fewer than the image's pixels (width times height), as in any usual
+stimulus set, the norms are computed from the stimulus Gram matrix, without rendering the noise.
+They agree with rendering each image to rounding: no configuration measured was bit-identical,
+and none differed by more than a relative 5e-14 in a single norm (reference BLAS; see
+\url{https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md}). A
+reference already stored in the file is reused as stored. With at least as many stimuli as
+pixels, the noise is rendered as before, and the reference is unchanged bit for bit.
 
 Pass a \code{response_seed} to draw a \emph{different} null from the same stimuli, for
 instance to check how much Monte Carlo error a given \code{iter} leaves in your InfoVal. This

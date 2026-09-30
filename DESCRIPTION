@@ -29,7 +29,8 @@ Imports:
     spatstat.explore,
     spatstat.geom,
     tibble,
-    yesno
+    yesno,
+    Matrix
 Suggests:
     testthat (>= 3.0.0),
     covr,

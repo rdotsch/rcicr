@@ -22,10 +22,13 @@ Why `rcicr` behaves as it does: the measurement that ruled an option out, the al
 ### A base image's alpha channel is discarded, not composited
 Greyscale conversion drops alpha and uses the stored colour channels. Compositing would invent a background value and make it part of the contract; rejecting transparency would break files the package has always accepted. `rcicr` renders opaque stimuli, so alpha means nothing downstream. A cut-out may therefore reveal colour that a viewer hid under transparency.
 
-### `rowMeans(x, dims = 2)` was adopted despite not being bit-identical
-Patch averaging in `generateNoiseImage()` moved from `apply(..., 1:2, mean)`, about 6x faster end to end. The two sum in a different order and so differ by about 1 ULP (~1e-19 on pixel values around 0.01). Adopted because an **independent oracle**, the average as an explicit triple loop using neither function, put both within ~5.6e-17 across noise types, scales and seeds. At the golden master's configuration they are bit-identical.
+### Two computations were adopted despite not being bit-identical
+Each sums in a new order; each was checked against an **independent oracle**:
 
-The trap: **`rowMeans()` on a 3-D array defaults to `dims = 1`**, collapsing dimensions 2 *and* 3, and `array()` then silently recycles the short result. The first version submitted did exactly that, with a measured maximum deviation of 0.21 on data with an SD of ~0.01, not the ~1e-17 it claimed.
+- `rowMeans(x, dims = 2)` replaced `apply(..., 1:2, mean)` in `generateNoiseImage()`, about 6x faster, 1 ULP apart. An explicit triple loop put both within ~5.6e-17; at the golden master's configuration they are bit-identical.
+- The InfoVal reference goes through the stimulus Gram matrix when trials are fewer than pixels (#354). Against the rendered arithmetic, kept as its oracle and for the other sets, the largest relative norm difference was 4.8e-14 and no call at 1.96 changed ([`analyses/gram-reference-accuracy.md`](analyses/gram-reference-accuracy.md); reference BLAS only).
+
+The trap: **`rowMeans()` on a 3-D array defaults to `dims = 1`**, and `array()` silently recycles the short result. The first version submitted did exactly that: deviation 0.21, not ~1e-17.
 
 ### The stimulus seed's stream is load-bearing well beyond stimulus generation
 `generateStimuli2IFC()` seeds with the stimulus seed and draws one `runif()` value per parameter per trial. The simulated reference responses continue that stream, so the null depends on the file and the session's `RNGkind()`, not on the current random state or `ncores`. Files do not record the RNG kind ([#315](https://github.com/rdotsch/rcicr/issues/315)). `?generateReferenceDistribution2IFC` documents the historical stream, and tests pin it. A `NULL` or missing stimulus seed leaves none, so the default stops and asks for a `response_seed` ([#334](https://github.com/rdotsch/rcicr/issues/334)) rather than reseed from the clock.

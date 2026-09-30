@@ -27,6 +27,14 @@
 #' responses continue the random stream from the saved stimulus seed, after the draws for one
 #' parameter matrix, which reproduces the historical default reference.
 #'
+#' When the stimuli are fewer than the image's pixels (width times height), as in any usual
+#' stimulus set, the norms are computed from the stimulus Gram matrix, without rendering the noise.
+#' They agree with rendering each image to rounding: no configuration measured was bit-identical,
+#' and none differed by more than a relative 5e-14 in a single norm (reference BLAS; see
+#' \url{https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md}). A
+#' reference already stored in the file is reused as stored. With at least as many stimuli as
+#' pixels, the noise is rendered as before, and the reference is unchanged bit for bit.
+#'
 #' Pass a \code{response_seed} to draw a \emph{different} null from the same stimuli, for
 #' instance to check how much Monte Carlo error a given \code{iter} leaves in your InfoVal. This
 #' changes only the simulated responses, not the stimuli or the noise basis the null is built on.
@@ -36,7 +44,7 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
 #' @param iter Number of simulated classification images, each built from random responses; the distribution holds one norm per image.
-#' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). The noise is rebuilt only for a stimulus set with at least as many stimuli as the image has pixels; for any other set, the reference renders nothing and \code{ncores} is not used.
 #' @param response_seed Optional seed for the simulated random responses. The default,
 #' \code{NULL}, continues from the state the stimulus generator left behind, as described under
 #' Reproducibility; it needs the stimulus seed saved in the file. A number gives an independent
@@ -140,47 +148,18 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # leaking into the frame that is re-saved below.
   if (is.null(response_seed)) requireStimulusSeed(get0("seed", envir = environment(), inherits = FALSE), rdata)
   write("Building the reference from the saved noise, please wait...", stdout())
-  stimuli <- referenceNoise(environment(), names(stimuli_params)[1], ncores)
-
-  # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
+  if (iter < 10000) {
+    warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
+  }
 
   # Seed the *responses* only. A response_seed replaces the stimulus stream
   # entirely; without one, the draws the generator spent on the parameters are
   # replayed so the responses continue from where they always did. Handing the
   # stimulus seed a different value instead would describe stimuli the
   # participants never saw.
-  seedResponseStream(environment(), names(stimuli_params)[1], response_seed)
-
-  if (iter < 10000) {
-    warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
-  }
-
-  # Initialize progressbar (dplyr::progress_estimated() is deprecated)
-  pb <- txtProgressBar(min = 0, max = iter, style = 3)
-
-  # Run simulation
-  reference_norms <- vector(length = iter)
-
-  for (i in 1:iter) {
-    setTxtProgressBar(pb, i)
-
-    # Generate random responses for this iteration.
-    # This is exactly what the deprecated purrr::rbernoulli(n, p) did
-    # internally. It is spelled out rather than swapped for rbinom() on
-    # purpose: rbinom() consumes the random stream differently, so it would
-    # silently change every reference distribution - and therefore every
-    # infoVal - computed from a given seed.
-    responses <- ((runif(n_trials) > 0.5) * 2) - 1
-
-    # Compute classification image for this iteration
-    ci <- (stimuli %*% as.matrix(responses)) / ncol(stimuli)
-
-    # Save norm for this iteration
-    reference_norms[i] <- norm(ci, "f")
-  }
-
-  close(pb)
+  reference_norms <- referenceNorms(environment(), names(stimuli_params)[1], NULL, iter, ncores,
+                                    response_seed)
 
   if (save_rdata) {
 

@@ -1,5 +1,16 @@
 # rcicr (development version)
 
+## Reproducibility impact
+
+- **InfoVal reference distributions are now computed through the stimulus Gram matrix, and differ from before by rounding.** When a stimulus set has fewer stimuli than its images have pixels (width times height), as any usual set does, `generateReferenceDistribution2IFC()` and `computeInfoVal2IFC()` no longer render the noise. The norms follow from the trials-by-trials Gram matrix of the saved noise, which sums in a different order. The measured configurations are listed in `analyses/gram-reference-accuracy.md`: 64 to 512 pixels square, up to 770 stimuli, the reference BLAS. None gave a bit-identical reference. The largest relative difference in a norm was 4.8e-14, InfoVal moved by at most 7.9e-13, and no call at 1.96 changed among 2,800 classification images. The Monte Carlo error a 10,000-draw reference already carries is 0.031 at 1.96. Other BLAS libraries were not measured. (#354)
+
+  Only a reference computed anew changes: for a new stimulus file, with `force_gen_ref_dist = TRUE`, with a `response_seed`, or when rcicr automatically rebuilds an unmarked reference that an older version left in the file. A marked reference already stored in the file is reused as stored, so its InfoVal does not change. A stimulus set with at least as many stimuli as pixels keeps the previous calculation exactly.
+
+## Performance and dependencies
+
+- **Reference distributions are much faster and need less memory.** Timed on one machine at 10,000 iterations, `generateReferenceDistribution2IFC()` was about 19x faster at 128 pixels and 300 stimuli with the default `ncores` (30.6 s to 1.6 s), and about 34x faster at 256 pixels with `ncores = 2` (115.7 s to 3.4 s). At 256 pixels with the default `ncores`, the previous version ran out of memory in 4 GB. At the 512-pixel, 770-stimulus default, peak memory measured in the analysis halved, from 3.3 GB to 1.6 GB. `ncores` now matters only for the sets that are still rendered, those with at least as many stimuli as pixels. (#354)
+- `Matrix`, an R recommended package that rcicr already depended on through spatstat, is now a direct import.
+
 ## New features
 
 - **`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` can build the InfoVal reference over the stimuli a classification image was actually built from.** Brinkman et al. (2019) require the reference to use the same stimuli as the CI, but the reference has always used every saved stimulus. A CI built from fewer, for example after dropping missed trials, therefore got an inflated InfoVal: at 512 pixels, pure-noise CIs had a median InfoVal of 0.09 to 0.11 with 1% of trials missing and 0.51 to 0.58 with 5%, in the stimulus sets measured in `analyses/infoval-design-mismatch.md`. Pass those stimuli as the new `reference_stimuli` argument, each once. The reference is reproducible from the stimulus file and stored in it, as `reference_norms_by_stimuli`, apart from the default reference. No default changes, so every existing call returns the same number. (#349)

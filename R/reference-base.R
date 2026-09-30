@@ -143,6 +143,105 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) 
   matrix(noise, ncol = n_trials)
 }
 
+# The norms of `iter` CIs built from random responses over the selected saved
+# stimuli, the responses continuing the stream seedResponseStream() sets up.
+# Nothing before the first response draw consumes random numbers.
+#
+# Fewer trials than pixels go through the stimulus Gram matrix G, since then
+# norm(S r / n) = sqrt(t(r) G r) / n needs neither the rendered pixels-by-trials
+# matrix nor a pixels-sized product per draw. Otherwise G would be no smaller
+# than S, so the rendered calculation is kept exactly, bit for bit. The two
+# routes differ by rounding only (analyses/gram-reference-accuracy.md, #354).
+referenceNorms <- function(source, label, reference_stimuli, iter, ncores, response_seed) {
+  params <- savedReferenceParams(source, label)
+  if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
+  p <- referenceBasis(source)
+  if (nrow(params) < length(p$patches[, , 1])) {
+    gram <- stimulusGram(params, p)
+    seedResponseStream(source, label, response_seed)
+    return(gramNorms(gram, iter))
+  }
+  noise <- referenceNoise(source, label, ncores, reference_stimuli)
+  seedResponseStream(source, label, response_seed)
+  renderedNorms(noise, iter)
+}
+
+referenceBasis <- function(source) {
+  p <- if (exists('s', envir = source, inherits = FALSE)) source$s else source$p
+  if (is.null(p)) stop('The stimulus file does not contain its saved noise basis (p or s).')
+  if ('sinusoids' %in% names(p)) p <- list(patches = p$sinusoids, patchIdx = p$sinIdx)
+  p
+}
+
+# The arithmetic of every reference before #354, kept for the route that uses it.
+renderedNorms <- function(noise, iter) {
+  pb <- txtProgressBar(min = 0, max = iter, style = 3)
+  on.exit(close(pb), add = TRUE)
+  norms <- numeric(iter)
+  for (i in seq_len(iter)) {
+    responses <- ((runif(ncol(noise)) > 0.5) * 2) - 1
+    ci <- (noise %*% as.matrix(responses)) / ncol(noise)
+    norms[i] <- norm(ci, 'f')
+    setTxtProgressBar(pb, i)
+  }
+  norms
+}
+
+# G = t(S) S for the noise S = P t(X), with P the basis generateNoiseImage()
+# averages: one patch per pixel per layer, over the number of layers. Built
+# from whichever is smaller, the rendered S or the parameters' cross-product
+# t(P) P, which is 128 MB for five scales at any image size.
+stimulusGram <- function(params, p) {
+  d <- dim(p$patches)
+  npix <- d[1] * d[2]
+  nparams <- max(p$patchIdx)
+  if (ncol(params) != nparams) {
+    # generateNoiseImage()'s check, once rather than once per trial.
+    if (ncol(params) == nparams + 1 && min(p$patchIdx) == 0) {
+      warning('Rdata patch indices start at 0, whereas parameters are used from position 1. Due to this mismatch, one sinusoid will not be shown in resulting CI.')
+      params <- params[, seq_len(nparams), drop = FALSE]
+    } else {
+      stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
+    }
+  }
+  # A 0 index is a cell of the layer a 0-based file never wrote; its patch value
+  # is 0, so dropping it drops nothing (DECISIONS.md, "4096 -> 4092").
+  keep <- as.vector(p$patchIdx) != 0
+  basis <- Matrix::sparseMatrix(i = rep(seq_len(npix), d[3])[keep],
+                                j = as.vector(p$patchIdx)[keep],
+                                x = as.vector(p$patches)[keep] / d[3],
+                                dims = c(npix, nparams))
+  if (gramFromRenderedNoise(npix, nrow(params), nparams)) {
+    return(crossprod(as.matrix(basis %*% t(params))))
+  }
+  params %*% as.matrix(Matrix::crossprod(basis)) %*% t(params)
+}
+
+# The rendered noise is pixels x trials; the parameters' cross-product is
+# parameters x parameters. Either gives G; build it from the smaller.
+gramFromRenderedNoise <- function(npix, n_trials, nparams) {
+  npix * n_trials <= nparams^2
+}
+
+# One runif(n * k) consumes the stream exactly as k successive runif(n) calls.
+# runif(), not rbinom(), in both routes: see DECISIONS.md, "purrr::rbernoulli()
+# was replaced with runif(), not rbinom()".
+gramNorms <- function(gram, iter, block = 1000L) {
+  n <- nrow(gram)
+  pb <- txtProgressBar(min = 0, max = iter, style = 3)
+  on.exit(close(pb), add = TRUE)
+  norms <- numeric(iter)
+  done <- 0L
+  while (done < iter) {
+    k <- min(block, iter - done)
+    responses <- matrix(((runif(n * k) > 0.5) * 2) - 1, nrow = n, ncol = k)
+    norms[done + seq_len(k)] <- sqrt(pmax(colSums(responses * (gram %*% responses)), 0)) / n
+    done <- done + k
+    setTxtProgressBar(pb, done)
+  }
+  norms
+}
+
 # A missing or NULL stimulus seed leaves no stream to replay: set.seed(NULL)
 # reseeds from the clock, so the default reference could never be reproduced
 # (#334). Checked before referenceNoise(), the slow step.
@@ -182,18 +281,8 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
     stop('iter must be a positive integer.')
   }
   if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, selection$baseimage)
-  stimuli <- referenceNoise(source, selection$baseimage, ncores)
-  seedResponseStream(source, selection$baseimage, response_seed)
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
-  pb <- txtProgressBar(min = 0, max = iter, style = 3)
-  on.exit(close(pb), add = TRUE)
-  norms <- numeric(iter)
-  for (i in seq_len(iter)) {
-    responses <- ((runif(source$n_trials) > 0.5) * 2) - 1
-    ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
-    norms[i] <- norm(ci, 'f')
-    setTxtProgressBar(pb, i)
-  }
+  norms <- referenceNorms(source, selection$baseimage, NULL, iter, ncores, response_seed)
   if (save_rdata) {
     cache <- source$reference_norms_by_base
     if (is.null(cache)) cache <- list()

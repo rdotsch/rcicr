@@ -84,19 +84,9 @@ generateSubsetReference <- function(source, rdata, selection, reference_stimuli,
   base_key <- if (selection$independent) label else NULL
   if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, base_key, subset = TRUE)
   write('Building the reference from the saved noise, please wait...', stdout())
-  stimuli <- referenceNoise(source, label, ncores, reference_stimuli)
-  seedResponseStream(source, label, response_seed)
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
   write('Computing reference distribution, please wait...', stdout())
-  pb <- txtProgressBar(min = 0, max = iter, style = 3)
-  on.exit(close(pb), add = TRUE)
-  norms <- numeric(iter)
-  for (i in seq_len(iter)) {
-    responses <- ((runif(length(reference_stimuli)) > 0.5) * 2) - 1
-    ci <- (stimuli %*% as.matrix(responses)) / ncol(stimuli)
-    norms[i] <- norm(ci, 'f')
-    setTxtProgressBar(pb, i)
-  }
+  norms <- referenceNorms(source, label, reference_stimuli, iter, ncores, response_seed)
   if (save_rdata) {
     cache <- subsetReferenceCache(source)
     entry <- list(
