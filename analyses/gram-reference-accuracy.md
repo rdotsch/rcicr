@@ -285,13 +285,13 @@ knitr::kable(cost, row.names = FALSE)
 
 | config | build | speedup | rendered_mb | gram_mb |
 |:---|:---|---:|---:|---:|
-| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.1 | 3.1 | 0.1 |
-| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.0 | 3.1 | 0.1 |
-| 64px, 100 trials, gabor, nscales 5 | rendered | 27.8 | 3.1 | 0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | rendered | 23.3 | 37.5 | 0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 43.5 | 150.0 | 0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 41.1 | 385.0 | 4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 107.3 | 600.0 | 0.7 |
+| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.8 | 3.1 | 0.1 |
+| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 35.2 | 3.1 | 0.1 |
+| 64px, 100 trials, gabor, nscales 5 | rendered | 28.8 | 3.1 | 0.1 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | 22.5 | 37.5 | 0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 43.1 | 150.0 | 0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 40.8 | 385.0 | 4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 98.9 | 600.0 | 0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -336,7 +336,7 @@ default_row <- data.frame(
 )
 default_row
           build     rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb
-1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 146.9567             3295
+1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 139.8515           3294.4
   gram_peak_mb
 1       1561.2
 ```
