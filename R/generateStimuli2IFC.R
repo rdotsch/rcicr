@@ -18,7 +18,7 @@
 #' @param stimulus_path Directory to save the stimuli and the \code{.Rdata} file to. Required unless both \code{save_as_png} and \code{save_rdata} are FALSE; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @param label Label put at the start of each file name.
 #' @param use_same_parameters Boolean: all base images share one set of noise parameters (\code{TRUE}) or each gets its own (\code{FALSE}).
-#' @param seed Seed for the random number generator, for reproducibility. It is saved in the \code{.Rdata} file, where the default InfoVal reference replays it. With \code{seed = NULL} there is nothing to replay, so InfoVal references for that file need an explicit \code{response_seed}.
+#' @param seed Seed for the random number generator, for reproducibility. It is saved in the \code{.Rdata} file with the session's \code{\link{RNGkind}()}, and the default InfoVal reference replays it under that kind. With \code{seed = NULL} there is nothing to replay, so InfoVal references for that file need an explicit \code{response_seed}. The caller's own random stream is left as it was: the next random number drawn after this call is the one that would have been drawn without it.
 #' @param maximize_baseimage_contrast Boolean: rescale the base image's pixel values to maximize its contrast. A base image with no contrast at all, every pixel the same value, cannot be rescaled and is rejected with an error. It can still be used with \code{maximize_baseimage_contrast = FALSE}.
 #' @param noise_type Noise pattern type: \code{sinusoid} (default) or \code{gabor}.
 #' @param nscales Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency. \code{img_size} must be divisible by \code{2^(nscales - 1)}.
@@ -47,6 +47,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   # Read before any setup, which can cross a minute boundary: two calls started
   # in the same minute must reach the same lock.
   started <- stimulusTime()
+  # The seed is the caller's to choose, not their stream to keep (#189).
+  restore_stream <- captureRandomStream()
+  on.exit(restore_stream(), add = TRUE)
 
   # stimulus_path is required, not defaulted: a default path writes to the
   # user's filespace uninvited, which CRAN policy does not allow.
@@ -191,7 +194,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
   # Reference generation replays these parameter draws to preserve the historical
   # response stream. Changing the seeding or draw count here requires revisiting
-  # seedResponseStream(); reproducibility also requires the same RNGkind().
+  # seedResponseStream(), which replays them under the kind saved here.
+  rng_kind <- RNGkind() # nolint: object_usage_linter. Saved by name below.
   set.seed(seed)
 
   stimuli_params <- list()
@@ -336,7 +340,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     # set later (notably generateReferenceDistribution2IFC(), which builds the
     # infoVal null distribution) reproduces the same noise basis. They were
     # previously omitted, so re-generation silently fell back to the defaults.
-    saveStimulusFile(c("base_face_files", "base_faces", "img_size", "label", "n_trials", "noise_type", "nscales", "sigma", "p", "seed", "stimuli_params", "stimulus_path", "use_same_parameters", "generator_version"), rdata_file, environment())
+    saveStimulusFile(c("base_face_files", "base_faces", "img_size", "label", "n_trials", "noise_type", "nscales", "sigma", "p", "seed", "stimuli_params", "stimulus_path", "use_same_parameters", "generator_version", "rng_kind"), rdata_file, environment())
   }
 
   finished <- TRUE
