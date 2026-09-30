@@ -25,7 +25,11 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
   its call. That distance is 5.6e10 times smaller than the
   estimated standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call changed among the
   2,800 CIs, 228 of them within 0.5 of 1.96.
-- **Speed.** 13x or more faster at 128px, and over 100x at 512px.
+- **Speed, serial only.** Against the rendered route rendering serially, as the package does with
+  `ncores = 1`: 13x or more faster at 128px, and over 100x at 512px. The package's default
+  `ncores = detectCores() - 1` parallelises only the rendering. Its per-iteration loop, which
+  dominates at 10,000 draws, is serial whatever `ncores` is. The analysis does not time the
+  parallel default, so these ratios do not describe it.
 - **Memory.** At the 512px, 770-trial default, as component sizes: the rendered noise matrix is
   1.5 GB; the Gram matrix is 4.5 MB, plus a 128 MB basis cross-product. The Gram route's measured
   peak is larger: 1.4 GB of R heap in a Gram-only run, mostly the sparse basis and the loaded file
@@ -62,7 +66,9 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
    references computed fresh change: new files, `force_gen_ref_dist`, `response_seed`, and the
    automatic rebuild of an unmarked legacy reference.
 5. **Docs.** A `NEWS.md` entry under "Reproducibility impact", sized from the knitted analysis, and
-   a performance note. `DECISIONS.md` generalises "`rowMeans(x, dims = 2)` was adopted despite not
+   a performance note. Its figures come from timing `generateReferenceDistribution2IFC()` itself on
+   `main` and on the branch, at the default `ncores`, in the implementation PR; the analysis's
+   serial ratios are not quoted there. `DECISIONS.md` generalises "`rowMeans(x, dims = 2)` was adopted despite not
    being bit-identical" to cover both, since they share a rationale: an independent oracle, and
    differences many orders of magnitude below anything a researcher reports. The file is at 5,197
    of 5,200 words, so the merged entry must fit by tightening the existing text, not adding to it.
