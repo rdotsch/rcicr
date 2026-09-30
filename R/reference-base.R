@@ -148,9 +148,9 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) 
 # Nothing before the first response draw consumes random numbers.
 #
 # Fewer trials than pixels go through the stimulus Gram matrix G, since then
-# norm(S r / n) = sqrt(t(r) G r) / n needs neither the rendered pixels-by-trials
-# matrix nor a pixels-sized product per draw. Otherwise G would be no smaller
-# than S, so the rendered calculation is kept exactly, bit for bit. The two
+# norm(S r / n) = sqrt(t(r) G r) / n needs no pixels-sized product per draw;
+# stimulusGram() says when building G renders the noise. Otherwise G would be no
+# smaller than S, so the rendered calculation is kept exactly, bit for bit. The two
 # routes differ by rounding only (analyses/gram-reference-accuracy.md, #354).
 referenceNorms <- function(source, label, reference_stimuli, iter, ncores, response_seed) {
   params <- savedReferenceParams(source, label)

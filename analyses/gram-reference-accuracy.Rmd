@@ -12,11 +12,12 @@ options(width = 100)
 ```
 
 The InfoVal reference distribution is the norms of classification images built from random
-responses. rcicr has always computed them by rendering every saved stimulus into a pixels-by-trials
-matrix and multiplying it by each simulated response vector
-([issue #354](https://github.com/rdotsch/rcicr/issues/354)). The same norms follow from the stimulus
-Gram matrix, a trials-by-trials matrix of dot products between the noise images, without rendering
-any image. The two routes sum in a different order, so their results need not be bit-identical.
+responses. Until [issue #354](https://github.com/rdotsch/rcicr/issues/354), rcicr computed them by
+rendering every saved stimulus into a pixels-by-trials matrix and multiplying it by each simulated
+response vector. The same norms follow from the stimulus Gram matrix, a trials-by-trials matrix of
+dot products between the noise images, with no pixels-sized product per draw. Building that matrix
+renders the noise once for a small stimulus set, and not at all for a larger one (see below). The
+two routes sum in a different order, so their results need not be bit-identical.
 
 This document measures by how much they differ, and how often the difference changes a decision at
 the conventional cut-off of 1.96. It implements both routes itself, so it measures the same thing

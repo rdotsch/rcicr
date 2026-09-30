@@ -13,14 +13,15 @@ What computing the InfoVal reference through the Gram matrix changes
   not](#what-this-shows-and-what-it-does-not)
 
 The InfoVal reference distribution is the norms of classification images
-built from random responses. rcicr has always computed them by rendering
-every saved stimulus into a pixels-by-trials matrix and multiplying it
-by each simulated response vector ([issue
-\#354](https://github.com/rdotsch/rcicr/issues/354)). The same norms
-follow from the stimulus Gram matrix, a trials-by-trials matrix of dot
-products between the noise images, without rendering any image. The two
-routes sum in a different order, so their results need not be
-bit-identical.
+built from random responses. Until [issue
+\#354](https://github.com/rdotsch/rcicr/issues/354), rcicr computed them
+by rendering every saved stimulus into a pixels-by-trials matrix and
+multiplying it by each simulated response vector. The same norms follow
+from the stimulus Gram matrix, a trials-by-trials matrix of dot products
+between the noise images, with no pixels-sized product per draw.
+Building that matrix renders the noise once for a small stimulus set,
+and not at all for a larger one (see below). The two routes sum in a
+different order, so their results need not be bit-identical.
 
 This document measures by how much they differ, and how often the
 difference changes a decision at the conventional cut-off of 1.96. It
@@ -285,13 +286,13 @@ knitr::kable(cost, row.names = FALSE)
 
 | config | build | speedup | rendered_mb | gram_mb |
 |:---|:---|---:|---:|---:|
-| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.8 | 3.1 | 0.1 |
-| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 35.2 | 3.1 | 0.1 |
-| 64px, 100 trials, gabor, nscales 5 | rendered | 28.8 | 3.1 | 0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | rendered | 22.5 | 37.5 | 0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 43.1 | 150.0 | 0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 40.8 | 385.0 | 4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 98.9 | 600.0 | 0.7 |
+| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.3 | 3.1 | 0.1 |
+| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.1 | 3.1 | 0.1 |
+| 64px, 100 trials, gabor, nscales 5 | rendered | 28.1 | 3.1 | 0.1 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | 23.5 | 37.5 | 0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 44.1 | 150.0 | 0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 43.8 | 385.0 | 4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 106.9 | 600.0 | 0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -336,7 +337,7 @@ default_row <- data.frame(
 )
 default_row
           build     rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb
-1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 139.8515           3294.4
+1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 140.5038           3294.4
   gram_peak_mb
 1       1561.2
 ```
