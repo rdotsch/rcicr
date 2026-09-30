@@ -94,6 +94,25 @@
   attribute and gets no message. The attribute leaves the list’s fields
   unchanged.
 
+### Bug fixes
+
+- **A single generated trial or a single participant no longer stops
+  with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`,
+  and
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  with one participant ID, now run: the progress bars start at 0. So
+  does one participant with one trial. Where each stimulus appears once,
+  one participant’s CI is the same as the pooled CI of their trials.
+  With repeated presentations the two weight trials differently, as
+  [`?generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  describes. A `t.test` z-map over fewer than two images, one
+  participant or one distinct stimulus, cannot be computed. It now stops
+  before any work with a message that says so and suggests
+  `zmapmethod = "quick"`, instead of failing inside
+  [`t.test()`](https://rdrr.io/r/stats/t.test.html). No result that was
+  computed before changes.
+  ([\#351](https://github.com/rdotsch/rcicr/issues/351))
+
 ## rcicr 1.5.0 (2026-09-25)
 
 CRAN release: 2026-09-27
