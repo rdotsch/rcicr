@@ -25,7 +25,7 @@
 #' @param sigma Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).
 #' @param ncores Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
 #' @param return_as_dataframe Boolean: return a data frame with the raw noise of the generated stimuli (default: \code{FALSE}), one row per pixel and one column per trial. With the default \code{use_same_parameters = TRUE} every base image shares the same noise, so that is all of it. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned, because one column per trial cannot hold several. The stimuli are still written for every base image, and \code{save_rdata = TRUE} records every parameter set, so nothing is missing from the files.
-#' @param save_as_png Boolean: write the stimuli to disk as PNG images (default: \code{TRUE}).
+#' @param save_as_png Boolean: write the stimuli to disk as PNG images (default: \code{TRUE}). They are named \code{<label>_<base label>_<seed>_<trial>_ori.png} and \code{_inv.png}, with no time, so a later call into the same folder with the same label, base label and seed would write the same names. Existing PNGs are never overwritten: the call stops before generating or writing anything, and also stops when two base labels name the same file on this file system (for example, labels differing only in case). Use a different \code{label} or \code{stimulus_path}, or, to regenerate a stimulus set on purpose, delete its PNGs and its \code{.Rdata} file first. While PNGs are being written, a second call into the same folder with the same seed stops.
 #' @param save_rdata Boolean: save the \code{.Rdata} file with the stimulus parameters (default: \code{TRUE}). Computing classification images needs that file, so keep this \code{TRUE}; the argument exists mainly for internal use. The file is named \code{<label>_seed_<seed>_time_<month>_<day>_<year>_<hour>_<minute>.Rdata}, for the minute the call started. An existing file of that name is never overwritten: the call stops before generating anything. So does a call into the same folder with the same seed, started in the same minute, while another is still running.
 #' @return Nothing: everything is saved to files. With \code{return_as_dataframe = TRUE}, the data frame described there.
 #' @examples
@@ -139,8 +139,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     base_faces[[base_face]] <- img
   }
 
-  # Initialize #
-  p <- generateNoisePattern(img_size, noise_type = noise_type, nscales = nscales, sigma = sigma)
+  # The basis is built after the reservations below; its size check must still
+  # come before the directory exists (#339).
+  validateTiling(img_size, nscales)
 
   # Only create the directory when something is written to it.
   # generateReferenceDistribution2IFC() calls this with both save flags FALSE
@@ -155,11 +156,38 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     stimulus_path <- NA_character_
   }
 
+  # One handler, registered before anything is reserved, releases everything in
+  # order: a call that does not finish (an error, or the user aborting) stops
+  # its workers, removes what it created, and only then gives up its locks.
+  finished <- FALSE
+  cl <- NULL
+  worker_pids <- NULL
+  owned_rdata <- NULL
+  reserved_pngs <- character()
+  rdata_lock <- NULL
+  png_lock <- NULL
+  on.exit(releaseStimulusCall(finished, cl, worker_pids, reserved_pngs, owned_rdata,
+                              c(png_lock, rdata_lock)), add = TRUE)
+
   if (save_rdata) {
     rdata_file <- stimulusRdataPath(stimulus_path, label, seed, started)
     rdata_lock <- acquireStimulusLock(rdata_file, seed, started)
-    on.exit(unlink(rdata_lock, recursive = TRUE), add = TRUE)
+    # The lock established that the file did not exist, and holds it, so any
+    # file there at exit is this call's own, possibly half-written by save().
+    owned_rdata <- rdata_file
   }
+
+  # Every PNG is reserved before anything is generated.
+  if (save_as_png) {
+    png_lock <- acquirePngLock(stimulus_path, seed)
+    reserved_pngs <- reserveStimulusPngs(
+      stimulusPngPaths(stimulus_path, label, names(base_faces), seed, n_trials)
+    )
+  }
+
+  # After the reservations, so a call that cannot write stops before the basis,
+  # the slow step at the default 512px.
+  p <- generateNoisePattern(img_size, noise_type = noise_type, nscales = nscales, sigma = sigma)
 
   # Reference generation replays these parameter draws to preserve the historical
   # response stream. Changing the seeding or draw count here requires revisiting
@@ -204,7 +232,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   # in a one-worker cluster. See startBackend() in parallel.R.
   cl <- startBackend(ncores)
   if (!is.null(cl)) {
-    on.exit(stopClusterSafely(cl), add = TRUE)
+    # Recorded so an unfinished call can stop a worker mid-trial, before it
+    # writes a PNG the cleanup has already removed.
+    worker_pids <- unlist(parallel::clusterCall(cl, Sys.getpid))
   }
 
   stims <- foreach::foreach(
@@ -255,7 +285,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
       # write to file
       if (save_as_png) {
-        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_ori.png", trial), sep = "_"), sep = '/'))
+        png::writePNG(combined, stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'ori'))
       }
 
       # compute inverted stimulus
@@ -266,7 +296,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
       # write to file
       if (save_as_png) {
-        png::writePNG(combined, paste(stimulus_path, paste(label, base_face, seed, sprintf("%05d_inv.png", trial), sep = "_"), sep = '/'))
+        png::writePNG(combined, stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'inv'))
       }
     }
 
@@ -284,6 +314,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     parallel::stopCluster(cl)
   }
   cl <- NULL
+  # The workers have exited, and their PIDs may be reused by now: an unfinished
+  # call must not signal them.
+  worker_pids <- NULL
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   #
@@ -296,15 +329,17 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   # note that comparing versions as strings is wrong anyway, since '0.10.0' sorts
   # below '0.4.0'. p$generator_version has always held the real version and is
   # the more trustworthy of the two on any file that has it.
-  generator_version <- utils::packageVersion('rcicr')
+  generator_version <- utils::packageVersion('rcicr') # nolint: object_usage_linter. Saved by name below.
 
   if (save_rdata) {
     # nscales and sigma are saved so that anything re-generating this stimulus
     # set later (notably generateReferenceDistribution2IFC(), which builds the
     # infoVal null distribution) reproduces the same noise basis. They were
     # previously omitted, so re-generation silently fell back to the defaults.
-    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, use_same_parameters, generator_version, file = rdata_file, envir = environment())
+    saveStimulusFile(c("base_face_files", "base_faces", "img_size", "label", "n_trials", "noise_type", "nscales", "sigma", "p", "seed", "stimuli_params", "stimulus_path", "use_same_parameters", "generator_version"), rdata_file, environment())
   }
+
+  finished <- TRUE
 
   # Return CIs
   if (return_as_dataframe) {
