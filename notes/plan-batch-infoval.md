@@ -2,12 +2,18 @@
 
 ## Why a function, when the reference is already stored for reuse
 
-Measured here (R 4.3.3, one core), on a 300-trial 512px stimulus file of 39 MB (`analyses`-style script, not committed):
+Measured here (R 4.3.3, one core) by `analyses/infoval-batch-cost.R`, committed with this plan, on a 300-trial 512px stimulus file of 39 MB. Its output:
+
+```
+file MB: 39.14279
+reference: 6.0s; cached-hit call: 0.84s; bare load(): 0.42s
+forced/unstorable reference per call: 4.8s
+```
 
 | | per CI today |
 |---|---|
-| `computeInfoVal2IFC()` with the reference already stored | 0.84 s, of which a bare `load()` of the file is 0.41 s, and the call loads it twice |
-| the same when the reference cannot be stored (read-only file) or is drawn with `response_seed` | 4.8 s: the reference is simulated again for every CI |
+| `computeInfoVal2IFC()` with the reference already stored | 0.84 s. A bare `load()` of the file is 0.42 s, and the call loads it twice (`selectReferenceBase()`, then `loadRdata()`) |
+| the same when the reference is simulated on every call (a read-only file, `response_seed`, or `force_gen_ref_dist = TRUE`) | 4.8 s |
 
 So a loop over 100 participants spends about 80 s loading one file 200 times, or about 8 minutes simulating one reference 100 times. The batch loads the file once and resolves each distinct reference once. It is also where per-participant `reference_stimuli` (each CI scored over the stimuli it was built from) becomes one argument instead of a hand-written loop.
 
@@ -34,9 +40,9 @@ So a loop over 100 participants spends about 80 s loading one file 200 times, or
 
 ## Implementation
 
-`computeInfoVal2IFC()` has three paths (shared, independent base, subset), each ending in "resolve norms, then score". Each is split at that point into an internal resolver returning the norms and a scoring step. `computeInfoVal2IFC()` becomes resolver plus score, with its printed lines and messages unchanged. The batch groups CIs by their canonical `reference_stimuli` (`canonicalReferenceStimuli()`, so `c(3,1,2)` and `1:3` share a reference) and calls the resolver once per group.
+`computeInfoVal2IFC()` has three paths (shared, independent base, subset), each ending in "resolve the reference, then score". Each is split at that point into an internal resolver and a scoring step. The resolver returns a summary, `list(median, mad, iter)`, not the norms: a repopulated `ref_lookup` row supplies only those three numbers, and scoring needs nothing else. `computeInfoVal2IFC()` becomes resolver plus score, with its printed lines and messages unchanged. The batch groups CIs by their canonical `reference_stimuli` (`canonicalReferenceStimuli()`, so `c(3,1,2)` and `1:3` share a reference) and calls the resolver once per group.
 
-The shared path's `ref_lookup` block (empty since 2018) stays inside its resolver, unchanged.
+The shared path's `ref_lookup` block (empty since 2018) stays inside its resolver, unchanged, and a hit on it would serve the whole batch like any other resolved reference. A test mocks one row in to hold that.
 
 ## Tests
 
