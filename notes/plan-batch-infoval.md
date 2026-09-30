@@ -22,7 +22,7 @@ So a loop over 100 participants spends about 80 s loading one file 200 times, or
 `batchComputeInfoVal2IFC(target_cis, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images"))`
 
 - **Name** (the maintainer's choice). It pairs with `batchGenerateCI2IFC()`, whose result is its natural input, and sits beside it in the reference index.
-- `target_cis`: a list of classification images as returned by `generateCI()`. A single CI (a list with a `ci` element) is refused with a pointer to `computeInfoVal2IFC()`, since otherwise it would be read as a list of four "CIs".
+- `target_cis`: a list of classification images as returned by `generateCI()`. Every element is validated as a CI: a list whose `ci` element is a numeric matrix. A single CI passed by mistake is recognised by its own `ci` element being a numeric matrix, not by the name, since `list(ci = first, control = second)` is a valid batch. It is refused with a pointer to `computeInfoVal2IFC()`.
 - Every other argument means what it means in `computeInfoVal2IFC()` and applies to every CI, except `reference_stimuli`, which is one of:
   - `NULL`: every CI against the full set, as `computeInfoVal2IFC()` does;
   - a vector of stimulus numbers: the same subset for every CI;
@@ -49,12 +49,12 @@ The shared path's `ref_lookup` block (empty since 2018) stays inside its resolve
 - Parity: `identical()` to the named `computeInfoVal2IFC()` loop above, on a named list straight from `batchGenerateCI2IFC()` and on an unnamed list, for the full set, a shared subset, per-CI subsets (including a `NULL` element and two CIs sharing a subset in a different order), an independent-base file with `baseimage`, `response_seed`, `force_gen_ref_dist = TRUE`, and a read-only file.
 - Resolution count: mocking `generateReferenceDistribution2IFC()` to count calls, a read-only file with 5 CIs over 2 distinct subsets simulates exactly 2 references (the loop simulates 5). Stored-reference case: the file is loaded a fixed number of times, independent of the number of CIs.
 - Messages: 3 mismatched CIs out of 5 give one message naming those 3; matched CIs give none.
-- Refusals: a single CI; `reference_stimuli` a list of the wrong length; an element that is not a CI.
+- Refusals: a single CI; `reference_stimuli` a list of the wrong length; an element that is not a CI. Accepted: a batch with an element named `ci`.
 - The existing `computeInfoVal2IFC()` tests pass unchanged; the refactor adds no expectation to them.
 
 ## Gate
 
-Expected: no deviation. The refactor must leave `computeInfoVal2IFC()` numerically inert. Checked with `Rscript tools/compare-release-output.R --quick --ref="$(git rev-parse origin/main)"`, expecting `0 expected deviations`.
+Planned check, run after the implementation, with its output quoted in the PR: `Rscript tools/compare-release-output.R --quick --ref="$(git rev-parse origin/main)"`. It must report `0 expected deviations` and no unexpected one, since the refactor has to leave `computeInfoVal2IFC()` numerically inert.
 
 ## NEWS and docs
 
