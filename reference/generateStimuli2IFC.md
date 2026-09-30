@@ -114,6 +114,16 @@ generateStimuli2IFC(
 - save_as_png:
 
   Boolean: write the stimuli to disk as PNG images (default: `TRUE`).
+  They are named `<label>_<base label>_<seed>_<trial>_ori.png` and
+  `_inv.png`, with no time, so a later call into the same folder with
+  the same label, base label and seed would write the same names.
+  Existing PNGs are never overwritten: the call stops before generating
+  or writing anything, and also stops when two base labels name the same
+  file on this file system (for example, labels differing only in case).
+  Use a different `label` or `stimulus_path`, or, to regenerate a
+  stimulus set on purpose, delete its PNGs and its `.Rdata` file first.
+  While PNGs are being written, a second call into the same folder with
+  the same seed stops.
 
 - save_rdata:
 

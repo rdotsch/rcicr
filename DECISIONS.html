@@ -55,11 +55,11 @@
 </div>
 <div class="section level3">
 <h3 id="two-computations-were-adopted-despite-not-being-bit-identical">Two computations were adopted despite not being bit-identical<a class="anchor" aria-label="anchor" href="#two-computations-were-adopted-despite-not-being-bit-identical"></a></h3>
-<p>Each sums in a new order; each was checked against an <strong>independent oracle</strong>:</p>
+<p>Each sums in a new order and was checked against an <strong>independent oracle</strong>:</p>
 <ul><li>
-<code>rowMeans(x, dims = 2)</code> replaced <code>apply(..., 1:2, mean)</code> in <code><a href="reference/generateNoiseImage.html">generateNoiseImage()</a></code>, about 6x faster, 1 ULP apart. An explicit triple loop put both within ~5.6e-17; at the golden master’s configuration they are bit-identical.</li>
-<li>The InfoVal reference defaults to the stimulus Gram matrix (#354). Against its oracle, the rendered arithmetic, norms differed by at most 3.3e-14 (relative); no call at 1.96 changed (<a href="analyses/gram-reference-accuracy.html"><code>analyses/gram-reference-accuracy.md</code></a>; reference BLAS only). An argument, not size-based routing, which could need more memory and moved numbers unseen; <code>reference_method = "images"</code> restores old values exactly.</li>
-</ul><p>The trap: <strong><code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowMeans()</a></code> on a 3-D array defaults to <code>dims = 1</code></strong>, and <code><a href="https://rdrr.io/r/base/array.html" class="external-link">array()</a></code> silently recycles the short result. The first version submitted did exactly that: deviation 0.21, not ~1e-17.</p>
+<code>rowMeans(x, dims = 2)</code> replaced <code>apply(..., 1:2, mean)</code> in <code><a href="reference/generateNoiseImage.html">generateNoiseImage()</a></code>, about 6x faster, 1 ULP apart. An explicit triple loop put both within ~5.6e-17; at the golden master’s configuration, bit-identical.</li>
+<li>The InfoVal reference defaults to the stimulus Gram matrix (#354). Against the rendered arithmetic, its oracle, norms differ by at most 3.3e-14 relative; no call at 1.96 changed (<a href="analyses/gram-reference-accuracy.html"><code>analyses/gram-reference-accuracy.md</code></a>; reference BLAS only). An argument, not size-based routing (more memory, numbers moved unseen); <code>"images"</code> restores old values exactly.</li>
+</ul><p>The trap: <strong><code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowMeans()</a></code> on a 3-D array defaults to <code>dims = 1</code></strong>, and <code><a href="https://rdrr.io/r/base/array.html" class="external-link">array()</a></code> silently recycles the short result. A first version did: deviation 0.21, not ~1e-17.</p>
 </div>
 <div class="section level3">
 <h3 id="the-stimulus-seeds-stream-is-load-bearing-well-beyond-stimulus-generation">The stimulus seed’s stream is load-bearing well beyond stimulus generation<a class="anchor" aria-label="anchor" href="#the-stimulus-seeds-stream-is-load-bearing-well-beyond-stimulus-generation"></a></h3>
@@ -138,7 +138,7 @@
 </div>
 <div class="section level3">
 <h3 id="a-subset-ci-is-scored-against-the-full-stimulus-set-by-default">A subset CI is scored against the full stimulus set by default<a class="anchor" aria-label="anchor" href="#a-subset-ci-is-scored-against-the-full-stimulus-set-by-default"></a></h3>
-<p>Brinkman et al. (2019) require the reference to use the CI’s own stimuli. A new default would move reported InfoVals, so matching is the researcher’s call: <code>reference_stimuli</code> builds the paper’s reference, and <code><a href="reference/generateCI.html">generateCI()</a></code>’s <code>trial_design</code> attribute lets <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> flag a mismatch. Repeats and participant averages get none; the paper defines none. Cost measured in <a href="analyses/infoval-design-mismatch.html"><code>analyses/infoval-design-mismatch.md</code></a>.</p>
+<p>Brinkman et al. (2019) require the reference to use the CI’s own stimuli. A new default would move reported InfoVals; matching is the researcher’s call: <code>reference_stimuli</code> builds the paper’s reference, and a <code>trial_design</code> attribute flags a mismatch. The paper defines none for repeats or participant averages. Cost: <a href="analyses/infoval-design-mismatch.html"><code>analyses/infoval-design-mismatch.md</code></a>.</p>
 </div>
 <div class="section level3">
 <h3 id="computecumulativecicorrelation-does-not-aggregate-repeated-stimuli-and-its-curve-ends-at-1-by-construction">
@@ -246,8 +246,8 @@
 <p>Renaming a copy over the original (#333) was <strong>rejected</strong>: it changes the file’s owner, group and ACLs, which base R cannot restore. Where it can, <code>saveRdataSafely()</code> keeps a verified backup until <code><a href="https://rdrr.io/r/base/save.html" class="external-link">save()</a></code> completes. Barring concurrent saves, rcicr never deletes or overwrites a <code>.rcicr-backup</code> it cannot prove it made; restoring needs a check first.</p>
 </div>
 <div class="section level3">
-<h3 id="a-stimulus-rdata-file-is-never-overwritten">A stimulus <code>.Rdata</code> file is never overwritten<a class="anchor" aria-label="anchor" href="#a-stimulus-rdata-file-is-never-overwritten"></a></h3>
-<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> stops rather than replace one (<a href="https://github.com/rdotsch/rcicr/issues/338" class="external-link">#338</a>). A <code>_2</code> suffix was <strong>rejected</strong>: <code>list.files(...)[1]</code> would silently pick the older file, which may not match the PNGs on disk. Seconds in the name only make a collision rarer. Its lock is keyed on seed and minute, not <code>label</code>: file systems equate spellings (case, Unicode) base R cannot normalize.</p>
+<h3 id="stimulus-files-are-never-overwritten">Stimulus files are never overwritten<a class="anchor" aria-label="anchor" href="#stimulus-files-are-never-overwritten"></a></h3>
+<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> reserves its <code>.Rdata</code> (<a href="https://github.com/rdotsch/rcicr/issues/338" class="external-link">#338</a>) and PNGs (<a href="https://github.com/rdotsch/rcicr/issues/350" class="external-link">#350</a>) first, and never replaces one. <strong>Rejected:</strong> a <code>_2</code> suffix (<code>list.files(...)[1]</code> picks the older file); time in names (collisions rarer, not gone; experiment software names PNGs); an <code>overwrite</code> argument. Locks key on seed, not <code>label</code>: file systems equate spellings (case, Unicode) base R cannot normalize. PNG reservation asks the file system, which catches aliased base labels; same-seed calls into a folder cannot overlap even with different labels.</p>
 </div>
 <div class="section level3">
 <h3 id="captureargs-skips-required-and-absent-arguments-but-never-defaulted-ones">

@@ -48,26 +48,24 @@ under transparency.
 
 ### Two computations were adopted despite not being bit-identical
 
-Each sums in a new order; each was checked against an **independent
+Each sums in a new order and was checked against an **independent
 oracle**:
 
 - `rowMeans(x, dims = 2)` replaced `apply(..., 1:2, mean)` in
   [`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md),
   about 6x faster, 1 ULP apart. An explicit triple loop put both within
-  ~5.6e-17; at the golden master’s configuration they are bit-identical.
+  ~5.6e-17; at the golden master’s configuration, bit-identical.
 - The InfoVal reference defaults to the stimulus Gram matrix (#354).
-  Against its oracle, the rendered arithmetic, norms differed by at most
-  3.3e-14 (relative); no call at 1.96 changed
+  Against the rendered arithmetic, its oracle, norms differ by at most
+  3.3e-14 relative; no call at 1.96 changed
   ([`analyses/gram-reference-accuracy.md`](https://rdotsch.github.io/rcicr/analyses/gram-reference-accuracy.md);
-  reference BLAS only). An argument, not size-based routing, which could
-  need more memory and moved numbers unseen;
-  `reference_method = "images"` restores old values exactly.
+  reference BLAS only). An argument, not size-based routing (more
+  memory, numbers moved unseen); `"images"` restores old values exactly.
 
 The trap: **[`rowMeans()`](https://rdrr.io/r/base/colSums.html) on a 3-D
 array defaults to `dims = 1`**, and
 [`array()`](https://rdrr.io/r/base/array.html) silently recycles the
-short result. The first version submitted did exactly that: deviation
-0.21, not ~1e-17.
+short result. A first version did: deviation 0.21, not ~1e-17.
 
 ### The stimulus seed’s stream is load-bearing well beyond stimulus generation
 
@@ -286,13 +284,10 @@ base moves too.
 ### A subset CI is scored against the full stimulus set by default
 
 Brinkman et al. (2019) require the reference to use the CI’s own
-stimuli. A new default would move reported InfoVals, so matching is the
+stimuli. A new default would move reported InfoVals; matching is the
 researcher’s call: `reference_stimuli` builds the paper’s reference, and
-[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
-`trial_design` attribute lets
-[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-flag a mismatch. Repeats and participant averages get none; the paper
-defines none. Cost measured in
+a `trial_design` attribute flags a mismatch. The paper defines none for
+repeats or participant averages. Cost:
 [`analyses/infoval-design-mismatch.md`](https://rdotsch.github.io/rcicr/analyses/infoval-design-mismatch.md).
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
@@ -613,16 +608,19 @@ can, `saveRdataSafely()` keeps a verified backup until
 concurrent saves, rcicr never deletes or overwrites a `.rcicr-backup` it
 cannot prove it made; restoring needs a check first.
 
-### A stimulus `.Rdata` file is never overwritten
+### Stimulus files are never overwritten
 
 [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
-stops rather than replace one
-([\#338](https://github.com/rdotsch/rcicr/issues/338)). A `_2` suffix
-was **rejected**: `list.files(...)[1]` would silently pick the older
-file, which may not match the PNGs on disk. Seconds in the name only
-make a collision rarer. Its lock is keyed on seed and minute, not
+reserves its `.Rdata`
+([\#338](https://github.com/rdotsch/rcicr/issues/338)) and PNGs
+([\#350](https://github.com/rdotsch/rcicr/issues/350)) first, and never
+replaces one. **Rejected:** a `_2` suffix (`list.files(...)[1]` picks
+the older file); time in names (collisions rarer, not gone; experiment
+software names PNGs); an `overwrite` argument. Locks key on seed, not
 `label`: file systems equate spellings (case, Unicode) base R cannot
-normalize.
+normalize. PNG reservation asks the file system, which catches aliased
+base labels; same-seed calls into a folder cannot overlap even with
+different labels.
 
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 

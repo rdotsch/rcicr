@@ -115,7 +115,7 @@
 
 
 <dt id="arg-save-as-png">save_as_png<a class="anchor" aria-label="anchor" href="#arg-save-as-png"></a></dt>
-<dd><p>Boolean: write the stimuli to disk as PNG images (default: <code>TRUE</code>).</p></dd>
+<dd><p>Boolean: write the stimuli to disk as PNG images (default: <code>TRUE</code>). They are named <code>&lt;label&gt;_&lt;base label&gt;_&lt;seed&gt;_&lt;trial&gt;_ori.png</code> and <code>_inv.png</code>, with no time, so a later call into the same folder with the same label, base label and seed would write the same names. Existing PNGs are never overwritten: the call stops before generating or writing anything, and also stops when two base labels name the same file on this file system (for example, labels differing only in case). Use a different <code>label</code> or <code>stimulus_path</code>, or, to regenerate a stimulus set on purpose, delete its PNGs and its <code>.Rdata</code> file first. While PNGs are being written, a second call into the same folder with the same seed stops.</p></dd>
 
 
 <dt id="arg-save-rdata">save_rdata<a class="anchor" aria-label="anchor" href="#arg-save-rdata"></a></dt>

@@ -96,6 +96,25 @@
 
 ### Bug fixes
 
+- **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  never overwrites stimulus PNGs.** PNG names carry no time, so a call
+  in a later minute into the same folder, with the same label, base
+  label and seed, overwrote the earlier PNGs. The earlier `.Rdata`
+  survived and no longer described them, and a shorter rerun left old
+  and new PNGs mixed. Now every PNG the call would write is reserved
+  before anything is generated. If any exists, the call stops with
+  nothing changed. It also stops when two base labels name the same file
+  on this file system, such as `face` and `Face` where case is ignored,
+  and while another same-seed call is writing PNGs into the folder. A
+  call that fails part-way, or that you abort with Esc or Ctrl-C, first
+  stops its parallel workers and then removes the files it created. Only
+  if R itself is killed can empty placeholder PNGs remain; the next
+  call’s message says the files it found are empty, as such placeholders
+  would be, so they can be checked and deleted. To regenerate a stimulus
+  set on purpose, delete its PNGs and its `.Rdata` first, or use a
+  different `label` or `stimulus_path`.
+  ([\#350](https://github.com/rdotsch/rcicr/issues/350))
+
 - **A single generated trial or a single participant no longer stops
   with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`,
   and
