@@ -314,6 +314,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     parallel::stopCluster(cl)
   }
   cl <- NULL
+  # The workers have exited, and their PIDs may be reused by now: an unfinished
+  # call must not signal them.
+  worker_pids <- NULL
 
   # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
   #

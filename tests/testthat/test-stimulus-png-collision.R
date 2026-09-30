@@ -199,10 +199,30 @@ test_that("an abort during the reservation itself leaves no placeholder", {
 test_that("empty leftovers of a killed call are named as such", {
   dir <- withr::local_tempdir()
   file.create(rcicr:::stimulusPngPaths(dir, "rcic", "face", 1, 6))
-  expect_error(generate(dir), "placeholders left by a generateStimuli2IFC\\(\\) call that was killed")
+  expect_error(generate(dir), "as placeholders left by a generateStimuli2IFC\\(\\) call that was killed")
   writeLines("real", rcicr:::stimulusPngPath(dir, "rcic", "face", 1, 1, "ori"))
   expect_error(generate(dir), "12 of the 12 PNG files")
   expect_no_match(tryCatch(generate(dir), error = conditionMessage), "placeholders")
+})
+
+test_that("a save that fails after the workers have exited signals no PID", {
+  dir <- withr::local_tempdir()
+  released <- NULL
+  original <- rcicr:::releaseStimulusCall
+  local_mocked_bindings(
+    saveStimulusFile = function(names, file, envir) stop("disk full"),
+    releaseStimulusCall = function(finished, cl, worker_pids, ...) {
+      released <<- list(finished = finished, worker_pids = worker_pids)
+      original(finished, cl, worker_pids, ...)
+    }
+  )
+  expect_error(suppressWarnings(utils::capture.output(
+    generateStimuli2IFC(list(face = base_png()), n_trials = 4, img_size = 16, stimulus_path = dir,
+                        seed = 1, ncores = 2, nscales = 1)
+  )), "disk full")
+  expect_false(released$finished)
+  expect_null(released$worker_pids)
+  expect_length(list.files(dir, all.files = TRUE, no.. = TRUE), 0)
 })
 
 test_that("a dangling symlink at the .Rdata name is taken, and a failure never removes it", {

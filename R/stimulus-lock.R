@@ -107,12 +107,14 @@ reserveStimulusPngs <- function(paths) {
   shown <- function(x) paste0(paste(utils::head(x, 3), collapse = ", "), if (length(x) > 3) ", ...")
   existing <- paths[vapply(paths, pathTaken, logical(1))]
   if (length(existing) > 0) {
-    # Only a call that never ran its cleanup (R was killed) leaves these.
+    # A call that never ran its cleanup (R was killed) leaves empty files, but
+    # so could anything else: size is no proof of who made them.
     leftover <- isTRUE(all(file.size(existing) == 0))
     stop(length(existing), " of the ", length(paths), " PNG files this call would write already ",
          "exist (", shown(existing), "), and stimulus files are never overwritten. ",
-         if (leftover) paste0("They are all empty: placeholders left by a generateStimuli2IFC() ",
-                              "call that was killed before it could clean up, safe to delete. "),
+         if (leftover) paste0("They are all empty, as placeholders left by a generateStimuli2IFC() ",
+                              "call that was killed before it could clean up would be; check that ",
+                              "they are not someone else's before deleting them. "),
          "Use a different label or stimulus_path, or, to regenerate this stimulus set on purpose, ",
          "delete its PNGs and its .Rdata file.", call. = FALSE)
   }
