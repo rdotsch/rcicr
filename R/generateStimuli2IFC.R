@@ -156,15 +156,19 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     stimulus_path <- NA_character_
   }
 
+  # A call that does not finish removes what it created, so a failure leaves no
+  # partial set.
+  finished <- FALSE
   if (save_rdata) {
     rdata_file <- stimulusRdataPath(stimulus_path, label, seed, started)
     rdata_lock <- acquireStimulusLock(rdata_file, seed, started)
     on.exit(unlink(rdata_lock, recursive = TRUE), add = TRUE)
+    # The lock established that the file did not exist, and holds it, so any
+    # file there at exit is this call's own, possibly half-written by save().
+    on.exit(if (!finished) unlink(rdata_file), add = TRUE)
   }
 
-  # Every PNG is reserved before anything is generated, and a call that does
-  # not finish removes what it reserved, so a failure leaves no partial set.
-  finished <- FALSE
+  # Every PNG is reserved before anything is generated.
   if (save_as_png) {
     png_lock <- acquirePngLock(stimulus_path, seed)
     on.exit(unlink(png_lock, recursive = TRUE), add = TRUE)
@@ -313,14 +317,14 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   # note that comparing versions as strings is wrong anyway, since '0.10.0' sorts
   # below '0.4.0'. p$generator_version has always held the real version and is
   # the more trustworthy of the two on any file that has it.
-  generator_version <- utils::packageVersion('rcicr')
+  generator_version <- utils::packageVersion('rcicr') # nolint: object_usage_linter. Saved by name below.
 
   if (save_rdata) {
     # nscales and sigma are saved so that anything re-generating this stimulus
     # set later (notably generateReferenceDistribution2IFC(), which builds the
     # infoVal null distribution) reproduces the same noise basis. They were
     # previously omitted, so re-generation silently fell back to the defaults.
-    save(base_face_files, base_faces, img_size, label, n_trials, noise_type, nscales, sigma, p, seed, stimuli_params, stimulus_path, use_same_parameters, generator_version, file = rdata_file, envir = environment())
+    saveStimulusFile(c("base_face_files", "base_faces", "img_size", "label", "n_trials", "noise_type", "nscales", "sigma", "p", "seed", "stimuli_params", "stimulus_path", "use_same_parameters", "generator_version"), rdata_file, environment())
   }
 
   finished <- TRUE

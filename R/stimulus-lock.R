@@ -128,3 +128,8 @@ reserveStimulusPngs <- function(paths) {
   }
   reserved
 }
+
+# Named so tests can make the save fail part-way.
+saveStimulusFile <- function(names, file, envir) {
+  save(list = names, file = file, envir = envir)
+}

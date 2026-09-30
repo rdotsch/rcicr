@@ -120,3 +120,20 @@ test_that("a call that fails part-way leaves no placeholder and no PNG behind", 
   expect_length(list.files(dir, all.files = TRUE, no.. = TRUE), 0)
   local_mocked_bindings(generateNoiseImage = rcicr::generateNoiseImage)
 })
+
+test_that("a save that fails part-way leaves no .Rdata behind, so the next call can run", {
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(stimulusTime = function() minute(0))
+  local_mocked_bindings(saveStimulusFile = function(names, file, envir) {
+    writeLines("half written", file)
+    stop("disk full")
+  })
+  expect_error(generate(dir), "disk full")
+  expect_length(list.files(dir, all.files = TRUE, no.. = TRUE), 0)
+
+  local_mocked_bindings(saveStimulusFile = function(names, file, envir) {
+    save(list = names, file = file, envir = envir)
+  })
+  expect_no_error(generate(dir))
+  expect_length(list.files(dir, pattern = "\\.Rdata$"), 1)
+})
