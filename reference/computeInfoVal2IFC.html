@@ -46,7 +46,8 @@
 <span>  force_gen_ref_dist <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  response_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  baseimage <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  reference_stimuli <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  reference_stimuli <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  reference_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gram"</span>, <span class="st">"images"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +99,13 @@ those stimuli and stored in the <code>rdata</code> file apart from the default o
 stimulus, as does passing all of them, with the same result in every case. A subset too small
 for random responses to give distinct norms (one stimulus, and usually two) is refused, since
 its MAD is 0 and the InfoVal would not be a number. See "Matching the reference to the classification image" below.</p></dd>
+
+
+<dt id="arg-reference-method">reference_method<a class="anchor" aria-label="anchor" href="#arg-reference-method"></a></dt>
+<dd><p><code>"gram"</code> (the default) or <code>"images"</code>: how the reference is
+computed, when it has to be. <code>"images"</code> reproduces rcicr 1.5.0 and earlier bit for bit; a
+reference already stored in <code>rdata</code> is reused whichever is given. See "Reference method" in
+<code><a href="generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -170,9 +178,9 @@ images. <em>Behavior Research Methods</em>, <em>51</em>, 2059-2073.
 <span class="r-in"><span><span class="co"># tiny here for a fast example, in practice use iter &gt;= 10000.</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC</a></span><span class="op">(</span><span class="va">rdata_file</span>, iter <span class="op">=</span> <span class="fl">3</span>, ncores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Building the reference from the saved noise, please wait...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Computing reference distribution, please wait...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> InfoVal reference computed with reference_method = "gram". References from rcicr 1.5.0 and earlier used "images"; pass reference_method = "images" to reproduce them bit for bit.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Saving simulated reference distribution to rdata file...</span>
 <span class="r-in"><span></span></span>
@@ -184,7 +192,7 @@ images. <em>Behavior Research Methods</em>, <em>51</em>, 2059-2073.
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">computeInfoVal2IFC</span><span class="op">(</span>target_ci <span class="op">=</span> <span class="va">target_ci</span>, rdata <span class="op">=</span> <span class="va">rdata_file</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Using reference distribution found in rdata file.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Informational value: z = -1.01238122740691 (ci norm = 0.985406648738523; reference median = 1.50357804391794; MAD = 0.51183425882624; iterations = 3)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Informational value: z = -1.01238122740691 (ci norm = 0.985406648738523; reference median = 1.50357804391794; MAD = 0.511834258826241; iterations = 3)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] -1.012381</span>
 </code></pre></div>
     </div>

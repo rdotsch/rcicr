@@ -12,7 +12,8 @@ generateReferenceDistribution2IFC(
   response_seed = NULL,
   save_rdata = TRUE,
   baseimage = NULL,
-  reference_stimuli = NULL
+  reference_stimuli = NULL,
+  reference_method = c("gram", "images")
 )
 ```
 
@@ -30,8 +31,9 @@ generateReferenceDistribution2IFC(
 
 - ncores:
 
-  Number of CPU cores used to rebuild the saved noise (default:
-  `detectCores() - 1`; 2 under `R CMD check`, per CRAN policy).
+  Number of CPU cores used to render the saved noise with
+  `reference_method = "images"` (default: `detectCores() - 1`; 2 under
+  `R CMD check`, per CRAN policy). `"gram"` does not use it.
 
 - response_seed:
 
@@ -70,6 +72,12 @@ generateReferenceDistribution2IFC(
   The simulated responses continue the same stream as the default, so
   the reference is reproducible from the file. Passing every saved
   stimulus is the same as the default, `NULL`.
+
+- reference_method:
+
+  `"gram"` (the default) or `"images"`: how the reference norms are
+  computed. `"images"` reproduces rcicr 1.5.0 and earlier bit for bit.
+  See "Reference method" below.
 
 ## Value
 
@@ -127,6 +135,39 @@ for instance to check how much Monte Carlo error a given `iter` leaves
 in your InfoVal. This changes only the simulated responses, not the
 stimuli or the noise basis the null is built on.
 
+## Reference method
+
+`reference_method = "gram"`, the default, computes the norms from the
+stimulus Gram matrix, without calling
+[`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md)
+or multiplying the noise for every draw. For a small stimulus set the
+Gram matrix is built from the noise rendered through the sparse basis;
+otherwise from the basis's cross-product, kept sparse. Either way the
+basis is built a block of image columns at a time, so no full-size copy
+of it, or of the noise, is held. `"images"` is the calculation of rcicr
+1.5.0 and earlier: every noise image rendered, in parallel over
+`ncores`, and multiplied for every draw. It reproduces references from
+those versions bit for bit.
+
+The two agree to rounding. No configuration measured was bit-identical,
+and none differed by more than a relative 5e-14 in a single norm
+(reference BLAS; see
+<https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md>).
+
+Computing a reference with `"gram"` prints a message saying so, and
+naming `"images"` as the way to reproduce earlier references. Silence it
+with [`suppressMessages()`](https://rdrr.io/r/base/message.html). The
+method is never switched for you.
+
+A reference already stored in the file is reused as stored, whichever
+method is asked for. To rebuild one with a particular method, add
+`force_gen_ref_dist = TRUE` in
+[`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md),
+or call this function with `save_rdata = TRUE`. The method a reference
+was computed with is stored beside it, as `reference_norms_method` or as
+`method` in each `reference_norms_by_base` and
+`reference_norms_by_stimuli` entry.
+
 ## Independent base images
 
 When the base images have different parameter matrices, `baseimage` says
@@ -160,9 +201,9 @@ rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE
 # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #> Building the reference from the saved noise, please wait...
-#>   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%
 #> Computing reference distribution, please wait...
-#>   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
+#> InfoVal reference computed with reference_method = "gram". References from rcicr 1.5.0 and earlier used "images"; pass reference_method = "images" to reproduce them bit for bit.
+#>   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%
 #> 
 #> Saving simulated reference distribution to rdata file...
 ```

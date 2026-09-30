@@ -46,23 +46,28 @@ always accepted. `rcicr` renders opaque stimuli, so alpha means nothing
 downstream. A cut-out may therefore reveal colour that a viewer hid
 under transparency.
 
-### `rowMeans(x, dims = 2)` was adopted despite not being bit-identical
+### Two computations were adopted despite not being bit-identical
 
-Patch averaging in
-[`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md)
-moved from `apply(..., 1:2, mean)`, about 6x faster end to end. The two
-sum in a different order and so differ by about 1 ULP (~1e-19 on pixel
-values around 0.01). Adopted because an **independent oracle**, the
-average as an explicit triple loop using neither function, put both
-within ~5.6e-17 across noise types, scales and seeds. At the golden
-master’s configuration they are bit-identical.
+Each sums in a new order; each was checked against an **independent
+oracle**:
+
+- `rowMeans(x, dims = 2)` replaced `apply(..., 1:2, mean)` in
+  [`generateNoiseImage()`](https://rdotsch.github.io/rcicr/reference/generateNoiseImage.md),
+  about 6x faster, 1 ULP apart. An explicit triple loop put both within
+  ~5.6e-17; at the golden master’s configuration they are bit-identical.
+- The InfoVal reference defaults to the stimulus Gram matrix (#354).
+  Against its oracle, the rendered arithmetic, norms differed by at most
+  3.3e-14 (relative); no call at 1.96 changed
+  ([`analyses/gram-reference-accuracy.md`](https://rdotsch.github.io/rcicr/analyses/gram-reference-accuracy.md);
+  reference BLAS only). An argument, not size-based routing, which could
+  need more memory and moved numbers unseen;
+  `reference_method = "images"` restores old values exactly.
 
 The trap: **[`rowMeans()`](https://rdrr.io/r/base/colSums.html) on a 3-D
-array defaults to `dims = 1`**, collapsing dimensions 2 *and* 3, and
-[`array()`](https://rdrr.io/r/base/array.html) then silently recycles
-the short result. The first version submitted did exactly that, with a
-measured maximum deviation of 0.21 on data with an SD of ~0.01, not the
-~1e-17 it claimed.
+array defaults to `dims = 1`**, and
+[`array()`](https://rdrr.io/r/base/array.html) silently recycles the
+short result. The first version submitted did exactly that: deviation
+0.21, not ~1e-17.
 
 ### The stimulus seed’s stream is load-bearing well beyond stimulus generation
 
@@ -281,14 +286,13 @@ base moves too.
 ### A subset CI is scored against the full stimulus set by default
 
 Brinkman et al. (2019) require the reference to use the CI’s own
-stimuli. A new default would move every InfoVal reported for a subset
-CI, so matching is the researcher’s call: `reference_stimuli` builds the
-paper’s reference, and
+stimuli. A new default would move reported InfoVals, so matching is the
+researcher’s call: `reference_stimuli` builds the paper’s reference, and
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
 `trial_design` attribute lets
 [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-flag a mismatch. Repeats and participant averages get no reference,
-since the paper defines none. Cost measured in
+flag a mismatch. Repeats and participant averages get none; the paper
+defines none. Cost measured in
 [`analyses/infoval-design-mismatch.md`](https://rdotsch.github.io/rcicr/analyses/infoval-design-mismatch.md).
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction

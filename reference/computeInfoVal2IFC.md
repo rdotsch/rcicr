@@ -12,7 +12,8 @@ computeInfoVal2IFC(
   force_gen_ref_dist = FALSE,
   response_seed = NULL,
   baseimage = NULL,
-  reference_stimuli = NULL
+  reference_stimuli = NULL,
+  reference_method = c("gram", "images")
 )
 ```
 
@@ -78,6 +79,14 @@ computeInfoVal2IFC(
   two) is refused, since its MAD is 0 and the InfoVal would not be a
   number. See "Matching the reference to the classification image"
   below.
+
+- reference_method:
+
+  `"gram"` (the default) or `"images"`: how the reference is computed,
+  when it has to be. `"images"` reproduces rcicr 1.5.0 and earlier bit
+  for bit; a reference already stored in `rdata` is reused whichever is
+  given. See "Reference method" in
+  [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md).
 
 ## Value
 
@@ -159,9 +168,9 @@ rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE
 # tiny here for a fast example, in practice use iter >= 10000.
 suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 #> Building the reference from the saved noise, please wait...
-#>   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%
 #> Computing reference distribution, please wait...
-#>   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
+#> InfoVal reference computed with reference_method = "gram". References from rcicr 1.5.0 and earlier used "images"; pass reference_method = "images" to reproduce them bit for bit.
+#>   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%
 #> 
 #> Saving simulated reference distribution to rdata file...
 
@@ -173,6 +182,6 @@ target_ci <- generateCI(
 
 computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
 #> Using reference distribution found in rdata file.
-#> Informational value: z = -1.01238122740691 (ci norm = 0.985406648738523; reference median = 1.50357804391794; MAD = 0.51183425882624; iterations = 3)
+#> Informational value: z = -1.01238122740691 (ci norm = 0.985406648738523; reference median = 1.50357804391794; MAD = 0.511834258826241; iterations = 3)
 #> [1] -1.012381
 ```
