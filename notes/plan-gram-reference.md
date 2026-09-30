@@ -54,10 +54,11 @@ references alone.
        `DECISIONS.md` → "4096 → 4092" measures;
      - parameters beyond `max(patchIdx)` are ignored, with `generateNoiseImage()`'s warning given
        once rather than once per trial;
-   - **routes on size.** When the selected trials outnumber the pixels, `G` (trials x trials) would
-     be larger than the rendered noise, and so would each iteration's product. Such sets, like
-     32px with 10,000 trials, keep today's rendered calculation unchanged and stay bit-identical.
-     Every other set uses `G`. All eight configurations in the analysis have fewer trials than
+   - **routes on size.** `G` is used only when the selected trials are strictly fewer than the
+     pixels. When they outnumber the pixels, `G` (trials x trials) would be larger than the rendered
+     noise, and so would each iteration's product. When they are equal, both are n x n and `G`
+     saves nothing but still costs a `crossprod` and bit-identity. Those sets, like 32px with 10,000
+     or 1,024 trials, keep today's rendered calculation unchanged and stay bit-identical. All eight configurations in the analysis have fewer trials than
      pixels, so all take the Gram route it measures;
    - builds `G` whichever way holds less: as `crossprod(S)` from the sparse-rendered noise
      `S = P t(X)` when pixels x trials is at most the squared parameter count, otherwise as
@@ -109,9 +110,10 @@ references alone.
 
 ## Verification
 
-- A fixture with more trials than pixels (8px, one scale, 100 trials) takes the rendered route,
-  and its reference stays `identical()` to the rendered arithmetic. A one-pixel mutation of the
-  routing threshold must fail a test.
+- Fixtures with more trials than pixels (8px, one scale, 100 trials) and with exactly as many
+  (8px, one scale, 64 trials) take the rendered route, and their references stay `identical()` to
+  the rendered arithmetic. One with one trial fewer (63) takes the Gram route. Turning `<` into
+  `<=` in the routing test must fail a test.
 - The bit-identity test becomes a tolerance test, `expect_equal(tolerance = 1e-12)`, against the
   rendered arithmetic it already spells out. The RNG state afterwards and the saved fields stay
   `identical()`. The analysis measured only the reference BLAS. The four CI platforms (macOS,
