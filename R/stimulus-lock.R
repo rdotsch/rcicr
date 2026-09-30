@@ -43,7 +43,7 @@ acquireStimulusLock <- function(rdata_file, seed, time) {
          "still running or was interrupted. Delete it only after confirming that no ",
          "generateStimuli2IFC() call is still writing to this folder.", call. = FALSE)
   }
-  if (file.exists(rdata_file)) {
+  if (pathTaken(rdata_file)) {
     unlink(lock, recursive = TRUE)
     stop(rdata_file, " already exists, and a stimulus file is never overwritten. Use a ",
          "different label or stimulus_path, or delete the file if you are regenerating this ",
@@ -107,12 +107,20 @@ reserveStimulusPngs <- function(paths) {
   shown <- function(x) paste0(paste(utils::head(x, 3), collapse = ", "), if (length(x) > 3) ", ...")
   existing <- paths[vapply(paths, pathTaken, logical(1))]
   if (length(existing) > 0) {
+    # Only a call that never ran its cleanup (R was killed) leaves these.
+    leftover <- isTRUE(all(file.size(existing) == 0))
     stop(length(existing), " of the ", length(paths), " PNG files this call would write already ",
-         "exist (", shown(existing), "), and stimulus files are never overwritten. Use a different ",
-         "label or stimulus_path, or, to regenerate this stimulus set on purpose, delete its PNGs ",
-         "and its .Rdata file.", call. = FALSE)
+         "exist (", shown(existing), "), and stimulus files are never overwritten. ",
+         if (leftover) paste0("They are all empty: placeholders left by a generateStimuli2IFC() ",
+                              "call that was killed before it could clean up, safe to delete. "),
+         "Use a different label or stimulus_path, or, to regenerate this stimulus set on purpose, ",
+         "delete its PNGs and its .Rdata file.", call. = FALSE)
   }
   reserved <- character()
+  # Rolled back if this loop is interrupted, since the caller only learns what
+  # was reserved once it returns.
+  done <- FALSE
+  on.exit(if (!done) unlink(reserved), add = TRUE)
   for (path in paths) {
     if (pathTaken(path) || !file.create(path, showWarnings = FALSE)) {
       aliased <- pathTaken(path)
@@ -126,7 +134,20 @@ reserveStimulusPngs <- function(paths) {
     }
     reserved <- c(reserved, path)
   }
+  done <- TRUE
   reserved
+}
+
+# The exit handler of generateStimuli2IFC(). Workers are killed rather than
+# stopped: a stopped worker still finishes the trial it is writing.
+releaseStimulusCall <- function(finished, cl, worker_pids, reserved_pngs, owned_rdata, locks) {
+  if (!finished) {
+    if (length(worker_pids) > 0) tools::pskill(worker_pids, tools::SIGKILL)
+    stopClusterSafely(cl)
+    unlink(c(reserved_pngs, owned_rdata))
+  }
+  unlink(locks, recursive = TRUE)
+  invisible(NULL)
 }
 
 # Named so tests can make the save fail part-way.

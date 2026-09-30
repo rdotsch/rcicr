@@ -137,3 +137,78 @@ test_that("a save that fails part-way leaves no .Rdata behind, so the next call 
   expect_no_error(generate(dir))
   expect_length(list.files(dir, pattern = "\\.Rdata$"), 1)
 })
+
+interrupt <- function() signalCondition(structure(class = c("interrupt", "condition"), list()))
+
+abort <- function(expr) tryCatch(expr, interrupt = function(e) "aborted")
+
+test_that("an abort removes everything the call created, serially", {
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(generateNoiseImage = function(...) interrupt())
+  expect_identical(abort(generate(dir)), "aborted")
+  expect_length(list.files(dir, all.files = TRUE, no.. = TRUE), 0)
+})
+
+test_that("a parallel abort leaves the folder empty", {
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(progressOption = function(pb, cl) list(progress = function(n) interrupt()))
+  expect_identical(abort(suppressWarnings(utils::capture.output(
+    generateStimuli2IFC(list(face = base_png()), n_trials = 40, img_size = 16, stimulus_path = dir,
+                        seed = 1, ncores = 2, nscales = 1)
+  ))), "aborted")
+  Sys.sleep(1)
+  expect_length(list.files(dir, all.files = TRUE, no.. = TRUE), 0)
+})
+
+test_that("the cleanup kills a worker still writing, before removing its files", {
+  # The parallel abort above interrupts as a result arrives, when the other
+  # worker is finishing too, so it cannot catch a write that lands after the
+  # cleanup. This drives the cleanup directly against a process that writes a
+  # reserved path a second later.
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  reserved <- file.path(dir, "rcic_face_1_00001_ori.png")
+  file.create(reserved)
+  writer <- parallel::mcparallel({
+    Sys.sleep(1)
+    writeLines("late", reserved)
+  })
+  rcicr:::releaseStimulusCall(FALSE, NULL, writer$pid, reserved, NULL, character())
+  Sys.sleep(2)
+  expect_false(file.exists(reserved))
+  parallel::mccollect(writer, wait = FALSE)
+})
+
+test_that("an abort during the reservation itself leaves no placeholder", {
+  dir <- withr::local_tempdir()
+  calls <- 0
+  local_mocked_bindings(pathTaken = function(path) {
+    calls <<- calls + 1
+    # The first 12 calls are the up-front check; interrupt partway through the loop.
+    if (calls == 12 + 5) interrupt()
+    file.exists(path)
+  })
+  expect_identical(abort(generate(dir)), "aborted")
+  expect_length(list.files(dir, all.files = TRUE, no.. = TRUE), 0)
+})
+
+test_that("empty leftovers of a killed call are named as such", {
+  dir <- withr::local_tempdir()
+  file.create(rcicr:::stimulusPngPaths(dir, "rcic", "face", 1, 6))
+  expect_error(generate(dir), "placeholders left by a generateStimuli2IFC\\(\\) call that was killed")
+  writeLines("real", rcicr:::stimulusPngPath(dir, "rcic", "face", 1, 1, "ori"))
+  expect_error(generate(dir), "12 of the 12 PNG files")
+  expect_no_match(tryCatch(generate(dir), error = conditionMessage), "placeholders")
+})
+
+test_that("a dangling symlink at the .Rdata name is taken, and a failure never removes it", {
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(stimulusTime = function() minute(0))
+  outside <- file.path(withr::local_tempdir(), "target.Rdata")
+  link <- rcicr:::stimulusRdataPath(dir, "rcic", 1, minute(0))
+  file.symlink(outside, link)
+  expect_error(generate(dir), "already exists, and a stimulus file is never overwritten")
+  expect_identical(Sys.readlink(link), outside)
+  expect_false(file.exists(outside))
+})

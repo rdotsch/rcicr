@@ -156,26 +156,33 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     stimulus_path <- NA_character_
   }
 
-  # A call that does not finish removes what it created, so a failure leaves no
-  # partial set.
+  # One handler, registered before anything is reserved, releases everything in
+  # order: a call that does not finish (an error, or the user aborting) stops
+  # its workers, removes what it created, and only then gives up its locks.
   finished <- FALSE
+  cl <- NULL
+  worker_pids <- NULL
+  owned_rdata <- NULL
+  reserved_pngs <- character()
+  rdata_lock <- NULL
+  png_lock <- NULL
+  on.exit(releaseStimulusCall(finished, cl, worker_pids, reserved_pngs, owned_rdata,
+                              c(png_lock, rdata_lock)), add = TRUE)
+
   if (save_rdata) {
     rdata_file <- stimulusRdataPath(stimulus_path, label, seed, started)
     rdata_lock <- acquireStimulusLock(rdata_file, seed, started)
-    on.exit(unlink(rdata_lock, recursive = TRUE), add = TRUE)
     # The lock established that the file did not exist, and holds it, so any
     # file there at exit is this call's own, possibly half-written by save().
-    on.exit(if (!finished) unlink(rdata_file), add = TRUE)
+    owned_rdata <- rdata_file
   }
 
   # Every PNG is reserved before anything is generated.
   if (save_as_png) {
     png_lock <- acquirePngLock(stimulus_path, seed)
-    on.exit(unlink(png_lock, recursive = TRUE), add = TRUE)
     reserved_pngs <- reserveStimulusPngs(
       stimulusPngPaths(stimulus_path, label, names(base_faces), seed, n_trials)
     )
-    on.exit(if (!finished) unlink(reserved_pngs), add = TRUE)
   }
 
   # After the reservations, so a call that cannot write stops before the basis,
@@ -225,7 +232,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   # in a one-worker cluster. See startBackend() in parallel.R.
   cl <- startBackend(ncores)
   if (!is.null(cl)) {
-    on.exit(stopClusterSafely(cl), add = TRUE)
+    # Recorded so an unfinished call can stop a worker mid-trial, before it
+    # writes a PNG the cleanup has already removed.
+    worker_pids <- unlist(parallel::clusterCall(cl, Sys.getpid))
   }
 
   stims <- foreach::foreach(
