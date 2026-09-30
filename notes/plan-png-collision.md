@@ -40,6 +40,16 @@ reach again, and deleting files is an explicit act the user already controls.
      and such calls are rare.
 3. **Unchanged:** `save_as_png = FALSE` writes no PNGs and takes neither the preflight nor the new
    lock. The `.Rdata` reservation and its messages stay as #338 left them.
+4. **`NEWS.md`**, in the development version's "Bug fixes": calls that used to overwrite PNGs now stop,
+   and how to regenerate on purpose.
+5. **`DECISIONS.md`.** The entry "A stimulus `.Rdata` file is never overwritten" becomes "Stimulus
+   files are never overwritten", and takes the policy and what was rejected:
+   - time in the PNG names;
+   - stopping on another minute's `.Rdata`;
+   - an `overwrite` argument;
+   - and the cost of keying the lock on the seed alone.
+
+   The file is at its word budget, so the entry must fit by tightening the existing text.
 
 ## Considered and not done
 
