@@ -42,7 +42,7 @@ So a loop over 100 participants spends about 80 s loading one file 200 times, or
 
 `computeInfoVal2IFC()` has three paths (shared, independent base, subset), each ending in "resolve the reference, then score". Each is split at that point into an internal resolver and a scoring step. The resolver returns a summary, `list(median, mad, iter)`, not the norms: a repopulated `ref_lookup` row supplies only those three numbers, and scoring needs nothing else. `computeInfoVal2IFC()` becomes resolver plus score, with its printed lines and messages unchanged. The batch groups CIs by their canonical `reference_stimuli` (`canonicalReferenceStimuli()`, so `c(3,1,2)` and `1:3` share a reference) and calls the resolver once per group.
 
-The shared path's `ref_lookup` block (empty since 2018) stays inside its resolver, unchanged, and a hit on it would serve the whole batch like any other resolved reference. A test mocks one row in to hold that.
+The shared path's `ref_lookup` block (empty since 2018) stays inside its resolver, unchanged, and a hit on it would serve the whole batch like any other resolved reference.
 
 ## Tests
 
