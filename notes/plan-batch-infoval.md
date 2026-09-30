@@ -15,7 +15,7 @@ So a loop over 100 participants spends about 80 s loading one file 200 times, or
 
 `batchComputeInfoVal2IFC(target_cis, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images"))`
 
-- **Name.** It pairs with `batchGenerateCI2IFC()`, whose result is its natural input, and sits beside it in the reference index. `computeInfoVals2IFC()` was the alternative; one letter from the existing function is an easy typo to make and to miss when reading. **Reviewer's call.**
+- **Name** (the maintainer's choice). It pairs with `batchGenerateCI2IFC()`, whose result is its natural input, and sits beside it in the reference index.
 - `target_cis`: a list of classification images as returned by `generateCI()`. A single CI (a list with a `ci` element) is refused with a pointer to `computeInfoVal2IFC()`, since otherwise it would be read as a list of four "CIs".
 - Every other argument means what it means in `computeInfoVal2IFC()` and applies to every CI, except `reference_stimuli`, which is one of:
   - `NULL`: every CI against the full set, as `computeInfoVal2IFC()` does;
@@ -24,7 +24,7 @@ So a loop over 100 participants spends about 80 s loading one file 200 times, or
 - `baseimage` is one label for the whole batch. CIs for different base images go in separate calls, which is how their references are stored anyway.
 - **Returns** a numeric vector, one InfoVal per CI, named by `names(target_cis)`.
 
-**The contract:** the result is `identical()` to `vapply(seq_along(cis), function(i) computeInfoVal2IFC(cis[[i]], rdata, ..., reference_stimuli = <that CI's>), numeric(1))` with the same arguments, including under `response_seed` and `force_gen_ref_dist = TRUE`. Both of those give the same reference on every call (one seeded stream, one stimulus stream), so resolving it once and reusing it changes no number. That is what the tests pin.
+**The contract:** the result is `identical()` to `stats::setNames(vapply(seq_along(cis), function(i) computeInfoVal2IFC(cis[[i]], rdata, ..., reference_stimuli = <that CI's>), numeric(1)), names(cis))` with the same arguments, names included (and no names when `cis` has none), including under `response_seed` and `force_gen_ref_dist = TRUE`. Both of those give the same reference on every call (one seeded stream, one stimulus stream), so resolving it once and reusing it changes no number. That is what the tests pin.
 
 ## Output
 
@@ -40,7 +40,7 @@ The shared path's `ref_lookup` block (empty since 2018) stays inside its resolve
 
 ## Tests
 
-- Parity: `identical()` to the `computeInfoVal2IFC()` loop for the full set, a shared subset, per-CI subsets (including a `NULL` element and two CIs sharing a subset in a different order), an independent-base file with `baseimage`, `response_seed`, `force_gen_ref_dist = TRUE`, and a read-only file.
+- Parity: `identical()` to the named `computeInfoVal2IFC()` loop above, on a named list straight from `batchGenerateCI2IFC()` and on an unnamed list, for the full set, a shared subset, per-CI subsets (including a `NULL` element and two CIs sharing a subset in a different order), an independent-base file with `baseimage`, `response_seed`, `force_gen_ref_dist = TRUE`, and a read-only file.
 - Resolution count: mocking `generateReferenceDistribution2IFC()` to count calls, a read-only file with 5 CIs over 2 distinct subsets simulates exactly 2 references (the loop simulates 5). Stored-reference case: the file is loaded a fixed number of times, independent of the number of CIs.
 - Messages: 3 mismatched CIs out of 5 give one message naming those 3; matched CIs give none.
 - Refusals: a single CI; `reference_stimuli` a list of the wrong length; an element that is not a CI.
