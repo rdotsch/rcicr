@@ -168,6 +168,13 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     responses <- aggregated$responses
   }
 
+  # The same predicates as the z-map dispatch below, so nothing it sends to the
+  # t test can pass here unchecked.
+  if (zmap && zmapmethod == 't.test') {
+    requireTTestStack(if (all(is.na(participants))) length(stimuli) else length(unique(participants)),
+                      !all(is.na(participants)))
+  }
+
   params <- selectStimulusParams(stimuli_params, baseimage, stimuli)
 
   # Generate CI(s) ----------------------------------------------------------

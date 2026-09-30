@@ -12,6 +12,18 @@ computeZmapQuick <- function(ci, sigma, threshold, img_size) {
   return(zmap)
 }
 
+# A one-sample t test needs two observations; with one, t.test() fails at every
+# pixel with a message that names neither the cause nor a way round it.
+requireTTestStack <- function(n_images, by_participant) {
+  if (n_images < 2) {
+    stop('zmapmethod = "t.test" tests each pixel across ',
+         if (by_participant) 'participants' else 'distinct stimuli',
+         ', and needs at least two; this call has ', n_images, '. Use zmapmethod = "quick", ',
+         'which works from the classification image alone.', call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 # The t-test z-map: a one-sample t test per pixel across a stack of images.
 #
 # What that stack is depends on how the CI was built, and this is the one place
@@ -31,7 +43,7 @@ computeZmapTTest <- function(ci, params, responses, p, pid_cis, img_size,
     weightedparameters <- params * responses
     n_observations <- length(responses)
 
-    pb <- txtProgressBar(min = 1, max = n_observations, style = 3)
+    pb <- txtProgressBar(min = 0, max = n_observations, style = 3)
 
     cl <- startBackend(n_cores)
     if (!is.null(cl)) {
