@@ -45,8 +45,9 @@ stimulus file, as \code{\link{computeInfoVal2IFC}} would for each in turn.
 }
 \details{
 Each distinct reference distribution is found or simulated once and used for every
-classification image scored against it, and the stimulus file is read a fixed number of times
-however many images there are. A loop over \code{computeInfoVal2IFC()} reads the file twice
+classification image scored against it. The stimulus file is read at most three times to find
+stored references, however many images there are, and again for each reference that has to be
+simulated. A loop over \code{computeInfoVal2IFC()} reads the file twice
 per image and, when the reference cannot be stored (a read-only file, a \code{response_seed},
 or \code{force_gen_ref_dist = TRUE}), simulates it again for every image. The values are
 identical to that loop's.
