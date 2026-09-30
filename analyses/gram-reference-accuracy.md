@@ -25,8 +25,9 @@ different order, so their results need not be bit-identical.
 
 This document measures by how much they differ, and how often the
 difference changes a decision at the conventional cut-off of 1.96. It
-implements both routes itself, so it measures the same thing whichever
-route the package uses.
+implements both routes itself. The package offers both, as
+`reference_method = "gram"` (the default) and
+`reference_method = "images"`.
 
 ``` r
 library(rcicr)
@@ -49,12 +50,14 @@ The **Gram route** uses `norm(S r / n) = sqrt(t(r) G r) / n`, with
 layer, divided by the number of layers, as `generateNoiseImage()`
 averages them. So `G = X t(P) P t(X)`, with `X` the saved parameter
 matrix and `t(P) P` computed once from the sparse basis. Or
-`G = t(S) S`, with `S = P t(X)` rendered through the sparse basis. The
-first holds a parameters-by-parameters matrix, 128 MB for five scales at
-any image size; the second a pixels-by-trials one. `gram_matrix()`
-builds whichever is smaller, so small stimulus sets never pay for the
-dense cross-product. Either way the simulation then runs on `G` alone.
-The table records which build each configuration used.
+`G = t(S) S`, with `S = P t(X)` rendered through the sparse basis. Both
+are sums over pixels, so `gram_matrix()` builds `P` a block of image
+columns at a time and accumulates the sum: the cross-product stays
+sparse, and the rendered build holds one block of noise at a time. It
+uses the rendered build when pixels times trials is at most the squared
+parameter count, and the cross-product otherwise. Either way the
+simulation then runs on `G` alone. The table records which build each
+configuration used.
 
 Both routes consume the random stream exactly as the package does: one
 `runif()` per trial, one iteration after another.
@@ -77,15 +80,31 @@ gram_build <- function(params, p) {
   if (d[1] * d[2] * nrow(params) <= max(p$patchIdx)^2) "rendered" else "cross-product"
 }
 
+# Both builds are sums over pixels, so the basis is built a block of image
+# columns at a time and the sum accumulated, as the package does: no full-size
+# basis, and for the rendered build no full noise matrix, is held.
 gram_matrix <- function(params, p) {
   d <- dim(p$patches)
   npix <- d[1] * d[2]
-  basis <- Matrix::sparseMatrix(i = rep(seq_len(npix), d[3]), j = as.vector(p$patchIdx),
-                                x = as.vector(p$patches) / d[3], dims = c(npix, max(p$patchIdx)))
-  if (gram_build(params, p) == "rendered") {
-    return(crossprod(as.matrix(basis %*% t(params))))
+  from_noise <- gram_build(params, p) == "rendered"
+  block_pixels <- if (from_noise) min(2^14, 2^22 %/% nrow(params)) else 2^14
+  if (from_noise && npix <= nrow(params) + block_pixels) block_pixels <- npix
+  columns <- max(1L, block_pixels %/% d[1])
+  total <- NULL
+  for (first in seq(1L, d[2], by = columns)) {
+    block <- first:min(d[2], first + columns - 1L)
+    basis <- Matrix::sparseMatrix(i = rep(seq_len(d[1] * length(block)), d[3]),
+                                  j = as.vector(p$patchIdx[, block, , drop = FALSE]),
+                                  x = as.vector(p$patches[, block, , drop = FALSE]) / d[3],
+                                  dims = c(d[1] * length(block), max(p$patchIdx)))
+    part <- if (from_noise) {
+      tcrossprod(as.matrix(Matrix::tcrossprod(params, basis)))
+    } else {
+      Matrix::crossprod(basis)
+    }
+    total <- if (is.null(total)) part else total + part
   }
-  params %*% as.matrix(Matrix::crossprod(basis)) %*% t(params)
+  if (from_noise) total else as.matrix(params %*% total %*% t(params))
 }
 
 gram_route <- function(params, p, iter, seed, block = 1000L) {
@@ -170,9 +189,18 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
 
   rendered_time <- system.time(rendered <- rendered_route(params, saved$p, iter, response_seed))
   gram_time <- system.time(gram <- gram_route(params, saved$p, iter, response_seed))
-  package <- quiet(generateReferenceDistribution2IFC(rdata, iter = iter, ncores = 1,
-                                                     response_seed = response_seed,
-                                                     save_rdata = FALSE))
+  build <- gram_build(params, saved$p)
+  rm(saved, params)
+  invisible(gc())
+  package <- function(method) {
+    quiet(suppressMessages(generateReferenceDistribution2IFC(
+      rdata, iter = iter, ncores = 1, response_seed = response_seed, save_rdata = FALSE,
+      reference_method = method)))
+  }
+  # The package's "images" builds its noise matrix by repeated cbind, which at
+  # 512 pixels does not fit beside the rest on the machine this was knitted on.
+  package_images <- if (size < 512) package("images")
+  package_gram <- package("gram")
 
   norms <- ci_norms(rdata, n)
   z_rendered <- z_of(norms, rendered)
@@ -182,7 +210,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
   data.frame(
     config = sprintf("%dpx, %d trials, %s, nscales %d", size, n, noise_type, nscales),
     iter = iter,
-    build = gram_build(params, saved$p),
+    build = build,
     identical = identical(rendered, gram),
     rel_norm = max(abs(gram - rendered) / rendered),
     d_median = abs(median(gram) - median(rendered)),
@@ -192,7 +220,8 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
     near_cutoff = sum(abs(z_rendered - cutoff) < 0.5),
     flips = sum((z_rendered > cutoff) != (z_gram > cutoff)),
     speedup = rendered_time[["elapsed"]] / gram_time[["elapsed"]],
-    package_vs_routes = max(abs(package - rendered) / rendered, abs(package - gram) / gram),
+    package_images_identical = if (is.null(package_images)) NA else identical(package_images, rendered),
+    package_gram = max(abs(package_gram - gram) / gram),
     rendered_mb = size^2 * n * 8 / 2^20,
     gram_mb = n^2 * 8 / 2^20
   )
@@ -209,13 +238,25 @@ results <- rbind(
 )
 ```
 
-The package’s own reference must agree with both routes, to a relative
-1e-12. Otherwise this document is not measuring the package.
+The package’s own references must agree with these routes:
+`reference_method = "images"` bit for bit with the rendered route, and
+`"gram"` with the Gram route to a relative 1e-12. Otherwise this
+document is not measuring the package. The `"images"` check runs up to
+256 pixels. At 512 the package’s `"images"`, which builds its noise
+matrix by repeated `cbind`, does not fit beside the rest on the machine
+this was knitted on; the package’s tests pin the same bit-identity.
 
 ``` r
-max(results$package_vs_routes)
-[1] 4.784245e-14
-stopifnot(max(results$package_vs_routes) < 1e-12)
+results[, c("config", "package_images_identical", "package_gram")]
+                                  config package_images_identical package_gram
+1  64px, 100 trials, sinusoid, nscales 5                     TRUE            0
+2  64px, 100 trials, sinusoid, nscales 3                     TRUE            0
+3     64px, 100 trials, gabor, nscales 5                     TRUE            0
+4 128px, 300 trials, sinusoid, nscales 5                     TRUE            0
+5 256px, 300 trials, sinusoid, nscales 5                     TRUE            0
+6 256px, 770 trials, sinusoid, nscales 5                     TRUE            0
+7 512px, 300 trials, sinusoid, nscales 5                       NA            0
+stopifnot(all(results$package_images_identical, na.rm = TRUE), max(results$package_gram) < 1e-12)
 ```
 
 ``` r
@@ -230,10 +271,10 @@ knitr::kable(shown, row.names = FALSE)
 | 64px, 100 trials, sinusoid, nscales 5 | rendered | FALSE | 3.6e-15 | 2.2e-16 | 1.7e-16 | 4.2e-14 | 7.5e-15 | 13 | 0 |
 | 64px, 100 trials, sinusoid, nscales 3 | cross-product | FALSE | 5.4e-15 | 4.4e-16 | 1.3e-15 | 1.3e-13 | 8.9e-14 | 21 | 0 |
 | 64px, 100 trials, gabor, nscales 5 | rendered | FALSE | 3.4e-15 | 5.6e-17 | 2.9e-16 | 1.4e-13 | 8.9e-14 | 23 | 0 |
-| 128px, 300 trials, sinusoid, nscales 5 | rendered | FALSE | 7.3e-15 | 5.6e-16 | 1.5e-15 | 3.7e-13 | 1.9e-13 | 49 | 0 |
-| 256px, 300 trials, sinusoid, nscales 5 | cross-product | FALSE | 1.9e-14 | 3.7e-15 | 3.3e-16 | 1.2e-13 | 8.3e-14 | 47 | 0 |
-| 256px, 770 trials, sinusoid, nscales 5 | cross-product | FALSE | 1.9e-14 | 1.4e-15 | 1.3e-15 | 2.0e-13 | 5.1e-14 | 28 | 0 |
-| 512px, 300 trials, sinusoid, nscales 5 | cross-product | FALSE | 4.8e-14 | 2.5e-14 | 8.1e-15 | 7.9e-13 | 5.6e-13 | 47 | 0 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | FALSE | 7.3e-15 | 5.6e-16 | 1.6e-15 | 4.0e-13 | 2.1e-13 | 49 | 0 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | FALSE | 1.5e-14 | 2.0e-15 | 1.4e-15 | 1.5e-13 | 2.0e-14 | 47 | 0 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | FALSE | 1.5e-14 | 1.6e-15 | 1.3e-15 | 2.1e-13 | 4.1e-14 | 28 | 0 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | FALSE | 3.3e-14 | 1.0e-14 | 6.1e-15 | 4.8e-13 | 3.0e-13 | 47 | 0 |
 
 `build` is how `G` was built. `rel_norm` is the largest relative
 difference in any single norm. `d_median` and `d_mad` are the absolute
@@ -264,18 +305,17 @@ spread
 
 largest <- max(results$dz_at_cutoff)
 spread / largest
-[1] 55580527760
+[1] 103541144456
 ```
 
 ## Time and memory
 
 The rendered route holds the pixels-by-trials noise matrix. The Gram
-route holds a trials-by-trials matrix, plus, while building it, the
-smaller of the basis cross-product and the sparse-rendered noise
-(`build`). `speedup` is the rendered route’s time over the Gram route’s,
-both as implemented above and timed in this run. The rendered route’s
-implementation here renders serially, as the package does with
-`ncores = 1`.
+route holds a trials-by-trials matrix, plus, while building it, one
+block of the basis and, for the rendered build, of the noise. `speedup`
+is the rendered route’s time over the Gram route’s, both as implemented
+above and timed in this run. The rendered route’s implementation here
+renders serially, as the package does with `ncores = 1`.
 
 ``` r
 cost <- results[, c("config", "build", "speedup", "rendered_mb", "gram_mb")]
@@ -286,17 +326,16 @@ knitr::kable(cost, row.names = FALSE)
 
 | config | build | speedup | rendered_mb | gram_mb |
 |:---|:---|---:|---:|---:|
-| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.3 | 3.1 | 0.1 |
-| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.1 | 3.1 | 0.1 |
-| 64px, 100 trials, gabor, nscales 5 | rendered | 28.1 | 3.1 | 0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | rendered | 23.5 | 37.5 | 0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 44.1 | 150.0 | 0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 43.8 | 385.0 | 4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 106.9 | 600.0 | 0.7 |
+| 64px, 100 trials, sinusoid, nscales 5 | rendered | 27.8 | 3.1 | 0.1 |
+| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.3 | 3.1 | 0.1 |
+| 64px, 100 trials, gabor, nscales 5 | rendered | 33.3 | 3.1 | 0.1 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | 40.0 | 37.5 | 0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 108.6 | 150.0 | 0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 94.7 | 385.0 | 4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 170.4 | 600.0 | 0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
-matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
-cross-product for five scales is 128 MB.
+matrix alone is 1.5 GB, and the Gram matrix 4.5 MB.
 
 ## The package default
 
@@ -337,23 +376,23 @@ default_row <- data.frame(
 )
 default_row
           build     rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb
-1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 140.5038           3294.4
+1 cross-product 2.695459e-14 2.442491e-15 5.433154e-15 2.902123e-13 217.5557           3294.7
   gram_peak_mb
-1       1561.2
+1       1745.5
 ```
 
 ## What this shows and what it does not
 
 None of the tested configurations gave bit-identical references, the
 package default included. The largest relative difference in any single
-norm is 4.8e-14. The largest InfoVal difference among 2800 CIs is
-7.9e-13, at 512px, 300 trials, sinusoid, nscales 5. At 1.96 the largest
-difference is 5.6e-13 on the rendered route’s scale (2.3e-14 at the
+norm is 3.3e-14. The largest InfoVal difference among 2800 CIs is
+4.8e-13, at 512px, 300 trials, sinusoid, nscales 5. At 1.96 the largest
+difference is 3.0e-13 on the rendered route’s scale (2.9e-13 at the
 default): under these references, a CI’s call can change only if its
 rendered-route InfoVal lies within that distance of the cut-off. None of
 the 228 CIs within 0.5 of 1.96 changed its call (0 of 2800 overall).
 
-That distance is 5.6e+10 times smaller than the estimated standard
+That distance is 1e+11 times smaller than the estimated standard
 deviation of InfoVal at 1.96 across 10,000-draw references, 0.031,
 estimated from 40 of them.
 
@@ -364,9 +403,9 @@ This document does not measure:
   alone;
 - references already stored in `.Rdata` files. A marked or seeded one is
   reused as stored and does not change. An unmarked default-stream one,
-  left by an older rcicr, is rebuilt automatically through whichever
-  route the package then uses, so it can change by the amounts measured
-  here;
+  left by an older rcicr, is rebuilt automatically with the
+  `reference_method` asked for, `"gram"` by default, so it can change by
+  the amounts measured here;
 - any BLAS library but the reference one this document was knitted with
   (its `sessionInfo()` is below): an optimised BLAS reorders sums in
   either route, by an amount not measured here.

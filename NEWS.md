@@ -12,7 +12,7 @@
 
 ## Performance and dependencies
 
-- **Reference distributions are much faster and need less memory.** At 10,000 iterations, `generateReferenceDistribution2IFC()` was about 19x faster at 128 pixels and 300 stimuli with the default `ncores`, and about 29x faster at 256 pixels with `ncores = 2`, measured by `analyses/gram-reference-benchmark.R` against the build before this change. At the 512-pixel, 770-stimulus default, peak memory measured in `analyses/gram-reference-accuracy.md` halved, from 3.3 GB to 1.6 GB. `ncores` is now used only with `reference_method = "images"`. (#354)
+- **Reference distributions are much faster and need less memory.** At 10,000 iterations, `generateReferenceDistribution2IFC()` was about 19x faster at 128 pixels and 300 stimuli with the default `ncores`, and about 29x faster at 256 pixels with `ncores = 2`, measured by `analyses/gram-reference-benchmark.R` against the build before this change. At the 512-pixel, 770-stimulus default, the peak R memory of the session knitting `analyses/gram-reference-accuracy.md` was 1.7 GB while the Gram route ran, against 3.3 GB for the rendered route. `ncores` is now used only with `reference_method = "images"`. (#354)
 - `Matrix`, an R recommended package that rcicr already depended on through spatstat, is now a direct import.
 
 ## New features
