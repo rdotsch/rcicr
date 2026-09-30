@@ -20,8 +20,8 @@ renders the noise once for a small stimulus set, and not at all for a larger one
 two routes sum in a different order, so their results need not be bit-identical.
 
 This document measures by how much they differ, and how often the difference changes a decision at
-the conventional cut-off of 1.96. It implements both routes itself, so it measures the same thing
-whichever route the package uses.
+the conventional cut-off of 1.96. It implements both routes itself. The package offers both, as
+`reference_method = "gram"` (the default) and `reference_method = "images"`.
 
 ```{r constants}
 library(rcicr)
@@ -41,10 +41,11 @@ always has. The **Gram route** uses `norm(S r / n) = sqrt(t(r) G r) / n`, with `
 basis: one weighted patch per pixel per layer, divided by the number of layers, as
 `generateNoiseImage()` averages them. So `G = X t(P) P t(X)`, with `X` the saved parameter matrix and
 `t(P) P` computed once from the sparse basis. Or `G = t(S) S`, with `S = P t(X)` rendered through
-the sparse basis. The first holds a parameters-by-parameters matrix, 128 MB for five scales at any
-image size; the second a pixels-by-trials one. `gram_matrix()` builds whichever is smaller, so small
-stimulus sets never pay for the dense cross-product. Either way the simulation then runs on `G`
-alone. The table records which build each configuration used.
+the sparse basis. Both are sums over pixels, so `gram_matrix()` builds `P` a block of image columns
+at a time and accumulates the sum: the cross-product stays sparse, and the rendered build holds one
+block of noise at a time. It uses the rendered build when pixels times trials is at most the squared
+parameter count, and the cross-product otherwise. Either way the simulation then runs on `G` alone.
+The table records which build each configuration used.
 
 Both routes consume the random stream exactly as the package does: one `runif()` per trial, one
 iteration after another.
@@ -67,15 +68,31 @@ gram_build <- function(params, p) {
   if (d[1] * d[2] * nrow(params) <= max(p$patchIdx)^2) "rendered" else "cross-product"
 }
 
+# Both builds are sums over pixels, so the basis is built a block of image
+# columns at a time and the sum accumulated, as the package does: no full-size
+# basis, and for the rendered build no full noise matrix, is held.
 gram_matrix <- function(params, p) {
   d <- dim(p$patches)
   npix <- d[1] * d[2]
-  basis <- Matrix::sparseMatrix(i = rep(seq_len(npix), d[3]), j = as.vector(p$patchIdx),
-                                x = as.vector(p$patches) / d[3], dims = c(npix, max(p$patchIdx)))
-  if (gram_build(params, p) == "rendered") {
-    return(crossprod(as.matrix(basis %*% t(params))))
+  from_noise <- gram_build(params, p) == "rendered"
+  block_pixels <- if (from_noise) min(2^14, 2^22 %/% nrow(params)) else 2^14
+  if (from_noise && npix <= nrow(params) + block_pixels) block_pixels <- npix
+  columns <- max(1L, block_pixels %/% d[1])
+  total <- NULL
+  for (first in seq(1L, d[2], by = columns)) {
+    block <- first:min(d[2], first + columns - 1L)
+    basis <- Matrix::sparseMatrix(i = rep(seq_len(d[1] * length(block)), d[3]),
+                                  j = as.vector(p$patchIdx[, block, , drop = FALSE]),
+                                  x = as.vector(p$patches[, block, , drop = FALSE]) / d[3],
+                                  dims = c(d[1] * length(block), max(p$patchIdx)))
+    part <- if (from_noise) {
+      tcrossprod(as.matrix(Matrix::tcrossprod(params, basis)))
+    } else {
+      Matrix::crossprod(basis)
+    }
+    total <- if (is.null(total)) part else total + part
   }
-  params %*% as.matrix(Matrix::crossprod(basis)) %*% t(params)
+  if (from_noise) total else as.matrix(params %*% total %*% t(params))
 }
 
 gram_route <- function(params, p, iter, seed, block = 1000L) {
@@ -155,9 +172,13 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
 
   rendered_time <- system.time(rendered <- rendered_route(params, saved$p, iter, response_seed))
   gram_time <- system.time(gram <- gram_route(params, saved$p, iter, response_seed))
-  package <- quiet(generateReferenceDistribution2IFC(rdata, iter = iter, ncores = 1,
-                                                     response_seed = response_seed,
-                                                     save_rdata = FALSE))
+  package <- function(method) {
+    quiet(suppressMessages(generateReferenceDistribution2IFC(
+      rdata, iter = iter, ncores = 1, response_seed = response_seed, save_rdata = FALSE,
+      reference_method = method)))
+  }
+  package_images <- package("images")
+  package_gram <- package("gram")
 
   norms <- ci_norms(rdata, n)
   z_rendered <- z_of(norms, rendered)
@@ -177,7 +198,8 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
     near_cutoff = sum(abs(z_rendered - cutoff) < 0.5),
     flips = sum((z_rendered > cutoff) != (z_gram > cutoff)),
     speedup = rendered_time[["elapsed"]] / gram_time[["elapsed"]],
-    package_vs_routes = max(abs(package - rendered) / rendered, abs(package - gram) / gram),
+    package_images_identical = identical(package_images, rendered),
+    package_gram = max(abs(package_gram - gram) / gram),
     rendered_mb = size^2 * n * 8 / 2^20,
     gram_mb = n^2 * 8 / 2^20
   )
@@ -194,12 +216,14 @@ results <- rbind(
 )
 ```
 
-The package's own reference must agree with both routes, to a relative 1e-12. Otherwise this
+The package's own references must agree with these routes: `reference_method = "images"` bit for
+bit with the rendered route, and `"gram"` with the Gram route to a relative 1e-12. Otherwise this
 document is not measuring the package.
 
 ```{r package-check}
-max(results$package_vs_routes)
-stopifnot(max(results$package_vs_routes) < 1e-12)
+all(results$package_images_identical)
+max(results$package_gram)
+stopifnot(all(results$package_images_identical), max(results$package_gram) < 1e-12)
 ```
 
 ```{r table}
@@ -238,8 +262,7 @@ spread / largest
 ## Time and memory
 
 The rendered route holds the pixels-by-trials noise matrix. The Gram route holds a trials-by-trials
-matrix, plus, while building it, the smaller of the basis cross-product and the sparse-rendered noise
-(`build`). `speedup` is the rendered route's time over the Gram
+matrix, plus, while building it, one block of the basis and, for the rendered build, of the noise. `speedup` is the rendered route's time over the Gram
 route's, both as implemented above and timed in this run. The rendered route's implementation here
 renders serially, as the package does with `ncores = 1`.
 
@@ -251,8 +274,7 @@ knitr::kable(cost, row.names = FALSE)
 ```
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise matrix alone is
-`r round(512^2 * 770 * 8 / 2^30, 2)` GB. The Gram matrix is `r round(770^2 * 8 / 2^20, 1)` MB, and
-the basis cross-product for five scales is `r round(4092^2 * 8 / 2^20)` MB.
+`r round(512^2 * 770 * 8 / 2^30, 2)` GB, and the Gram matrix `r round(770^2 * 8 / 2^20, 1)` MB.
 
 ## The package default
 
@@ -319,7 +341,8 @@ This document does not measure:
   is compared through its two references alone;
 - references already stored in `.Rdata` files. A marked or seeded one is reused as stored and does
   not change. An unmarked default-stream one, left by an older rcicr, is rebuilt automatically
-  through whichever route the package then uses, so it can change by the amounts measured here;
+  with the `reference_method` asked for, `"gram"` by default, so it can change by the amounts
+  measured here;
 - any BLAS library but the reference one this document was knitted with (its `sessionInfo()` is
   below): an optimised BLAS reorders sums in either route, by an amount not measured here.
 

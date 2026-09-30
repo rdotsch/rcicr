@@ -73,6 +73,10 @@
 #' stimulus, as does passing all of them, with the same result in every case. A subset too small
 #' for random responses to give distinct norms (one stimulus, and usually two) is refused, since
 #' its MAD is 0 and the InfoVal would not be a number. See "Matching the reference to the classification image" below.
+#' @param reference_method \code{"gram"} (the default) or \code{"images"}: how the reference is
+#' computed, when it has to be. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit; a
+#' reference already stored in \code{rdata} is reused whichever is given. See "Reference method" in
+#' \code{\link{generateReferenceDistribution2IFC}}.
 #' @return The Informational Value, a z-score.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
@@ -103,17 +107,19 @@
 #' )
 #'
 #' computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
-computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL, reference_stimuli = NULL) {
+computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images")) {
 
+  reference_method <- match.arg(reference_method)
   reference_selection <- selectReferenceBase(rdata, baseimage)
   subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
   if (!is.null(subset)) {
     return(computeSubsetInfoVal(target_ci, rdata, iter, force_gen_ref_dist, response_seed,
-                                subset$source, reference_selection, subset$reference_stimuli))
+                                subset$source, reference_selection, subset$reference_stimuli,
+                                reference_method))
   }
   if (reference_selection$independent) {
     return(computeBaseInfoVal(target_ci, rdata, iter, force_gen_ref_dist,
-                              response_seed, reference_selection))
+                              response_seed, reference_selection, reference_method))
   }
 
   # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug
@@ -219,7 +225,8 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 
     reference_norms <- resolveReferenceNorms(cached_reference, rdata, iter,
                                              force_gen_ref_dist, response_seed,
-                                             seedless = is.null(get0('seed', envir = environment(), inherits = FALSE)))
+                                             seedless = is.null(get0('seed', envir = environment(), inherits = FALSE)),
+                                             reference_method = reference_method)
 
     # Compute reference values
     ref_median <- median(reference_norms)

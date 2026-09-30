@@ -1,8 +1,8 @@
-# The reference goes through the stimulus Gram matrix when there are fewer
-# trials than pixels, and keeps the rendered calculation otherwise (#354).
-# The Gram route differs from the rendered one by rounding only, measured in
-# analyses/gram-reference-accuracy.md; these tests hold it to that on every
-# basis layout a stimulus file can carry.
+# reference_method = "gram" (the default) computes the reference through the
+# stimulus Gram matrix; "images" is the calculation of rcicr 1.5.0 and earlier
+# (#354). They differ by rounding only, measured in
+# analyses/gram-reference-accuracy.md; these tests hold "gram" to that on every
+# basis layout a stimulus file can carry, and "images" to bit-identity.
 
 reference_of <- function(rdata, iter = 20, response_seed = 5, ...) {
   norms <- NULL
@@ -80,35 +80,29 @@ test_that("both ways of building G give the Gram matrix of the rendered noise", 
                      numeric(length(p$patches[, , 1]))))
   }
   # nscales = 1 has 12 parameters, fewer than pixels x trials: the cross-product
-  # build. nscales = 5 has 4,092: the rendered build.
-  for (nscales in c(1, 5)) {
-    rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6, nscales = nscales)
-    e <- new.env()
-    load(rdata, envir = e)
-    params <- e$stimuli_params$base
-    expect_equal(rcicr:::stimulusGram(params, e$p), gram_of_rendered(params, e$p),
-                 tolerance = 1e-12, info = nscales)
+  # build. nscales = 5 has 4,092: the rendered build. At 32px each is one block
+  # of image columns; at 256px each is summed over four.
+  for (img_size in c(32, 256)) {
+    for (nscales in c(1, 5)) {
+      rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = img_size, n_trials = 6,
+                                  nscales = nscales)
+      e <- new.env()
+      load(rdata, envir = e)
+      params <- e$stimuli_params$base
+      expect_equal(rcicr:::stimulusGram(params, e$p), gram_of_rendered(params, e$p),
+                   tolerance = 1e-12, info = paste(img_size, nscales))
+    }
   }
 })
 
-test_that("trials that are not fewer than pixels keep the rendered calculation exactly", {
-  gram_calls <- 0
-  original <- rcicr:::stimulusGram
-  testthat::local_mocked_bindings(stimulusGram = function(params, p) {
-    gram_calls <<- gram_calls + 1
-    original(params, p)
-  }, .package = "rcicr")
-
-  # 8 pixels square is 64 pixels: 100 trials outnumber them, 64 equal them.
-  for (n_trials in c(100, 64)) {
+test_that("images reproduces the rendered arithmetic exactly, and gram matches it for any size", {
+  # 8 x 8 = 64 pixels: 100 stimuli outnumber them, 64 equal them.
+  for (n_trials in c(100, 64, 20)) {
     rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 8, n_trials = n_trials, nscales = 1)
-    expect_identical(reference_of(rdata), rendered_arithmetic(rdata), info = n_trials)
+    expect_identical(reference_of(rdata, reference_method = "images"), rendered_arithmetic(rdata),
+                     info = n_trials)
+    expect_equal(reference_of(rdata), rendered_arithmetic(rdata), tolerance = 1e-12, info = n_trials)
   }
-  expect_equal(gram_calls, 0)
-
-  rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 8, n_trials = 63, nscales = 1)
-  expect_equal(reference_of(rdata), rendered_arithmetic(rdata), tolerance = 1e-12)
-  expect_equal(gram_calls, 1)
 })
 
 test_that("G is built from whichever of the rendered noise and the cross-product is smaller", {
@@ -120,17 +114,9 @@ test_that("G is built from whichever of the rendered noise and the cross-product
   expect_true(rcicr:::gramFromRenderedNoise(npix = 64^2, n_trials = 100, nparams = 4092))
 })
 
-test_that("the rendered route is kept on the subset and independent-base paths too", {
-  gram_calls <- 0
-  original <- rcicr:::stimulusGram
-  testthat::local_mocked_bindings(stimulusGram = function(params, p) {
-    gram_calls <<- gram_calls + 1
-    original(params, p)
-  }, .package = "rcicr")
-
-  # 70 of 100 saved stimuli, at 64 pixels: the subset is not fewer than the pixels.
+test_that("images reproduces the rendered arithmetic on the subset and independent-base paths", {
   rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 8, n_trials = 100, nscales = 1)
-  expect_identical(reference_of(rdata, reference_stimuli = 1:70),
+  expect_identical(reference_of(rdata, reference_stimuli = 1:70, reference_method = "images"),
                    rendered_arithmetic(rdata, ids = 1:70))
 
   dir <- withr::local_tempdir()
@@ -143,10 +129,68 @@ test_that("the rendered route is kept on the subset and independent-base paths t
     )
   )
   independent <- list.files(dir, pattern = "\\.Rdata$", full.names = TRUE)[1]
-  expect_identical(reference_of(independent, baseimage = "second"),
+  expect_identical(reference_of(independent, baseimage = "second", reference_method = "images"),
                    rendered_arithmetic(independent, base = "second"))
+})
 
-  expect_equal(gram_calls, 0)
+test_that("computing with gram gives the notice, and images gives none", {
+  rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6, nscales = 1)
+  messages_for <- function(method) {
+    seen <- character()
+    record <- function(m) {
+      seen <<- c(seen, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+    run <- function() {
+      generateReferenceDistribution2IFC(rdata, iter = 20, ncores = 1, save_rdata = FALSE,
+                                        reference_method = method)
+    }
+    utils::capture.output(withCallingHandlers(suppressWarnings(run()), message = record))
+    seen
+  }
+  gram <- messages_for("gram")
+  expect_length(gram, 1)
+  expect_match(gram, 'computed with reference_method = "gram"')
+  expect_match(gram, 'pass reference_method = "images" to reproduce them bit for bit')
+  expect_length(messages_for("images"), 0)
+  expect_error(messages_for("pixels"), "should be one of")
+})
+
+test_that("a stored reference is reused under either method, and a new one records its method", {
+  quiet_messages <- function(expr) {
+    seen <- character()
+    out <- utils::capture.output(withCallingHandlers(suppressWarnings(expr), message = function(m) {
+      seen <<- c(seen, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }))
+    list(messages = seen, output = out)
+  }
+  rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6, nscales = 1)
+  mutate_rdata(rdata, reference_method = "planted")
+  computed <- quiet_messages(generateReferenceDistribution2IFC(rdata, iter = 20, ncores = 1))
+  expect_match(computed$messages, 'computed with reference_method = "gram"')
+  saved <- new.env()
+  load(rdata, envir = saved)
+  expect_identical(saved$reference_norms_method, "gram")
+  expect_identical(saved$reference_method, "planted")
+
+  ci <- NULL
+  utils::capture.output(ci <- generateCI(1:6, rep(c(1, -1), 3), "base", rdata, save_as_png = FALSE))
+  for (method in c("images", "gram")) {
+    reused <- quiet_messages(computeInfoVal2IFC(ci, rdata, reference_method = method))
+    expect_true(any(grepl("Using reference distribution found", reused$output)), info = method)
+    expect_false(any(grepl("computed with reference_method", reused$messages)), info = method)
+  }
+
+  independent <- make_independent_fixture(withr::local_tempdir())
+  quiet_messages(generateReferenceDistribution2IFC(independent, iter = 20, ncores = 1,
+                                                   baseimage = "second", reference_method = "images"))
+  quiet_messages(generateReferenceDistribution2IFC(independent, iter = 20, ncores = 1,
+                                                   baseimage = "second", reference_stimuli = 1:3))
+  saved <- new.env()
+  load(independent, envir = saved)
+  expect_identical(saved$reference_norms_by_base$second$method, "images")
+  expect_identical(saved$reference_norms_by_stimuli[[1]]$method, "gram")
 })
 
 test_that("the Gram route holds its tolerance at a realistic size", {

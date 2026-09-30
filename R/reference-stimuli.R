@@ -76,7 +76,7 @@ subsetReferenceIndex <- function(cache, reference_stimuli, base_key) {
 # still replays the generator's draws for every saved trial, so a subset
 # reference is reproducible from the file alone.
 generateSubsetReference <- function(source, rdata, selection, reference_stimuli, iter,
-                                    ncores, response_seed, save_rdata) {
+                                    ncores, response_seed, save_rdata, reference_method) {
   if (length(iter) != 1L || !is.finite(iter) || iter < 1 || iter != trunc(iter)) {
     stop('iter must be a positive integer.')
   }
@@ -86,13 +86,14 @@ generateSubsetReference <- function(source, rdata, selection, reference_stimuli,
   write('Building the reference from the saved noise, please wait...', stdout())
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
   write('Computing reference distribution, please wait...', stdout())
-  norms <- referenceNorms(source, label, reference_stimuli, iter, ncores, response_seed)
+  norms <- referenceNorms(source, label, reference_stimuli, iter, ncores, response_seed,
+                          reference_method)
   if (save_rdata) {
     cache <- subsetReferenceCache(source)
     entry <- list(
       reference_stimuli = reference_stimuli, baseimage = base_key, norms = norms,
       response_seed = response_seed, source = 'saved_noise',
-      fingerprint = referenceSnapshot(norms)
+      fingerprint = referenceSnapshot(norms), method = reference_method
     )
     i <- subsetReferenceIndex(cache, reference_stimuli, base_key)
     if (is.na(i)) i <- length(cache) + 1L
@@ -106,7 +107,7 @@ generateSubsetReference <- function(source, rdata, selection, reference_stimuli,
 }
 
 computeSubsetInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed,
-                                 source, selection, reference_stimuli) {
+                                 source, selection, reference_stimuli, reference_method) {
   label <- referenceLabel(source, selection)
   base_key <- if (selection$independent) label else NULL
   reportTrialDesign(target_ci, source$n_trials, reference_stimuli)
@@ -115,7 +116,8 @@ computeSubsetInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, res
   entry <- if (is.na(i)) NULL else cache[[i]]
   norms <- resolveReferenceNorms(entry, rdata, iter, force_gen_ref_dist, response_seed,
                                  base_key, seedless = is.null(source$seed),
-                                 reference_stimuli = reference_stimuli)
+                                 reference_stimuli = reference_stimuli,
+                                 reference_method = reference_method)
   if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
     stop('Invalid cached reference for these reference_stimuli. ',
          'Use force_gen_ref_dist = TRUE to regenerate it.')

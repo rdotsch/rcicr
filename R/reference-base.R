@@ -30,7 +30,7 @@ vouchedReference <- function(norms, marker, fingerprint) {
 # Both cache layouts use this policy; their generators own the storage details.
 resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
                                   response_seed, baseimage = NULL, seedless = FALSE,
-                                  reference_stimuli = NULL) {
+                                  reference_stimuli = NULL, reference_method = 'gram') {
   forced <- force_gen_ref_dist || !is.null(response_seed)
   stale <- !is.null(entry) && is.null(entry$response_seed) &&
     !vouchedReference(entry$norms, entry$source, entry$fingerprint)
@@ -63,7 +63,8 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     withCallingHandlers(
       generateReferenceDistribution2IFC(
         rdata, iter = iter, response_seed = response_seed,
-        save_rdata = save_rdata, baseimage = baseimage, reference_stimuli = reference_stimuli
+        save_rdata = save_rdata, baseimage = baseimage, reference_stimuli = reference_stimuli,
+        reference_method = reference_method
       ),
       warning = function(cond) {
         # The inherited count is not a new choice the caller can act on.
@@ -147,16 +148,17 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) 
 # stimuli, the responses continuing the stream seedResponseStream() sets up.
 # Nothing before the first response draw consumes random numbers.
 #
-# Fewer trials than pixels go through the stimulus Gram matrix G, since then
-# norm(S r / n) = sqrt(t(r) G r) / n needs no pixels-sized product per draw;
-# stimulusGram() says when building G renders the noise. Otherwise G would be no
-# smaller than S, so the rendered calculation is kept exactly, bit for bit. The two
-# routes differ by rounding only (analyses/gram-reference-accuracy.md, #354).
-referenceNorms <- function(source, label, reference_stimuli, iter, ncores, response_seed) {
+# "gram" uses the stimulus Gram matrix G: norm(S r / n) = sqrt(t(r) G r) / n
+# needs no pixels-sized product per draw. "images" is the calculation of
+# rcicr 1.5.0 and earlier, bit for bit. They differ by rounding only
+# (analyses/gram-reference-accuracy.md, #354).
+referenceNorms <- function(source, label, reference_stimuli, iter, ncores, response_seed,
+                           reference_method) {
   params <- savedReferenceParams(source, label)
   if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
   p <- referenceBasis(source)
-  if (nrow(params) < length(p$patches[, , 1])) {
+  reportReferenceMethod(reference_method)
+  if (reference_method == 'gram') {
     gram <- stimulusGram(params, p)
     seedResponseStream(source, label, response_seed)
     return(gramNorms(gram, iter))
@@ -164,6 +166,17 @@ referenceNorms <- function(source, label, reference_stimuli, iter, ncores, respo
   noise <- referenceNoise(source, label, ncores, reference_stimuli)
   seedResponseStream(source, label, response_seed)
   renderedNorms(noise, iter)
+}
+
+# A message, never a warning: it changes no number. Only computing a reference
+# reaches here, so a stored one is reused without it.
+reportReferenceMethod <- function(reference_method) {
+  if (reference_method == 'gram') {
+    message('InfoVal reference computed with reference_method = "gram". References from rcicr ',
+            '1.5.0 and earlier used "images"; pass reference_method = "images" to reproduce them ',
+            'bit for bit.')
+  }
+  invisible(NULL)
 }
 
 referenceBasis <- function(source) {
@@ -190,7 +203,12 @@ renderedNorms <- function(noise, iter) {
 # G = t(S) S for the noise S = P t(X), with P the basis generateNoiseImage()
 # averages: one patch per pixel per layer, over the number of layers. Built
 # from whichever is smaller, the rendered S or the parameters' cross-product
-# t(P) P, which is 128 MB for five scales at any image size.
+# t(P) P.
+#
+# Both are sums over pixels, so P is built a block of image columns at a time
+# and the sum accumulated: no full-size copy of the basis is held, nor, for the
+# rendered build, the full S. Each block's t(P) P is sparse (about 1 in 1,000
+# entries at 512px), so the cross-product build stays sparse until G.
 stimulusGram <- function(params, p) {
   d <- dim(p$patches)
   npix <- d[1] * d[2]
@@ -204,17 +222,32 @@ stimulusGram <- function(params, p) {
       stop("Stimulus generation aborted: number of parameters doesn't equal number of patches!")
     }
   }
-  # A 0 index is a cell of the layer a 0-based file never wrote; its patch value
-  # is 0, so dropping it drops nothing (DECISIONS.md, "4096 -> 4092").
-  keep <- as.vector(p$patchIdx) != 0
-  basis <- Matrix::sparseMatrix(i = rep(seq_len(npix), d[3])[keep],
-                                j = as.vector(p$patchIdx)[keep],
-                                x = as.vector(p$patches)[keep] / d[3],
-                                dims = c(npix, nparams))
-  if (gramFromRenderedNoise(npix, nrow(params), nparams)) {
-    return(crossprod(as.matrix(basis %*% t(params))))
+  from_noise <- gramFromRenderedNoise(npix, nrow(params), nparams)
+  # At most 16,384 pixels of basis per block, and for the rendered build about
+  # 32 MB of noise. Summing blocks holds G two more times, so when G is about
+  # as large as the noise itself, one block costs less.
+  block_pixels <- if (from_noise) min(2^14, 2^22 %/% nrow(params)) else 2^14
+  if (from_noise && npix <= nrow(params) + block_pixels) block_pixels <- npix
+  columns <- max(1L, block_pixels %/% d[1])
+  total <- NULL
+  for (first in seq(1L, d[2], by = columns)) {
+    block <- first:min(d[2], first + columns - 1L)
+    index <- p$patchIdx[, block, , drop = FALSE]
+    # A 0 index is a cell of the layer a 0-based file never wrote; its patch
+    # value is 0, so dropping it drops nothing (DECISIONS.md, "4096 -> 4092").
+    keep <- index != 0
+    basis <- Matrix::sparseMatrix(i = rep(seq_len(d[1] * length(block)), d[3])[keep],
+                                  j = index[keep],
+                                  x = p$patches[, block, , drop = FALSE][keep] / d[3],
+                                  dims = c(d[1] * length(block), nparams))
+    part <- if (from_noise) {
+      tcrossprod(as.matrix(Matrix::tcrossprod(params, basis)))
+    } else {
+      Matrix::crossprod(basis)
+    }
+    total <- if (is.null(total)) part else total + part
   }
-  params %*% as.matrix(Matrix::crossprod(basis)) %*% t(params)
+  if (from_noise) total else as.matrix(params %*% total %*% t(params))
 }
 
 # The rendered noise is pixels x trials; the parameters' cross-product is
@@ -275,21 +308,23 @@ seedResponseStream <- function(source, baseimage, response_seed) {
   invisible(NULL)
 }
 
-generateBaseReference <- function(selection, rdata, iter, ncores, response_seed, save_rdata) {
+generateBaseReference <- function(selection, rdata, iter, ncores, response_seed, save_rdata,
+                                  reference_method) {
   source <- selection$source
   if (length(iter) != 1L || !is.finite(iter) || iter < 1 || iter != trunc(iter)) {
     stop('iter must be a positive integer.')
   }
   if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, selection$baseimage)
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
-  norms <- referenceNorms(source, selection$baseimage, NULL, iter, ncores, response_seed)
+  norms <- referenceNorms(source, selection$baseimage, NULL, iter, ncores, response_seed,
+                          reference_method)
   if (save_rdata) {
     cache <- source$reference_norms_by_base
     if (is.null(cache)) cache <- list()
     if (!is.list(cache)) stop('reference_norms_by_base must be a list.')
     cache[[selection$baseimage]] <- list(
       norms = norms, response_seed = response_seed,
-      source = 'saved_noise', fingerprint = referenceSnapshot(norms)
+      source = 'saved_noise', fingerprint = referenceSnapshot(norms), method = reference_method
     )
     source$reference_norms_by_base <- cache
     saveRdataSafely(ls(source, all.names = TRUE), rdata, source)
@@ -297,13 +332,15 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
   invisible(norms)
 }
 
-computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed, selection) {
+computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed, selection,
+                               reference_method) {
   reportTrialDesign(target_ci, selection$source$n_trials, NULL)
   cache <- selection$source$reference_norms_by_base
   if (!is.null(cache) && !is.list(cache)) stop('reference_norms_by_base must be a list.')
   norms <- resolveReferenceNorms(cache[[selection$baseimage]], rdata, iter,
                                  force_gen_ref_dist, response_seed, selection$baseimage,
-                                 seedless = is.null(selection$source$seed))
+                                 seedless = is.null(selection$source$seed),
+                                 reference_method = reference_method)
   if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
     stop('Invalid cached reference for baseimage ', selection$baseimage,
          '. Use force_gen_ref_dist = TRUE to regenerate it.')

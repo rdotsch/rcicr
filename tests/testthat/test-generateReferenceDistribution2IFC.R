@@ -295,7 +295,7 @@ test_that('the reference keeps the legacy norms to rounding, and the RNG and sav
       load(path, envir = saved)
       expect_setequal(ls(saved, all.names = TRUE), c(
         ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed',
-        'reference_norms_source', 'reference_norms_fingerprint'
+        'reference_norms_source', 'reference_norms_fingerprint', 'reference_norms_method'
       ))
       for (name in ls(original, all.names = TRUE)) {
         expect_identical(saved[[name]], original[[name]], info = name)

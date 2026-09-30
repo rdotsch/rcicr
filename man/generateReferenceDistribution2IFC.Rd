@@ -11,7 +11,8 @@ generateReferenceDistribution2IFC(
   response_seed = NULL,
   save_rdata = TRUE,
   baseimage = NULL,
-  reference_stimuli = NULL
+  reference_stimuli = NULL,
+  reference_method = c("gram", "images")
 )
 }
 \arguments{
@@ -19,7 +20,7 @@ generateReferenceDistribution2IFC(
 
 \item{iter}{Number of simulated classification images, each built from random responses; the distribution holds one norm per image.}
 
-\item{ncores}{Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). The noise is rebuilt in parallel only for a stimulus set with at least as many stimuli as the image has pixels; for any other set, the Gram matrix is used and \code{ncores} is not.}
+\item{ncores}{Number of CPU cores used to render the saved noise with \code{reference_method = "images"} (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). \code{"gram"} does not use it.}
 
 \item{response_seed}{Optional seed for the simulated random responses. The default,
 \code{NULL}, continues from the state the stimulus generator left behind, as described under
@@ -43,6 +44,10 @@ is not all of them. See "Matching the reference to the classification image" in
 \code{\link{computeInfoVal2IFC}}. The simulated responses continue the same stream as the
 default, so the reference is reproducible from the file. Passing every saved stimulus is the
 same as the default, \code{NULL}.}
+
+\item{reference_method}{\code{"gram"} (the default) or \code{"images"}: how the reference
+norms are computed. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit. See
+"Reference method" below.}
 }
 \value{
 The reference distribution, invisibly, as a numeric vector of \code{iter} norms.
@@ -85,20 +90,36 @@ images are never reopened and a moved or archived experiment can still be scored
 responses continue the random stream from the saved stimulus seed, after the draws for one
 parameter matrix, which reproduces the historical default reference.
 
-When the stimuli are fewer than the image's pixels (width times height), as in any usual
-stimulus set, the norms are computed from the stimulus Gram matrix, without calling
-\code{generateNoiseImage()} or multiplying the noise for every draw. For a small set, the Gram
-matrix is built from the noise rendered once through the sparse basis; otherwise it comes from
-the basis's cross-product, whichever needs less memory.
-They agree with rendering each image to rounding: no configuration measured was bit-identical,
-and none differed by more than a relative 5e-14 in a single norm (reference BLAS; see
-\url{https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md}). A
-reference already stored in the file is reused as stored. With at least as many stimuli as
-pixels, the noise is rendered as before, and the reference is unchanged bit for bit.
-
 Pass a \code{response_seed} to draw a \emph{different} null from the same stimuli, for
 instance to check how much Monte Carlo error a given \code{iter} leaves in your InfoVal. This
 changes only the simulated responses, not the stimuli or the noise basis the null is built on.
+}
+
+\section{Reference method}{
+
+\code{reference_method = "gram"}, the default, computes the norms from the stimulus Gram
+matrix, without calling \code{generateNoiseImage()} or multiplying the noise for every draw.
+For a small stimulus set the Gram matrix is built from the noise rendered through the sparse
+basis; otherwise from the basis's cross-product, kept sparse. Either way the basis is built a
+block of image columns at a time, so no full-size copy of it, or of the noise, is held.
+\code{"images"} is the calculation of rcicr 1.5.0 and earlier: every noise image rendered, in
+parallel over \code{ncores}, and multiplied for every draw. It reproduces references from those
+versions bit for bit.
+
+The two agree to rounding. No configuration measured was bit-identical, and none differed by
+more than a relative 5e-14 in a single norm (reference BLAS; see
+\url{https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md}).
+
+Computing a reference with \code{"gram"} prints a message saying so, and naming
+\code{"images"} as the way to reproduce earlier references. Silence it with
+\code{suppressMessages()}. The method is never switched for you.
+
+A reference already stored in the file is reused as stored, whichever method is asked for. To
+rebuild one with a particular method, add \code{force_gen_ref_dist = TRUE} in
+\code{\link{computeInfoVal2IFC}}, or call this function with \code{save_rdata = TRUE}. The
+method a reference was computed with is stored beside it, as \code{reference_norms_method} or
+as \code{method} in each \code{reference_norms_by_base} and \code{reference_norms_by_stimuli}
+entry.
 }
 
 \section{Independent base images}{

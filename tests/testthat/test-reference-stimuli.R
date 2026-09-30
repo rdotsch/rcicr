@@ -12,13 +12,15 @@ reference_of <- function(rdata, iter = 20, ...) {
   quiet(generateReferenceDistribution2IFC(rdata, iter = iter, ncores = 1, ...))
 }
 
+# The guard's messages only: the notice naming reference_method comes with
+# every computed reference and is tested in test-gram-reference.R.
 messages_of <- function(expr) {
   seen <- character()
   quiet(withCallingHandlers(expr, message = function(m) {
     seen <<- c(seen, conditionMessage(m))
     invokeRestart("muffleMessage")
   }))
-  seen
+  seen[!grepl("reference_method = ", seen, fixed = TRUE)]
 }
 
 ci_of <- function(rdata, stimuli, participants = NA) {
@@ -63,7 +65,7 @@ test_that("an explicit full set, in any order and storage mode, is the default r
   # The default path re-saves its frame, so neither the argument nor anything
   # bound while deciding on the path may reach the file, omitted or not.
   added <- c("reference_norms", "reference_norms_fingerprint", "reference_norms_seed",
-             "reference_norms_source")
+             "reference_norms_source", "reference_norms_method")
   fresh <- names(saved(rdata))
   reference_of(rdata)
   expect_setequal(setdiff(names(saved(rdata)), fresh), added)
