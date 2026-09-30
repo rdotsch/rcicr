@@ -596,6 +596,12 @@ test_that("a t.test z-map over fewer than two images stops with a message that s
                'across distinct stimuli, and needs at least two; this call has 1')
   expect_error(zmap_ci(stimuli = c(3, 3), responses = c(1, -1)),
                'across distinct stimuli, and needs at least two; this call has 1')
+  # A named scalar still dispatches to the t test, so it must meet the guard too.
+  expect_error(generateCI(stimuli = 3, responses = 1, baseimage = "base", rdata = rdata,
+                          save_as_png = FALSE, n_cores = 1, zmap = TRUE,
+                          zmapmethod = c(method = "t.test"), zmapdecoration = FALSE,
+                          zmaptargetpath = withr::local_tempdir()),
+               'across distinct stimuli, and needs at least two; this call has 1')
 
   two <- zmap_ci(stimuli = 1:6, responses = rep(c(1, -1), 3), participants = rep(c("a", "b"), 3))
   expect_equal(dim(two$zmap), c(32, 32))
