@@ -26,7 +26,7 @@ Greyscale conversion drops alpha and uses the stored colour channels. Compositin
 Each sums in a new order; each was checked against an **independent oracle**:
 
 - `rowMeans(x, dims = 2)` replaced `apply(..., 1:2, mean)` in `generateNoiseImage()`, about 6x faster, 1 ULP apart. An explicit triple loop put both within ~5.6e-17; at the golden master's configuration they are bit-identical.
-- The InfoVal reference defaults to the stimulus Gram matrix (#354). Against its oracle, the rendered arithmetic, norms differed by at most 4.8e-14 (relative); no call at 1.96 changed ([`analyses/gram-reference-accuracy.md`](analyses/gram-reference-accuracy.md); reference BLAS only). An argument, not size-based routing, which could need more memory and moved numbers unseen; `reference_method = "images"` restores old values exactly.
+- The InfoVal reference defaults to the stimulus Gram matrix (#354). Against its oracle, the rendered arithmetic, norms differed by at most 3.3e-14 (relative); no call at 1.96 changed ([`analyses/gram-reference-accuracy.md`](analyses/gram-reference-accuracy.md); reference BLAS only). An argument, not size-based routing, which could need more memory and moved numbers unseen; `reference_method = "images"` restores old values exactly.
 
 The trap: **`rowMeans()` on a 3-D array defaults to `dims = 1`**, and `array()` silently recycles the short result. The first version submitted did exactly that: deviation 0.21, not ~1e-17.
 

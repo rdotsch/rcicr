@@ -154,12 +154,12 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) 
 # (analyses/gram-reference-accuracy.md, #354).
 referenceNorms <- function(source, label, reference_stimuli, iter, ncores, response_seed,
                            reference_method) {
-  params <- savedReferenceParams(source, label)
-  if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
-  p <- referenceBasis(source)
   reportReferenceMethod(reference_method)
   if (reference_method == 'gram') {
-    gram <- stimulusGram(params, p)
+    params <- savedReferenceParams(source, label)
+    if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
+    gram <- stimulusGram(params, referenceBasis(source))
+    rm(params)
     seedResponseStream(source, label, response_seed)
     return(gramNorms(gram, iter))
   }
