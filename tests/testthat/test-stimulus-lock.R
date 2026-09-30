@@ -34,7 +34,9 @@ test_that("a different label, or save_rdata = FALSE, does not stop", {
   dir <- withr::local_tempdir()
   generate(dir)
   expect_no_error(generate(dir, label = "other"))
-  expect_no_error(generate(dir, save_rdata = FALSE))
+  # Its own label: the same one would write the first call's PNGs, which stops
+  # for that reason instead (#350).
+  expect_no_error(generate(dir, save_rdata = FALSE, label = "pngs_only"))
   expect_length(list.files(dir, "\\.Rdata$"), 2)
 })
 

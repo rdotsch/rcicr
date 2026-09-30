@@ -21,6 +21,10 @@
 
   `generateCI()` now records which stimuli it used, whether any was repeated, and how many participants it averaged, as a `trial_design` attribute. `computeInfoVal2IFC()` reads it and prints a message when a CI is scored against a reference over different stimuli, giving the call that matches them: `reference_stimuli = attr(ci, "trial_design")$stimuli`. For a CI that averages repeated presentations or several participants, the message says instead that no reference is defined for that design, and suggests an InfoVal for each participant's CI. The message never changes the number returned. A CI from an older version has no attribute and gets no message. The attribute leaves the list's fields unchanged.
 
+## Bug fixes
+
+- **`generateStimuli2IFC()` never overwrites stimulus PNGs.** PNG names carry no time, so a call in a later minute into the same folder, with the same label, base label and seed, overwrote the earlier PNGs. The earlier `.Rdata` survived and no longer described them, and a shorter rerun left old and new PNGs mixed. Now every PNG the call would write is reserved before anything is generated. If any exists, the call stops with nothing changed. It also stops when two base labels name the same file on this file system, such as `face` and `Face` where case is ignored, and while another same-seed call is writing PNGs into the folder. A call that fails part-way removes the files it created. To regenerate a stimulus set on purpose, delete its PNGs and its `.Rdata` first, or use a different `label` or `stimulus_path`. (#350)
+
 # rcicr 1.5.0 (2026-09-25)
 
 ## Reproducibility impact
