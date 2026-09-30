@@ -262,5 +262,10 @@ This document does not measure:
 - the 512-pixel, 770-trial default with the rendered route, which needs more memory than the machine
   that knitted it had; the table stops at 512 pixels and 300 trials;
 - references already stored in `.Rdata` files, which are reused as stored and do not change;
-- optimised BLAS libraries, which reorder sums in either route and can differ from these values by
-  similar amounts.
+- any BLAS library but the reference one this document was knitted with (its `sessionInfo()` is
+  below): an optimised BLAS reorders sums in either route, by an amount not measured here.
+
+```{r session}
+session <- sessionInfo()
+cat(R.version.string, "\nBLAS:  ", session$BLAS, "\nLAPACK:", session$LAPACK, "\n")
+```

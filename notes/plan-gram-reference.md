@@ -25,7 +25,7 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
   its call. That distance is 5.6e10 times smaller than the
   estimated standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call changed among the
   2,800 CIs, 228 of them within 0.5 of 1.96.
-- **Speed.** 13x to 107x faster at 128px or more.
+- **Speed.** 13x or more faster at 128px, and over 100x at 512px.
 - **Memory.** At the 512px, 770-trial default, as component sizes: the rendered noise matrix is
   1.5 GB; the Gram matrix is 4.5 MB, plus a 128 MB basis cross-product. The Gram route's measured
   peak is larger: 1.4 GB of R heap in a Gram-only run, mostly the sparse basis and the loaded file
@@ -86,7 +86,10 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
 
 - The bit-identity test becomes a tolerance test, `expect_equal(tolerance = 1e-12)`, against the
   rendered arithmetic it already spells out. The RNG state afterwards and the saved fields stay
-  `identical()`.
+  `identical()`. The analysis measured only the reference BLAS. The four CI platforms (macOS,
+  Windows, and Ubuntu release and devel) run this test, so they measure the tolerance under their
+  own BLAS builds. If any exceeds `1e-12`, the PR reports the measured difference and sizes the
+  tolerance and the `NEWS.md` entry from it, rather than loosening either unmeasured.
 - The legacy fixtures are checked against the rendered arithmetic, as under Risks.
 - The full suite passes, and `analyses/gram-reference-accuracy.Rmd` knits against the implementation.
   Its package check requires agreement with both routes to 1e-12.

@@ -268,13 +268,13 @@ knitr::kable(cost, row.names = FALSE)
 
 | config                                 |  iter | speedup | rendered_mb | gram_mb |
 |:---------------------------------------|------:|--------:|------------:|--------:|
-| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.4 |         3.1 |     0.1 |
-| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    33.6 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.5 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    33.0 |         3.1 |     0.1 |
 | 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
 | 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.1 |        37.5 |     0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    43.4 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.8 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   107.1 |       600.0 |     0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    44.1 |       150.0 |     0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    41.7 |       385.0 |     4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   109.7 |       600.0 |     0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -302,5 +302,14 @@ This document does not measure:
   512 pixels and 300 trials;
 - references already stored in `.Rdata` files, which are reused as
   stored and do not change;
-- optimised BLAS libraries, which reorder sums in either route and can
-  differ from these values by similar amounts.
+- any BLAS library but the reference one this document was knitted with
+  (its `sessionInfo()` is below): an optimised BLAS reorders sums in
+  either route, by an amount not measured here.
+
+``` r
+session <- sessionInfo()
+cat(R.version.string, "\nBLAS:  ", session$BLAS, "\nLAPACK:", session$LAPACK, "\n")
+R version 4.5.2 (2025-10-31) 
+BLAS:   /usr/lib/aarch64-linux-gnu/blas/libblas.so.3.12.1 
+LAPACK: /usr/lib/aarch64-linux-gnu/lapack/liblapack.so.3.12.1 
+```
