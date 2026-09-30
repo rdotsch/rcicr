@@ -29,12 +29,13 @@ references alone.
   standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call
   changed among the 2,800 CIs, 228 of them within 0.5 of 1.96.
 - **Speed, serial only.** Against the rendered route rendering serially, as the package does with
-  `ncores = 1`: 13x or more faster at 128px, and over 100x at 512px. The package's default
+  `ncores = 1`, in the committed knit: 12.8x at 128px with 300 trials, 44x and 41x at 256px with
+  300 and 770 trials, 96x at 512px with 300 trials, and 140x at the 770-trial default. The package's default
   `ncores = detectCores() - 1` parallelises only the rendering. Its per-iteration loop, which
   dominates at 10,000 draws, is serial whatever `ncores` is. The analysis does not time the
   parallel default, so these ratios do not describe it.
 - **Memory at the default.** Peak R heap was 3.3 GB for the rendered route and 1.6 GB for the Gram
-  route, most of the latter the sparse basis and the loaded file. As component sizes, the rendered
+  route. The analysis records only these totals, not what makes them up. As component sizes, the rendered
   noise matrix is 1.5 GB, and the Gram matrix is 4.5 MB plus a 128 MB basis cross-product.
 
 ## Changes
@@ -89,8 +90,8 @@ references alone.
   below that, so no `EXPECTED` entry should be needed. That is a prediction; the gate run against
   `origin/main`, and the full dispatch, settle it.
 - **Memory at 512px.** The Gram route peaked at 1.6 GB of R heap at the default in the analysis,
-  mostly the sparse basis (15.7M non-zeros) and the loaded file. That is half the rendered route's
-  3.3 GB, but not small. If the implementation cannot lower it, the PR states its measured peak.
+  half the rendered route's 3.3 GB, but not small. The analysis does not break that peak down. If
+  the implementation cannot lower it, the PR measures what makes it up and states the peak.
 
 ## Verification
 
