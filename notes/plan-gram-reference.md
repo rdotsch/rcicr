@@ -44,7 +44,7 @@ references alone.
 1. **One helper builds the norms for all three paths:** the shared default in
    `generateReferenceDistribution2IFC()`, `generateBaseReference()`, and
    `generateSubsetReference()`. Today each has its own copy of the loop. Signature
-   `referenceNorms(source, label, reference_stimuli, iter)`, called after `seedResponseStream()`,
+   `referenceNorms(source, label, reference_stimuli, iter, ncores)`, called after `seedResponseStream()`,
    which is unchanged. It:
    - takes the saved parameters from `savedReferenceParams()`, which already truncates pre-0.3.0
      files' 4,096 columns to 4,092, and selects `reference_stimuli` rows if given;
@@ -68,8 +68,10 @@ references alone.
      sequential `runif(n)` calls do, so the RNG state afterwards is unchanged.
 
    The progress bar ticks per block.
-2. **`ncores`** stays an argument, because scripts pass it. The reference no longer renders noise,
-   so it has nothing to parallelise. Its documentation says so. No warning, because passing it is
+2. **`ncores`** keeps its meaning where rendering remains. On the rendered fallback (more trials
+   than pixels) it goes to `referenceNoise()` exactly as today, so that path stays parallel and
+   bit-identical. The Gram path renders no image, so it has nothing to parallelise and ignores
+   `ncores`. The documentation says which path uses it. There is no warning, because passing it is
    not an error.
 3. **`Matrix` moves into `Imports`.** It is an R "recommended" package, already in rcicr's recursive
    dependencies through `spatstat.explore`, `spatstat.data`, `spatstat.random` and
