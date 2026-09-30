@@ -36,10 +36,14 @@ A reference CI is `S r / n`: `S` holds the `n` saved noise images as columns, an
 +1/-1 responses. The **rendered route** computes that product and takes its Frobenius norm, as rcicr
 always has. The **Gram route** uses `norm(S r / n) = sqrt(t(r) G r) / n`, with `G = t(S) S`.
 
-`G` needs no rendered image. A noise image is linear in its parameters, `s = P x`, where `P` is the
+`G` can be built two ways. A noise image is linear in its parameters, `s = P x`, where `P` is the
 basis: one weighted patch per pixel per layer, divided by the number of layers, as
-`generateNoiseImage()` averages them. So `G = X t(P) P t(X)`, with `X` the saved parameter matrix, and
-`t(P) P` is computed once from the sparse basis.
+`generateNoiseImage()` averages them. So `G = X t(P) P t(X)`, with `X` the saved parameter matrix and
+`t(P) P` computed once from the sparse basis. Or `G = t(S) S`, with `S = P t(X)` rendered through
+the sparse basis. The first holds a parameters-by-parameters matrix, 128 MB for five scales at any
+image size; the second a pixels-by-trials one. `gram_matrix()` builds whichever is smaller, so small
+stimulus sets never pay for the dense cross-product. Either way the simulation then runs on `G`
+alone. The table records which build each configuration used.
 
 Both routes consume the random stream exactly as the package does: one `runif()` per trial, one
 iteration after another.
@@ -57,16 +61,24 @@ rendered_route <- function(params, p, iter, seed) {
   }, numeric(1))
 }
 
-basis_gram <- function(p) {
+gram_build <- function(params, p) {
+  d <- dim(p$patches)
+  if (d[1] * d[2] * nrow(params) <= max(p$patchIdx)^2) "rendered" else "cross-product"
+}
+
+gram_matrix <- function(params, p) {
   d <- dim(p$patches)
   npix <- d[1] * d[2]
   basis <- Matrix::sparseMatrix(i = rep(seq_len(npix), d[3]), j = as.vector(p$patchIdx),
                                 x = as.vector(p$patches) / d[3], dims = c(npix, max(p$patchIdx)))
-  as.matrix(Matrix::crossprod(basis))
+  if (gram_build(params, p) == "rendered") {
+    return(crossprod(as.matrix(basis %*% t(params))))
+  }
+  params %*% as.matrix(Matrix::crossprod(basis)) %*% t(params)
 }
 
 gram_route <- function(params, p, iter, seed, block = 1000L) {
-  G <- params %*% basis_gram(p) %*% t(params)
+  G <- gram_matrix(params, p)
   n <- nrow(params)
   set.seed(seed)
   out <- numeric(iter)
@@ -154,6 +166,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
   data.frame(
     config = sprintf("%dpx, %d trials, %s, nscales %d", size, n, noise_type, nscales),
     iter = iter,
+    build = gram_build(params, saved$p),
     identical = identical(rendered, gram),
     rel_norm = max(abs(gram - rendered) / rendered),
     d_median = abs(median(gram) - median(rendered)),
@@ -189,13 +202,13 @@ stopifnot(max(results$package_vs_routes) < 1e-12)
 ```
 
 ```{r table}
-shown <- results[, c("config", "iter", "identical", "rel_norm", "d_median", "d_mad", "max_dz",
+shown <- results[, c("config", "build", "identical", "rel_norm", "d_median", "d_mad", "max_dz",
                      "dz_at_cutoff", "near_cutoff", "flips")]
 shown[, 4:8] <- lapply(shown[, 4:8], function(x) sprintf("%.1e", x))
 knitr::kable(shown, row.names = FALSE)
 ```
 
-`rel_norm` is the largest relative difference in any single norm. `d_median` and `d_mad` are the
+`build` is how `G` was built. `rel_norm` is the largest relative difference in any single norm. `d_median` and `d_mad` are the
 absolute differences in the two statistics InfoVal is built from. `max_dz` is the largest InfoVal
 difference among the CIs, and `near_cutoff` how many of them lie within 0.5 of 1.96.
 
@@ -223,13 +236,14 @@ spread / largest
 
 ## Time and memory
 
-The rendered route holds the pixels-by-trials noise matrix; the Gram route holds a trials-by-trials
-matrix, plus the basis cross-product once. `speedup` is the rendered route's time over the Gram
+The rendered route holds the pixels-by-trials noise matrix. The Gram route holds a trials-by-trials
+matrix, plus, while building it, the smaller of the basis cross-product and the sparse-rendered noise
+(`build`). `speedup` is the rendered route's time over the Gram
 route's, both as implemented above and timed in this run. The rendered route's implementation here
 renders serially, as the package does with `ncores = 1`.
 
 ```{r cost}
-cost <- results[, c("config", "iter", "speedup", "rendered_mb", "gram_mb")]
+cost <- results[, c("config", "build", "speedup", "rendered_mb", "gram_mb")]
 cost$speedup <- round(cost$speedup, 1)
 cost[, 4:5] <- lapply(cost[, 4:5], function(x) round(x, 1))
 knitr::kable(cost, row.names = FALSE)
@@ -265,6 +279,7 @@ default_gram_peak <- sum(gc()[, 6])
 
 gram_cutoff <- median(gram) + cutoff * mad(gram)
 default_row <- data.frame(
+  build = gram_build(params, p),
   rel_norm = max(abs(gram - rendered) / rendered),
   d_median = abs(median(gram) - median(rendered)),
   d_mad = abs(mad(gram) - mad(rendered)),

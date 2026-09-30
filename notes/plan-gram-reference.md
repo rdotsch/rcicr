@@ -29,11 +29,12 @@ references alone.
   standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call
   changed among the 2,800 CIs, 228 of them within 0.5 of 1.96.
 - **Speed, serial only.** Against the rendered route rendering serially, as the package does with
-  `ncores = 1`, in the committed knit: 12.8x at 128px with 300 trials, 44x and 41x at 256px with
-  300 and 770 trials, 96x at 512px with 300 trials, and 140x at the 770-trial default. The package's default
-  `ncores = detectCores() - 1` parallelises only the rendering. Its per-iteration loop, which
-  dominates at 10,000 draws, is serial whatever `ncores` is. The analysis does not time the
-  parallel default, so these ratios do not describe it.
+  `ncores = 1`, in the committed knit: 26x to 34x at 64px with 100 trials, 23x at 128px with 300
+  trials, 44x and 41x at 256px with 300 and 770 trials, 118x at 512px with 300 trials, and 138x at
+  the 770-trial default. The package's default
+  `ncores = detectCores() - 1` parallelises the rendering but not the per-iteration loop. The
+  analysis times each route whole, not the two phases, so how far the parallel default narrows
+  these ratios is not measured.
 - **Memory at the default.** Peak R heap was 3.3 GB for the rendered route and 1.6 GB for the Gram
   route. The analysis records only these totals, not what makes them up. As component sizes, the rendered
   noise matrix is 1.5 GB, and the Gram matrix is 4.5 MB plus a 128 MB basis cross-product.
@@ -53,7 +54,11 @@ references alone.
        `DECISIONS.md` → "4096 → 4092" measures;
      - parameters beyond `max(patchIdx)` are ignored, with `generateNoiseImage()`'s warning given
        once rather than once per trial;
-   - computes `G = X t(P) P t(X)`;
+   - builds `G` whichever way holds less: as `crossprod(S)` from the sparse-rendered noise
+     `S = P t(X)` when pixels x trials is at most the squared parameter count, otherwise as
+     `X t(P) P t(X)`, whose dense cross-product is 128 MB for five scales at any image size. Small
+     stimulus sets therefore never pay for it. The analysis implements the same rule and records
+     which build each configuration used;
    - draws responses in blocks as one `runif(n * k)`, which consumes the stream exactly as `k`
      sequential `runif(n)` calls do, so the RNG state afterwards is unchanged.
 

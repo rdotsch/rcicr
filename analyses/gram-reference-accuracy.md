@@ -43,11 +43,17 @@ computes that product and takes its Frobenius norm, as rcicr always has.
 The **Gram route** uses `norm(S r / n) = sqrt(t(r) G r) / n`, with
 `G = t(S) S`.
 
-`G` needs no rendered image. A noise image is linear in its parameters,
+`G` can be built two ways. A noise image is linear in its parameters,
 `s = P x`, where `P` is the basis: one weighted patch per pixel per
 layer, divided by the number of layers, as `generateNoiseImage()`
 averages them. So `G = X t(P) P t(X)`, with `X` the saved parameter
-matrix, and `t(P) P` is computed once from the sparse basis.
+matrix and `t(P) P` computed once from the sparse basis. Or
+`G = t(S) S`, with `S = P t(X)` rendered through the sparse basis. The
+first holds a parameters-by-parameters matrix, 128 MB for five scales at
+any image size; the second a pixels-by-trials one. `gram_matrix()`
+builds whichever is smaller, so small stimulus sets never pay for the
+dense cross-product. Either way the simulation then runs on `G` alone.
+The table records which build each configuration used.
 
 Both routes consume the random stream exactly as the package does: one
 `runif()` per trial, one iteration after another.
@@ -65,16 +71,24 @@ rendered_route <- function(params, p, iter, seed) {
   }, numeric(1))
 }
 
-basis_gram <- function(p) {
+gram_build <- function(params, p) {
+  d <- dim(p$patches)
+  if (d[1] * d[2] * nrow(params) <= max(p$patchIdx)^2) "rendered" else "cross-product"
+}
+
+gram_matrix <- function(params, p) {
   d <- dim(p$patches)
   npix <- d[1] * d[2]
   basis <- Matrix::sparseMatrix(i = rep(seq_len(npix), d[3]), j = as.vector(p$patchIdx),
                                 x = as.vector(p$patches) / d[3], dims = c(npix, max(p$patchIdx)))
-  as.matrix(Matrix::crossprod(basis))
+  if (gram_build(params, p) == "rendered") {
+    return(crossprod(as.matrix(basis %*% t(params))))
+  }
+  params %*% as.matrix(Matrix::crossprod(basis)) %*% t(params)
 }
 
 gram_route <- function(params, p, iter, seed, block = 1000L) {
-  G <- params %*% basis_gram(p) %*% t(params)
+  G <- gram_matrix(params, p)
   n <- nrow(params)
   set.seed(seed)
   out <- numeric(iter)
@@ -167,6 +181,7 @@ measure <- function(size, n, iter, noise_type = "sinusoid", nscales = 5) {
   data.frame(
     config = sprintf("%dpx, %d trials, %s, nscales %d", size, n, noise_type, nscales),
     iter = iter,
+    build = gram_build(params, saved$p),
     identical = identical(rendered, gram),
     rel_norm = max(abs(gram - rendered) / rendered),
     d_median = abs(median(gram) - median(rendered)),
@@ -203,27 +218,27 @@ stopifnot(max(results$package_vs_routes) < 1e-12)
 ```
 
 ``` r
-shown <- results[, c("config", "iter", "identical", "rel_norm", "d_median", "d_mad", "max_dz",
+shown <- results[, c("config", "build", "identical", "rel_norm", "d_median", "d_mad", "max_dz",
                      "dz_at_cutoff", "near_cutoff", "flips")]
 shown[, 4:8] <- lapply(shown[, 4:8], function(x) sprintf("%.1e", x))
 knitr::kable(shown, row.names = FALSE)
 ```
 
-| config | iter | identical | rel_norm | d_median | d_mad | max_dz | dz_at_cutoff | near_cutoff | flips |
-|:---|---:|:---|:---|:---|:---|:---|:---|---:|---:|
-| 64px, 100 trials, sinusoid, nscales 5 | 10000 | FALSE | 3.8e-15 | 3.9e-16 | 1.7e-16 | 5.2e-14 | 2.9e-15 | 13 | 0 |
-| 64px, 100 trials, sinusoid, nscales 3 | 10000 | FALSE | 5.4e-15 | 4.4e-16 | 1.3e-15 | 1.3e-13 | 8.9e-14 | 21 | 0 |
-| 64px, 100 trials, gabor, nscales 5 | 10000 | FALSE | 3.6e-15 | 5.6e-17 | 2.9e-16 | 1.4e-13 | 8.9e-14 | 23 | 0 |
-| 128px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.1e-14 | 2.2e-16 | 9.1e-16 | 2.1e-13 | 1.1e-13 | 49 | 0 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 3.7e-15 | 3.3e-16 | 1.2e-13 | 8.3e-14 | 47 | 0 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 | FALSE | 1.9e-14 | 1.4e-15 | 1.3e-15 | 2.0e-13 | 5.1e-14 | 28 | 0 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 | FALSE | 4.8e-14 | 2.5e-14 | 8.1e-15 | 7.9e-13 | 5.6e-13 | 47 | 0 |
+| config | build | identical | rel_norm | d_median | d_mad | max_dz | dz_at_cutoff | near_cutoff | flips |
+|:---|:---|:---|:---|:---|:---|:---|:---|---:|---:|
+| 64px, 100 trials, sinusoid, nscales 5 | rendered | FALSE | 3.6e-15 | 2.2e-16 | 1.7e-16 | 4.2e-14 | 7.5e-15 | 13 | 0 |
+| 64px, 100 trials, sinusoid, nscales 3 | cross-product | FALSE | 5.4e-15 | 4.4e-16 | 1.3e-15 | 1.3e-13 | 8.9e-14 | 21 | 0 |
+| 64px, 100 trials, gabor, nscales 5 | rendered | FALSE | 3.4e-15 | 5.6e-17 | 2.9e-16 | 1.4e-13 | 8.9e-14 | 23 | 0 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | FALSE | 7.3e-15 | 5.6e-16 | 1.5e-15 | 3.7e-13 | 1.9e-13 | 49 | 0 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | FALSE | 1.9e-14 | 3.7e-15 | 3.3e-16 | 1.2e-13 | 8.3e-14 | 47 | 0 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | FALSE | 1.9e-14 | 1.4e-15 | 1.3e-15 | 2.0e-13 | 5.1e-14 | 28 | 0 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | FALSE | 4.8e-14 | 2.5e-14 | 8.1e-15 | 7.9e-13 | 5.6e-13 | 47 | 0 |
 
-`rel_norm` is the largest relative difference in any single norm.
-`d_median` and `d_mad` are the absolute differences in the two
-statistics InfoVal is built from. `max_dz` is the largest InfoVal
-difference among the CIs, and `near_cutoff` how many of them lie within
-0.5 of 1.96.
+`build` is how `G` was built. `rel_norm` is the largest relative
+difference in any single norm. `d_median` and `d_mad` are the absolute
+differences in the two statistics InfoVal is built from. `max_dz` is the
+largest InfoVal difference among the CIs, and `near_cutoff` how many of
+them lie within 0.5 of 1.96.
 
 ## Against the Monte Carlo error InfoVal already carries
 
@@ -253,29 +268,30 @@ spread / largest
 
 ## Time and memory
 
-The rendered route holds the pixels-by-trials noise matrix; the Gram
-route holds a trials-by-trials matrix, plus the basis cross-product
-once. `speedup` is the rendered route’s time over the Gram route’s, both
-as implemented above and timed in this run. The rendered route’s
+The rendered route holds the pixels-by-trials noise matrix. The Gram
+route holds a trials-by-trials matrix, plus, while building it, the
+smaller of the basis cross-product and the sparse-rendered noise
+(`build`). `speedup` is the rendered route’s time over the Gram route’s,
+both as implemented above and timed in this run. The rendered route’s
 implementation here renders serially, as the package does with
 `ncores = 1`.
 
 ``` r
-cost <- results[, c("config", "iter", "speedup", "rendered_mb", "gram_mb")]
+cost <- results[, c("config", "build", "speedup", "rendered_mb", "gram_mb")]
 cost$speedup <- round(cost$speedup, 1)
 cost[, 4:5] <- lapply(cost[, 4:5], function(x) round(x, 1))
 knitr::kable(cost, row.names = FALSE)
 ```
 
-| config                                 |  iter | speedup | rendered_mb | gram_mb |
-|:---------------------------------------|------:|--------:|------------:|--------:|
-| 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.5 |         3.1 |     0.1 |
-| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    32.8 |         3.1 |     0.1 |
-| 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    12.8 |        37.5 |     0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | 10000 |    44.1 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.7 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 |    95.8 |       600.0 |     0.7 |
+| config | build | speedup | rendered_mb | gram_mb |
+|:---|:---|---:|---:|---:|
+| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.7 | 3.1 | 0.1 |
+| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.1 | 3.1 | 0.1 |
+| 64px, 100 trials, gabor, nscales 5 | rendered | 28.6 | 3.1 | 0.1 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | 23.2 | 37.5 | 0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 44.1 | 150.0 | 0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 41.2 | 385.0 | 4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 118.3 | 600.0 | 0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -309,6 +325,7 @@ default_gram_peak <- sum(gc()[, 6])
 
 gram_cutoff <- median(gram) + cutoff * mad(gram)
 default_row <- data.frame(
+  build = gram_build(params, p),
   rel_norm = max(abs(gram - rendered) / rendered),
   d_median = abs(median(gram) - median(rendered)),
   d_mad = abs(mad(gram) - mad(rendered)),
@@ -318,8 +335,10 @@ default_row <- data.frame(
   gram_peak_mb = default_gram_peak
 )
 default_row
-      rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb gram_peak_mb
-1 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 139.6505           3294.1       1561.2
+          build     rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb
+1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 137.9737             3295
+  gram_peak_mb
+1       1561.2
 ```
 
 ## What this shows and what it does not
