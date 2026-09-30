@@ -316,7 +316,9 @@ This document does not measure:
 
 - CIs scored at the 512-pixel, 770-trial default, or the package's own reference there; the default
   is compared through its two references alone;
-- references already stored in `.Rdata` files, which are reused as stored and do not change;
+- references already stored in `.Rdata` files. A marked or seeded one is reused as stored and does
+  not change. An unmarked default-stream one, left by an older rcicr, is rebuilt automatically
+  through whichever route the package then uses, so it can change by the amounts measured here;
 - any BLAS library but the reference one this document was knitted with (its `sessionInfo()` is
   below): an optimised BLAS reorders sums in either route, by an amount not measured here.
 

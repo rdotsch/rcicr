@@ -29,9 +29,9 @@ references alone.
   standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call
   changed among the 2,800 CIs, 228 of them within 0.5 of 1.96.
 - **Speed, serial only.** Against the rendered route rendering serially, as the package does with
-  `ncores = 1`, in the committed knit: 26x to 34x at 64px with 100 trials, 23x at 128px with 300
-  trials, 44x and 41x at 256px with 300 and 770 trials, 118x at 512px with 300 trials, and 138x at
-  the 770-trial default. The package's default
+  `ncores = 1`, in the committed knit: 25x to 34x at 64px with 100 trials, 23x at 128px with 300
+  trials, 44x and 41x at 256px with 300 and 770 trials, 107x at 512px with 300 trials, and 147x at
+  the 770-trial default. Between knits these ratios have varied by up to about 10%. The package's default
   `ncores = detectCores() - 1` parallelises the rendering but not the per-iteration loop. The
   analysis times each route whole, not the two phases, so how far the parallel default narrows
   these ratios is not measured.
@@ -76,10 +76,12 @@ references alone.
 3. **`Matrix` moves into `Imports`.** It is an R "recommended" package, already in rcicr's recursive
    dependencies through `spatstat.explore`, `spatstat.data`, `spatstat.random` and
    `spatstat.sparse`, so nothing new is installed.
-4. **Stored references are untouched.** A cached reference is reused as stored, and its fingerprint
-   check compares the stored norms with their stored copy, not with a recomputation. Only
-   references computed fresh change: new files, `force_gen_ref_dist`, `response_seed`, and the
-   automatic rebuild of an unmarked legacy reference.
+4. **Stored references change only when rebuilt.** A marked (vouched) or seeded reference is reused
+   as stored: its fingerprint check compares the stored norms with their stored copy, not with a
+   recomputation. Everything computed fresh changes: new files, `force_gen_ref_dist`,
+   `response_seed`, and the automatic rebuild of an unmarked default-stream reference left by an
+   older rcicr, which `resolveReferenceNorms()` treats as stale. The `NEWS.md` entry names that
+   migration explicitly, because it changes a number already stored in a researcher's file.
 5. **Docs.** A `NEWS.md` entry under "Reproducibility impact", sized from the knitted analysis, and
    a performance note. Its figures come from timing `generateReferenceDistribution2IFC()` itself on
    `main` and on the branch, at the default `ncores`, in the implementation PR; the analysis's

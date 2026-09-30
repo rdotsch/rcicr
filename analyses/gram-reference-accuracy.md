@@ -285,13 +285,13 @@ knitr::kable(cost, row.names = FALSE)
 
 | config | build | speedup | rendered_mb | gram_mb |
 |:---|:---|---:|---:|---:|
-| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.7 | 3.1 | 0.1 |
-| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.1 | 3.1 | 0.1 |
-| 64px, 100 trials, gabor, nscales 5 | rendered | 28.6 | 3.1 | 0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | rendered | 23.2 | 37.5 | 0.7 |
-| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 44.1 | 150.0 | 0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 41.2 | 385.0 | 4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 118.3 | 600.0 | 0.7 |
+| 64px, 100 trials, sinusoid, nscales 5 | rendered | 25.1 | 3.1 | 0.1 |
+| 64px, 100 trials, sinusoid, nscales 3 | cross-product | 34.0 | 3.1 | 0.1 |
+| 64px, 100 trials, gabor, nscales 5 | rendered | 27.8 | 3.1 | 0.1 |
+| 128px, 300 trials, sinusoid, nscales 5 | rendered | 23.3 | 37.5 | 0.7 |
+| 256px, 300 trials, sinusoid, nscales 5 | cross-product | 43.5 | 150.0 | 0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | cross-product | 41.1 | 385.0 | 4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | cross-product | 107.3 | 600.0 | 0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
@@ -336,7 +336,7 @@ default_row <- data.frame(
 )
 default_row
           build     rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb
-1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 137.9737             3295
+1 cross-product 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 146.9567             3295
   gram_peak_mb
 1       1561.2
 ```
@@ -361,8 +361,11 @@ This document does not measure:
 - CIs scored at the 512-pixel, 770-trial default, or the package’s own
   reference there; the default is compared through its two references
   alone;
-- references already stored in `.Rdata` files, which are reused as
-  stored and do not change;
+- references already stored in `.Rdata` files. A marked or seeded one is
+  reused as stored and does not change. An unmarked default-stream one,
+  left by an older rcicr, is rebuilt automatically through whichever
+  route the package then uses, so it can change by the amounts measured
+  here;
 - any BLAS library but the reference one this document was knitted with
   (its `sessionInfo()` is below): an optimised BLAS reorders sums in
   either route, by an amount not measured here.
