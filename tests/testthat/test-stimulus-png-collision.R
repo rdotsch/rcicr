@@ -167,16 +167,20 @@ test_that("the cleanup kills a worker still writing, before removing its files",
   # reserved path a second later.
   skip_on_os("windows")
   dir <- withr::local_tempdir()
-  reserved <- file.path(dir, "rcic_face_1_00001_ori.png")
+  reserved <- file.path(dir, sprintf("rcic_face_1_%05d_ori.png", 1:2))
   file.create(reserved)
-  writer <- parallel::mcparallel({
-    Sys.sleep(1)
-    writeLines("late", reserved)
+  # One writer per worker, as with ncores = 2.
+  writers <- lapply(reserved, function(path) {
+    parallel::mcparallel({
+      Sys.sleep(1)
+      writeLines("late", path)
+    })
   })
-  rcicr:::releaseStimulusCall(FALSE, NULL, writer$pid, reserved, NULL, character())
+  pids <- vapply(writers, `[[`, integer(1), "pid")
+  rcicr:::releaseStimulusCall(FALSE, NULL, pids, reserved, NULL, character())
   Sys.sleep(2)
-  expect_false(file.exists(reserved))
-  parallel::mccollect(writer, wait = FALSE)
+  expect_false(any(file.exists(reserved)))
+  parallel::mccollect(writers, wait = FALSE)
 })
 
 test_that("an abort during the reservation itself leaves no placeholder", {

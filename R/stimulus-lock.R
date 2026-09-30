@@ -142,7 +142,8 @@ reserveStimulusPngs <- function(paths) {
 # stopped: a stopped worker still finishes the trial it is writing.
 releaseStimulusCall <- function(finished, cl, worker_pids, reserved_pngs, owned_rdata, locks) {
   if (!finished) {
-    if (length(worker_pids) > 0) tools::pskill(worker_pids, tools::SIGKILL)
+    # pskill() takes the whole vector; try() keeps a failure from skipping the rest.
+    if (length(worker_pids) > 0) try(tools::pskill(worker_pids, tools::SIGKILL), silent = TRUE)
     stopClusterSafely(cl)
     unlink(c(reserved_pngs, owned_rdata))
   }
