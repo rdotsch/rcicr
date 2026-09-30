@@ -28,7 +28,10 @@
 #' parameter matrix, which reproduces the historical default reference.
 #'
 #' When the stimuli are fewer than the image's pixels (width times height), as in any usual
-#' stimulus set, the norms are computed from the stimulus Gram matrix, without rendering the noise.
+#' stimulus set, the norms are computed from the stimulus Gram matrix, without calling
+#' \code{generateNoiseImage()} or multiplying the noise for every draw. For a small set, the Gram
+#' matrix is built from the noise rendered once through the sparse basis; otherwise it comes from
+#' the basis's cross-product, whichever needs less memory.
 #' They agree with rendering each image to rounding: no configuration measured was bit-identical,
 #' and none differed by more than a relative 5e-14 in a single norm (reference BLAS; see
 #' \url{https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md}). A
@@ -44,7 +47,7 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
 #' @param iter Number of simulated classification images, each built from random responses; the distribution holds one norm per image.
-#' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). The noise is rebuilt only for a stimulus set with at least as many stimuli as the image has pixels; for any other set, the reference renders nothing and \code{ncores} is not used.
+#' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). The noise is rebuilt in parallel only for a stimulus set with at least as many stimuli as the image has pixels; for any other set, the Gram matrix is used and \code{ncores} is not.
 #' @param response_seed Optional seed for the simulated random responses. The default,
 #' \code{NULL}, continues from the state the stimulus generator left behind, as described under
 #' Reproducibility; it needs the stimulus seed saved in the file. A number gives an independent
