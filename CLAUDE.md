@@ -29,7 +29,7 @@ Ubuntu's `universe` pocket *is* reachable. It has a Debian build of every depend
 bash tools/setup-container-r.sh      # toolchain + rcicr; safe to re-run
 ```
 
-After that the ordinary workflow applies, including the release gate. Measured here: `testthat::test_local()` gives 1141 passing and 1 skip.
+After that the ordinary workflow applies, including the release gate. Measured here: `testthat::test_local()` gives 1498 passing and no skips, as uid 1000.
 
 Three things to know before trusting or editing that script:
 
@@ -37,7 +37,7 @@ Three things to know before trusting or editing that script:
 - **`yesno` is the one package without a Debian build**, so the script installs a stub. `computeInfoVal2IFC()` only reaches the real one from a single `if (interactive())` branch, behind a `ref_lookup` whose rows have been commented out since 2018, so a batch run can never reach the prompt. The stub raises an error instead of answering, so nothing can quietly come to depend on a stubbed reply.
 - **The v1.0.1 reference's own imports are installed too** (`raster`, `sp`, `ggplot2`, `plyr` and the others this package has since dropped), so the gate never needs `--install-deps` and never reaches for CRAN. `raster` also pulls in the GDAL/GEOS/PROJ system libraries it links against.
 
-Two differences from CI will mislead you if you forget them. Sessions run as **root**, so a file made read-only is still writable, and the one test that depends on that skips instead of running. And the full release gate needs about 20 minutes per reference plus about 1.5 GB of RAM at 512px, so prefer running it in CI: a `workflow_dispatch` of `reproducibility.yaml` runs the **full** battery against both references, because the `--quick` choice depends on a `pull_request` event.
+Two differences from CI will mislead you if you forget them. A session may run as **root** (check with `id -u`). Then a file made read-only is still writable, and the one test that depends on that skips instead of running. And the full release gate needs about 20 minutes per reference plus about 1.5 GB of RAM at 512px, so prefer running it in CI: a `workflow_dispatch` of `reproducibility.yaml` runs the **full** battery against both references, because the `--quick` choice depends on a `pull_request` event.
 
 ### Isolating one change from what its base branch already carries
 
