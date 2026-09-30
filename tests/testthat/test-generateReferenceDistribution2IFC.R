@@ -253,7 +253,7 @@ test_that("the saved file records which seed produced its norms, and no argument
                      ls(seeded_run, all.names = TRUE)))
 })
 
-test_that('reference matrix reuse preserves legacy norms, RNG and saved fields exactly', {
+test_that('the reference keeps the legacy norms to rounding, and the RNG and saved fields exactly', {
   withr::local_seed(42)
   for (scales in c(1, 3)) {
     path <- make_fixture_rdata(withr::local_tempdir(), nscales = scales)
@@ -271,7 +271,9 @@ test_that('reference matrix reuse preserves legacy norms, RNG and saved fields e
       expect_s3_class(stimuli, 'data.frame')
       if (!is.null(response_seed)) set.seed(response_seed)
       expected <- numeric(24)
-      # Retain the old loop's coercion and arithmetic as the compatibility oracle.
+      # The old loop's arithmetic, kept as the compatibility oracle. Six trials
+      # are fewer than the pixels, so the reference takes the Gram route, which
+      # differs from it by rounding only (#354).
       for (i in seq_along(expected)) {
         responses <- ((runif(original$n_trials) > 0.5) * 2) - 1
         ci <- (as.matrix(stimuli) %*% as.matrix(responses)) / ncol(stimuli)
@@ -284,7 +286,8 @@ test_that('reference matrix reuse preserves legacy norms, RNG and saved fields e
         response_seed = response_seed, save_rdata = TRUE
       ))
       actual_rng <- .Random.seed
-      expect_identical(actual, expected)
+      expect_equal(actual, expected, tolerance = 1e-12)
+      expect_false(identical(actual, expected))
       expect_identical(actual_rng, expected_rng)
       expect_gt(length(unique(actual)), 1)
 
@@ -292,12 +295,12 @@ test_that('reference matrix reuse preserves legacy norms, RNG and saved fields e
       load(path, envir = saved)
       expect_setequal(ls(saved, all.names = TRUE), c(
         ls(original, all.names = TRUE), 'reference_norms', 'reference_norms_seed',
-        'reference_norms_source', 'reference_norms_fingerprint'
+        'reference_norms_source', 'reference_norms_fingerprint', 'reference_norms_method'
       ))
       for (name in ls(original, all.names = TRUE)) {
         expect_identical(saved[[name]], original[[name]], info = name)
       }
-      expect_identical(saved$reference_norms, expected)
+      expect_identical(saved$reference_norms, actual)
       expect_identical(saved$reference_norms_seed, response_seed)
     }
   }

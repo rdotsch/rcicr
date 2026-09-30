@@ -1,5 +1,20 @@
 # rcicr (development version)
 
+## Reproducibility impact
+
+- **InfoVal reference distributions are now computed through the stimulus Gram matrix by default, and differ from before by rounding. `reference_method = "images"` reproduces earlier references bit for bit.** `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` gain a `reference_method` argument. The default, `"gram"`, no longer renders each noise image and multiplies the noise for every simulated draw. The norms follow from the trials-by-trials Gram matrix of the saved noise, which sums in a different order. That matrix is built from the noise rendered through the sparse basis for a small set, and from the basis's cross-product, kept sparse, otherwise, one block of image columns at a time. `"images"` is the calculation of rcicr 1.5.0 and earlier, unchanged. (#354)
+
+  The measured configurations are listed in `analyses/gram-reference-accuracy.md`: 64 to 512 pixels square, up to 770 stimuli, the reference BLAS. None gave a bit-identical reference. The largest relative difference in a norm was 3.3e-14, InfoVal moved by at most 4.8e-13, and no call at 1.96 changed among 2,800 classification images. For comparison, the standard deviation of InfoVal at 1.96 across 10,000-draw references, estimated for the one stimulus set it was measured on (512 pixels, 300 stimuli), was 0.031. Other BLAS libraries were not measured.
+
+  Only a reference computed anew changes: for a new stimulus file, with `force_gen_ref_dist = TRUE`, with a `response_seed`, or when rcicr automatically rebuilds an unmarked reference that an older version left in the file. A reference already stored in the file is reused as stored, whichever method is asked for, so its InfoVal does not change. To reproduce an earlier InfoVal exactly after a reference has been rebuilt, rebuild it with `reference_method = "images"`. Each newly stored reference records its method, as `reference_norms_method` or as `method` in the per-base and per-subset entries.
+
+  Computing a reference with `"gram"` prints a message saying so, and naming `"images"` as the way to reproduce earlier references. The method is never switched for you.
+
+## Performance and dependencies
+
+- **Reference distributions are much faster and need less memory.** At 10,000 iterations, `generateReferenceDistribution2IFC()` was about 19x faster at 128 pixels and 300 stimuli with the default `ncores`, and about 29x faster at 256 pixels with `ncores = 2`, measured by `analyses/gram-reference-benchmark.R` against the build before this change. At the 512-pixel, 770-stimulus default, the peak R memory of the session knitting `analyses/gram-reference-accuracy.md` was 1.7 GB while the Gram route ran, against 3.3 GB for the rendered route. `ncores` is now used only with `reference_method = "images"`. (#354)
+- `Matrix`, an R recommended package that rcicr already depended on through spatstat, is now a direct import.
+
 ## New features
 
 - **`computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` can build the InfoVal reference over the stimuli a classification image was actually built from.** Brinkman et al. (2019) require the reference to use the same stimuli as the CI, but the reference has always used every saved stimulus. A CI built from fewer, for example after dropping missed trials, therefore got an inflated InfoVal: at 512 pixels, pure-noise CIs had a median InfoVal of 0.09 to 0.11 with 1% of trials missing and 0.51 to 0.58 with 5%, in the stimulus sets measured in `analyses/infoval-design-mismatch.md`. Pass those stimuli as the new `reference_stimuli` argument, each once. The reference is reproducible from the stimulus file and stored in it, as `reference_norms_by_stimuli`, apart from the default reference. No default changes, so every existing call returns the same number. (#349)

@@ -11,7 +11,8 @@ computeInfoVal2IFC(
   force_gen_ref_dist = FALSE,
   response_seed = NULL,
   baseimage = NULL,
-  reference_stimuli = NULL
+  reference_stimuli = NULL,
+  reference_method = c("gram", "images")
 )
 }
 \arguments{
@@ -46,6 +47,11 @@ those stimuli and stored in the \code{rdata} file apart from the default one, as
 stimulus, as does passing all of them, with the same result in every case. A subset too small
 for random responses to give distinct norms (one stimulus, and usually two) is refused, since
 its MAD is 0 and the InfoVal would not be a number. See "Matching the reference to the classification image" below.}
+
+\item{reference_method}{\code{"gram"} (the default) or \code{"images"}: how the reference is
+computed, when it has to be. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit; a
+reference already stored in \code{rdata} is reused whichever is given. See "Reference method" in
+\code{\link{generateReferenceDistribution2IFC}}.}
 }
 \value{
 The Informational Value, a z-score.

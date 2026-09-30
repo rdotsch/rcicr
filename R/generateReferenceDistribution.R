@@ -31,12 +31,37 @@
 #' instance to check how much Monte Carlo error a given \code{iter} leaves in your InfoVal. This
 #' changes only the simulated responses, not the stimuli or the noise basis the null is built on.
 #'
+#' @section Reference method:
+#' \code{reference_method = "gram"}, the default, computes the norms from the stimulus Gram
+#' matrix, without calling \code{generateNoiseImage()} or multiplying the noise for every draw.
+#' For a small stimulus set the Gram matrix is built from the noise rendered through the sparse
+#' basis; otherwise from the basis's cross-product, kept sparse. Either way the basis is built a
+#' block of image columns at a time, so no full-size copy of it, or of the noise, is held.
+#' \code{"images"} is the calculation of rcicr 1.5.0 and earlier: every noise image rendered, in
+#' parallel over \code{ncores}, and multiplied for every draw. It reproduces references from those
+#' versions bit for bit.
+#'
+#' The two agree to rounding. No configuration measured was bit-identical, and none differed by
+#' more than a relative 5e-14 in a single norm (reference BLAS; see
+#' \url{https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md}).
+#'
+#' Computing a reference with \code{"gram"} prints a message saying so, and naming
+#' \code{"images"} as the way to reproduce earlier references. Silence it with
+#' \code{suppressMessages()}. The method is never switched for you.
+#'
+#' A reference already stored in the file is reused as stored, whichever method is asked for. To
+#' rebuild one with a particular method, add \code{force_gen_ref_dist = TRUE} in
+#' \code{\link{computeInfoVal2IFC}}, or call this function with \code{save_rdata = TRUE}. The
+#' method a reference was computed with is stored beside it, as \code{reference_norms_method} or
+#' as \code{method} in each \code{reference_norms_by_base} and \code{reference_norms_by_stimuli}
+#' entry.
+#'
 #' @export
 #' @importFrom stats runif
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
 #' @param iter Number of simulated classification images, each built from random responses; the distribution holds one norm per image.
-#' @param ncores Number of CPU cores used to rebuild the saved noise (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param ncores Number of CPU cores used to render the saved noise with \code{reference_method = "images"} (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). \code{"gram"} does not use it.
 #' @param response_seed Optional seed for the simulated random responses. The default,
 #' \code{NULL}, continues from the state the stimulus generator left behind, as described under
 #' Reproducibility; it needs the stimulus seed saved in the file. A number gives an independent
@@ -56,6 +81,9 @@
 #' \code{\link{computeInfoVal2IFC}}. The simulated responses continue the same stream as the
 #' default, so the reference is reproducible from the file. Passing every saved stimulus is the
 #' same as the default, \code{NULL}.
+#' @param reference_method \code{"gram"} (the default) or \code{"images"}: how the reference
+#' norms are computed. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit. See
+#' "Reference method" below.
 #' @section Independent base images:
 #' When the base images have different parameter matrices, \code{baseimage} says whose noise to
 #' use. The distributions are then stored in \code{reference_norms_by_base}, one entry per base
@@ -91,19 +119,20 @@
 #'
 #' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 #' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL, reference_stimuli = NULL) { # nolint: object_length_linter.
+generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images")) { # nolint: object_length_linter.
 
+  reference_method <- match.arg(reference_method)
   reference_selection <- selectReferenceBase(rdata, baseimage)
   # Only a proper subset leaves here; an explicit full set takes the default path.
   subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
   if (!is.null(subset)) {
     return(invisible(generateSubsetReference(subset$source, rdata, reference_selection,
                                              subset$reference_stimuli, iter, ncores,
-                                             response_seed, save_rdata)))
+                                             response_seed, save_rdata, reference_method)))
   }
   if (reference_selection$independent) {
     return(invisible(generateBaseReference(reference_selection, rdata, iter,
-                                           ncores, response_seed, save_rdata)))
+                                           ncores, response_seed, save_rdata, reference_method)))
   }
 
   # load() assigns straight into this function's frame, so any object stored in
@@ -119,12 +148,14 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # would overwrite it here and then be written back, corrupting the record of
   # how the stimuli were generated.
   .args <- list(rdata = rdata, iter = iter, ncores = ncores,
-    response_seed = response_seed, save_rdata = save_rdata, baseimage = baseimage
+    response_seed = response_seed, save_rdata = save_rdata, baseimage = baseimage,
+    reference_method = reference_method
   )
 
-  # Neither is needed below. Removed before load() so the frame re-saved at the
-  # end holds the file's own objects of these names, if any, and nothing else.
-  rm(reference_stimuli, subset)
+  # Removed before load() so the frame re-saved at the end holds the file's own
+  # objects of these names, if any, and nothing else; the method is read from
+  # .args below.
+  rm(reference_stimuli, subset, reference_method)
 
   # Load parameter file (created when generating stimuli)
   loadRdata(rdata, environment())
@@ -140,47 +171,18 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # leaking into the frame that is re-saved below.
   if (is.null(response_seed)) requireStimulusSeed(get0("seed", envir = environment(), inherits = FALSE), rdata)
   write("Building the reference from the saved noise, please wait...", stdout())
-  stimuli <- referenceNoise(environment(), names(stimuli_params)[1], ncores)
-
-  # Simulate random responding in 2IFC task with ntrials trials across iter iterations
   write("Computing reference distribution, please wait...", stdout())
+  if (iter < 10000) {
+    warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
+  }
 
   # Seed the *responses* only. A response_seed replaces the stimulus stream
   # entirely; without one, the draws the generator spent on the parameters are
   # replayed so the responses continue from where they always did. Handing the
   # stimulus seed a different value instead would describe stimuli the
   # participants never saw.
-  seedResponseStream(environment(), names(stimuli_params)[1], response_seed)
-
-  if (iter < 10000) {
-    warning("You should set iter >= 10000 for InfoVal statistic to be reliable")
-  }
-
-  # Initialize progressbar (dplyr::progress_estimated() is deprecated)
-  pb <- txtProgressBar(min = 0, max = iter, style = 3)
-
-  # Run simulation
-  reference_norms <- vector(length = iter)
-
-  for (i in 1:iter) {
-    setTxtProgressBar(pb, i)
-
-    # Generate random responses for this iteration.
-    # This is exactly what the deprecated purrr::rbernoulli(n, p) did
-    # internally. It is spelled out rather than swapped for rbinom() on
-    # purpose: rbinom() consumes the random stream differently, so it would
-    # silently change every reference distribution - and therefore every
-    # infoVal - computed from a given seed.
-    responses <- ((runif(n_trials) > 0.5) * 2) - 1
-
-    # Compute classification image for this iteration
-    ci <- (stimuli %*% as.matrix(responses)) / ncol(stimuli)
-
-    # Save norm for this iteration
-    reference_norms[i] <- norm(ci, "f")
-  }
-
-  close(pb)
+  reference_norms <- referenceNorms(environment(), names(stimuli_params)[1], NULL, iter, ncores,
+                                    response_seed, .args$reference_method)
 
   if (save_rdata) {
 
@@ -189,6 +191,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
 
     # Provenance belongs to the saved norms; function arguments and scratch state do not.
     reference_norms_seed <- response_seed # nolint: object_usage_linter.
+    reference_norms_method <- .args$reference_method # nolint: object_usage_linter.
     reference_norms_source <- "saved_noise" # nolint: object_usage_linter.
     reference_norms_fingerprint <- referenceSnapshot(reference_norms) # nolint: object_usage_linter.
     outfile <- rdata

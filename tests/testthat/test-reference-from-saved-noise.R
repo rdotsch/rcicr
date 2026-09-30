@@ -321,11 +321,20 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   # muffles would defeat the option and make this pass whatever happens. So the
   # assertion is simply that the call completes -- any warning at all, including
   # the inherited iter of 20, would abort it.
+  # The refresh computes a reference, so the notice naming the method is the one
+  # message expected; nothing may say the values changed.
+  seen <- character()
   expect_no_error(
     withr::with_options(list(warn = 2), {
-      expect_message(utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata)), NA)
+      withCallingHandlers(utils::capture.output(iv <- computeInfoVal2IFC(ci, rdata)),
+                          message = function(m) {
+                            seen <<- c(seen, conditionMessage(m))
+                            invokeRestart("muffleMessage")
+                          })
     })
   )
+  expect_length(seen, 1)
+  expect_match(seen, 'computed with reference_method = "gram"')
 
   # It was refreshed and marked, and came back identical, so nothing is said.
   after <- new.env()
