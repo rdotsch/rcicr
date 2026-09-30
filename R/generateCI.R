@@ -168,6 +168,11 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     responses <- aggregated$responses
   }
 
+  if (isTRUE(zmap) && identical(zmapmethod, 't.test')) {
+    requireTTestStack(if (all(is.na(participants))) length(stimuli) else length(unique(participants)),
+                      !all(is.na(participants)))
+  }
+
   params <- selectStimulusParams(stimuli_params, baseimage, stimuli)
 
   # Generate CI(s) ----------------------------------------------------------

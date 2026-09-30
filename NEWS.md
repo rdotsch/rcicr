@@ -21,6 +21,10 @@
 
   `generateCI()` now records which stimuli it used, whether any was repeated, and how many participants it averaged, as a `trial_design` attribute. `computeInfoVal2IFC()` reads it and prints a message when a CI is scored against a reference over different stimuli, giving the call that matches them: `reference_stimuli = attr(ci, "trial_design")$stimuli`. For a CI that averages repeated presentations or several participants, the message says instead that no reference is defined for that design, and suggests an InfoVal for each participant's CI. The message never changes the number returned. A CI from an older version has no attribute and gets no message. The attribute leaves the list's fields unchanged.
 
+## Bug fixes
+
+- **A single generated trial or a single participant no longer stops with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`, and `generateCI()` with one participant ID, now run: the progress bars start at 0. So does one participant with one trial. One participant's CI is the same as the pooled CI of their trials. A `t.test` z-map over fewer than two images, one participant or one distinct stimulus, cannot be computed. It now stops before any work with a message that says so and suggests `zmapmethod = "quick"`, instead of failing inside `t.test()`. No result that was computed before changes. (#351)
+
 # rcicr 1.5.0 (2026-09-25)
 
 ## Reproducibility impact

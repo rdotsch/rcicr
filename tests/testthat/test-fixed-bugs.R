@@ -529,3 +529,74 @@ test_that("the batch functions label each CI with the participant it was compute
     }
   }
 })
+
+# Issue 351: a progress bar starting at 1 stopped any call with a single item.
+test_that("a single generated trial produces a usable stimulus set", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 1, nscales = 1)
+  expect_true(file.exists(rdata))
+
+  png_dir <- withr::local_tempdir()
+  base <- make_square_png(file.path(png_dir, "face.png"))
+  suppressWarnings(generateStimuli2IFC(list(face = base), n_trials = 1, img_size = 32, nscales = 1,
+                                       stimulus_path = png_dir, ncores = 1))
+  expect_length(list.files(png_dir, pattern = "^rcic_face_.*\\.png$"), 2)
+
+  ci <- generateCI(1, 1, "base", rdata, save_as_png = FALSE)
+  e <- new.env()
+  load(rdata, envir = e)
+  expect_identical(ci$ci, generateCINoise(e$stimuli_params$base[1, ], 1, e$p))
+  norms <- NULL
+  reference <- function() {
+    generateReferenceDistribution2IFC(rdata, iter = 5, ncores = 1, save_rdata = FALSE)
+  }
+  utils::capture.output(norms <- suppressMessages(suppressWarnings(reference())))
+  expect_length(norms, 5)
+})
+
+test_that("one participant gives the same CI as the pooled trials, serially and in parallel", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1)
+  responses <- c(1, -1, -1, 1, 1, -1)
+  pooled <- generateCI(1:6, responses, "base", rdata, save_as_png = FALSE)$ci
+
+  for (cores in c(1, 2)) {
+    one <- generateCI(1:6, responses, "base", rdata, participants = rep("a", 6),
+                      save_as_png = FALSE, n_cores = cores)$ci
+    expect_identical(one, pooled, info = cores)
+  }
+})
+
+test_that("one participant with one trial gives that trial's CI, serially and in parallel", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1)
+  e <- new.env()
+  load(rdata, envir = e)
+  expected <- generateCINoise(e$stimuli_params$base[3, ], -1, e$p)
+
+  for (cores in c(1, 2)) {
+    ci <- generateCI(3, -1, "base", rdata, participants = "a", save_as_png = FALSE,
+                     n_cores = cores)$ci
+    expect_identical(ci, expected, info = cores)
+  }
+})
+
+test_that("a t.test z-map over fewer than two images stops with a message that says so", {
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1)
+  zmap_ci <- function(...) {
+    generateCI(..., baseimage = "base", rdata = rdata, save_as_png = FALSE, n_cores = 1,
+               zmap = TRUE, zmapmethod = "t.test", zmapdecoration = FALSE,
+               zmaptargetpath = withr::local_tempdir())
+  }
+
+  expect_error(zmap_ci(stimuli = 1:6, responses = rep(c(1, -1), 3), participants = rep("a", 6)),
+               'across participants, and needs at least two; this call has 1')
+  expect_error(zmap_ci(stimuli = 3, responses = 1),
+               'across distinct stimuli, and needs at least two; this call has 1')
+  expect_error(zmap_ci(stimuli = c(3, 3), responses = c(1, -1)),
+               'across distinct stimuli, and needs at least two; this call has 1')
+
+  two <- zmap_ci(stimuli = 1:6, responses = rep(c(1, -1), 3), participants = rep(c("a", "b"), 3))
+  expect_equal(dim(two$zmap), c(32, 32))
+})

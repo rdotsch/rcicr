@@ -22,8 +22,11 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
                                   individual_scaling_constant, antiCI) {
   pids <- as.numeric(factor(participants))
   npids <- length(unique(pids))
+  # A single selected trial arrives as a parameter vector, which the per-row
+  # selection below would index as a matrix.
+  if (is.null(dim(params))) params <- matrix(params, nrow = 1)
 
-  pb <- txtProgressBar(min = 1, max = npids, style = 3)
+  pb <- txtProgressBar(min = 0, max = npids, style = 3)
 
   cl <- startBackend(n_cores)
   if (!is.null(cl)) {
