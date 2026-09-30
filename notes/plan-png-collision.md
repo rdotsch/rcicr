@@ -55,6 +55,10 @@ reach again, and deleting files is an explicit act the user already controls.
    lock. The `.Rdata` reservation and its messages stay as #338 left them.
 4. **`NEWS.md`**, in the development version's "Bug fixes": calls that used to overwrite PNGs now stop,
    and how to regenerate on purpose.
+   **`?generateStimuli2IFC`** makes it lasting documentation. `@param save_as_png` states the rule
+   (existing PNGs are never overwritten, and the call stops before writing anything) and the
+   recovery: a different `label` or `stimulus_path`, or delete the earlier set, PNGs and `.Rdata`,
+   to regenerate on purpose. That matches what `@param save_rdata` already says for the `.Rdata`.
 5. **`DECISIONS.md`.** The entry "A stimulus `.Rdata` file is never overwritten" becomes "Stimulus
    files are never overwritten", and takes the policy and what was rejected:
    - time in the PNG names;
