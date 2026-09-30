@@ -69,8 +69,14 @@ stimulusPngPaths <- function(stimulus_path, label, base_labels, seed, n_trials) 
   }), use.names = FALSE)
 }
 
-# Named so tests can model a case-insensitive file system.
-pathTaken <- function(path) file.exists(path)
+# Named so tests can model a case-insensitive file system. A dangling symlink
+# is taken too: file.exists() follows it and says no, and file.create() would
+# create its target, which may lie outside the folder. Sys.readlink() gives NA
+# for a path that does not exist, and "" for one that is not a link.
+pathTaken <- function(path) {
+  link <- Sys.readlink(path)
+  file.exists(path) || (!is.na(link) && nzchar(link))
+}
 
 # Keyed on the seed alone. Same-seed calls into one folder write the same PNG
 # names whatever the minute, and the label cannot be part of the key, for the

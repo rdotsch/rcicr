@@ -102,6 +102,17 @@ test_that("on a case-insensitive file system, face and Face collide for real", {
   expect_length(list.files(dir), 0)
 })
 
+test_that("a dangling symlink at a PNG's name is taken, and neither it nor its target is touched", {
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  outside <- file.path(withr::local_tempdir(), "target.png")
+  link <- rcicr:::stimulusPngPath(dir, "rcic", "face", 1, 1, "ori")
+  file.symlink(outside, link)
+  expect_error(generate(dir), "1 of the 12 PNG files")
+  expect_identical(Sys.readlink(link), outside)
+  expect_false(file.exists(outside))
+})
+
 test_that("a call that fails part-way leaves no placeholder and no PNG behind", {
   dir <- withr::local_tempdir()
   local_mocked_bindings(generateNoiseImage = function(...) stop("generation failed"))
