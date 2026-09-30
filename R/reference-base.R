@@ -332,9 +332,9 @@ generateBaseReference <- function(selection, rdata, iter, ncores, response_seed,
   invisible(norms)
 }
 
-computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed, selection,
-                               reference_method) {
-  reportTrialDesign(target_ci, selection$source$n_trials, NULL)
+baseReference <- function(rdata, iter, force_gen_ref_dist, response_seed, selection,
+                          reference_method, report) {
+  report(selection$source$n_trials, NULL)
   cache <- selection$source$reference_norms_by_base
   if (!is.null(cache) && !is.list(cache)) stop('reference_norms_by_base must be a list.')
   norms <- resolveReferenceNorms(cache[[selection$baseimage]], rdata, iter,
@@ -345,12 +345,8 @@ computeBaseInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, respo
     stop('Invalid cached reference for baseimage ', selection$baseimage,
          '. Use force_gen_ref_dist = TRUE to regenerate it.')
   }
-  cinorm <- norm(matrix(target_ci[['ci']]), 'f')
-  info_val <- (cinorm - median(norms)) / mad(norms)
-  write(paste0('Informational value: z = ', info_val, ' (baseimage = ', selection$baseimage,
-               '; ci norm = ', cinorm, '; reference median = ', median(norms),
-               '; MAD = ', mad(norms), '; iterations = ', length(norms), ')'), stdout())
-  return(info_val)
+  list(median = median(norms), mad = mad(norms), iter = length(norms),
+       note = paste0('baseimage = ', selection$baseimage, '; '))
 }
 
 # Named so tests can model read-only archives even when running as root.

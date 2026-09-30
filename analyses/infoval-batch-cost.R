@@ -17,3 +17,19 @@ cat(sprintf("reference: %.1fs; cached-hit call: %.2fs; bare load(): %.2fs\n", t_
 Sys.chmod(rd, "0444")
 t_ro <- system.time(invisible(capture.output(suppressMessages(computeInfoVal2IFC(ci, rd, force_gen_ref_dist = TRUE)))))[["elapsed"]]
 cat(sprintf("forced/unstorable reference per call: %.1fs\n", t_ro))
+
+# The same 20 CIs, looped and batched, stored reference and unstorable one.
+cis <- lapply(1:20, function(i) {
+  set.seed(100 + i)
+  out <- NULL
+  invisible(capture.output(out <- generateCI(1:300, sample(c(1, -1), 300, TRUE), "face", rd, save_as_png = FALSE)))
+  out
+})
+Sys.chmod(rd, "0644")
+timed <- function(expr) system.time(invisible(capture.output(suppressMessages(expr))))[["elapsed"]]
+loop_hit <- timed(for (ci in cis) computeInfoVal2IFC(ci, rd))
+batch_hit <- timed(batchComputeInfoVal2IFC(cis, rd))
+loop_seeded <- timed(for (ci in cis) computeInfoVal2IFC(ci, rd, response_seed = 5))
+batch_seeded <- timed(batchComputeInfoVal2IFC(cis, rd, response_seed = 5))
+cat(sprintf("20 CIs, stored reference: loop %.1fs, batch %.1fs (%.0fx)\n", loop_hit, batch_hit, loop_hit / batch_hit))
+cat(sprintf("20 CIs, response_seed: loop %.1fs, batch %.1fs (%.0fx)\n", loop_seeded, batch_seeded, loop_seeded / batch_seeded))

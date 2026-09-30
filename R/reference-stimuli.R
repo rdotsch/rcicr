@@ -106,11 +106,11 @@ generateSubsetReference <- function(source, rdata, selection, reference_stimuli,
   norms
 }
 
-computeSubsetInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, response_seed,
-                                 source, selection, reference_stimuli, reference_method) {
+subsetReference <- function(rdata, iter, force_gen_ref_dist, response_seed, source, selection,
+                            reference_stimuli, reference_method, report) {
   label <- referenceLabel(source, selection)
   base_key <- if (selection$independent) label else NULL
-  reportTrialDesign(target_ci, source$n_trials, reference_stimuli)
+  report(source$n_trials, reference_stimuli)
   cache <- subsetReferenceCache(source)
   i <- subsetReferenceIndex(cache, reference_stimuli, base_key)
   entry <- if (is.na(i)) NULL else cache[[i]]
@@ -129,14 +129,10 @@ computeSubsetInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, res
          'so no InfoVal can be computed from it: too few stimuli for random responses to ',
          'give distinct norms.', call. = FALSE)
   }
-  cinorm <- norm(matrix(target_ci[['ci']]), 'f')
-  info_val <- (cinorm - median(norms)) / mad(norms)
   base_note <- if (is.null(base_key)) '' else paste0('baseimage = ', base_key, '; ')
-  write(paste0('Informational value: z = ', info_val, ' (', base_note, 'reference over ',
-               length(reference_stimuli), ' of ', source$n_trials, ' stimuli; ci norm = ',
-               cinorm, '; reference median = ', median(norms), '; MAD = ', mad(norms),
-               '; iterations = ', length(norms), ')'), stdout())
-  return(info_val)
+  list(median = median(norms), mad = mad(norms), iter = length(norms),
+       note = paste0(base_note, 'reference over ', length(reference_stimuli), ' of ',
+                     source$n_trials, ' stimuli; '))
 }
 
 # A message, never a warning: whether the design and the reference match is
@@ -144,27 +140,44 @@ computeSubsetInfoVal <- function(target_ci, rdata, iter, force_gen_ref_dist, res
 # without the attribute (an older version's, or one built by hand) has nothing
 # to compare.
 reportTrialDesign <- function(target_ci, n_trials, reference_stimuli) {
+  issue <- trialDesignIssue(target_ci, n_trials, reference_stimuli)
+  if (is.null(issue)) return(invisible(NULL))
+  if (issue$averaged) {
+    message('This classification image ', issue$built_from, '. ', uncalibratedDesignAdvice())
+  } else {
+    message('This classification image was built from ', issue$built_from, ' of the ',
+            n_trials, ' saved stimuli, but the reference is built over ', issue$reference, '. ',
+            mismatchedDesignAdvice('reference_stimuli = attr(<your CI>, "trial_design")$stimuli'))
+  }
+  invisible(NULL)
+}
+
+# NULL when the CI's recorded design matches its reference, or nothing is
+# recorded to compare.
+trialDesignIssue <- function(target_ci, n_trials, reference_stimuli) {
   design <- attr(target_ci, 'trial_design', exact = TRUE)
-  if (is.null(design) || !validTrialCount(n_trials)) return(invisible(NULL))
+  if (is.null(design) || !validTrialCount(n_trials)) return(NULL)
   if (isTRUE(design$repeated) || isTRUE(design$n_participants > 1L)) {
     built_from <- if (isTRUE(design$n_participants > 1L)) {
       paste0('averages ', design$n_participants, ' participants')
     } else {
       'averages repeated presentations of the same stimuli'
     }
-    message('This classification image ', built_from, '. Every InfoVal reference in rcicr ',
-            'assumes one response per stimulus from one responder, and none is defined for ',
-            'this design, so this InfoVal is not calibrated for it. Where each participant ',
-            'saw every stimulus once, compute InfoVal for each participant\'s own CI instead.')
-    return(invisible(NULL))
+    return(list(averaged = TRUE, built_from = built_from))
   }
   used <- if (is.null(reference_stimuli)) seq_len(n_trials) else reference_stimuli
-  if (!identical(design$stimuli, used)) {
-    message('This classification image was built from ', length(design$stimuli), ' of the ',
-            n_trials, ' saved stimuli, but the reference is built over ', length(used),
-            '. Brinkman et al. (2019) require the reference to use the stimuli the CI was ',
-            'built from. To score it that way, pass ',
-            'reference_stimuli = attr(<your CI>, "trial_design")$stimuli.')
-  }
-  invisible(NULL)
+  if (identical(design$stimuli, used)) return(NULL)
+  list(averaged = FALSE, built_from = length(design$stimuli), reference = length(used))
+}
+
+uncalibratedDesignAdvice <- function() {
+  paste0('Every InfoVal reference in rcicr assumes one response per stimulus from one ',
+         'responder, and none is defined for this design, so this InfoVal is not calibrated ',
+         'for it. Where each participant saw every stimulus once, compute InfoVal for each ',
+         'participant\'s own CI instead.')
+}
+
+mismatchedDesignAdvice <- function(call) {
+  paste0('Brinkman et al. (2019) require the reference to use the stimuli the CI was ',
+         'built from. To score it that way, pass ', call, '.')
 }

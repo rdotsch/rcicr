@@ -90,7 +90,9 @@ Pass the stimuli the CI was built from as \code{reference_stimuli}. \code{\link{
 records them on its result, so
 \code{computeInfoVal2IFC(ci, rdata, reference_stimuli = attr(ci, "trial_design")$stimuli)}
 does it, and a message says when a CI is scored against a reference over different stimuli.
-The message never changes the number returned.
+The message never changes the number returned. To score many classification images, one per
+participant say, use \code{\link{batchComputeInfoVal2IFC}}, which takes \code{reference_stimuli}
+per image and computes each distinct reference once.
 
 No reference is defined for a CI that averages repeated presentations of a stimulus or several
 participants: every reference here assumes one response per stimulus from one responder. For
