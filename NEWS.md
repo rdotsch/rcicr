@@ -10,6 +10,12 @@
 
   Computing a reference with `"gram"` prints a message saying so, and naming `"images"` as the way to reproduce earlier references. The method is never switched for you.
 
+- **`generateStimuli2IFC()` now leaves your random stream where it was.** It seeds with its `seed` argument and used to leave the stream wherever stimulus generation ended. Now the next random number your script draws after the call is the one it would have drawn without it, and a session that had no `.Random.seed` before has none after. A script that draws random numbers after generating stimuli without calling `set.seed()` first therefore gets different draws. Nothing rcicr computes changes: stimuli, classification images, z-maps and InfoVal are all drawn from their own seeds. (#189)
+
+- **InfoVal references for new stimulus files no longer depend on the scoring session's `RNGkind()`.** `generateStimuli2IFC()` saves the session's `RNGkind()` in the `.Rdata` file as `rng_kind`, and reference responses, with or without a `response_seed`, are drawn under it. A file scored under the kind it was generated with gives the same reference as before. Scored under another kind, it used to give a different reference and now gives that same one. Stimuli are unchanged under every kind, and files written before this version still draw under the session's kind, with the message on an automatic refresh that says when values changed. (#315)
+
+  In that cross-kind case, an explicit regeneration (`force_gen_ref_dist = TRUE`, a `response_seed`, or `generateReferenceDistribution2IFC()`) now leaves your random stream untouched, kind and position, instead of advancing it; advancing it would leave your session on the file's generator. Under the session's own kind it still advances the stream as before.
+
 ## Performance and dependencies
 
 - **Reference distributions are much faster and need less memory.** At 10,000 iterations, `generateReferenceDistribution2IFC()` was about 19x faster at 128 pixels and 300 stimuli with the default `ncores`, and about 29x faster at 256 pixels with `ncores = 2`, measured by `analyses/gram-reference-benchmark.R` against the build before this change. At the 512-pixel, 770-stimulus default, the peak R memory of the session knitting `analyses/gram-reference-accuracy.md` was 1.7 GB while the Gram route ran, against 3.3 GB for the rendered route. `ncores` is now used only with `reference_method = "images"`. (#354)

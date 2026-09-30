@@ -97,21 +97,6 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
   norms
 }
 
-# A cache hit consumed no random numbers before automatic migration existed.
-preserveRandomStream <- function(expr) {
-  had <- exists('.Random.seed', envir = globalenv(), inherits = FALSE)
-  before <- if (had) get('.Random.seed', envir = globalenv(), inherits = FALSE)
-  on.exit({
-    if (had) {
-      # nolint next: object_name_linter. R owns this name, not this package.
-      assign('.Random.seed', before, envir = globalenv())
-    } else if (exists('.Random.seed', envir = globalenv(), inherits = FALSE)) {
-      rm('.Random.seed', envir = globalenv())
-    }
-  }, add = TRUE)
-  expr
-}
-
 savedReferenceParams <- function(source, baseimage) {
   n_trials <- source$n_trials
   if (length(n_trials) != 1L || !is.finite(n_trials) || n_trials < 1 || n_trials != trunc(n_trials)) {
@@ -160,12 +145,34 @@ referenceNorms <- function(source, label, reference_stimuli, iter, ncores, respo
     if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
     gram <- stimulusGram(params, referenceBasis(source))
     rm(params)
-    seedResponseStream(source, label, response_seed)
-    return(gramNorms(gram, iter))
+    return(replayResponses(source, label, response_seed, function() gramNorms(gram, iter)))
   }
   noise <- referenceNoise(source, label, ncores, reference_stimuli)
-  seedResponseStream(source, label, response_seed)
-  renderedNorms(noise, iter)
+  replayResponses(source, label, response_seed, function() renderedNorms(noise, iter))
+}
+
+# The responses are drawn under the uniform generator the stimuli were drawn
+# under, when the file records it (#315). Under the session's own kind the
+# caller's stream is left where the draws end, as it always was. Under another
+# kind it is restored instead, since leaving it there would leave the session
+# on the file's generator.
+replayResponses <- function(source, baseimage, response_seed, draw) {
+  kind <- stimulusRngKind(source)
+  if (is.null(kind) || identical(kind, RNGkind()[1])) {
+    seedResponseStream(source, baseimage, response_seed)
+    return(draw())
+  }
+  preserveRandomStream({
+    seedResponseStream(source, baseimage, response_seed, kind)
+    draw()
+  })
+}
+
+# NULL for files written before rng_kind was saved: their kind is unknown.
+stimulusRngKind <- function(source) {
+  kind <- get0('rng_kind', envir = source, inherits = FALSE)
+  if (!is.character(kind) || !length(kind) || is.na(kind[1]) || !nzchar(kind[1])) return(NULL)
+  kind[1]
 }
 
 # A message, never a warning: it changes no number. Only computing a reference
@@ -297,13 +304,13 @@ seededReferenceAdvice <- function(rdata, baseimage = NULL, subset = FALSE) {
 
 # Replay one normalized parameter matrix's draws to preserve the historical response stream.
 # selectStimulusParams() removes the four unused columns of pre-0.3.0 files.
-seedResponseStream <- function(source, baseimage, response_seed) {
+seedResponseStream <- function(source, baseimage, response_seed, kind = NULL) {
   if (!is.null(response_seed)) {
-    set.seed(response_seed)
+    set.seed(response_seed, kind = kind)
     return(invisible(NULL))
   }
   nparams <- ncol(savedReferenceParams(source, baseimage))
-  set.seed(source$seed)
+  set.seed(source$seed, kind = kind)
   for (trial in seq_len(source$n_trials)) runif(nparams)
   invisible(NULL)
 }

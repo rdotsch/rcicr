@@ -59,10 +59,11 @@ for (scales in c(1, 3)) {
   test_that(title, {
     path <- make_independent_fixture(withr::local_tempdir(), nscales = scales)
     saved <- read_reference_fixture(path)
-    suppressWarnings(generateStimuli2IFC(saved$base_face_files, saved$n_trials,
-                                         saved$img_size, seed = saved$seed, noise_type = saved$noise_type,
-                                         nscales = saved$nscales, sigma = saved$sigma, ncores = 1,
-                                         return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE))
+    # The shared rebuild's draws: one parameter row per trial from the stimulus
+    # seed. generateStimuli2IFC() now gives the caller's stream back (#189), so
+    # they are replayed here rather than left behind by a call to it.
+    set.seed(saved$seed)
+    for (trial in seq_len(saved$n_trials)) runif(ncol(saved$stimuli_params[[1]]))
     responses <- replicate(24, ((runif(saved$n_trials) > 0.5) * 2) - 1)
     for (key in c("first", "second")) {
       expected <- reference_oracle(saved, key, responses = responses)
