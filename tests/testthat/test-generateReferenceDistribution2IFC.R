@@ -269,7 +269,14 @@ test_that('the reference keeps the legacy norms to rounding, and the RNG and sav
         return_as_dataframe = TRUE, save_as_png = FALSE, save_rdata = FALSE
       ))
       expect_s3_class(stimuli, 'data.frame')
-      if (!is.null(response_seed)) set.seed(response_seed)
+      # generateStimuli2IFC() gives the caller's stream back (#189), so the
+      # stream it drew the parameters from is replayed here.
+      if (is.null(response_seed)) {
+        set.seed(original$seed)
+        for (trial in seq_len(original$n_trials)) runif(ncol(original$stimuli_params[[1]]))
+      } else {
+        set.seed(response_seed)
+      }
       expected <- numeric(24)
       # The old loop's arithmetic, kept as the compatibility oracle. Six trials
       # are fewer than the pixels, so the reference takes the Gram route, which

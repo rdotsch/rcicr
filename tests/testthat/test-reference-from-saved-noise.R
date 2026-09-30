@@ -783,14 +783,14 @@ local_rng_kind <- function(kind, envir = parent.frame()) {
   RNGkind(kind)
 }
 
-test_that("a refresh reproduces the cache only under the stimuli's RNG kind", {
-  # What NEWS.md's unchanged guarantee is conditioned on. seedResponseStream()
-  # replays the stimulus stream with set.seed(), which keeps the session's kind
-  # rather than restoring one, so the session doing the refresh decides -- not
+test_that("a refresh of a file without rng_kind reproduces the cache only under the stimuli's kind", {
+  # What NEWS.md's unchanged guarantee is conditioned on, for files written
+  # before the kind was recorded: the session doing the refresh decides, not
   # the session that built the reference being replaced.
   local_rng_kind("Mersenne-Twister")
   tmp <- withr::local_tempdir()
   rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  mutate_rdata(rdata, .remove = "rng_kind")
   ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
   suppressWarnings(utils::capture.output(
     generateReferenceDistribution2IFC(rdata, iter = 5, ncores = 1, save_rdata = TRUE)
@@ -814,14 +814,19 @@ test_that("a refresh reproduces the cache only under the stimuli's RNG kind", {
 
   expect_identical(refresh_under("Mersenne-Twister"), cached)
   expect_false(identical(refresh_under("L'Ecuyer-CMRG"), cached))
+
+  # A file that records its kind refreshes identically under either (#315).
+  mutate_rdata(rdata, rng_kind = c("Mersenne-Twister", "Inversion", "Rejection"))
+  expect_identical(refresh_under("L'Ecuyer-CMRG"), cached)
 })
 
-test_that("a kind-changed refresh reports that its values superseded the cache", {
+test_that("a kind-changed refresh of a file without rng_kind reports that its values superseded the cache", {
   # The guarantee's escape hatch: where the kinds differ the numbers move, and
   # NEWS.md says the call reports it. Silence there would be the failure.
   local_rng_kind("Mersenne-Twister")
   tmp <- withr::local_tempdir()
   rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 4, nscales = 1, seed = 1)
+  mutate_rdata(rdata, .remove = "rng_kind")
   ci <- generateCI(1:4, c(1, -1, 1, -1), "base", rdata, save_as_png = FALSE, n_cores = 1)
   stale_the_cache(rdata)
 

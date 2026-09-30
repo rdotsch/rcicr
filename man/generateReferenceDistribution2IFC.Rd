@@ -70,20 +70,24 @@ default the result is saved in the \code{rdata} file for later reuse.
 \section{Reproducibility}{
 
 With the default \code{response_seed = NULL}, the reference distribution depends only on the
-stimulus \code{.Rdata} file and the session's \code{\link{RNGkind}}: not on the current
-random state, and not on \code{ncores}. Two researchers computing InfoVal from the same
-stimulus file get the same reference distribution, and the same number, on any machine and in
-any session, provided both use the same RNG kind.
+stimulus \code{.Rdata} file: not on the current random state, not on \code{ncores}, and,
+for files that record the RNG kind, not on the session's \code{\link{RNGkind}}. Two
+researchers computing InfoVal from the same stimulus file get the same reference distribution,
+and the same number, on any machine and in any session.
 
 This needs the stimulus seed saved in the file. A file without one (made with
 \code{generateStimuli2IFC(seed = NULL)}, or with the field removed) has no stream to continue,
 so the default stops with an error; pass a \code{response_seed} instead.
 
-The RNG kind is the one gap. \code{set.seed()} keeps whatever kind the session already has,
-and no stimulus file records which kind was in use. A session with a different
-\code{RNGkind()} therefore draws different simulated responses, and so a different null; the
-saved noise basis and stimulus parameters stay the same. To reproduce an earlier reference, use
-the RNG kind that built it; see \url{https://github.com/rdotsch/rcicr/issues/315}.
+Stimulus files record the \code{\link{RNGkind}} the stimuli were drawn under, as
+\code{rng_kind}, and the simulated responses are drawn under it, with or without a
+\code{response_seed}. When it differs from the session's kind, the caller's random stream is
+restored afterwards, kind and position, so the session is not left on the file's generator. In
+the session's own kind the stream is left where the draws end, as it always was. Files written
+before the kind was recorded draw under the session's kind: a session with a different
+\code{RNGkind()} draws different responses, and so a different null. To reproduce an earlier
+reference from such a file, use the RNG kind that built it; see
+\url{https://github.com/rdotsch/rcicr/issues/315}.
 
 The noise is rebuilt from the basis and parameters saved in the stimulus file, so the base
 images are never reopened and a moved or archived experiment can still be scored. The simulated
