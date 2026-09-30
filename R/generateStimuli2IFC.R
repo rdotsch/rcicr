@@ -139,8 +139,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     base_faces[[base_face]] <- img
   }
 
-  # Initialize #
-  p <- generateNoisePattern(img_size, noise_type = noise_type, nscales = nscales, sigma = sigma)
+  # The basis is built after the reservations below; its size check must still
+  # come before the directory exists (#339).
+  validateTiling(img_size, nscales)
 
   # Only create the directory when something is written to it.
   # generateReferenceDistribution2IFC() calls this with both save flags FALSE
@@ -172,6 +173,10 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     )
     on.exit(if (!finished) unlink(reserved_pngs), add = TRUE)
   }
+
+  # After the reservations, so a call that cannot write stops before the basis,
+  # the slow step at the default 512px.
+  p <- generateNoisePattern(img_size, noise_type = noise_type, nscales = nscales, sigma = sigma)
 
   # Reference generation replays these parameter draws to preserve the historical
   # response stream. Changing the seeding or draw count here requires revisiting

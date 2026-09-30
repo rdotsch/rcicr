@@ -38,6 +38,11 @@ test_that("a later-minute call that would overwrite the PNGs stops and changes n
   expect_error(generate(dir, n_trials = 6, nscales = 2), "12 of the 12 PNG files")
   expect_identical(snapshot(dir), first)
 
+  # It stops before the noise basis, the slow step, is built.
+  local_mocked_bindings(generateNoisePattern = function(...) stop("basis built"))
+  expect_error(generate(dir, n_trials = 6, nscales = 2), "12 of the 12 PNG files")
+  local_mocked_bindings(generateNoisePattern = rcicr::generateNoisePattern)
+
   # A shorter run collides on the files it shares, and leaves the rest alone too.
   expect_error(generate(dir, n_trials = 4, nscales = 2), "8 of the 8 PNG files")
   expect_identical(snapshot(dir), first)
