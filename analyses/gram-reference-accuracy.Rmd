@@ -239,17 +239,57 @@ At the package defaults, 512 pixels and 770 trials, the rendered noise matrix al
 `r round(512^2 * 770 * 8 / 2^30, 2)` GB. The Gram matrix is `r round(770^2 * 8 / 2^20, 1)` MB, and
 the basis cross-product for five scales is `r round(4092^2 * 8 / 2^20)` MB.
 
+## The package default
+
+512 pixels and 770 trials, measured on its own: the rendered route's noise matrix leaves room for
+little else on the machine this was knitted on. For the same reason, the package's own reference is
+not generated here, and no CIs are scored. `dz_at_cutoff` needs no CIs, because it is computed from
+the two references alone. Both routes' peak R memory is recorded, from `gc()`.
+
+```{r default}
+rm(saved, params, population)
+invisible(gc())
+rdata <- stimulus_set(512, 770, "sinusoid", 5)
+saved <- new.env()
+load(rdata, envir = saved)
+params <- saved$stimuli_params$base
+p <- saved$p
+rm(saved)
+
+invisible(gc(reset = TRUE))
+default_rendered_time <- system.time(rendered <- rendered_route(params, p, 10000, response_seed))
+default_rendered_peak <- sum(gc()[, 6])
+invisible(gc(reset = TRUE))
+default_gram_time <- system.time(gram <- gram_route(params, p, 10000, response_seed))
+default_gram_peak <- sum(gc()[, 6])
+
+gram_cutoff <- median(gram) + cutoff * mad(gram)
+default_row <- data.frame(
+  rel_norm = max(abs(gram - rendered) / rendered),
+  d_median = abs(median(gram) - median(rendered)),
+  d_mad = abs(mad(gram) - mad(rendered)),
+  dz_at_cutoff = abs(z_of(gram_cutoff, rendered) - cutoff),
+  speedup = default_rendered_time[["elapsed"]] / default_gram_time[["elapsed"]],
+  rendered_peak_mb = default_rendered_peak,
+  gram_peak_mb = default_gram_peak
+)
+default_row
+```
+
 ## What this shows and what it does not
 
 ```{r summary, include = FALSE}
 worst <- results[which.max(results$max_dz), ]
+largest <- max(results$dz_at_cutoff, default_row$dz_at_cutoff)
 ```
 
-None of the tested configurations gave bit-identical references. The largest relative difference in any single norm is
-`r sprintf("%.1e", max(results$rel_norm))`. The largest InfoVal difference among
+None of the tested configurations gave bit-identical references, the package default included. The
+largest relative difference in any single norm is
+`r sprintf("%.1e", max(results$rel_norm, default_row$rel_norm))`. The largest InfoVal difference among
 `r nrow(results) * n_cis` CIs is `r sprintf("%.1e", max(results$max_dz))`, at
 `r worst$config`. At 1.96 the largest difference is
-`r sprintf("%.1e", largest)` on the rendered route's scale: under these references, a CI's call can
+`r sprintf("%.1e", largest)` on the rendered route's scale
+(`r sprintf("%.1e", default_row$dz_at_cutoff)` at the default): under these references, a CI's call can
 change only if its rendered-route InfoVal lies within that distance of the cut-off. None of the `r sum(results$near_cutoff)` CIs within 0.5 of 1.96 changed its call
 (`r sum(results$flips)` of `r nrow(results) * n_cis` overall).
 
@@ -259,8 +299,8 @@ estimated standard deviation of InfoVal at 1.96 across 10,000-draw references,
 
 This document does not measure:
 
-- the 512-pixel, 770-trial default with the rendered route, which needs more memory than the machine
-  that knitted it had; the table stops at 512 pixels and 300 trials;
+- CIs scored at the 512-pixel, 770-trial default, or the package's own reference there; the default
+  is compared through its two references alone;
 - references already stored in `.Rdata` files, which are reused as stored and do not change;
 - any BLAS library but the reference one this document was knitted with (its `sessionInfo()` is
   below): an optimised BLAS reorders sums in either route, by an amount not measured here.

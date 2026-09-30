@@ -8,6 +8,7 @@ What computing the InfoVal reference through the Gram matrix changes
 - [Against the Monte Carlo error InfoVal already
   carries](#against-the-monte-carlo-error-infoval-already-carries)
 - [Time and memory](#time-and-memory)
+- [The package default](#the-package-default)
 - [What this shows and what it does
   not](#what-this-shows-and-what-it-does-not)
 
@@ -269,27 +270,68 @@ knitr::kable(cost, row.names = FALSE)
 | config                                 |  iter | speedup | rendered_mb | gram_mb |
 |:---------------------------------------|------:|--------:|------------:|--------:|
 | 64px, 100 trials, sinusoid, nscales 5  | 10000 |     3.5 |         3.1 |     0.1 |
-| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    33.0 |         3.1 |     0.1 |
+| 64px, 100 trials, sinusoid, nscales 3  | 10000 |    32.8 |         3.1 |     0.1 |
 | 64px, 100 trials, gabor, nscales 5     | 10000 |     3.5 |         3.1 |     0.1 |
-| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    13.1 |        37.5 |     0.7 |
+| 128px, 300 trials, sinusoid, nscales 5 | 10000 |    12.8 |        37.5 |     0.7 |
 | 256px, 300 trials, sinusoid, nscales 5 | 10000 |    44.1 |       150.0 |     0.7 |
-| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    41.7 |       385.0 |     4.5 |
-| 512px, 300 trials, sinusoid, nscales 5 | 10000 |   109.7 |       600.0 |     0.7 |
+| 256px, 770 trials, sinusoid, nscales 5 | 10000 |    40.7 |       385.0 |     4.5 |
+| 512px, 300 trials, sinusoid, nscales 5 | 10000 |    95.8 |       600.0 |     0.7 |
 
 At the package defaults, 512 pixels and 770 trials, the rendered noise
 matrix alone is 1.5 GB. The Gram matrix is 4.5 MB, and the basis
 cross-product for five scales is 128 MB.
 
+## The package default
+
+512 pixels and 770 trials, measured on its own: the rendered route’s
+noise matrix leaves room for little else on the machine this was knitted
+on. For the same reason, the package’s own reference is not generated
+here, and no CIs are scored. `dz_at_cutoff` needs no CIs, because it is
+computed from the two references alone. Both routes’ peak R memory is
+recorded, from `gc()`.
+
+``` r
+rm(saved, params, population)
+invisible(gc())
+rdata <- stimulus_set(512, 770, "sinusoid", 5)
+saved <- new.env()
+load(rdata, envir = saved)
+params <- saved$stimuli_params$base
+p <- saved$p
+rm(saved)
+
+invisible(gc(reset = TRUE))
+default_rendered_time <- system.time(rendered <- rendered_route(params, p, 10000, response_seed))
+default_rendered_peak <- sum(gc()[, 6])
+invisible(gc(reset = TRUE))
+default_gram_time <- system.time(gram <- gram_route(params, p, 10000, response_seed))
+default_gram_peak <- sum(gc()[, 6])
+
+gram_cutoff <- median(gram) + cutoff * mad(gram)
+default_row <- data.frame(
+  rel_norm = max(abs(gram - rendered) / rendered),
+  d_median = abs(median(gram) - median(rendered)),
+  d_mad = abs(mad(gram) - mad(rendered)),
+  dz_at_cutoff = abs(z_of(gram_cutoff, rendered) - cutoff),
+  speedup = default_rendered_time[["elapsed"]] / default_gram_time[["elapsed"]],
+  rendered_peak_mb = default_rendered_peak,
+  gram_peak_mb = default_gram_peak
+)
+default_row
+      rel_norm     d_median        d_mad dz_at_cutoff  speedup rendered_peak_mb gram_peak_mb
+1 4.568655e-14 5.884182e-15 3.538836e-15 2.331468e-14 139.6505           3294.1       1561.2
+```
+
 ## What this shows and what it does not
 
-None of the tested configurations gave bit-identical references. The
-largest relative difference in any single norm is 4.8e-14. The largest
-InfoVal difference among 2800 CIs is 7.9e-13, at 512px, 300 trials,
-sinusoid, nscales 5. At 1.96 the largest difference is 5.6e-13 on the
-rendered route’s scale: under these references, a CI’s call can change
-only if its rendered-route InfoVal lies within that distance of the
-cut-off. None of the 228 CIs within 0.5 of 1.96 changed its call (0 of
-2800 overall).
+None of the tested configurations gave bit-identical references, the
+package default included. The largest relative difference in any single
+norm is 4.8e-14. The largest InfoVal difference among 2800 CIs is
+7.9e-13, at 512px, 300 trials, sinusoid, nscales 5. At 1.96 the largest
+difference is 5.6e-13 on the rendered route’s scale (2.3e-14 at the
+default): under these references, a CI’s call can change only if its
+rendered-route InfoVal lies within that distance of the cut-off. None of
+the 228 CIs within 0.5 of 1.96 changed its call (0 of 2800 overall).
 
 That distance is 5.6e+10 times smaller than the estimated standard
 deviation of InfoVal at 1.96 across 10,000-draw references, 0.031,
@@ -297,9 +339,9 @@ estimated from 40 of them.
 
 This document does not measure:
 
-- the 512-pixel, 770-trial default with the rendered route, which needs
-  more memory than the machine that knitted it had; the table stops at
-  512 pixels and 300 trials;
+- CIs scored at the 512-pixel, 770-trial default, or the package’s own
+  reference there; the default is compared through its two references
+  alone;
 - references already stored in `.Rdata` files, which are reused as
   stored and do not change;
 - any BLAS library but the reference one this document was knitted with

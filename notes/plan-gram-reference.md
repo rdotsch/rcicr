@@ -15,25 +15,27 @@ kept after the merge.
 
 ## What the analysis measured
 
-From the knitted `analyses/gram-reference-accuracy.md`: seven configurations, from 64px with 100
-trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference draws.
+From the knitted `analyses/gram-reference-accuracy.md`, all with the reference BLAS and 10,000
+reference draws: seven configurations with scored CIs, from 64px with 100 trials to 512px with 300
+trials, sinusoid and gabor, plus the package default (512px, 770 trials), compared through its two
+references alone.
 
-- **Accuracy.** The largest relative difference in a single norm was 4.8e-14. The largest InfoVal
-  difference among 2,800 CIs was 7.9e-13, at 512px.
+- **Accuracy.** No configuration gave bit-identical references. The largest relative difference in
+  a single norm was 4.8e-14 (4.6e-14 at the default). The largest InfoVal difference among 2,800
+  CIs was 7.9e-13, at 512px with 300 trials.
 - **Decisions.** The norms whose call at 1.96 differs between the routes span at most 5.6e-13 on
-  the rendered route's InfoVal scale, so only a CI within that distance of the cut-off can change
-  its call. That distance is 5.6e10 times smaller than the
-  estimated standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call changed among the
-  2,800 CIs, 228 of them within 0.5 of 1.96.
+  the rendered route's InfoVal scale (2.3e-14 at the default), so only a CI within that distance of
+  the cut-off can change its call. That distance is 5.6e10 times smaller than the estimated
+  standard deviation of InfoVal at 1.96 across 10,000-draw references (0.031, from 40). No call
+  changed among the 2,800 CIs, 228 of them within 0.5 of 1.96.
 - **Speed, serial only.** Against the rendered route rendering serially, as the package does with
   `ncores = 1`: 13x or more faster at 128px, and over 100x at 512px. The package's default
   `ncores = detectCores() - 1` parallelises only the rendering. Its per-iteration loop, which
   dominates at 10,000 draws, is serial whatever `ncores` is. The analysis does not time the
   parallel default, so these ratios do not describe it.
-- **Memory.** At the 512px, 770-trial default, as component sizes: the rendered noise matrix is
-  1.5 GB; the Gram matrix is 4.5 MB, plus a 128 MB basis cross-product. The Gram route's measured
-  peak is larger: 1.4 GB of R heap in a Gram-only run, mostly the sparse basis and the loaded file
-  (see Risks). The rendered route's peak was not measured at that size.
+- **Memory at the default.** Peak R heap was 3.3 GB for the rendered route and 1.6 GB for the Gram
+  route, most of the latter the sparse basis and the loaded file. As component sizes, the rendered
+  noise matrix is 1.5 GB, and the Gram matrix is 4.5 MB plus a 128 MB basis cross-product.
 
 ## Changes
 
@@ -68,10 +70,12 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
 5. **Docs.** A `NEWS.md` entry under "Reproducibility impact", sized from the knitted analysis, and
    a performance note. Its figures come from timing `generateReferenceDistribution2IFC()` itself on
    `main` and on the branch, at the default `ncores`, in the implementation PR; the analysis's
-   serial ratios are not quoted there. `DECISIONS.md` generalises "`rowMeans(x, dims = 2)` was adopted despite not
-   being bit-identical" to cover both, since they share a rationale: an independent oracle, and
-   differences many orders of magnitude below anything a researcher reports. The file is at 5,197
-   of 5,200 words, so the merged entry must fit by tightening the existing text, not adding to it.
+   serial ratios are not quoted there. `DECISIONS.md` generalises "`rowMeans(x, dims = 2)` was adopted
+   despite not being bit-identical" to cover both, since they share a rationale: an independent
+   oracle, and measured differences far below the Monte Carlo error InfoVal already carries. Both
+   entries state the bound only for what was measured, the configurations in the analysis and
+   the BLAS builds CI ran, and name what was not. The file is at 5,197 of 5,200 words, so the
+   merged entry must fit by tightening the existing text, not adding to it.
 
 ## Risks
 
@@ -84,9 +88,9 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
   (`tools/compare-release-output.R:350`). The measured differences are three orders of magnitude
   below that, so no `EXPECTED` entry should be needed. That is a prediction; the gate run against
   `origin/main`, and the full dispatch, settle it.
-- **Memory at 512px.** Building the sparse basis peaked at 1.4 GB in a Gram-only run at the default, 512px, 770 trials and 10,000 iterations (15.7M non-zeros,
-  plus the loaded file). That is below the rendered route, but not small. If the implementation
-  cannot lower it, the PR states the measured peak.
+- **Memory at 512px.** The Gram route peaked at 1.6 GB of R heap at the default in the analysis,
+  mostly the sparse basis (15.7M non-zeros) and the loaded file. That is half the rendered route's
+  3.3 GB, but not small. If the implementation cannot lower it, the PR states its measured peak.
 
 ## Verification
 
@@ -96,6 +100,9 @@ trials to 512px with 300 trials, sinusoid and gabor, each with 10,000 reference 
   Windows, and Ubuntu release and devel) run this test, so they measure the tolerance under their
   own BLAS builds. If any exceeds `1e-12`, the PR reports the measured difference and sizes the
   tolerance and the `NEWS.md` entry from it, rather than loosening either unmeasured.
+- A second parity test at 128px with 300 trials, a few seconds' work, gives those four BLAS builds
+  a configuration of realistic size, not only the 32px fixture. The 512px default under a
+  non-reference BLAS stays unmeasured, and the docs say so.
 - The legacy fixtures are checked against the rendered arithmetic, as under Risks.
 - The full suite passes, and `analyses/gram-reference-accuracy.Rmd` knits against the implementation.
   Its package check requires agreement with both routes to 1e-12.
