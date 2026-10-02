@@ -16,7 +16,8 @@ batchGenerateCI(
   label = "",
   antiCI = FALSE,
   scaling = "autoscale",
-  constant = 0.1
+  constant = 0.1,
+  participants = NULL
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ batchGenerateCI(
 \item{scaling}{Scaling method: \code{none}, \code{constant}, \code{matched}, \code{independent} or \code{autoscale} (default). \code{autoscale} computes the CIs unscaled and then puts them on one scale with \code{\link{autoscale}}.}
 
 \item{constant}{Scaling constant for the noise. Used only when \code{scaling = 'constant'}.}
+
+\item{participants}{Optional name of a column holding a participant ID per trial. When given, each unit's CI is computed as \code{\link{generateCI}} does with \code{participants}: one CI per participant in the unit, then their average. With \code{by} naming a condition, that gives one CI per condition with participants nested in it, and each participant counts equally however many trials they contributed. Every row needs an ID; the call stops before computing anything if any is missing. Default: \code{NULL}, all of a unit's trials pooled into one CI.}
 }
 \value{
 Named list with one classification image per unit. Each is itself a list of pixel matrices: the raw noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
