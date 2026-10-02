@@ -26,7 +26,7 @@ Only the table's rows are checked. `README.md`, `NEWS.md`, `notes/` and `analyse
 
 ## Shape
 
-- `tools/check-word-budgets.sh`, runnable locally from the repository root, so the number a contributor sees is the one CI enforces. It counts with `LC_ALL=C.UTF-8 wc -w`, the command `AGENTS.md` already gives, rather than reimplementing word splitting in R, so the two can never disagree. `C.UTF-8` is set inside the script: in the C locale a non-breaking space is not a separator, and the counts would come out lower.
+- `tools/check-word-budgets.sh`, runnable locally from the repository root, so the number a contributor sees is the one CI enforces. It counts with `LC_ALL=C.UTF-8 wc -w`, the command `AGENTS.md` already gives, rather than reimplementing word splitting in R, so the two can never disagree. The locale is set inside the script, so a contributor's own locale cannot change the count.
 - A last step in `ubuntu-latest (release)`, after "CITATION.cff matches its sources". It is not a new job, for the ruleset reason `MAINTENANCE.md` records: required checks match by name, and a new job's check would report without blocking. It goes last so a failure cannot hide the check results.
 - `MAINTENANCE.md` gets one short entry next to the stale-`man/` gate, and `AGENTS.md`'s instruction to run `wc -w` points to the script. Both stay within their budgets, which the script then checks.
 
