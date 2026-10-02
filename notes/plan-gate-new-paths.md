@@ -23,8 +23,8 @@ New extras in `tools/compare-harness.R`, each with a floor in its `SINCE` table 
 | `infoval_batch` | `batchComputeInfoVal2IFC()` over the full-set CI and the subset CI, per-CI `reference_stimuli` | 1.6.0 |
 | `infoval_cross_kind` | the default reference rebuilt under `RNGkind("L'Ecuyer-CMRG")` for a file written under Mersenne-Twister; the session's kind is restored afterwards | 1.6.0 |
 | `infoval_seeded` | `computeInfoVal2IFC(response_seed = 7)` | 1.2.0, to be confirmed by running it |
-| `batch_participants` | `batchGenerateCI(participants = )`, every field | 1.6.0 |
-| `scaling_record` | `attr(ci, "scaling")$constant` and `$individual$constant` as plain numbers, for each scaling method and for `autoscale()` | 1.6.0 |
+| `batch_participants` | `batchGenerateCI(participants = )` and `batchGenerateCI2IFC(participants = )`, every field: two exported wrappers that forward the argument separately | 1.6.0 |
+| `scaling_record` | as plain numbers: `attr(ci, "scaling")$constant` for each scaling method, `$individual$constant`, and after `autoscale()` both its own `$constant` and `$combined$constant`. The input autoscaled is a list of `'independent'` CIs, so the preserved constant is a number, not `NA`. | 1.6.0 |
 
 The InfoVal extras go on the four existing `infoval` configs, where a reference costs seconds. `batch_participants` and `scaling_record` go where `batch`, `participants` or `individual_cis` already run.
 
