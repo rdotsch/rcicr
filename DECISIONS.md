@@ -620,6 +620,20 @@ normalize. PNG reservation asks the file system, which catches aliased
 base labels; same-seed calls into a folder cannot overlap even with
 different labels.
 
+### The batch CI functions are kept, not deprecated
+
+[\#87](https://github.com/rdotsch/rcicr/issues/87) planned to deprecate
+[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+and
+[`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+in favour of `generateCI(participants = )`. That was **not done**:
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+returns only the group CI, so nothing replaces their per-unit list,
+which published scripts and
+[`batchComputeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md)
+rely on. Both share one loop, and `participants` nests participants in
+each unit. `individual_scaling = 'autoscale'` was not added either.
+
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 
 The [`load()`](https://rdrr.io/r/base/load.html) guard copies a

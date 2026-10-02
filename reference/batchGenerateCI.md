@@ -18,7 +18,8 @@ batchGenerateCI(
   label = "",
   antiCI = FALSE,
   scaling = "autoscale",
-  constant = 0.1
+  constant = 0.1,
+  participants = NULL
 )
 ```
 
@@ -85,6 +86,18 @@ batchGenerateCI(
 - constant:
 
   Scaling constant for the noise. Used only when `scaling = 'constant'`.
+
+- participants:
+
+  Optional name of a column holding a participant ID per trial. When
+  given, each unit's CI is computed as
+  [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  does with `participants`: one CI per participant in the unit, then
+  their average. With `by` naming a condition, that gives one CI per
+  condition with participants nested in it, and each participant counts
+  equally however many trials they contributed. Every row needs an ID;
+  the call stops before computing anything if any is missing. Default:
+  `NULL`, all of a unit's trials pooled into one CI.
 
 ## Value
 

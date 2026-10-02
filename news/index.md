@@ -96,6 +96,18 @@
 
 ### New features
 
+- **[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+  and
+  [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+  gain a `participants` argument**, the name of a column of participant
+  IDs. Each unit’s CI is then the average of its participants’ CIs, as
+  `generateCI(participants = )` computes it, so with `by` naming a
+  condition every participant counts equally however many trials they
+  gave. Every row needs an ID; a missing one stops the call before
+  anything is computed. Without the argument nothing changes: the two
+  functions now share one implementation and return exactly what they
+  did. ([\#87](https://github.com/rdotsch/rcicr/issues/87))
+
 - **[`batchComputeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md)
   computes the InfoVal of every classification image in a list**, such
   as the result of
