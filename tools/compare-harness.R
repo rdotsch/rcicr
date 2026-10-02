@@ -60,9 +60,10 @@ setwd(workdir)
 #   scaling_record  the whole scaling attribute, flattened by name    [>= 1.6.0]
 #
 # InfoVal extras, on the configs with an infoval_iter:
-#   reference_images  the reference vector as 1.5.0 computed it, compared
-#                exactly: "images" on a version that has reference_method,
-#                the default on one that does not                     [>= 1.4.0]
+#   reference_images  the reference vectors as 1.5.0 computed them, from the
+#                stimulus stream and from a response_seed, compared exactly:
+#                "images" on a version that has reference_method, the default
+#                on one that does not                                 [>= 1.4.0]
 #   infoval_seeded  computeInfoVal2IFC(response_seed = )               [>= 1.4.0]
 #   reference_norms  the default, subset and seeded reference vectors [>= 1.6.0]
 #   infoval_subset, infoval_images, infoval_batch                      [>= 1.6.0]
@@ -582,11 +583,15 @@ run_config <- function(cfg) {
                          rdata = rdata, scaling = "none", save_as_png = FALSE, targetpath = ci_dir)
 
     if ("reference_images" %in% ex) {
-      out$reference_images <- if ("reference_method" %in% names(formals(generateReferenceDistribution2IFC))) {
-        reference(reference_method = "images")
-      } else {
-        reference()
+      images <- function(...) {
+        if ("reference_method" %in% names(formals(generateReferenceDistribution2IFC))) {
+          reference(reference_method = "images", ...)
+        } else {
+          reference(...)
+        }
       }
+      out$reference_images <- images()
+      out$reference_images_seeded <- images(response_seed = 7)
     }
     if ("infoval_seeded" %in% ex) out$infoval_seeded <- infoval(ci, response_seed = 7)
     if ("reference_norms" %in% ex) {
