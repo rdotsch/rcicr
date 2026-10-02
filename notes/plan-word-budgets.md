@@ -25,6 +25,10 @@ The budgets are stated twice: in the table in `AGENTS.md` → "Which file a thin
 
 Only the table's rows are checked. `README.md`, `NEWS.md`, `notes/` and `analyses/` have no budget.
 
+## One budget changes: `DECISIONS.md` goes from 5200 to 6000
+
+Decided with the maintainer. It is the only doc with no room (5200 of 5200), and the only one that grows by design: `AGENTS.md` asks for an entry for every decision that was not obvious. It is read by section, through its headings and links, not end to end. At its budget, each new entry has to displace older reasoning; the last one cost about 45 words of measured detail. The process docs stay as they are: they describe how to work, should stay short, and have 70 to 275 words spare. The table in `AGENTS.md` and the line at the top of `DECISIONS.md` both change to 6000 in this PR, which the check itself then confirms agree.
+
 ## Shape
 
 - `tools/check-word-budgets.sh`, runnable locally from the repository root, so the number a contributor sees is the one CI enforces. It counts with `LC_ALL=C.UTF-8 wc -w`, the command `AGENTS.md` already gives, rather than reimplementing word splitting in R, so the two can never disagree. The locale is set inside the script, so a contributor's own locale cannot change the count.
