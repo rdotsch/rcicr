@@ -169,7 +169,9 @@ classification image. After that,
 [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
 puts a batch of CIs on one scale so they can be compared by eye,
 [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-scores a CI against a simulated null distribution, and
+scores a CI against a simulated null distribution
+([`batchComputeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md)
+scores a list of them), and
 [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
 shows which regions carry reliable signal.
 

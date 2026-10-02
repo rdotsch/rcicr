@@ -129,7 +129,11 @@ Pass the stimuli the CI was built from as `reference_stimuli`.
 records them on its result, so
 `computeInfoVal2IFC(ci, rdata, reference_stimuli = attr(ci, "trial_design")$stimuli)`
 does it, and a message says when a CI is scored against a reference over
-different stimuli. The message never changes the number returned.
+different stimuli. The message never changes the number returned. To
+score many classification images, one per participant say, use
+[`batchComputeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md),
+which takes `reference_stimuli` per image and computes each distinct
+reference once.
 
 No reference is defined for a CI that averages repeated presentations of
 a stimulus or several participants: every reference here assumes one

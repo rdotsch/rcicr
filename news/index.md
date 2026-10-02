@@ -96,6 +96,26 @@
 
 ### New features
 
+- **[`batchComputeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md)
+  computes the InfoVal of every classification image in a list**, such
+  as the result of
+  [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md),
+  and returns them as a named vector. The values are identical to those
+  of
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  called on each image in turn. `reference_stimuli` can be given per
+  image, for example
+  `lapply(cis, function(ci) attr(ci, "trial_design")$stimuli)`. Each
+  distinct reference is found or simulated once, and the stimulus file
+  is read at most three times to find stored references, however many
+  images there are, rather than twice per image. For 20 images on a
+  300-trial, 512-pixel stimulus file, that was about 13x faster than the
+  loop with the reference already stored, and about 19x faster with a
+  `response_seed`, where the loop simulates the reference again for
+  every image (`analyses/infoval-batch-cost.R`). Trial-design messages
+  are collected into one per kind, naming the images concerned.
+  ([\#85](https://github.com/rdotsch/rcicr/issues/85))
+
 - **[`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
   and
   [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)

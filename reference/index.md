@@ -37,6 +37,8 @@ null.
 
 - [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
   : Computes Informational Value
+- [`batchComputeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md)
+  : Computes Informational Values for several classification images
 - [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
   : Generates reference distribution
 

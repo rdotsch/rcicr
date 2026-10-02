@@ -131,6 +131,6 @@ cis <- suppressWarnings(batchGenerateCI2IFC(
   data = data, by = "participant", stimuli = "stimulus", responses = "response",
   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 ))
-#>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%Using scaling factor constant:0.243058701371615
+#>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%Using scaling factor constant:0.157022795426509
 #> 
 ```
