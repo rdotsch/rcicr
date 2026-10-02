@@ -35,7 +35,8 @@ The InfoVal extras go on the four existing `infoval` configs, where a reference 
 
 ## Verification
 
-- `--quick` against v1.0.1 and v1.5.0: unchanged check counts, since every new extra is skipped. The output is quoted in the PR.
+- `--quick` against v1.0.1: unchanged check count, since every new extra has a floor above 1.0.1.
+- `--quick` against v1.5.0: the 1.6.0-floored extras are skipped, but `infoval_seeded` (floor 1.2.0) runs on each of the four InfoVal configs, so the count grows by those checks and no others. The measured count before and after, and the new keys, are quoted in the PR.
 - The driver cannot force the floor: `compare-release-output.R` reads the reference version from the reference tree's `DESCRIPTION` and passes it to both harness runs, overriding the environment (`run_side()`). So `tools/compare-harness.R` is run directly with `RCICR_COMPARE_REF_VERSION=1.6.0`, twice into separate output directories. Then every new extra's keys must be present in the saved output, with their counts listed in the PR, and the two runs must be identical. That proves each extra executes, records something, and is deterministic, which is what a comparison needs. It is a check of the harness only, never how the gate is run.
 - `infoval_seeded` against v1.2.0, v1.4.0 and v1.5.0. Where a version's documented reference change (`NEWS.md`, the saved-noise rebuild of #301, the Gram route of #354) moves the value, it gets an `EXPECTED` entry with a `check` predicate bounding it, not a bare entry that would excuse any value. If a version cannot run it, the floor rises to the first that can.
 
