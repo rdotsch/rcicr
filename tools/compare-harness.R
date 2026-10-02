@@ -55,6 +55,21 @@ setwd(workdir)
 #   mask         generateCI(mask=) -- masked pixels come back NA        [>= 1.1.0]
 #   mask_rgba    generateCI(mask=) with a 4-channel PNG mask            [>= 1.1.0]
 #   zmap_plain   a z-map with zmapdecoration = FALSE                    [>= 1.1.0]
+#   batch_participants  both batch wrappers with participants nested in each
+#                group, unbalanced so averaging differs from pooling  [>= 1.6.0]
+#   scaling_record  the whole scaling attribute, flattened by name    [>= 1.6.0]
+#
+# InfoVal extras, on the configs with an infoval_iter:
+#   reference_images  the reference vectors as 1.5.0 computed them, from the
+#                stimulus stream and from a response_seed, compared exactly:
+#                "images" on a version that has reference_method, the default
+#                on one that does not                                 [>= 1.4.0]
+#   infoval_seeded  computeInfoVal2IFC(response_seed = )               [>= 1.4.0]
+#   reference_norms  the default, subset and seeded reference vectors [>= 1.6.0]
+#   infoval_subset, infoval_images, infoval_batch                      [>= 1.6.0]
+#   infoval_cross_kind  every reference call again under L'Ecuyer-CMRG for a
+#                file written under Mersenne-Twister, and whether the caller's
+#                whole random state survives it                       [>= 1.6.0]
 #
 # zmap_plain is also the only way to cover a z-map below 512px here. Decoration
 # needs margins a small device does not have: the released versions this gate
@@ -85,16 +100,28 @@ setwd(workdir)
 # reference version writes the same *set* of names here, permuted rather than
 # different, so the keys line up across runs and only the values move.
 
-ALL_EXTRAS <- c("ci2ifc", "subset", "participants", "individual_cis", "batch",
-                "cumulative", "zmap_quick", "zmap_ttest", "mask", "mask_rgba",
-                "zmap_plain")
+CI_EXTRAS <- c("ci2ifc", "subset", "participants", "individual_cis", "batch",
+               "cumulative", "zmap_quick", "zmap_ttest", "mask", "mask_rgba",
+               "zmap_plain", "batch_participants", "scaling_record")
+INFOVAL_EXTRAS <- c("reference_images", "infoval_seeded", "reference_norms", "infoval_subset",
+                    "infoval_images", "infoval_batch", "infoval_cross_kind")
+ALL_EXTRAS <- c(CI_EXTRAS, INFOVAL_EXTRAS)
 
 # Oldest reference version that can run each extra without crashing.
 # mask_rgba shares mask's floor: 1.1.0 and 1.2.3 were both run against a
 # 4-channel mask before it was added here, and each returned a mask rather
 # than an error. A 2-channel mask has no floor that works -- every reference
 # version indexes channel 3 unconditionally and dies -- so it stays out.
-SINCE <- c(mask = "1.1.0", mask_rgba = "1.1.0", zmap_plain = "1.1.0")
+SINCE <- c(mask = "1.1.0", mask_rgba = "1.1.0", zmap_plain = "1.1.0",
+           # The first version whose default reference is built from the saved
+           # noise (#301), which is what "images" reproduces.
+           reference_images = "1.4.0",
+           # 1.2.0 and 1.3.0 accept a response_seed but scored the second of two
+           # independent bases against the first one's null (#299).
+           infoval_seeded = "1.4.0",
+           batch_participants = "1.6.0", scaling_record = "1.6.0", reference_norms = "1.6.0",
+           infoval_subset = "1.6.0", infoval_images = "1.6.0", infoval_batch = "1.6.0",
+           infoval_cross_kind = "1.6.0")
 
 REF_VERSION <- package_version(Sys.getenv("RCICR_COMPARE_REF_VERSION", "1.0.1"))
 message("battery for reference version ", REF_VERSION)
@@ -118,12 +145,12 @@ CONFIGS <- list(
   # The default pipeline, at the size and settings the package documents. The
   # only config that can carry the z-map extras (see above).
   cfg_("defaults-512-sinusoid", img_size = 512, stimulus_pngs = TRUE,
-       extras = ALL_EXTRAS),
+       extras = CI_EXTRAS),
 
   # Spatial scales: fewer and more than the default 5. nscales also decides how
   # many parameters a trial draws, so it moves the RNG stream too.
   cfg_("sinusoid-128-nscales3", img_size = 128, nscales = 3,
-       extras = setdiff(ALL_EXTRAS, c("zmap_quick", "zmap_ttest"))),
+       extras = setdiff(CI_EXTRAS, c("zmap_quick", "zmap_ttest"))),
   cfg_("sinusoid-128-nscales6", img_size = 128, nscales = 6, n_trials = 12),
 
   # Alpha changes the stored base face rather than the noise parameters or CI.
@@ -155,16 +182,20 @@ CONFIGS <- list(
   # sigma are the two settings v1.0.1 failed to save into the .Rdata, so both
   # get a non-default run: that is where its InfoVal was computed against the
   # wrong null.
-  cfg_("sinusoid-64-infoval", img_size = 64, infoval_iter = 200),
-  cfg_("sinusoid-64-nscales3-infoval", img_size = 64, nscales = 3, infoval_iter = 200),
+  cfg_("sinusoid-64-infoval", img_size = 64, infoval_iter = 200,
+       extras = INFOVAL_EXTRAS),
+  cfg_("sinusoid-64-nscales3-infoval", img_size = 64, nscales = 3, infoval_iter = 200,
+       extras = INFOVAL_EXTRAS),
   cfg_("gabor-64-sigma10-infoval", img_size = 64, noise_type = "gabor", sigma = 10,
-       infoval_iter = 200),
+       infoval_iter = 200,
+       extras = INFOVAL_EXTRAS),
 
   # The path #299 changed: two base images drawing independent parameters, with
   # InfoVal taken on the second. Every other InfoVal config above has one base,
   # so none of them reaches the reference selection at all.
   cfg_("sinusoid-64-twobase-indep-infoval", img_size = 64, n_base = 2,
-       same_params = FALSE, infoval_iter = 200)
+       same_params = FALSE, infoval_iter = 200,
+       extras = INFOVAL_EXTRAS)
 )
 
 # --quick (RCICR_COMPARE_QUICK=1) drops the 512px config for local iteration.
@@ -380,6 +411,60 @@ run_config <- function(cfg) {
     }
   }
 
+  if ("batch_participants" %in% ex) {
+    # Two participants per group with unequal trial counts, so the average of
+    # their CIs differs from the pooled CI: on balanced data a wrapper that
+    # stopped forwarding `participants` would change nothing here.
+    grp <- rep(c("a", "b"), length.out = cfg$n_trials)
+    pid <- ave(seq_along(grp), grp, FUN = function(i) ifelse(seq_along(i) <= 0.75 * length(i), "p1", "p2"))
+    df <- data.frame(stim = stimuli, resp = responses, grp = grp, pid = pid, stringsAsFactors = FALSE)
+    args <- list(data = df, by = "grp", stimuli = "stim", responses = "resp", baseimage = "base1",
+                 rdata = rdata, antiCI = cfg$anti, save_as_png = FALSE, targetpath = ci_dir)
+    pooled <- do.call(batchGenerateCI, args)
+    for (wrapper in c("batchGenerateCI", "batchGenerateCI2IFC")) {
+      cis <- do.call(wrapper, c(args, participants = "pid"))
+      if (isTRUE(all.equal(cis[[1]]$ci, pooled[[1]]$ci)))
+        stop("batch_participants: averaging participants equals pooling, so it tests nothing")
+      for (nm in sort(names(cis))) {
+        out[[paste0("batch_participants_", wrapper, "_", nm, "_ci")]] <- cis[[nm]]$ci
+        out[[paste0("batch_participants_", wrapper, "_", nm, "_scaled")]] <- cis[[nm]]$scaled
+      }
+    }
+  }
+
+  if ("scaling_record" %in% ex) {
+    # Whole and flattened by name, so a field dropped, renamed, relabelled or
+    # added changes a key: names and labels exactly, numbers numerically.
+    record_keys <- function(case, ci) {
+      rec <- attr(ci, "scaling")
+      out[[paste0("scaling_names_", case)]] <<- names(unlist(rec))
+      out[[paste0("scaling_labels_", case)]] <<-
+        unlist(rapply(rec, function(x) x, classes = "character", how = "unlist"))
+      out[[paste0("scaling_values_", case)]] <<-
+        unname(unlist(rapply(rec, as.numeric, classes = c("numeric", "integer", "logical"),
+                             how = "unlist")))
+    }
+    for (sc in SCALINGS) {
+      record_keys(sc, generateCI(stimuli = stimuli, responses = responses, baseimage = "base1",
+                                 rdata = rdata, scaling = sc, antiCI = cfg$anti,
+                                 save_as_png = FALSE, targetpath = ci_dir))
+    }
+    pids <- rep(c("pb", "pa", "pa"), length.out = cfg$n_trials)
+    record_keys("participants", generateCI(stimuli = stimuli, responses = responses,
+                                           participants = pids, baseimage = "base1",
+                                           rdata = rdata, antiCI = cfg$anti, save_as_png = FALSE,
+                                           targetpath = ci_dir, n_cores = 1))
+    half <- seq_len(cfg$n_trials %/% 2)
+    cis <- list(
+      first = generateCI(stimuli = stimuli[half], responses = responses[half], baseimage = "base1",
+                         rdata = rdata, antiCI = cfg$anti, save_as_png = FALSE, targetpath = ci_dir),
+      all = generateCI(stimuli = stimuli, responses = responses, baseimage = "base1", rdata = rdata,
+                       antiCI = cfg$anti, save_as_png = FALSE, targetpath = ci_dir)
+    )
+    scaled <- autoscale(cis, save_as_pngs = FALSE)
+    for (nm in names(scaled)) record_keys(paste0("autoscale_", nm), scaled[[nm]])
+  }
+
   if ("cumulative" %in% ex) {
     out$cumulative <- computeCumulativeCICorrelation(
       stimuli = stimuli, responses = responses, baseimage = "base1", rdata = rdata)
@@ -477,6 +562,76 @@ run_config <- function(cfg) {
     # reference that scored it against the wrong null, it is that error.
     out$infoval_oracle_delta <-
       out$infoval - infoval_oracle(rdata, ci, key, cfg$infoval_iter)
+
+    # The base is forwarded under the same condition as above: an independent
+    # base file stops every reference call that does not name one.
+    with_base <- function(f, args) {
+      if (!identical(key, "base1") && "baseimage" %in% names(formals(f))) args$baseimage <- key
+      args
+    }
+    reference <- function(...) {
+      do.call(generateReferenceDistribution2IFC,
+              with_base(generateReferenceDistribution2IFC,
+                        list(rdata, iter = cfg$infoval_iter, ncores = 1, save_rdata = FALSE, ...)))
+    }
+    infoval <- function(target, ...) {
+      do.call(computeInfoVal2IFC, with_base(computeInfoVal2IFC, c(list(target, rdata, iter = cfg$infoval_iter),
+                                                                 list(...))))
+    }
+    sub <- seq(1, cfg$n_trials, by = 2)
+    sub_ci <- generateCI(stimuli = stimuli[sub], responses = responses[sub], baseimage = key,
+                         rdata = rdata, scaling = "none", save_as_png = FALSE, targetpath = ci_dir)
+
+    if ("reference_images" %in% ex) {
+      images <- function(...) {
+        if ("reference_method" %in% names(formals(generateReferenceDistribution2IFC))) {
+          reference(reference_method = "images", ...)
+        } else {
+          reference(...)
+        }
+      }
+      out$reference_images <- images()
+      out$reference_images_seeded <- images(response_seed = 7)
+    }
+    if ("infoval_seeded" %in% ex) out$infoval_seeded <- infoval(ci, response_seed = 7)
+    if ("reference_norms" %in% ex) {
+      out$reference_norms_default <- reference()
+      out$reference_norms_subset <- reference(reference_stimuli = sub)
+      out$reference_norms_seeded <- reference(response_seed = 7)
+    }
+    if ("infoval_subset" %in% ex) out$infoval_subset <- infoval(sub_ci, reference_stimuli = sub)
+    if ("infoval_batch" %in% ex) {
+      batch <- do.call(batchComputeInfoVal2IFC,
+                       with_base(batchComputeInfoVal2IFC,
+                                 list(list(full = ci, subset = sub_ci), rdata, iter = cfg$infoval_iter,
+                                      reference_stimuli = list(NULL, sub))))
+      out$infoval_batch <- unname(batch)
+      out$infoval_batch_names <- names(batch)
+    }
+    # Stores an "images" reference in the file, so it runs after every call
+    # that reads the stored one.
+    if ("infoval_images" %in% ex) {
+      out$infoval_images <- infoval(ci, reference_method = "images", force_gen_ref_dist = TRUE)
+    }
+    # Last: it changes the session's RNG kind, and the battery shares one stream.
+    if ("infoval_cross_kind" %in% ex) {
+      had <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+      before <- if (had) get(".Random.seed", envir = globalenv(), inherits = FALSE)
+      kind <- RNGkind()
+      RNGkind("L'Ecuyer-CMRG")
+      caller <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+      out$cross_kind_default <- reference()
+      out$cross_kind_subset <- reference(reference_stimuli = sub)
+      out$cross_kind_seeded <- reference(response_seed = 7)
+      out$cross_kind_infoval <- infoval(ci, force_gen_ref_dist = TRUE)
+      out$cross_kind_stream_kept <- identical(get(".Random.seed", envir = globalenv()), caller)
+      if (had) {
+        assign(".Random.seed", before, envir = globalenv())
+      } else {
+        do.call(RNGkind, as.list(kind))
+        rm(".Random.seed", envir = globalenv())
+      }
+    }
   }
 
   unlink(c(stim_dir, ci_dir, zmap_dir, file.path(getwd(), "zmaps")), recursive = TRUE)

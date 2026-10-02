@@ -343,11 +343,17 @@ expectation_for <- function(key) {
 # stimulus_pngs and individual_cis are MD5 digests, not numbers: they belong on
 # the bit-identical branch both because a hash has no meaningful tolerance and
 # because the numeric branch below calls abs() on them.
-EXACT_RE  <- "^(patchIdx|stimuli_params_|base_face_|stimulus_pngs|individual_cis)"
+# reference_images is the "images" reference, which reproduces 1.5.0 bit for bit;
+# the names, labels and flags beside it have no tolerance to give.
+EXACT_RE  <- paste0("^(patchIdx|stimuli_params_|base_face_|stimulus_pngs|individual_cis|",
+                    "reference_images|infoval_batch_names|scaling_names_|scaling_labels_|",
+                    "cross_kind_stream_kept)")
 IMAGE_RE  <- "^(patches|noise_image|ci|combined|scaled_|ci2ifc|subset_|participants_|batch_)"
 ULP       <- .Machine$double.eps      # 2.22e-16
 ULPS      <- 8
 INFOVAL_TOL <- 1e-9
+INFOVAL_KEYS <- c("infoval", "infoval_twice", "infoval_oracle_delta", "infoval_seeded",
+                  "infoval_subset", "infoval_batch", "infoval_images", "cross_kind_infoval")
 
 say <- function(...) cat(..., "\n", sep = "")
 die <- function(...) { say("ERROR: ", ...); quit(status = 2L) }
@@ -559,8 +565,8 @@ compare_one <- function(name, a, b) {
   # exactly zero, so what needs tolerating is not their summation order but the
   # reference's own InfoVal error -- a difference between two O(1) values. That
   # is the absolute bar, not the relative one below.
-  if (name %in% c("infoval", "infoval_twice", "infoval_oracle_delta")) {
-    d <- abs(a - b)
+  if (name %in% INFOVAL_KEYS) {
+    d <- max(abs(a - b))
     return(if (d <= INFOVAL_TOL) list(status = "OK", detail = sprintf("|d| = %.3g", d))
            else list(status = "DIFF", detail = sprintf("|d| = %.6g (tol %.0e)", d, INFOVAL_TOL)))
   }
