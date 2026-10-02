@@ -417,10 +417,14 @@ independentConstant <- function(ci) {
   if (abs(r[1]) > abs(r[2])) abs(r[1]) else abs(r[2])
 }
 
-# What applyScaling() did to `ci`, for the `scaling` attribute (#9). An
-# unrecognised method is recorded as the 'none' applyScaling() falls back to.
+# The method applyScaling() applies: an unrecognised one falls back to 'none'.
+scalingMethod <- function(scaling) {
+  if (scaling %in% c('none', 'constant', 'matched', 'independent')) scaling else 'none'
+}
+
+# What applyScaling() did to `ci`, for the `scaling` attribute (#9).
 scalingRecord <- function(ci, scaling, constant) {
-  method <- if (scaling %in% c('none', 'constant', 'matched', 'independent')) scaling else 'none'
+  method <- scalingMethod(scaling)
   list(method = method, constant = switch(method,
     constant = constant,
     independent = independentConstant(ci),

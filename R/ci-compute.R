@@ -84,21 +84,21 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
   return(list(ci = apply(pid.cis, c(1, 2), mean), pid_cis = pid.cis)) #* sqrt(npids)
 }
 
-# The scaling each participant's CI got, or would get, as its own PNG. The
-# stack is unmasked (the loop masks only the copy it renders), so the mask is
-# applied here first, or a masked-out extreme would set the constant.
-# Participants are in the stack's order, factor()'s sorted levels, which is
-# the order the PNGs are named in.
+# The scaling each participant's CI got, or would get, as its own PNG. Only
+# 'independent' derives a constant from the CI; the other methods record the
+# caller's constant or NA, so they never scan the stack. The stack is unmasked
+# (the loop masks only the copy it renders), so the mask is applied here first,
+# read once rather than per participant, or a masked-out extreme would set the
+# constant. Participants are in the stack's order, factor()'s sorted levels,
+# which is the order the PNGs are named in.
 individualScalingRecord <- function(pid_cis, participants, mask, img_size, individual_scaling,
                                     individual_scaling_constant) {
-  ids <- sort(unique(participants))
-  records <- lapply(seq_along(ids), function(i) {
-    ci <- pid_cis[, , i]
-    if (hasMask(mask)) ci <- applyMask(ci, mask, img_size)
-    scalingRecord(ci, individual_scaling, individual_scaling_constant)
-  })
-  constants <- vapply(records, function(r) as.numeric(r$constant), numeric(1))
-  method <- records[[1]]$method
-  list(method = method,
-       constant = if (method == 'independent') stats::setNames(constants, ids) else constants[1])
+  if (scalingMethod(individual_scaling) != 'independent') {
+    return(scalingRecord(NULL, individual_scaling, individual_scaling_constant))
+  }
+  kept <- if (hasMask(mask)) !is.na(applyMask(matrix(0, img_size, img_size), mask, img_size)) else TRUE
+  constants <- vapply(seq_len(dim(pid_cis)[3]), function(i) {
+    independentConstant(pid_cis[, , i][kept])
+  }, numeric(1))
+  list(method = 'independent', constant = stats::setNames(constants, sort(unique(participants))))
 }

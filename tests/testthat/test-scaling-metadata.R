@@ -145,3 +145,36 @@ test_that("the record changes no pixel", {
   expect_identical(ci$ci, noise)
   expect_identical(names(ci), c("ci", "scaled", "base", "combined"))
 })
+
+test_that("individual constants read the mask once, and other methods scan no participant", {
+  rdata <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
+  participants <- c(1, 1, 2, 2, 3, 3, 4, 4)
+  mask <- matrix(1, 32, 32)
+  mask[1:4, 1:4] <- 0
+  masks <- 0
+  constants <- 0
+  original_mask <- rcicr:::applyMask
+  original_constant <- rcicr:::independentConstant
+  local_mocked_bindings(
+    applyMask = function(...) {
+      masks <<- masks + 1
+      original_mask(...)
+    },
+    independentConstant = function(ci) {
+      constants <<- constants + 1
+      original_constant(ci)
+    }
+  )
+  ci_of(rdata, participants = participants, mask = mask)
+  # One for the group CI, one for all four participants.
+  expect_identical(masks, 2)
+  # applyScaling() and the record, for the group CI, plus one per participant.
+  expect_identical(constants, 2 + 4)
+
+  masks <- 0
+  constants <- 0
+  ci_of(rdata, participants = participants, mask = mask, scaling = "constant",
+        individual_scaling = "constant")
+  expect_identical(masks, 1)
+  expect_identical(constants, 0)
+})
