@@ -31,7 +31,9 @@
 #' records them on its result, so
 #' \code{computeInfoVal2IFC(ci, rdata, reference_stimuli = attr(ci, "trial_design")$stimuli)}
 #' does it, and a message says when a CI is scored against a reference over different stimuli.
-#' The message never changes the number returned.
+#' The message never changes the number returned. To score many classification images, one per
+#' participant say, use \code{\link{batchComputeInfoVal2IFC}}, which takes \code{reference_stimuli}
+#' per image and computes each distinct reference once.
 #'
 #' No reference is defined for a CI that averages repeated presentations of a stimulus or several
 #' participants: every reference here assumes one response per stimulus from one responder. For
@@ -110,18 +112,33 @@
 computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dist = FALSE, response_seed = NULL, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images")) {
 
   reference_method <- match.arg(reference_method)
-  reference_selection <- selectReferenceBase(rdata, baseimage)
-  subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
-  if (!is.null(subset)) {
-    return(computeSubsetInfoVal(target_ci, rdata, iter, force_gen_ref_dist, response_seed,
-                                subset$source, reference_selection, subset$reference_stimuli,
-                                reference_method))
-  }
-  if (reference_selection$independent) {
-    return(computeBaseInfoVal(target_ci, rdata, iter, force_gen_ref_dist,
-                              response_seed, reference_selection, reference_method))
+  selection <- selectReferenceBase(rdata, baseimage)
+  report <- function(n_trials, reference_stimuli) reportTrialDesign(target_ci, n_trials, reference_stimuli)
+  subset <- subsetReferenceFor(rdata, selection, reference_stimuli)
+  reference <- if (!is.null(subset)) {
+    subsetReference(rdata, iter, force_gen_ref_dist, response_seed, subset$source, selection,
+                    subset$reference_stimuli, reference_method, report)
+  } else if (selection$independent) {
+    baseReference(rdata, iter, force_gen_ref_dist, response_seed, selection, reference_method,
+                  report)
+  } else {
+    sharedReference(rdata, iter, force_gen_ref_dist, response_seed, reference_method, report)
   }
 
+  cinorm <- norm(matrix(target_ci[['ci']]), 'f')
+  info_val <- (cinorm - reference$median) / reference$mad
+  write(paste0('Informational value: z = ', info_val, ' (', reference$note, 'ci norm = ', cinorm,
+               '; reference median = ', reference$median, '; MAD = ', reference$mad,
+               '; iterations = ', reference$iter, ')'), stdout())
+
+  return(info_val)
+}
+
+# The default reference of a file whose bases share one parameter matrix, as
+# list(median, mad, iter, note): a ref_lookup row supplies only those numbers,
+# and scoring needs nothing else. report(n_trials, NULL) runs once the file is
+# loaded, before anything is simulated.
+sharedReference <- function(rdata, iter, force_gen_ref_dist, response_seed, reference_method, report) {
   # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug
   ref_seed <- NA
   ref_img_size <- NA
@@ -132,7 +149,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   loadRdata(rdata, environment())
   list2env(.args, envir = environment())
 
-  reportTrialDesign(target_ci, get0('n_trials', envir = environment(), inherits = FALSE), NULL)
+  report(get0('n_trials', envir = environment(), inherits = FALSE), NULL)
 
   if (!is.null(response_seed)) force_gen_ref_dist <- TRUE
   cached_reference <- if (exists('reference_norms', envir = environment(), inherits = FALSE)) {
@@ -234,12 +251,5 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     ref_iter <- length(reference_norms)
   }
 
-  # Compute informational value metric
-  cinorm <- norm(matrix(target_ci[["ci"]]), "f")
-  infoVal <- (cinorm - ref_median) / (ref_mad)
-
-  write(paste0("Informational value: z = ", infoVal, " (ci norm = ", cinorm, "; reference median = ", ref_median, "; MAD = ", ref_mad, "; iterations = ", ref_iter, ")"), stdout())
-
-  return(infoVal)
-
+  list(median = ref_median, mad = ref_mad, iter = ref_iter, note = '')
 }
