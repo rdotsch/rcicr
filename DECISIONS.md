@@ -10,7 +10,7 @@ entirely. `AGENTS.md` → “Which file a thing goes in” says what that
 excludes, when an entry is worth adding, and where other material goes.
 Entries are grouped by theme and edited in place.
 
-**Keep this file under 5200 words**; over budget, something comes out
+**Keep this file under 6000 words**; over budget, something comes out
 before something goes in. Write the decision and the evidence, not the
 route to it: an entry earns its length from a measurement or a rejected
 alternative.

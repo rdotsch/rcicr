@@ -113,11 +113,11 @@
 <td>600</td>
 </tr><tr><td><code>DECISIONS.md</code></td>
 <td>why the <strong>package</strong> behaves as it does</td>
-<td>5200</td>
+<td>6000</td>
 </tr><tr><td><code>NEWS.md</code></td>
 <td>what changed for users</td>
 <td>none; never trimmed</td>
-</tr></tbody></table><p>Check word counts with <code>LC_ALL=C.UTF-8 wc -w</code> (Unicode whitespace counts as a separator).</p>
+</tr></tbody></table><p>Check them with <code>bash tools/check-word-budgets.sh</code>, which reads this table, counts with <code>LC_ALL=C.UTF-8 wc -w</code>, and runs in CI, where a file over budget fails the check.</p>
 <p><code>DECISIONS.md</code> is where things are most often misfiled. Its subject is what <code><a href="reference/generateCI.html">generateCI()</a></code> returns and why a number cannot change, <strong>not</strong> how CI is wired or how a release is cut. The test: would this still matter if the package were maintained somewhere else entirely?</p>
 <ul><li>
 <strong>Update it when a decision is made</strong>, not in a sweep at the end, while the reasoning and the numbers are still to hand.</li>

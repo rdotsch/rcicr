@@ -110,7 +110,11 @@
 <li>
 <code>gh_keywords = FALSE</code>, which keeps generation off the network.</li>
 <li>The comparison excludes <code>preferred-citation</code>’s year. It comes from <code>inst/CITATION</code>, which reads the clock when <code>DESCRIPTION</code> has no publication date, so it changes every 1 January and would otherwise turn a required check red on a calendar boundary.</li>
-</ul><hr></div>
+</ul></div>
+<div class="section level3">
+<h3 id="the-word-budgets-are-read-from-agentsmd-and-an-unreadable-table-fails">The word budgets are read from <code>AGENTS.md</code>, and an unreadable table fails<a class="anchor" aria-label="anchor" href="#the-word-budgets-are-read-from-agentsmd-and-an-unreadable-table-fails"></a></h3>
+<p><code>tools/check-word-budgets.sh</code> is the last step of <code>ubuntu-latest (release)</code>, like the stale-<code>man/</code> gate. It reads the budgets from the <code>AGENTS.md</code> table, not a copy, and checks each file’s own “Keep this file under N words” line against it. An unparseable row, a missing header, or a doc stating a budget without a row fails, so an edited table cannot leave a file unchecked. Only a file <em>over</em> budget fails.</p>
+<hr></div>
 </div>
 <div class="section level2">
 <h2 id="repository-documents">Repository documents<a class="anchor" aria-label="anchor" href="#repository-documents"></a></h2>
