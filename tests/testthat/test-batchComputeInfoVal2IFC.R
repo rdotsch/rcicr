@@ -65,6 +65,14 @@ test_that("an independent-base file is scored per base, as the loop scores it", 
   cis <- lapply(list(x = rep(c(1, -1), 6), y = rep(c(1, 1, -1), 4)), function(r) {
     quietly(generateCI(1:12, r, "second", rdata, save_as_png = FALSE))
   })
+  # Full-set and subset references for the same base, in one call.
+  mixed <- list(NULL, 1:9)
+  expect_identical(
+    quietly(batchComputeInfoVal2IFC(c(cis, cis), copy_of(rdata), iter = 30, baseimage = "second",
+                                    reference_stimuli = c(mixed, mixed))),
+    loop_oracle(c(cis, cis), copy_of(rdata), reference_stimuli = c(mixed, mixed), iter = 30,
+                baseimage = "second")
+  )
   for (stimuli in list(NULL, 1:9)) {
     expected <- loop_oracle(cis, copy_of(rdata), reference_stimuli = stimuli, iter = 30,
                             baseimage = "second")
