@@ -96,6 +96,18 @@
 
 ### New features
 
+- **Every classification image records how it was scaled**, as a
+  `scaling` attribute: the method applied and its constant, including
+  the one `'independent'` scaling computes from each CI, which was
+  discarded before. With `participants`, it also records each
+  participant’s constant, so the individual CI images can be reproduced.
+  [`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md),
+  and the batch functions with their default `'autoscale'`, record the
+  shared constant they printed, and keep the earlier record for
+  `$combined`, which they leave unchanged. No pixel changes;
+  [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) keeps the record
+  with the result. ([\#9](https://github.com/rdotsch/rcicr/issues/9))
+
 - **[`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
   and
   [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)

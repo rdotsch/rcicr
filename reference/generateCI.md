@@ -178,7 +178,16 @@ noise (`scaled`), the base image (`base`) and the two combined
 from (`stimuli`), whether any was presented more than once (`repeated`),
 and the number of participants (`n_participants`);
 [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-uses it to check that its reference matches the CI.
+uses it to check that its reference matches the CI. Its `scaling`
+attribute records how `scaled` was made: `method`, the method applied
+(an unrecognised one is recorded as the `'none'` used instead), and
+`constant`, the constant used (`NA` for `'none'` and `'matched'`; for
+`'independent'`, the one computed from this CI). With `participants`,
+its `individual` element records the same for the individual CIs, with
+one constant per participant, named by ID, under `'independent'`. These
+are the CIs `save_individual_cis` writes, and the record is there
+whether or not they were written. To keep it in a file, save the whole
+result with [`saveRDS()`](https://rdrr.io/r/base/readRDS.html).
 
 ## Details
 

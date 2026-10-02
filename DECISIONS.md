@@ -181,6 +181,15 @@ and plain [`mad()`](https://rdrr.io/r/stats/mad.html). **Do not add a
 
 ## Things that look like bugs and are not
 
+### The scaling record is an attribute, and there is no analysis log file
+
+[\#9](https://github.com/rdotsch/rcicr/issues/9) asked for the scaling
+method and constant to be kept. They are an attribute of each CI, like
+`trial_design`, not a list field, because scripts iterate the fields as
+pixel matrices. A log file was **rejected**: it would need a required
+write path (see “Write paths are required arguments”), and it would be a
+second copy of state the result already carries.
+
 ### `autoscale()` leaves `$combined` untouched — intentional
 
 At Ron’s direction, `$combined` stays as the caller passed it, and

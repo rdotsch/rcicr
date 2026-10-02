@@ -32,7 +32,12 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 
 The input `cis` list, with each element's `$scaled` matrix replaced by
 its autoscaled version. The scaling constant is printed to the console,
-not returned.
+and recorded in each element's `scaling` attribute (see
+[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)):
+`method` is `'autoscale'` and `constant` the shared constant, both
+describing `$scaled`. Its `combined` element keeps the earlier record,
+which still describes `$combined`, or is `NULL` when the element had
+none.
 
 **Look at `$scaled`, not `$combined`.** `$combined` is returned exactly
 as it was passed in, on purpose, so that existing scripts that plot it

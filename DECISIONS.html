@@ -101,6 +101,10 @@
 <div class="section level2">
 <h2 id="things-that-look-like-bugs-and-are-not">Things that look like bugs and are not<a class="anchor" aria-label="anchor" href="#things-that-look-like-bugs-and-are-not"></a></h2>
 <div class="section level3">
+<h3 id="the-scaling-record-is-an-attribute-and-there-is-no-analysis-log-file">The scaling record is an attribute, and there is no analysis log file<a class="anchor" aria-label="anchor" href="#the-scaling-record-is-an-attribute-and-there-is-no-analysis-log-file"></a></h3>
+<p><a href="https://github.com/rdotsch/rcicr/issues/9" class="external-link">#9</a> asked for the scaling method and constant to be kept. They are an attribute of each CI, like <code>trial_design</code>, not a list field, because scripts iterate the fields as pixel matrices. A log file was <strong>rejected</strong>: it would need a required write path (see “Write paths are required arguments”), and it would be a second copy of state the result already carries.</p>
+</div>
+<div class="section level3">
 <h3 id="autoscale-leaves-combined-untouched--intentional">
 <code>autoscale()</code> leaves <code>$combined</code> untouched — intentional<a class="anchor" aria-label="anchor" href="#autoscale-leaves-combined-untouched--intentional"></a></h3>
 <p>At Ron’s direction, <code>$combined</code> stays as the caller passed it, and <code>$scaled</code> holds the autoscaled result. After <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code>, which scales with <code>'none'</code> before autoscaling, <code>$combined</code> overlays unscaled noise and can look almost blank. <code>(ci$scaled + ci$base) / 2</code> gives what <code>save_as_pngs = TRUE</code> writes. Changing <code>$combined</code> would change the images existing scripts plot.</p>
