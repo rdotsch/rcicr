@@ -202,6 +202,9 @@ Renaming a copy over the original (#333) was **rejected**: it changes the file's
 ### Stimulus files are never overwritten
 `generateStimuli2IFC()` reserves its `.Rdata` ([#338](https://github.com/rdotsch/rcicr/issues/338)) and PNGs ([#350](https://github.com/rdotsch/rcicr/issues/350)) first, and never replaces one. **Rejected:** a `_2` suffix (`list.files(...)[1]` picks the older file); time in names (collisions rarer, not gone; experiment software names PNGs); an `overwrite` argument. Locks key on seed, not `label`: file systems equate spellings (case, Unicode) base R cannot normalize. PNG reservation asks the file system, which catches aliased base labels; same-seed calls into a folder cannot overlap even with different labels.
 
+### The batch CI functions are kept, not deprecated
+[#87](https://github.com/rdotsch/rcicr/issues/87) planned to deprecate `batchGenerateCI()` and `batchGenerateCI2IFC()` in favour of `generateCI(participants = )`. That was **not done**: `generateCI()` returns only the group CI, so nothing replaces their per-unit list, which published scripts and `batchComputeInfoVal2IFC()` rely on. Both share one loop, and `participants` nests participants in each unit. `individual_scaling = 'autoscale'` was not added either.
+
 ### `captureArgs()` skips required-and-absent arguments, but never defaulted ones
 The `load()` guard copies a function's arguments and restores them after reading an `.Rdata` file. Once paths became required, `mget(names(formals()))` started failing: it forces each promise, and a wrapper passing on its own missing argument (`batchGenerateCI()` passing `targetpath = targetpath`) turns that promise into a missing symbol. The guard is used by `computeInfoVal2IFC()` and `computeCumulativeCICorrelation()`; `generateCI()` loads into a private environment instead, so it has no frame to guard.
 

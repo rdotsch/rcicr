@@ -16,7 +16,8 @@ batchGenerateCI2IFC(
   antiCI = FALSE,
   scaling = "autoscale",
   constant = 0.1,
-  label = ""
+  label = "",
+  participants = NULL
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ batchGenerateCI2IFC(
 \item{constant}{Scaling constant for the noise. Used only when \code{scaling = 'constant'}.}
 
 \item{label}{Optional string added to the PNG file names to make them easier to identify.}
+
+\item{participants}{Optional name of a column holding a participant ID per trial. When given, each unit's CI is computed as \code{\link{generateCI}} does with \code{participants}: one CI per participant in the unit, then their average. With \code{by} naming a condition, that gives one CI per condition with participants nested in it, and each participant counts equally however many trials they contributed. Every row needs an ID; the call stops before computing anything if any is missing. Default: \code{NULL}, all of a unit's trials pooled into one CI.}
 }
 \value{
 Named list with one classification image per unit. Each is itself a list of pixel matrices: the raw noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
