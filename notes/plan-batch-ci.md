@@ -15,6 +15,7 @@
 2. **A new last argument on both, `participants = NULL`**: the name of a column of participant IDs. It is appended, never inserted: a formal in the middle rebinds every later positional argument in existing scripts. When given, each `by` group's CI is `generateCI(..., participants = <that group's IDs>)`: one CI per participant in the group, then their average, which is what the issue asked for with participants nested in condition. When `NULL`, the call is exactly today's.
    - Individual CIs are not written: there is no `save_individual_cis` passthrough. Scripts that want them can call `generateCI()` per group.
    - `participants` naming a column that does not exist stops before any CI is computed, naming the column.
+   - **Any missing ID in that column stops the call before any CI is computed**, naming the groups affected. Otherwise a group whose IDs are all `NA` would reach `generateCI()`'s `all(is.na(participants))` branch, which reads that as "no participants" and pools the trials. The batch would then silently mix participant-averaged and pooled groups, which weight repeated stimuli differently. A partly missing column already stops inside `generateCI()`; checking up front covers both cases with one message.
 3. **No other behaviour changes.** The progress bar, names, PNG file names and the autoscale step stay as they are.
 
 ## Tests
@@ -23,7 +24,7 @@
 - **The two exports agree** with each other, given the same named arguments.
 - **Positional calls still bind as before:** a call using the full positional order of each signature gives the same result as the named call, so the appended argument cannot have shifted anything.
 - **Participants nested in a condition:** each condition's CI equals `generateCI(participants = )` on that condition's rows, and differs from the pooled CI when participants contribute unequal numbers of trials. Two participants with the same ID in different conditions stay separate, because the grouping is per condition.
-- **A missing `participants` column** stops before anything is computed.
+- **A missing `participants` column** stops before anything is computed, and so does a column with `NA` IDs, both when one group's IDs are all `NA` and when they are partly `NA`.
 
 ## Gate, NEWS, DECISIONS
 
