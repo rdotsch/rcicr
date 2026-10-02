@@ -27,7 +27,7 @@
 
 ## Gate, NEWS, DECISIONS
 
-The gate's `batch` configuration compares both batch functions; expected `0 expected deviations` against `main`, quoted in the PR once run. NEWS: a New features entry for `participants`. `DECISIONS.md`: one short entry on keeping the batch functions instead of deprecating them. It is at its budget, so an equal number of words comes out elsewhere.
+The gate's `batch` extra runs `batchGenerateCI()` with `autoscale()` (`tools/compare-harness.R:368-379`); `batchGenerateCI2IFC()` is covered by the tests above, not by the gate. Expected `0 expected deviations` against `main`, quoted in the PR once run. NEWS: a New features entry for `participants`. `DECISIONS.md`: one short entry on keeping the batch functions instead of deprecating them. It is at its budget, so an equal number of words comes out elsewhere.
 
 ## The step most likely to fail
 
