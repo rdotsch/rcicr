@@ -4,7 +4,7 @@ Why `rcicr` behaves as it does: the measurement that ruled an option out, the al
 
 **This file is about the package, not about the repository**: a decision here would still matter if `rcicr` were maintained somewhere else entirely. `AGENTS.md` → "Which file a thing goes in" says what that excludes, when an entry is worth adding, and where other material goes. Entries are grouped by theme and edited in place.
 
-**Keep this file under 5200 words**; over budget, something comes out before something goes in. Write the decision and the evidence, not the route to it: an entry earns its length from a measurement or a rejected alternative.
+**Keep this file under 6000 words**; over budget, something comes out before something goes in. Write the decision and the evidence, not the route to it: an entry earns its length from a measurement or a rejected alternative.
 
 ---
 
