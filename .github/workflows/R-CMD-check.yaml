@@ -140,3 +140,8 @@ jobs:
       - name: CITATION.cff matches its sources
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: Rscript tools/check-citation-cff.R
+
+      # The budgets in AGENTS.md's table, which the script reads (#287).
+      - name: Documentation word budgets
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: bash tools/check-word-budgets.sh

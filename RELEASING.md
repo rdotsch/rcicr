@@ -25,6 +25,8 @@ Widening a tolerance, dropping a configuration or skipping the run is neither ou
 
 ## 1. Prepare the release PR
 
+**Pick X.Y.Z by impact on users' results.** Major: existing call syntax or argument meaning changes (#194 would be 2.0.0). Minor: new features, or any change to numeric output, listed under "Reproducibility impact". Patch: anything else, such as fixes that change no number a working call returned. The highest that applies wins. Strict semver would make every reproducibility change a major version, and the number would stop meaning anything.
+
 Branch from `main` (`release-X.Y.Z`) and make four edits together:
 
 - **`NEWS.md`**: rename `# rcicr (development version)` to `# rcicr X.Y.Z (YYYY-MM-DD)`. R indexes only sections under a heading it can read a version from, so until then none of this release's entries are in the news database. Keep version numbers *out* of `##` headings, or the file stops parsing and `R CMD check` NOTEs.
