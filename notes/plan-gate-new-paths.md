@@ -28,7 +28,7 @@ New extras in `tools/compare-harness.R`, each with a floor in its `SINCE` table 
 
 The InfoVal extras go on the four existing `infoval` configs, where a reference costs seconds. `batch_participants` and `scaling_record` go where `batch`, `participants` or `individual_cis` already run.
 
-**When they start comparing.** A floor of 1.6.0 means they run once the reference is 1.6.0 or later: the previous-release run of every release after 1.6.0, and a `--ref` at any `main` commit after that release. Until then they are skipped, as the floors intend. In both CI runs (`--ref` at the merge base, and the release runs) the battery is chosen by the reference version, so nothing here can crash a run against v1.0.1 or v1.5.0.
+**When they start comparing.** CI's `reproducibility.yaml` compares against v1.0.1 and against the newest release tag (`.github/workflows/reproducibility.yaml:129-150`); a local `--ref` can name any commit. A floor of 1.6.0 means the extras run once that reference is 1.6.0 or later: CI's previous-release run from the first PR after 1.6.0 is tagged, and a local `--ref` at any `main` commit after it. Until then they are skipped, as the floors intend. The battery is chosen by the reference version, so nothing here can crash a run against v1.0.1 or v1.5.0.
 
 **Not floored at a development version.** `1.5.0.9000` would make the extras run against `main` now, but `main` has carried that version both before and after these functions existed, so the floor could not tell those commits apart. A reference that cannot run an extra aborts the whole gate. Floors are release versions only.
 
