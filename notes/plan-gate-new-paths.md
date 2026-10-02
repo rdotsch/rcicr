@@ -20,6 +20,7 @@ New extras in `tools/compare-harness.R`, each with a floor in its `SINCE` table 
 |---|---|---|
 | `infoval_subset` | `computeInfoVal2IFC(reference_stimuli = <every other stimulus>)` | 1.6.0 |
 | `infoval_images` | `computeInfoVal2IFC(reference_method = "images", force_gen_ref_dist = TRUE)` | 1.6.0 |
+| `reference_norms` | the full vector `generateReferenceDistribution2IFC(save_rdata = FALSE)` returns, for the default, a subset and `reference_method = "images"`. An InfoVal reduces the reference to its median and MAD, so a change that reorders or alters the norms without moving those two would pass every InfoVal extra; `"images"` promises bit-for-bit equality. | 1.6.0 |
 | `infoval_batch` | `batchComputeInfoVal2IFC()` over the full-set CI and the subset CI, per-CI `reference_stimuli` | 1.6.0 |
 | `infoval_cross_kind` | the default reference rebuilt under `RNGkind("L'Ecuyer-CMRG")` for a file written under Mersenne-Twister; the session's kind is restored afterwards | 1.6.0 |
 | `infoval_seeded` | `computeInfoVal2IFC(response_seed = 7)` | 1.2.0, to be confirmed by running it |
