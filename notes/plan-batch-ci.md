@@ -2,7 +2,7 @@
 
 ## Decided with the maintainer
 
-`batchGenerateCI()` and `batchGenerateCI2IFC()` **stay supported and are not deprecated**. They are in published analysis scripts, their output is the natural input to `batchComputeInfoVal2IFC()`, and nothing replaces them yet: `generateCI(participants = ...)` returns only the group CI, never the individual ones. The issue's deprecation and `individual_scaling = 'autoscale'` items are therefore not done. `DECISIONS.md` records that, so the issue's ticked boxes are not taken as a plan later. What remains is the duplication, and the issue's one missing feature: CIs per condition, with participants nested in it.
+`batchGenerateCI()` and `batchGenerateCI2IFC()` **stay supported and are not deprecated**. They are in published analysis scripts, their output is the natural input to `batchComputeInfoVal2IFC()`, and nothing replaces them yet: `generateCI(participants = ...)` returns only the group CI, never the individual ones. The issue's deprecation and `individual_scaling = 'autoscale'` items are therefore not done. The implementation adds a `DECISIONS.md` entry saying so, so the issue's ticked boxes are not taken as a plan later; it is not there yet. What remains is the duplication, and the issue's one missing feature: CIs per condition, with participants nested in it.
 
 ## What is verified
 
