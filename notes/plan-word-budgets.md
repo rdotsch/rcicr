@@ -17,7 +17,8 @@ The budgets are stated twice: in the table in `AGENTS.md` → "Which file a thin
 
 ## The four decisions the issue names
 
-- **Where the numbers live: the `AGENTS.md` table**, parsed. It is the one place every budget is already listed, and duplicating them in the script would add a third copy to drift. Rows are matched by their shape, `` | `FILE.md` | ... | N | ``. A row whose last cell is not a number (`NEWS.md`'s "none; never trimmed") is skipped. A file named in the table but missing, or a table yielding no rows at all, fails the check, so a reformatted table cannot silently pass by matching nothing.
+- **Where the numbers live: the `AGENTS.md` table**, parsed. It is the one place every budget is already listed, and duplicating them in the script would add a third copy to drift. The table is the block of `|` lines under the `| file | its job | budget |` header, and **every row in it must parse**: a first cell naming a backticked file, and a last cell that is either a whole number or begins with `none` (`NEWS.md`'s "none; never trimmed", the only unbudgeted row). Any other row fails the check, naming the row, so a reformatted or garbled row cannot drop out unnoticed. So do a missing header, a file named in the table but absent, and a table with no budgeted row.
+- **A deleted row is caught from the other side.** Every top-level `*.md` file that carries a "Keep this file under N words" line must have a budgeted row in the table. Deleting a row while the file keeps its line fails the check, and so does a new doc given a line but no row.
 - **The per-file "Keep this file under N words" lines are checked against the table too.** They are the copy a reader of that file sees, and they are what drifts if only the table is edited.
 - **Inclusive: a file fails only when it is over its budget.** `AGENTS.md` and `DECISIONS.md` both phrase the rule as "over budget, something comes out", and `DECISIONS.md` sits at exactly 5200 today under that reading. The "under N" wording stays as it is.
 - **A failure, not a warning.** A warning in a passing check is not read; the budgets exist because a doc that only grows stops being read. The error names the file, its count, its budget and the excess, so the fix starts from a number.
@@ -33,7 +34,7 @@ Only the table's rows are checked. `README.md`, `NEWS.md`, `notes/` and `analyse
 ## Verification
 
 - Run against the current tree: passes and prints the table above.
-- Mutations, each expected to fail with a message naming the cause: add 1 word to `DECISIONS.md`; change a budget in the table without changing the file's own line; change a file's line without the table; rename a file in the table to one that does not exist; break the table's format so no row matches.
+- Mutations, each expected to fail with a message naming the cause: add 1 word to `DECISIONS.md`; change a budget in the table without changing the file's own line; change a file's line without the table; rename a file in the table to one that does not exist; delete one budgeted row; make one row's budget non-numeric; drop one row's leading `|`; remove the header so no table is found.
 - In CI, the step's output is quoted in this PR once it runs.
 
 ## The step most likely to fail
