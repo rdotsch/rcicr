@@ -30,6 +30,14 @@ test_that("each method records itself and a constant that reproduces $scaled", {
   }
   expect_identical(attr(ci_of(rdata, scaling = "squash"), "scaling"),
                    list(method = "none", constant = NA_real_))
+
+  # A factor is matched by its label, not its level index.
+  from_factor <- ci_of(rdata, scaling = factor("independent"), scaling_constant = 0.4)
+  expect_identical(attr(from_factor, "scaling"), attr(independent, "scaling"))
+  individual <- attr(ci_of(rdata, participants = rep(1:2, each = 4),
+                           individual_scaling = factor("independent")), "scaling")$individual
+  expect_identical(individual$method, "independent")
+  expect_named(individual$constant, c("1", "2"))
 })
 
 test_that("an all-zero CI under 'independent' records 0", {

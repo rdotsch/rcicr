@@ -418,7 +418,10 @@ independentConstant <- function(ci) {
 }
 
 # The method applyScaling() applies: an unrecognised one falls back to 'none'.
+# As a string: applyScaling() also accepts a factor, which switch() would
+# dispatch on its level index rather than its label.
 scalingMethod <- function(scaling) {
+  scaling <- as.character(scaling)
   if (scaling %in% c('none', 'constant', 'matched', 'independent')) scaling else 'none'
 }
 
