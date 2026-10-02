@@ -138,10 +138,10 @@ test_that("the batch functions return the autoscale record, and 'none' behind $c
 test_that("the record changes no pixel", {
   rdata <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
   ci <- ci_of(rdata)
-  responses <- c(1, -1, -1, 1, 1, 1, -1, 1)
-  noise <- generateCINoise(rcicr:::selectStimulusParams(
-    (function() { e <- new.env(); load(rdata, envir = e); e$stimuli_params })(), "base", 1:8
-  ), responses, (function() { e <- new.env(); load(rdata, envir = e); e$p })())
+  e <- new.env()
+  load(rdata, envir = e)
+  params <- rcicr:::selectStimulusParams(e$stimuli_params, "base", 1:8)
+  noise <- generateCINoise(params, c(1, -1, -1, 1, 1, 1, -1, 1), e$p)
   expect_identical(ci$ci, noise)
   expect_identical(names(ci), c("ci", "scaled", "base", "combined"))
 })
