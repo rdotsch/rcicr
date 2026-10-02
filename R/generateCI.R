@@ -72,7 +72,7 @@
 #' @param threshold Threshold z-score (default: 3). Z-scores below it are not drawn on the z-map.
 #' @param zmaptargetpath Directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @param n_cores Number of CPU cores used to create the z-map (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
-#' @return List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from (\code{stimuli}), whether any was presented more than once (\code{repeated}), and the number of participants (\code{n_participants}); \code{\link{computeInfoVal2IFC}} uses it to check that its reference matches the CI.
+#' @return List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from (\code{stimuli}), whether any was presented more than once (\code{repeated}), and the number of participants (\code{n_participants}); \code{\link{computeInfoVal2IFC}} uses it to check that its reference matches the CI. Its \code{scaling} attribute records how \code{scaled} was made: \code{method}, the method applied (an unrecognised one is recorded as the \code{'none'} used instead), and \code{constant}, the constant used (\code{NA} for \code{'none'} and \code{'matched'}; for \code{'independent'}, the one computed from this CI). With \code{participants}, its \code{individual} element records the same for the individual CIs, with one constant per participant, named by ID, under \code{'independent'}. These are the CIs \code{save_individual_cis} writes, and the record is there whether or not they were written. To keep it in a file, save the whole result with \code{saveRDS()}.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
@@ -209,6 +209,12 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
 
   # Apply scaling
   scaled <- applyScaling(base, ci, scaling, scaling_constant)
+  scaling_record <- scalingRecord(ci, scaling, scaling_constant)
+  if (!is.null(pid.cis)) {
+    scaling_record$individual <- individualScalingRecord(pid.cis, participants, mask, img_size,
+                                                         individual_scaling,
+                                                         individual_scaling_constant)
+  }
 
   # Combine with base image
   combined <- combine(scaled, base)
@@ -243,14 +249,14 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     )
   }
 
-  # Return data. The design is an attribute, not a field: scripts iterate the
-  # fields and expect pixel matrices.
+  # Return data. The design and scaling are attributes, not fields: scripts
+  # iterate the fields and expect pixel matrices.
   if (zmapbool) {
     return(structure(list(ci = ci, scaled = scaled, base = base, combined = combined, zmap = zmap),
-                     trial_design = design))
+                     trial_design = design, scaling = scaling_record))
   } else {
     return(structure(list(ci = ci, scaled = scaled, base = base, combined = combined),
-                     trial_design = design))
+                     trial_design = design, scaling = scaling_record))
   }
 }
 
@@ -385,12 +391,7 @@ applyScaling <- function(base, ci, scaling, constant) {
     # Scaling with maximum scaling factor for the given CI
   } else if (scaling == "independent") {
 
-    # Determine the lowest possible scaling factor constant
-    if (abs(range(ci[!is.na(ci)])[1]) > abs(range(ci[!is.na(ci)])[2])) {
-      constant <- abs(range(ci[!is.na(ci)])[1])
-    } else {
-      constant <- abs(range(ci[!is.na(ci)])[2])
-    }
+    constant <- independentConstant(ci)
 
     if (isTRUE(constant == 0)) {
       warnDegenerateScaling(scaling)
@@ -406,6 +407,32 @@ applyScaling <- function(base, ci, scaling, constant) {
 
   # Return the scaled CI
   return(scaled)
+}
+
+# The lowest constant that keeps this CI's scaled noise within [0, 1]. One
+# helper for applyScaling() and scalingRecord(), so the recorded constant is
+# the one that rendered the image.
+independentConstant <- function(ci) {
+  r <- range(ci[!is.na(ci)])
+  if (abs(r[1]) > abs(r[2])) abs(r[1]) else abs(r[2])
+}
+
+# The method applyScaling() applies: an unrecognised one falls back to 'none'.
+# As a string: applyScaling() also accepts a factor, which switch() would
+# dispatch on its level index rather than its label.
+scalingMethod <- function(scaling) {
+  scaling <- as.character(scaling)
+  if (scaling %in% c('none', 'constant', 'matched', 'independent')) scaling else 'none'
+}
+
+# What applyScaling() did to `ci`, for the `scaling` attribute (#9).
+scalingRecord <- function(ci, scaling, constant) {
+  method <- scalingMethod(scaling)
+  list(method = method, constant = switch(method,
+    constant = constant,
+    independent = independentConstant(ci),
+    NA_real_
+  ))
 }
 
 # Render a classification image that has nothing to scale.

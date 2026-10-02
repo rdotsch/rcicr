@@ -6,7 +6,11 @@
 #' @param save_as_pngs Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in \code{cis}.
 #' @param targetpath Directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @return The input \code{cis} list, with each element's \code{$scaled} matrix replaced by its
-#' autoscaled version. The scaling constant is printed to the console, not returned.
+#' autoscaled version. The scaling constant is printed to the console, and recorded in each
+#' element's \code{scaling} attribute (see \code{\link{generateCI}}): \code{method} is
+#' \code{'autoscale'} and \code{constant} the shared constant, both describing \code{$scaled}. Its
+#' \code{combined} element keeps the earlier record, which still describes \code{$combined}, or is
+#' \code{NULL} when the element had none.
 #'
 #' \strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is returned exactly
 #' as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
@@ -82,6 +86,7 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
     } else {
       (cis[[ciname]]$ci + constant) / (2 * constant)
     }
+    attr(cis[[ciname]], 'scaling') <- autoscaledRecord(attr(cis[[ciname]], 'scaling'), constant)
 
     # Note that $combined is deliberately NOT updated here. It stays as the
     # caller supplied it, so whatever combination was made before autoscaling
@@ -100,4 +105,18 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
   }
 
   return(cis)
+}
+
+# The top level describes $scaled, which this function rewrites; `combined`
+# keeps the record of the scaling $combined was made with, which it does not.
+# NULL there means unknown: a CI from an older version, or built by hand.
+autoscaledRecord <- function(previous, constant) {
+  combined <- if (identical(previous$method, 'autoscale')) {
+    previous$combined
+  } else if (!is.null(previous)) {
+    previous[c('method', 'constant')]
+  }
+  record <- list(method = 'autoscale', constant = constant, combined = combined)
+  if (!is.null(previous$individual)) record$individual <- previous$individual
+  record
 }
