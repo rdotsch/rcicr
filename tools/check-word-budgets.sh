@@ -4,6 +4,9 @@
 #   bash tools/check-word-budgets.sh
 # A table this script cannot read fails rather than passes: a check that
 # silently matches nothing would enforce nothing.
+#
+# CI's count, from GNU coreutils' wc, is the one enforced. Other wc builds can
+# differ by a few words on Unicode whitespace: BusyBox counted up to 13 fewer.
 set -euo pipefail
 export LC_ALL=C.UTF-8
 
@@ -19,38 +22,40 @@ grep -qxF "$header" AGENTS.md || {
 # The table: the header, its separator, then every |-line up to the first that is not one.
 rows=$(awk -v h="$header" '$0 == h {t = 1; getline; next} t && /^\|/ {print; next} t {exit}' AGENTS.md)
 
-declare -A budget
+# "file budget" lines, not an associative array: macOS ships bash 3.2.
+budgets=''
+budget_of() { awk -v f="$1" '$1 == f {print $2}' <<<"$budgets"; }
 while IFS= read -r row; do
   file=$(sed -nE 's/^\| `([^`]+)` \|.*$/\1/p' <<<"$row")
   last=$(sed -E 's/^.*\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|[[:space:]]*$/\1/' <<<"$row")
   if [[ -z $file ]]; then
     error "AGENTS.md budget row has no backticked file name in its first cell: $row"
   elif [[ $last =~ ^[0-9]+$ ]]; then
-    budget[$file]=$last
+    budgets+="$file $last"$'\n'
   elif [[ $last != none* ]]; then
     error "AGENTS.md budget row for $file ends in '$last', which is neither a number nor 'none': $row"
   fi
 done <<<"$rows"
 
-if (( ${#budget[@]} == 0 )); then
+if [[ -z $budgets ]]; then
   error "AGENTS.md's budget table has no budgeted row."
 fi
 
 # A doc that states its own budget must be in the table, or deleting its row
 # would stop it being checked.
 for doc in *.md; do
-  if grep -qE 'Keep this file under [0-9]+ words' "$doc" && [[ -z ${budget[$doc]:-} ]]; then
+  if grep -qE 'Keep this file under [0-9]+ words' "$doc" && [[ -z $(budget_of "$doc") ]]; then
     error "$doc says 'Keep this file under N words' but has no budget row in AGENTS.md."
   fi
 done
 
 printf '%-18s %6s %6s %6s\n' file words budget spare
-for file in $(printf '%s\n' "${!budget[@]}" | sort); do
+for file in $(awk 'NF {print $1}' <<<"$budgets" | sort); do
   if [[ ! -f $file ]]; then
     error "AGENTS.md budgets $file, which does not exist."
     continue
   fi
-  limit=${budget[$file]}
+  limit=$(budget_of "$file")
   words=$(wc -w < "$file" | tr -d ' ')
   printf '%-18s %6s %6s %6s\n' "$file" "$words" "$limit" "$((limit - words))"
   stated=$(grep -oE 'Keep this file under [0-9]+ words' "$file" | grep -oE '[0-9]+' | head -n1 || true)
