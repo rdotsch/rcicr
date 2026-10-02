@@ -41,6 +41,10 @@ A `scaling` **attribute** on every classification image, like `trial_design`, ne
 - `autoscale()` and both batch functions with `'autoscale'`: every element carries the shared constant at the top level, `scaling$combined` reproduces `$combined` from `$ci` and `$base` (with `'none'` for the batch functions, which scale with `'none'` first), `individual` survives on a `participants` CI, and `trial_design` survives. Autoscaling twice keeps the original `combined` record rather than nesting.
 - `identical()` of every pixel field before and after the change, on the golden-master inputs: the attribute changes no number.
 
+## DECISIONS.md
+
+One entry with the implementation: the record is an attribute, not a list field, because scripts iterate the fields as pixel matrices; and the rejected log file, with its two reasons (a required write path, and a second copy of state the result already carries). It goes in after #364 raises the budget, so it displaces nothing.
+
 ## Gate and NEWS
 
 No numeric output changes; the gate compares fields, not attributes. Planned check after implementation, with its output quoted in the PR: `Rscript tools/compare-release-output.R --quick --ref="$(git rev-parse origin/main)"`, expecting `0 expected deviations`. NEWS: a New features entry. No Reproducibility impact entry.
