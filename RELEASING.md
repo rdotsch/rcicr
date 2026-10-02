@@ -25,7 +25,7 @@ Widening a tolerance, dropping a configuration or skipping the run is neither ou
 
 ## 1. Prepare the release PR
 
-**Pick X.Y.Z by impact on users' results.** Major: existing call syntax or argument meaning changes (#194 would be 2.0.0). Minor: new features, or any change to numeric output, listed under "Reproducibility impact". Patch: fixes that change no number a working call returned. Strict semver would make every reproducibility change a major version, and the number would stop meaning anything.
+**Pick X.Y.Z by impact on users' results.** Major: existing call syntax or argument meaning changes (#194 would be 2.0.0). Minor: new features, or any change to numeric output, listed under "Reproducibility impact". Patch: anything else, such as fixes that change no number a working call returned. The highest that applies wins. Strict semver would make every reproducibility change a major version, and the number would stop meaning anything.
 
 Branch from `main` (`release-X.Y.Z`) and make four edits together:
 
