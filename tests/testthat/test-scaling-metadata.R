@@ -186,3 +186,14 @@ test_that("individual constants read the mask once, and other methods scan no pa
   expect_identical(masks, 1)
   expect_identical(constants, 0)
 })
+
+test_that("a z-map result carries the same record and design as one without", {
+  # generateCI() returns through a separate branch when zmap = TRUE.
+  rdata <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
+  plain <- ci_of(rdata, scaling = "independent")
+  with_zmap <- ci_of(rdata, scaling = "independent", zmap = TRUE, zmapmethod = "quick",
+                     zmapdecoration = FALSE, zmaptargetpath = withr::local_tempdir())
+  expect_true("zmap" %in% names(with_zmap))
+  expect_identical(attr(with_zmap, "scaling"), attr(plain, "scaling"))
+  expect_identical(attr(with_zmap, "trial_design"), attr(plain, "trial_design"))
+})

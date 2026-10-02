@@ -125,3 +125,22 @@ test_that("a missing participants column or missing IDs stop before any CI", {
   ungrouped$pid[is.na(ungrouped$cond)] <- NA
   expect_error(call(ungrouped), "a CI was computed")
 })
+
+test_that("nested participants under the default 'autoscale' scale the averaged CIs together", {
+  rdata <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
+  d <- batch_data()
+  d$pid[d$cond %in% "b"] <- c(1, 1, 1, 2, 2, 2)
+  nested <- quietly(batchGenerateCI(d, "cond", "stim", "resp", "base", rdata, save_as_png = FALSE,
+                                    participants = "pid"))
+  expected <- list()
+  for (unit in c("a", "b")) {
+    rows <- d[d$cond %in% unit, ]
+    expected[[paste0("base_cond_", unit)]] <- quietly(generateCI(
+      rows$stim, rows$resp, "base", rdata, participants = rows$pid, save_as_png = FALSE,
+      scaling = "none", n_cores = 1
+    ))
+  }
+  expected <- quietly(autoscale(expected, save_as_pngs = FALSE))
+  expect_identical(pixels(nested), pixels(expected))
+  expect_identical(attr(nested$base_cond_a, "scaling")$method, "autoscale")
+})
