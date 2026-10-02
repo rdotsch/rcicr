@@ -29,7 +29,7 @@ Ubuntu's `universe` pocket *is* reachable. It has a Debian build of every depend
 bash tools/setup-container-r.sh      # toolchain + rcicr; safe to re-run
 ```
 
-After that the ordinary workflow applies, including the release gate. Measured here: `testthat::test_local()` gives 1613 passing and 1 skip, as uid 1000. The skip is the test that needs a case-insensitive file system.
+After that the ordinary workflow applies, including the release gate. Measured here: `testthat::test_local()` gives 1704 passing and 1 skip, as uid 1000. The skip is the test that needs a case-insensitive file system.
 
 Three things to know before trusting or editing that script:
 
