@@ -117,3 +117,14 @@ test_that("generateStimuli2IFC() leaves the caller's stream where it was", {
   expect_error(make_fixture_rdata(withr::local_tempdir()), "save failed")
   expect_identical(runif(3), expected)
 })
+
+test_that("an interrupted generateStimuli2IFC() also gives the stream back", {
+  interrupt <- function() signalCondition(structure(class = c("interrupt", "condition"), list()))
+  set.seed(42)
+  expected <- runif(3)
+  set.seed(42)
+  local_mocked_bindings(saveStimulusFile = function(...) interrupt())
+  expect_identical(tryCatch(make_fixture_rdata(withr::local_tempdir()),
+                            interrupt = function(e) "aborted"), "aborted")
+  expect_identical(runif(3), expected)
+})
