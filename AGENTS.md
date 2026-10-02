@@ -54,10 +54,10 @@ Each document has one job and **a word budget**; over budget, something comes ou
 | `RELEASING.md` | the release checklist and why it is in that order | 1600 |
 | `MAINTENANCE.md` | how the repository's CI, gates and generated files are wired | 1800 |
 | `SECURITY.md` | vulnerability reporting and dependency posture | 600 |
-| `DECISIONS.md` | why the **package** behaves as it does | 5200 |
+| `DECISIONS.md` | why the **package** behaves as it does | 6000 |
 | `NEWS.md` | what changed for users | none; never trimmed |
 
-Check word counts with `LC_ALL=C.UTF-8 wc -w` (Unicode whitespace counts as a separator).
+Check them with `bash tools/check-word-budgets.sh`, which reads this table, counts with `LC_ALL=C.UTF-8 wc -w`, and runs in CI, where a file over budget fails the check.
 
 `DECISIONS.md` is where things are most often misfiled. Its subject is what `generateCI()` returns and why a number cannot change, **not** how CI is wired or how a release is cut. The test: would this still matter if the package were maintained somewhere else entirely?
 

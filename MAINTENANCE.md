@@ -72,6 +72,9 @@ Three generation settings matter:
 - `gh_keywords = FALSE`, which keeps generation off the network.
 - The comparison excludes `preferred-citation`'s year. It comes from `inst/CITATION`, which reads the clock when `DESCRIPTION` has no publication date, so it changes every 1 January and would otherwise turn a required check red on a calendar boundary.
 
+### The word budgets are read from `AGENTS.md`, and an unreadable table fails
+`tools/check-word-budgets.sh` is the last step of `ubuntu-latest (release)`, like the stale-`man/` gate. It reads the budgets from the `AGENTS.md` table, not a copy, and checks each file's own "Keep this file under N words" line against it. An unparseable row, a missing header, or a doc stating a budget without a row fails, so an edited table cannot leave a file unchecked. Only a file *over* budget fails.
+
 ---
 
 ## Repository documents
