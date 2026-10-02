@@ -24,7 +24,7 @@ bash tools/setup-container-r.sh      # toolchain + rcicr; safe to re-run
 After that the ordinary workflow applies, including the release gate.
 Measured here:
 [`testthat::test_local()`](https://testthat.r-lib.org/reference/test_package.html)
-gives 1711 passing and 1 skip, as uid 1000. The skip is the test that
+gives 1719 passing and 1 skip, as uid 1000. The skip is the test that
 needs a case-insensitive file system.
 
 Three things to know before trusting or editing that script:
