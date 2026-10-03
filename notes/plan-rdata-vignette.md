@@ -27,6 +27,8 @@ Three fields are written but not documented:
 
 The vignette documents all three.
 
+A masked CI (`generateCI(mask = )`, then `computeInfoVal2IFC()`) writes its reference to `reference_norms_by_stimuli`; that entry's names are `reference_stimuli baseimage mask norms response_seed source fingerprint method`.
+
 ## Decision for review: show the fields, or check them
 
 **(a) Show.** The vignette generates a small file and prints `ls()` next to the tables. A reader sees the real file, but nothing fails when a field goes undocumented: the three above went unnoticed through two PRs.
