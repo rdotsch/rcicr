@@ -37,8 +37,7 @@ coerceTrialVectors <- function(stimuli, responses, participants) {
   # instead would guess what the gap means.
   missing_ids <- which(is.na(participants))
   if (length(missing_ids) > 0 && length(missing_ids) < length(participants)) {
-    shown <- paste(utils::head(missing_ids, 5), collapse = ', ')
-    if (length(missing_ids) > 5) shown <- paste0(shown, ', ...')
+    shown <- firstFew(missing_ids)
     stop(paste0('participants has no ID for ', length(missing_ids), ' of ',
       length(participants), ' trials (', if (length(missing_ids) == 1) 'trial ' else 'trials ',
       shown, '). Give every trial an ID, or remove those trials from stimuli, ',
@@ -70,13 +69,18 @@ validateResponses <- function(responses) {
   }
   bad <- which(!is.finite(responses))
   if (length(bad) > 0) {
-    shown <- paste(utils::head(bad, 5), collapse = ', ')
-    if (length(bad) > 5) shown <- paste0(shown, ', ...')
+    shown <- firstFew(bad)
     stop('responses has no finite value for ', length(bad), ' of ', length(responses), ' trials (',
          if (length(bad) == 1) 'trial ' else 'trials ', shown, '). Give every trial a response, ',
          'or remove those trials from stimuli, responses and participants alike.', call. = FALSE)
   }
   invisible(NULL)
+}
+
+# The first n items for a message, then "..." if there are more.
+firstFew <- function(x, n = 5) {
+  shown <- paste(utils::head(x, n), collapse = ', ')
+  if (length(x) > n) paste0(shown, ', ...') else shown
 }
 
 # Check before unlist() can turn factor codes or logicals into numeric indices.

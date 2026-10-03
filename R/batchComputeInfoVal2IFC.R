@@ -168,8 +168,7 @@ ciLabels <- function(target_cis) {
 reportBatchTrialDesign <- function(issues, labels) {
   n <- length(issues)
   some <- function(which) {
-    shown <- paste(utils::head(labels[which], 5), collapse = ', ')
-    if (length(which) > 5) shown <- paste0(shown, ', ...')
+    shown <- firstFew(labels[which])
     paste0(length(which), ' of the ', n, ' classification images (', shown, ')')
   }
   averaged <- which(vapply(issues, function(x) isTRUE(x$averaged), logical(1)))
