@@ -85,8 +85,7 @@ requireParticipantIds <- function(data, by, participants) {
   missing_ids <- is.na(data[[participants]])
   if (any(missing_ids)) {
     groups <- unique(data[[by]][missing_ids])
-    shown <- paste(utils::head(groups, 5), collapse = ', ')
-    if (length(groups) > 5) shown <- paste0(shown, ', ...')
+    shown <- firstFew(groups)
     stop(sum(missing_ids), ' rows have no participant ID in column ', participants, ' (', by,
          ' ', shown, '). Give every trial an ID, or remove the trials without one.',
          call. = FALSE)
@@ -107,8 +106,7 @@ requireBatchResponses <- function(data, by, responses) {
   bad <- !is.finite(values)
   if (any(bad)) {
     groups <- unique(data[[by]][bad])
-    shown <- paste(utils::head(groups, 5), collapse = ', ')
-    if (length(groups) > 5) shown <- paste0(shown, ', ...')
+    shown <- firstFew(groups)
     stop(sum(bad), ' rows have no finite response in column ', responses, ' (', by, ' ', shown,
          '). Give every trial a response, or remove those trials.', call. = FALSE)
   }
