@@ -21,7 +21,7 @@ show <- function(m, title, zlim = range(m, na.rm = TRUE)) {
 }
 ```
 
-Short answers to questions that come up once the basics in `vignette("reverse-correlation-walkthrough")` are in place. Each recipe runs at a small size so this vignette builds in seconds; real studies use `img_size = 512` and several hundred trials.
+Short answers to questions that come up once the basics in `vignette("reverse-correlation-walkthrough", package = "rcicr")` are in place. Each recipe runs at a small size so this vignette builds in seconds; real studies use `img_size = 512` and several hundred trials.
 
 ```{r setup}
 library(rcicr)
@@ -224,7 +224,7 @@ Older releases import packages this one no longer needs; `install_github()` inst
 
 Classification images come out the same unless `NEWS.md` lists your situation under "Reproducibility impact", in the releases after the one you used. An InfoVal depends on the reference distribution stored in the `.Rdata` file:
 
-- **A reference stored by 1.4.0 or later is reused as stored**, so its InfoVal does not change. Such a file holds `reference_norms_source` (see `vignette("stored-data")`).
+- **A reference stored by 1.4.0 or later is reused as stored**, so its InfoVal does not change. Such a file holds `reference_norms_source` (see `vignette("stored-data", package = "rcicr")`).
 - **An older reference is rebuilt** the first time, with a message that the new InfoVal supersedes earlier ones. By default it is computed through the stimulus Gram matrix, which differs from the calculation of 1.5.0 and earlier only by rounding. `reference_method = "images"` is that earlier calculation, unchanged.
 - **The rebuilt reference matches the old one exactly** when the old version reconstructed the stimuli correctly, which excludes pre-0.3.0 files and pre-1.1.0 files whose missing settings were replaced by defaults, and when the random draws use the same generator. Files from before `rng_kind` was stored draw under the session's `RNGkind()`; R's default has not changed, so this matters only if the original session set another kind.
 - **A reference drawn with a `response_seed` is kept as stored**, whichever method you ask for.
