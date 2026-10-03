@@ -3,7 +3,7 @@
 
 run <- function(entry, ..., writable = TRUE, simulated = c(1, 2, 3)) {
   calls <- list()
-  local_mocked_bindings(
+  testthat::local_mocked_bindings(
     generateReferenceDistribution2IFC = function(rdata, iter, response_seed, save_rdata, ...) {
       calls[[length(calls) + 1]] <<- list(iter = iter, response_seed = response_seed,
                                           save_rdata = save_rdata)
