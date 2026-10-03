@@ -71,7 +71,7 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'remotes'</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># A specific release, by tag</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@v1.3.0'</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@vX.Y.Z'</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># The development version at the tip of main. Record its commit SHA.</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr'</span><span class="op">)</span></span>
@@ -80,9 +80,8 @@
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'rdotsch/rcicr@&lt;commit-sha&gt;'</span><span class="op">)</span></span></code></pre></div>
 <p>Every release is tagged; the <a href="https://github.com/rdotsch/rcicr/releases" class="external-link">releases page</a> lists them. Record the version you ran in your analysis script, and install that tag when you come back to the analysis. For an unreleased GitHub install, record the commit SHA instead and install that. A classification image is only reproducible with the exact code that computed it. Any release that changes numeric output says so in <a href="NEWS.html"><code>NEWS.md</code></a> under “Reproducibility impact”.</p>
 <blockquote>
-<p><strong>Saved per-participant classification images before 1.3.0? Check their filenames.</strong> With <code>generateCI(participants = ..., save_individual_cis = TRUE)</code>, an image could be saved under another participant’s name. This happened wherever the order in which participants appear in your data differs from their sorted order. For text IDs that includes the ordinary case of <code>p1</code> to <code>p10</code> in collection order, which sort as <code>p1, p10, p2, ...</code>. The images themselves are correct, so the fix is renaming files, not re-running anything. The <a href="https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html">individual-CI filename advisory</a> explains how to tell whether you are affected, what it did to an analysis, and how to recover. <a href="NEWS.html"><code>NEWS.md</code></a> has a shorter version under “Reproducibility impact”, and <a href="https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md" class="external-link">this note</a> helps you work out which version a stored analysis actually ran. <code><a href="reference/batchGenerateCI.html">batchGenerateCI()</a></code>, <code><a href="reference/batchGenerateCI2IFC.html">batchGenerateCI2IFC()</a></code> and <code><a href="reference/generateCI2IFC.html">generateCI2IFC()</a></code> were never affected.</p>
+<p><strong>Saved per-participant classification images with a GitHub install before 1.3.0? Check their filenames.</strong> A direct <code>generateCI(participants = ..., save_individual_cis = TRUE)</code> call could save an image under another participant’s name whenever participants were not in sorted order, as with <code>p1</code> to <code>p10</code> in collection order. The images are correct; only their names can be wrong. The <a href="https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html">individual-CI filename advisory</a> explains how to tell whether you are affected and how to rename the files. CRAN releases never carried this bug.</p>
 </blockquote>
-<p>Version 1.3.0 returned <code>rcicr</code> to CRAN. The package had been archived in 2021 because email to an old maintainer address bounced; nothing was wrong with the package itself.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-example">Quick example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
@@ -115,12 +114,13 @@
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>The function reference, both vignettes and the changelog are also online at <strong><a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a></strong>, so you can read them before installing.</p>
-<p>Two vignettes ship with the package:</p>
+<p>The function reference, the vignettes and the changelog are also online at <strong><a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a></strong>, so you can read them before installing.</p>
+<p>Three vignettes ship with the package:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># shortest working example</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"reverse-correlation-walkthrough"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># the full method</span></span></code></pre></div>
-<p>The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"reverse-correlation-walkthrough"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># the full method</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"recipes"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># answers to common follow-up questions</span></span></code></pre></div>
+<p>The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version. The recipes cover noise-only stimuli, rating scales as responses, and matching the informational-value reference to dropped trials, masks, batches and group averages.</p>
 <p>For example datasets and analysis scripts, see <a href="https://github.com/rdotsch/rcicr_examples/" class="external-link">rcicr_examples</a>.</p>
 </div>
 <div class="section level2">
@@ -301,18 +301,14 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<p>On a fresh Ubuntu machine without a compiler or R package library, <code>tools/dev-setup.sh</code> sets both up; see <a href="https://github.com/rdotsch/rcicr/blob/main/CONTRIBUTING.md" class="external-link"><code>CONTRIBUTING.md</code></a> → “Getting set up”.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span>   <span class="co"># load the package for interactive development</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span>       <span class="co"># run the test suite</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span>      <span class="co"># full CRAN-style check</span></span></code></pre></div>
+<p><code>citation("rcicr")</code> gives the reference for the software. If you use the technique, also cite the method: <a href="https://doi.org/10.1177/1948550611430272" class="external-link">Dotsch and Todorov (2012)</a>, and for a practical primer <a href="https://doi.org/10.1080/10463283.2017.1381469" class="external-link">Brinkman, Todorov and Dotsch (2017)</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
-<p>Contributions, thoughts and criticisms are welcome: <a href="https://github.com/rdotsch/rcicr/issues/" class="external-link">open an issue</a>.</p>
+<p>Contributions, thoughts and criticisms are welcome: <a href="https://github.com/rdotsch/rcicr/issues/" class="external-link">open an issue</a>. <a href="https://github.com/rdotsch/rcicr/blob/main/CONTRIBUTING.md" class="external-link"><code>CONTRIBUTING.md</code></a> explains how to set up a development environment, run the tests and open a pull request.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

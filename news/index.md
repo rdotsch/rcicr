@@ -365,6 +365,8 @@
   builds in seconds.
   ([\#69](https://github.com/rdotsch/rcicr/issues/69),
   [\#6](https://github.com/rdotsch/rcicr/issues/6))
+- The README says how to cite rcicr and the method behind it, and lists
+  all three vignettes.
 
 ## rcicr 1.5.0 (2026-09-25)
 

@@ -29,7 +29,7 @@ to try the unreleased development version:
 install.packages('remotes')
 
 # A specific release, by tag
-remotes::install_github('rdotsch/rcicr@v1.3.0')
+remotes::install_github('rdotsch/rcicr@vX.Y.Z')
 
 # The development version at the tip of main. Record its commit SHA.
 remotes::install_github('rdotsch/rcicr')
@@ -48,31 +48,16 @@ changes numeric output says so in
 [`NEWS.md`](https://rdotsch.github.io/rcicr/NEWS.md) under
 “Reproducibility impact”.
 
-> **Saved per-participant classification images before 1.3.0? Check
-> their filenames.** With
-> `generateCI(participants = ..., save_individual_cis = TRUE)`, an image
-> could be saved under another participant’s name. This happened
-> wherever the order in which participants appear in your data differs
-> from their sorted order. For text IDs that includes the ordinary case
-> of `p1` to `p10` in collection order, which sort as
-> `p1, p10, p2, ...`. The images themselves are correct, so the fix is
-> renaming files, not re-running anything. The [individual-CI filename
+> **Saved per-participant classification images with a GitHub install
+> before 1.3.0? Check their filenames.** A direct
+> `generateCI(participants = ..., save_individual_cis = TRUE)` call
+> could save an image under another participant’s name whenever
+> participants were not in sorted order, as with `p1` to `p10` in
+> collection order. The images are correct; only their names can be
+> wrong. The [individual-CI filename
 > advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html)
-> explains how to tell whether you are affected, what it did to an
-> analysis, and how to recover.
-> [`NEWS.md`](https://rdotsch.github.io/rcicr/NEWS.md) has a shorter
-> version under “Reproducibility impact”, and [this
-> note](https://github.com/rdotsch/rcicr/blob/main/notes/individual-ci-mislabelling.md)
-> helps you work out which version a stored analysis actually ran.
-> [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md),
-> [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
-> and
-> [`generateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/generateCI2IFC.md)
-> were never affected.
-
-Version 1.3.0 returned `rcicr` to CRAN. The package had been archived in
-2021 because email to an old maintainer address bounced; nothing was
-wrong with the package itself.
+> explains how to tell whether you are affected and how to rename the
+> files. CRAN releases never carried this bug.
 
 ## Quick example
 
@@ -112,22 +97,26 @@ anything.
 
 ## Documentation
 
-The function reference, both vignettes and the changelog are also online
+The function reference, the vignettes and the changelog are also online
 at **<https://rdotsch.github.io/rcicr/>**, so you can read them before
 installing.
 
-Two vignettes ship with the package:
+Three vignettes ship with the package:
 
 ``` r
 
 vignette("getting-started", package = "rcicr")  # shortest working example
 vignette("reverse-correlation-walkthrough", package = "rcicr")  # the full method
+vignette("recipes", package = "rcicr")  # answers to common follow-up questions
 ```
 
 The walkthrough covers designing a study, generating stimuli, computing
 classification images for several participants, choosing a scaling
 method, and telling signal from noise. Its code runs whenever the
-package is built, so it keeps working with the current version.
+package is built, so it keeps working with the current version. The
+recipes cover noise-only stimuli, rating scales as responses, and
+matching the informational-value reference to dropped trials, masks,
+batches and group averages.
 
 For example datasets and analysis scripts, see
 [rcicr_examples](https://github.com/rdotsch/rcicr_examples/).
@@ -275,24 +264,21 @@ Before you write code against this file:
   [`numeric_version()`](https://rdrr.io/r/base/numeric_version.html),
   never as text.
 
-## Development
+## Citation
 
-On a fresh Ubuntu machine without a compiler or R package library,
-`tools/dev-setup.sh` sets both up; see
-[`CONTRIBUTING.md`](https://github.com/rdotsch/rcicr/blob/main/CONTRIBUTING.md)
-→ “Getting set up”.
-
-``` r
-
-devtools::load_all()   # load the package for interactive development
-devtools::test()       # run the test suite
-devtools::check()      # full CRAN-style check
-```
+`citation("rcicr")` gives the reference for the software. If you use the
+technique, also cite the method: [Dotsch and Todorov
+(2012)](https://doi.org/10.1177/1948550611430272), and for a practical
+primer [Brinkman, Todorov and Dotsch
+(2017)](https://doi.org/10.1080/10463283.2017.1381469).
 
 ## Contributing
 
 Contributions, thoughts and criticisms are welcome: [open an
 issue](https://github.com/rdotsch/rcicr/issues/).
+[`CONTRIBUTING.md`](https://github.com/rdotsch/rcicr/blob/main/CONTRIBUTING.md)
+explains how to set up a development environment, run the tests and open
+a pull request.
 
 ## License
 
