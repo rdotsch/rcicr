@@ -126,6 +126,7 @@
 generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images")) { # nolint: object_length_linter.
 
   reference_method <- match.arg(reference_method)
+  validateIter(iter)
   reference_selection <- selectReferenceBase(rdata, baseimage)
   # Only a proper subset leaves here; an explicit full set takes the default path.
   subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
