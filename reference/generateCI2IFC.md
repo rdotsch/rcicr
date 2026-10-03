@@ -121,6 +121,13 @@ all of them is a good choice.
 [`autoscale`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
 finds it for you.
 
+## See also
+
+[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md),
+which new code should use;
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+section "Computing one classification image".
+
 ## Examples
 
 ``` r

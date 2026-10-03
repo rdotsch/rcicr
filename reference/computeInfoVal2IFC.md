@@ -161,6 +161,15 @@ informational value of classification images. *Behavior Research
 Methods*, *51*, 2059-2073.
 [doi:10.3758/s13428-019-01232-2](https://doi.org/10.3758/s13428-019-01232-2)
 
+## See also
+
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+section "Is there actually signal?";
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md),
+"Matching the InfoVal reference to the design", for dropped trials,
+masks, batches and group averages, and "Reproducing a number from an
+earlier version".
+
 ## Examples
 
 ``` r

@@ -143,7 +143,7 @@ generateStimuli2IFC(
 ## Value
 
 Nothing: everything is saved to files.
-[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+[`vignette("stored-data", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
 lists what the `.Rdata` file holds. With `return_as_dataframe = TRUE`,
 the data frame described there.
 
@@ -152,6 +152,15 @@ the data frame described there.
 Saves the stimuli as PNGs, together with an `.Rdata` file holding the
 parameters used to generate each stimulus. Analysing the responses later
 requires that file.
+
+## See also
+
+[`vignette("getting-started", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/getting-started.md)
+for the shortest working example;
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+section "Generating stimuli", for choosing the settings;
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md),
+"Noise-only stimuli", for stimuli without a face.
 
 ## Examples
 

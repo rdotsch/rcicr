@@ -63,7 +63,7 @@
     <p>The input <code>cis</code> list, with each element's <code>$scaled</code> matrix replaced by its
 autoscaled version. The scaling constant is printed to the console, and recorded in each
 element's <code>scaling</code> attribute, which keeps the earlier record for <code>$combined</code>;
-<code><a href="../articles/stored-data.html">vignette("stored-data")</a></code> lists its fields.</p>
+<code><a href="../articles/stored-data.html">vignette("stored-data", package = "rcicr")</a></code> lists its fields.</p>
 <p><strong>Look at <code>$scaled</code>, not <code>$combined</code>.</strong> <code>$combined</code> is returned exactly
 as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
 image. Only <code>$scaled</code> holds the autoscaled result. To show the autoscaled noise over the
@@ -73,6 +73,10 @@ base image, compute <code>(ci$scaled + ci$base) / 2</code>: that is exactly what
 <code><a href="batchGenerateCI2IFC.html">batchGenerateCI2IFC</a></code>. Both scale with <code>'none'</code> before calling this
 function, so their <code>$combined</code> overlays the <em>unscaled</em> noise and looks almost blank,
 while <code>$scaled</code> is the image you want.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="../articles/reverse-correlation-walkthrough.html">vignette("reverse-correlation-walkthrough", package = "rcicr")</a></code>, sections "Scaling" and "Several participants at once".</p></div>
     </div>
 
     <div class="section level2">

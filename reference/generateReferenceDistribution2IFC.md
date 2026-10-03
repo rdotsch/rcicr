@@ -194,6 +194,14 @@ whose noise to use. The distributions are then stored in
 is neither used nor overwritten. Files whose base images share one
 parameter matrix keep using `reference_norms`.
 
+## See also
+
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+section "Is there actually signal?";
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md),
+"Matching the InfoVal reference to the design" and "Reproducing a number
+from an earlier version".
+
 ## Examples
 
 ``` r

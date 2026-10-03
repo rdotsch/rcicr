@@ -128,6 +128,11 @@ classification images, autoscaled classification images) comes straight
 from the pixel array via
 [`png::writePNG()`](https://rdrr.io/pkg/png/man/writePNG.html).
 
+## See also
+
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+section "Is there actually signal?".
+
 ## Examples
 
 ``` r

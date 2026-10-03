@@ -11,7 +11,7 @@ and Todorov (2012)
 
 ## Details
 
-[`vignette("reverse-correlation-walkthrough")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md)
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md)
 works through a complete experiment. In brief:
 [`generateStimuli2IFC`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
 creates the stimuli and the `.Rdata` file recording how they were made,
@@ -20,8 +20,14 @@ and
 or
 [`batchGenerateCI`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
 turns participants' responses into classification images.
-`citation("rcicr")` prints the reference for the software; cite the
-method papers below as well.
+[`vignette("getting-started", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/getting-started.md)
+is the shortest working example;
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+answers questions that come up after the basics;
+[`vignette("stored-data", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+lists everything in the `.Rdata` file and in a returned classification
+image. `citation("rcicr")` prints the reference for the software; cite
+the method papers below as well.
 
 ## References
 

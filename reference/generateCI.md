@@ -184,7 +184,7 @@ from, so that
 can check that its reference matches the CI; its `scaling` attribute
 records how `scaled` was made, for the group CI and, with
 `participants`, for the individual CIs.
-[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+[`vignette("stored-data", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
 lists the fields of both. To keep them in a file, save the whole result
 with [`saveRDS()`](https://rdrr.io/r/base/readRDS.html).
 
@@ -239,6 +239,13 @@ does *not* average repeats; it weights each trial equally. With unequal
 counts, the final CI it computes itself therefore differs from the one
 this function returns. To compare against the CI you will report, pass
 this function's output as its `targetci`.
+
+## See also
+
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+sections "Computing one classification image" and "Scaling";
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+for rating scales as responses and for masked classification images.
 
 ## Examples
 

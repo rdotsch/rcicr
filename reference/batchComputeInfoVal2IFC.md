@@ -88,6 +88,11 @@ classification image" in
 are collected into one message per kind, naming the classification
 images concerned, rather than one per image.
 
+## See also
+
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md),
+"Several classification images at once".
+
 ## Examples
 
 ``` r

@@ -164,7 +164,7 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>List of pixel matrices: the raw classification noise (<code>ci</code>), the scaled noise (<code>scaled</code>), the base image (<code>base</code>) and the two combined (<code>combined</code>), plus the z-map (<code>zmap</code>) when <code>zmap = TRUE</code>. Its <code>trial_design</code> attribute records which saved stimuli the CI was built from, so that <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> can check that its reference matches the CI; its <code>scaling</code> attribute records how <code>scaled</code> was made, for the group CI and, with <code>participants</code>, for the individual CIs. <code><a href="../articles/stored-data.html">vignette("stored-data")</a></code> lists the fields of both. To keep them in a file, save the whole result with <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>.</p>
+    <p>List of pixel matrices: the raw classification noise (<code>ci</code>), the scaled noise (<code>scaled</code>), the base image (<code>base</code>) and the two combined (<code>combined</code>), plus the z-map (<code>zmap</code>) when <code>zmap = TRUE</code>. Its <code>trial_design</code> attribute records which saved stimuli the CI was built from, so that <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> can check that its reference matches the CI; its <code>scaling</code> attribute records how <code>scaled</code> was made, for the group CI and, with <code>participants</code>, for the individual CIs. <code><a href="../articles/stored-data.html">vignette("stored-data", package = "rcicr")</a></code> lists the fields of both. To keep them in a file, save the whole result with <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -204,6 +204,10 @@ correlate at 0.77.</p>
 trial equally. With unequal counts, the final CI it computes itself therefore differs from the
 one this function returns. To compare against the CI you will report, pass this function's
 output as its <code>targetci</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="../articles/reverse-correlation-walkthrough.html">vignette("reverse-correlation-walkthrough", package = "rcicr")</a></code>, sections "Computing one classification image" and "Scaling"; <code><a href="../articles/recipes.html">vignette("recipes", package = "rcicr")</a></code> for rating scales as responses and for masked classification images.</p></div>
     </div>
 
     <div class="section level2">

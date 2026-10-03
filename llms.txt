@@ -170,7 +170,7 @@ it, nothing about your stimuli can be recovered: not from the PNGs, and
 not from the seed alone. Back it up with your response data and keep it
 with anything you publish. Recomputing a classification image years
 later needs this file and nothing else.
-[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+[`vignette("stored-data", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
 lists everything in it, and in the classification image
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
 returns.

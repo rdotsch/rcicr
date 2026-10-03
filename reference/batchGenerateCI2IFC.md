@@ -114,6 +114,13 @@ Splits `data` by the `by` column, calls
 for each part, and returns the CIs. By default each CI is also saved as
 a PNG.
 
+## See also
+
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+section "Several participants at once";
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md),
+"Several classification images at once".
+
 ## Examples
 
 ``` r

@@ -35,7 +35,7 @@ The input `cis` list, with each element's `$scaled` matrix replaced by
 its autoscaled version. The scaling constant is printed to the console,
 and recorded in each element's `scaling` attribute, which keeps the
 earlier record for `$combined`;
-[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+[`vignette("stored-data", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
 lists its fields.
 
 **Look at `$scaled`, not `$combined`.** `$combined` is returned exactly
@@ -52,6 +52,11 @@ or
 Both scale with `'none'` before calling this function, so their
 `$combined` overlays the *unscaled* noise and looks almost blank, while
 `$scaled` is the image you want.
+
+## See also
+
+[`vignette("reverse-correlation-walkthrough", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md),
+sections "Scaling" and "Several participants at once".
 
 ## Examples
 
