@@ -19,7 +19,6 @@ Imports:
     matlab,
     png,
     jpeg,
-    dplyr,
     scales,
     viridis,
     utils,
@@ -28,11 +27,10 @@ Imports:
     foreach,
     spatstat.explore,
     spatstat.geom,
-    tibble,
-    yesno,
     Matrix
 Suggests:
     testthat (>= 3.0.0),
+    tibble,
     covr,
     withr,
     knitr,

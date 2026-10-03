@@ -47,9 +47,6 @@
 #'
 #' @export
 #' @importFrom stats mad median
-#' @importFrom tibble tribble
-#' @importFrom dplyr filter count summarise %>%
-#' @import yesno
 #' @param target_ci A classification image, as the list returned by \code{\link{generateCI}}.
 #' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus and, once computed, the reference distribution (see \code{\link{generateReferenceDistribution2IFC}}).
 #' @param iter Number of simulated classification images in the reference distribution. Used only when the reference distribution has to be simulated.
@@ -135,15 +132,9 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
 }
 
 # The default reference of a file whose bases share one parameter matrix, as
-# list(median, mad, iter, note): a ref_lookup row supplies only those numbers,
-# and scoring needs nothing else. report(n_trials, NULL) runs once the file is
+# list(median, mad, iter, note). report(n_trials, NULL) runs once the file is
 # loaded, before anything is simulated.
 sharedReference <- function(rdata, iter, force_gen_ref_dist, response_seed, reference_method, report) {
-  # RD: To supress notes from R CMD CHECK, but thise should not be necessary -- debug
-  ref_seed <- NA
-  ref_img_size <- NA
-  ref_n_trials <- NA
-
   # Old files may contain argument names, including a stale rdata path.
   .args <- captureArgs(environment())
   loadRdata(rdata, environment())
@@ -163,90 +154,12 @@ sharedReference <- function(rdata, iter, force_gen_ref_dist, response_seed, refe
     NULL
   }
 
-  # Check whether reference norms are present or can be looked up from table. If not, re-generate.
-  if (!force_gen_ref_dist && !exists("reference_norms", envir = environment(), inherits = FALSE)) {
-    # Before the lookup, whose filter on `seed` fails without one.
-    requireStimulusSeed(get0('seed', envir = environment(), inherits = FALSE), rdata)
+  seed <- get0('seed', envir = environment(), inherits = FALSE)
+  if (!force_gen_ref_dist && is.null(cached_reference)) requireStimulusSeed(seed, rdata)
 
-    # Pre-computed reference distribution table (TODO: read from external file).
-    #
-    # THIS TABLE IS EMPTY, AND THAT IS CORRECT. The four rows below were
-    # measured under the pre-2018 infoVal formula and were commented out by
-    # commit 01e547e, which adopted the Euclidean norm and scaling factor k from
-    # the erratum to Schmitz et al. (2019). That change redefined the norms these
-    # medians and MADs summarise, so reusing them would silently score every CI
-    # against a null from the wrong formula. Emptying the table was the right
-    # call; the numbers were never re-measured.
-    #
-    # The consequence is that every lookup below misses and the reference
-    # distribution is always regenerated -- correct, just slow. The matching and
-    # prompting machinery is kept rather than deleted so that repopulating the
-    # table is a matter of measuring four numbers, not rebuilding the feature.
-    # To repopulate: run generateReferenceDistribution2IFC() at each parameter
-    # combination and record median(reference_norms) and mad(reference_norms).
-    ref_lookup <- tribble(
-      ~ref_seed, ~ref_img_size, ~ref_iter, ~ref_n_trials, ~ref_median, ~ref_mad,
-      #  1,         512,           10000,     100,           1097.7394,     52.54232,
-      #  1,         512,           10000,     300,           634.0318,      30.51781,
-      #  1,         512,           10000,     500,           490.4709,      23.71276,
-      #  1,         512,           10000,     1000,          347.2960,      16.64761
-    )
-
-    # Check whether we have a perfect match
-    ref_values <- ref_lookup %>%
-      filter(ref_seed == seed, ref_img_size == img_size, ref_n_trials == n_trials, ref_iter == iter)
-
-    if (ref_values %>% count() == 1) {
-      # We have a match, use the values
-      write("Pre-computed reference values matching your exact parameters found.", stdout())
-
-      ref_median <- ref_values$ref_median
-      ref_mad <- ref_values$ref_mad
-      ref_iter <- ref_values$ref_iter
-
-    } else {
-      # Check whether at least seed, img_size, and n_trials match
-      ref_values <- ref_lookup %>%
-        filter(ref_seed == seed, ref_img_size == img_size, ref_n_trials == n_trials)
-
-      if (ref_values %>% count() > 0) {
-        write("I found pre-computed reference values that matched seed, image size, and number of trials, but not the number of reference distribution iterations.", stdout())
-        max_ref_iter <- as.numeric(ref_values %>% summarise(max(ref_iter)))
-
-        # Only ask when there is somebody to answer. In a non-interactive
-        # session -- a batch script, knitr, R CMD check -- there is no way to
-        # respond, so decline and regenerate rather than silently substituting a
-        # reference distribution built with a different number of iterations than
-        # the caller asked for. Regenerating is slower but is what was requested.
-        if (interactive()) {
-          user_response <- yesno::yesno(paste0("I did find pre-computed values for ", max_ref_iter, " iterations matching all other parameters. Do you want to use those instead?"))
-        } else {
-          write(paste0("Not running interactively, so I cannot ask -- regenerating the reference distribution with the requested ", iter, " iterations rather than reusing the pre-computed ", max_ref_iter, ". Pass the pre-computed value explicitly if you want it."), stdout())
-          user_response <- FALSE
-        }
-
-        if (user_response) {
-          write(paste0("Using pre-computed reference values for ", max_ref_iter, " instead of ", iter, " iterations."), stdout())
-          ref_values <- ref_lookup %>%
-            filter(ref_seed == seed, ref_img_size == img_size, ref_n_trials == n_trials, ref_iter == max_ref_iter)
-
-          ref_median <- ref_values$ref_median
-          ref_mad <- ref_values$ref_mad
-          ref_iter <- ref_values$ref_iter
-        }
-      }
-    }
-  }
-
-  if (!exists("ref_median", envir = environment(), inherits = FALSE)) {
-
-    reference_norms <- resolveReferenceNorms(cached_reference, rdata, iter,
-                                             force_gen_ref_dist, response_seed,
-                                             seedless = is.null(get0('seed', envir = environment(), inherits = FALSE)),
-                                             reference_method = reference_method)
-
-    return(referenceSummary(reference_norms, 'in the stimulus file', 'in the stimulus file', ''))
-  }
-
-  list(median = ref_median, mad = ref_mad, iter = ref_iter, note = '')
+  reference_norms <- resolveReferenceNorms(cached_reference, rdata, iter,
+                                           force_gen_ref_dist, response_seed,
+                                           seedless = is.null(seed),
+                                           reference_method = reference_method)
+  referenceSummary(reference_norms, 'in the stimulus file', 'in the stimulus file', '')
 }

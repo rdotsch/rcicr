@@ -50,6 +50,7 @@ test_that("computeInfoVal2IFC(force_gen_ref_dist = TRUE) regenerates the referen
 })
 
 test_that("generateCI accepts tibble columns as well as data.frame columns", {
+  skip_if_not_installed("tibble")
   # Issues #70 and #123. tbl[, "col"] stays a 1-column tibble # nolint: commented_code_linter.
   # where df[, "col"] drops to a vector, so aggregate() fails with
   # "arguments must have same length". Since readr/dplyr return tibbles by

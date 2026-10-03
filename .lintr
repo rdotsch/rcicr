@@ -17,10 +17,8 @@ linters: linters_with_defaults(
     # Not a default linter. CONTRIBUTING.md: "TRUE/FALSE, never T/F". No T or
     # F remains in R/, and nothing else guards against reintroducing it.
     T_and_F_symbol_linter = T_and_F_symbol_linter(),
-    # The package uses %>% seven times and |> never, so it is already
-    # consistent -- the linter merely defaults to preferring native. %>% comes
-    # from dplyr, an Import regardless for count/filter/summarise, so switching
-    # would shed no dependency. A stray |> still fires under this setting.
-    pipe_consistency_linter = pipe_consistency_linter(pipe = "%>%")
+    # The package uses no pipe since dplyr was dropped (#392). Native |> is
+    # the one to use if one is added: it needs no import.
+    pipe_consistency_linter = pipe_consistency_linter(pipe = "|>")
   )
 exclusions: list()
