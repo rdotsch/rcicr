@@ -351,6 +351,21 @@
   computed before changes.
   ([\#351](https://github.com/rdotsch/rcicr/issues/351))
 
+### Documentation
+
+- **A new vignette,
+  [`vignette("recipes")`](https://rdotsch.github.io/rcicr/articles/recipes.md),
+  answers questions that come up after the basics.** It covers
+  noise-only stimuli from a uniform grey base image, which needs
+  `maximize_baseimage_contrast = FALSE`; rating scales as response
+  weights, and how to check their direction; and matching the InfoVal
+  reference to the design: dropped trials (`reference_stimuli`), masked
+  classification images, scoring a batch, and why a CI averaged over
+  participants has no calibrated InfoVal. It runs at 64 pixels and
+  builds in seconds.
+  ([\#69](https://github.com/rdotsch/rcicr/issues/69),
+  [\#6](https://github.com/rdotsch/rcicr/issues/6))
+
 ## rcicr 1.5.0 (2026-09-25)
 
 CRAN release: 2026-09-27

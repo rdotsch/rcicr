@@ -6,6 +6,7 @@
   rcicr](https://rdotsch.github.io/rcicr/articles/getting-started.md):
 - [A reverse correlation
   walkthrough](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md):
+- [Recipes](https://rdotsch.github.io/rcicr/articles/recipes.md):
 
 ### Advisories
 
