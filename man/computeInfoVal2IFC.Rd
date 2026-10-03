@@ -147,5 +147,5 @@ target_ci <- generateCI(
 computeInfoVal2IFC(target_ci = target_ci, rdata = rdata_file)
 }
 \seealso{
-\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?"; \code{vignette("recipes", package = "rcicr")}, "Matching the InfoVal reference to the design", for dropped trials, masks, batches and group averages.
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?"; \code{vignette("recipes", package = "rcicr")}, "Matching the InfoVal reference to the design", for dropped trials, masks, batches and group averages, and "Reproducing a number from an earlier version".
 }

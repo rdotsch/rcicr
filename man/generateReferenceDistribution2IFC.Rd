@@ -164,5 +164,5 @@ rdata_file <- list.files(stimulus_path, pattern = "\\\\.Rdata$", full.names = TR
 suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
 }
 \seealso{
-\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?"; \code{vignette("recipes", package = "rcicr")}, "Matching the InfoVal reference to the design".
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?"; \code{vignette("recipes", package = "rcicr")}, "Matching the InfoVal reference to the design" and "Reproducing a number from an earlier version".
 }

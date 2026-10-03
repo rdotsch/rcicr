@@ -108,7 +108,7 @@
 #' \code{reference_stimuli} goes in \code{reference_norms_by_stimuli}, a list with one entry per
 #' stimulus set (and base image, where the bases have different noise), leaving the default
 #' reference untouched.
-#' @seealso \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?"; \code{vignette("recipes", package = "rcicr")}, "Matching the InfoVal reference to the design".
+#' @seealso \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?"; \code{vignette("recipes", package = "rcicr")}, "Matching the InfoVal reference to the design" and "Reproducing a number from an earlier version".
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")
