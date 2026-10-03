@@ -21,7 +21,7 @@ show <- function(m, title, zlim = range(m, na.rm = TRUE)) {
 }
 ```
 
-Short answers to questions that come up once the basics in `vignette("reverse-correlation-walkthrough")` are in place. Each recipe runs at a small size so this vignette builds in seconds; real studies use `img_size = 512` and several hundred trials.
+Short answers to questions that come up once the basics in `vignette("reverse-correlation-walkthrough", package = "rcicr")` are in place. Each recipe runs at a small size so this vignette builds in seconds; real studies use `img_size = 512` and several hundred trials.
 
 ```{r setup}
 library(rcicr)
@@ -203,6 +203,59 @@ infoval_group
 ```
 
 Averaging shrinks the CI's norm, so against a single-responder reference the group CI scores below zero, although one of its participants scored 6.3 on their own. Score each participant's own CI instead, as above.
+
+## Reproducing a number from an earlier version
+
+A classification image or InfoVal reported years ago can be reproduced in two ways.
+
+### Run the version that computed it
+
+This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record, and the same BLAS library. For a release, use the version your analysis script or its session info records. A development install from GitHub is identified only by its commit SHA, since snapshots share a version number: install the SHA you recorded, `remotes::install_github("rdotsch/rcicr@<commit-sha>")`, or keep the library it was installed in. `p$generator_version` in the `.Rdata` file (in files from 0.3.3 on) names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
+
+```{r old-version, eval = FALSE}
+dir.create("rcicr-1.4.1")
+remotes::install_github("rdotsch/rcicr@v1.4.1", lib = "rcicr-1.4.1")
+library(rcicr, lib.loc = "rcicr-1.4.1")
+```
+
+Older releases import packages this one no longer needs; `install_github()` installs those too.
+
+### Recompute with the current version
+
+Classification images come out the same unless `NEWS.md` lists your situation under "Reproducibility impact", in the releases after the one you used. For a version before 1.1.0, check `ChangeLog` too: `NEWS.md` starts at 1.1.0.
+
+Their file names can differ, though, for per-participant images from a GitHub install before 1.3.0. In affected versions, a direct `generateCI()` call with `participants` and `save_individual_cis = TRUE` could save an image under another participant's name. Rerunning such a version reproduces the wrong names; recomputing with this one gives the right names, so comparing old and new files by name can turn up differences where there are none. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected. CRAN releases never carried the bug.
+
+An InfoVal depends on the reference distribution stored in the `.Rdata` file:
+
+- **A reference stored by 1.4.0 or later is reused as stored**, so its InfoVal does not change, as long as no older rcicr has since replaced its norms. Such a reference carries a `source` marker; `vignette("stored-data", package = "rcicr")` shows where it sits for each way a reference is stored.
+- **A reference drawn with a `response_seed` is kept as stored**, whichever method you ask for.
+- **Any other reference is rebuilt** the first time, with a message that the new InfoVal supersedes earlier ones. By default it is computed through the stimulus Gram matrix, which differs from the calculation of 1.5.0 and earlier only by rounding; `reference_method = "images"` is that earlier calculation, unchanged. A file generated with `seed = NULL` cannot rebuild its reference; the error names the call that stores a reproducible one instead.
+
+To rebuild a reference the way earlier versions did, store it with `generateReferenceDistribution2IFC()` and `reference_method = "images"`, passing the original `iter` (the length of the stored norms, if the file still holds them), the original `response_seed` if there was one, and, when the base images have parameters of their own, the classification image's `baseimage`. Later `computeInfoVal2IFC()` calls reuse it. Whether it then matches the old reference exactly depends on what changed after your version, so read the "Reproducibility impact" entries in `NEWS.md` for every later release (and `ChangeLog`, for versions before 1.1.0). It also needs the original session's random number generator and BLAS library; `sessionInfo()` names the BLAS, and lists the generator only when it differs from R's default.
+
+Here both methods score the same classification image, each on its own copy of the file:
+
+```{r reproduce, results = "hide", warning = FALSE}
+ci_all <- generateCI(1:120, choice, "face", rdata_file, save_as_png = FALSE)
+
+gram_file <- tempfile(fileext = ".Rdata")
+file.copy(rdata_file, gram_file)
+generateReferenceDistribution2IFC(gram_file, iter = 1000, ncores = 1)
+infoval_gram <- computeInfoVal2IFC(ci_all, gram_file, iter = 1000)
+
+images_file <- tempfile(fileext = ".Rdata")
+file.copy(rdata_file, images_file)
+generateReferenceDistribution2IFC(images_file, iter = 1000, ncores = 1,
+                                  reference_method = "images")
+infoval_images <- computeInfoVal2IFC(ci_all, images_file, iter = 1000)
+```
+
+```{r reproduce-show}
+c(gram = infoval_gram, images = infoval_images, difference = infoval_images - infoval_gram)
+```
+
+Real references use `iter = 10000`; the smaller one here keeps the slower `"images"` calculation quick.
 
 ```{r, include = FALSE}
 par(oldpar)
