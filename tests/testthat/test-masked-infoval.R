@@ -16,8 +16,8 @@ top_mask <- function(rows = 1:5, size = 32) {
 }
 
 masked_fixture <- function() {
-  rdata <- make_fixture_rdata(withr::local_tempdir(.local_envir = parent.frame()), n_trials = 8,
-                              nscales = 2)
+  dir <- withr::local_tempdir(.local_envir = parent.frame())
+  rdata <- make_fixture_rdata(dir, n_trials = 8, nscales = 2) # nolint: object_usage_linter.
   list(rdata = rdata,
        ci = quietly(generateCI(1:8, responses8, "base", rdata, save_as_png = FALSE,
                                mask = top_mask())))
@@ -122,8 +122,9 @@ test_that("the batch scores masked and unmasked CIs as the single function does"
   })
   batch <- quietly(batchComputeInfoVal2IFC(cis, f$rdata, iter = 20, response_seed = 4))
   expect_identical(calls, 2)
-  single <- vapply(cis, function(ci) quietly(computeInfoVal2IFC(ci, f$rdata, iter = 20,
-                                                                response_seed = 4)), numeric(1))
+  single <- vapply(cis, function(ci) {
+    quietly(computeInfoVal2IFC(ci, f$rdata, iter = 20, response_seed = 4))
+  }, numeric(1))
   expect_identical(batch, single)
   expect_identical(batch[["masked"]], batch[["again"]])
 })
