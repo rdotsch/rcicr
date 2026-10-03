@@ -67,6 +67,7 @@ setwd(workdir)
 #   infoval_seeded  computeInfoVal2IFC(response_seed = )               [>= 1.4.0]
 #   reference_norms  the default, subset and seeded reference vectors [>= 1.6.0]
 #   infoval_subset, infoval_images, infoval_batch                      [>= 1.6.0]
+#   infoval_masked  a masked CI's InfoVal, and its reference vector     [>= 1.6.0]
 #   infoval_cross_kind  every reference call again under L'Ecuyer-CMRG for a
 #                file written under Mersenne-Twister, and whether the caller's
 #                whole random state survives it                       [>= 1.6.0]
@@ -104,7 +105,7 @@ CI_EXTRAS <- c("ci2ifc", "subset", "participants", "individual_cis", "batch",
                "cumulative", "zmap_quick", "zmap_ttest", "mask", "mask_rgba",
                "zmap_plain", "batch_participants", "scaling_record")
 INFOVAL_EXTRAS <- c("reference_images", "infoval_seeded", "reference_norms", "infoval_subset",
-                    "infoval_images", "infoval_batch", "infoval_cross_kind")
+                    "infoval_images", "infoval_batch", "infoval_masked", "infoval_cross_kind")
 ALL_EXTRAS <- c(CI_EXTRAS, INFOVAL_EXTRAS)
 
 # Oldest reference version that can run each extra without crashing.
@@ -121,7 +122,7 @@ SINCE <- c(mask = "1.1.0", mask_rgba = "1.1.0", zmap_plain = "1.1.0",
            infoval_seeded = "1.4.0",
            batch_participants = "1.6.0", scaling_record = "1.6.0", reference_norms = "1.6.0",
            infoval_subset = "1.6.0", infoval_images = "1.6.0", infoval_batch = "1.6.0",
-           infoval_cross_kind = "1.6.0")
+           infoval_masked = "1.6.0", infoval_cross_kind = "1.6.0")
 
 REF_VERSION <- package_version(Sys.getenv("RCICR_COMPARE_REF_VERSION", "1.0.1"))
 message("battery for reference version ", REF_VERSION)
@@ -600,6 +601,15 @@ run_config <- function(cfg) {
       out$reference_norms_seeded <- reference(response_seed = 7)
     }
     if ("infoval_subset" %in% ex) out$infoval_subset <- infoval(sub_ci, reference_stimuli = sub)
+    if ("infoval_masked" %in% ex) {
+      mask <- matrix(1, cfg$img_size, cfg$img_size)
+      mask[seq_len(cfg$img_size %/% 4), ] <- 0
+      masked_ci <- generateCI(stimuli = stimuli, responses = responses, baseimage = key,
+                              rdata = rdata, scaling = "none", save_as_png = FALSE,
+                              targetpath = ci_dir, mask = mask)
+      out$reference_norms_masked <- reference(mask = mask)
+      out$infoval_masked <- infoval(masked_ci)
+    }
     if ("infoval_batch" %in% ex) {
       batch <- do.call(batchComputeInfoVal2IFC,
                        with_base(batchComputeInfoVal2IFC,

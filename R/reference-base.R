@@ -30,7 +30,8 @@ vouchedReference <- function(norms, marker, fingerprint) {
 # Both cache layouts use this policy; their generators own the storage details.
 resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
                                   response_seed, baseimage = NULL, seedless = FALSE,
-                                  reference_stimuli = NULL, reference_method = 'gram') {
+                                  reference_stimuli = NULL, reference_method = 'gram',
+                                  masked = NULL) {
   forced <- force_gen_ref_dist || !is.null(response_seed)
   stale <- !is.null(entry) && is.null(entry$response_seed) &&
     !vouchedReference(entry$norms, entry$source, entry$fingerprint)
@@ -42,7 +43,7 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     if (seedless && is.null(entry$response_seed)) {
       message(rdata, ' has no stimulus seed, so its stored reference distribution cannot ',
               'be regenerated from it. It is used as stored. ',
-              seededReferenceAdvice(rdata, baseimage, !is.null(reference_stimuli)))
+              seededReferenceAdvice(rdata, baseimage, !is.null(reference_stimuli), !is.null(masked)))
     }
     return(entry$norms)
   }
@@ -64,7 +65,8 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
       generateReferenceDistribution2IFC(
         rdata, iter = iter, response_seed = response_seed,
         save_rdata = save_rdata, baseimage = baseimage, reference_stimuli = reference_stimuli,
-        reference_method = reference_method
+        reference_method = reference_method,
+        mask = if (is.null(masked)) NA else maskMatrix(masked)
       ),
       warning = function(cond) {
         # The inherited count is not a new choice the caller can act on.
@@ -110,7 +112,7 @@ savedReferenceParams <- function(source, baseimage) {
 # built from the stored parameters and basis. Re-generating the stimuli instead
 # reopened every base image, which an archived or moved experiment no longer has
 # (#301), and rebuilt the basis from fields older files do not carry.
-referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) {
+referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL, masked = NULL) {
   params <- savedReferenceParams(source, baseimage)
   if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
   n_trials <- nrow(params)
@@ -126,7 +128,8 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) 
     if (is.null(cl)) setTxtProgressBar(pb, trial)
     as.vector(generateNoiseImage(params[trial, ], p))
   }
-  matrix(noise, ncol = n_trials)
+  noise <- matrix(noise, ncol = n_trials)
+  if (is.null(masked)) noise else noise[!masked, , drop = FALSE]
 }
 
 # The norms of `iter` CIs built from random responses over the selected saved
@@ -138,16 +141,16 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL) 
 # rcicr 1.5.0 and earlier, bit for bit. They differ by rounding only
 # (analyses/gram-reference-accuracy.md, #354).
 referenceNorms <- function(source, label, reference_stimuli, iter, ncores, response_seed,
-                           reference_method) {
+                           reference_method, masked = NULL) {
   reportReferenceMethod(reference_method)
   if (reference_method == 'gram') {
     params <- savedReferenceParams(source, label)
     if (!is.null(reference_stimuli)) params <- params[reference_stimuli, , drop = FALSE]
-    gram <- stimulusGram(params, referenceBasis(source))
+    gram <- stimulusGram(params, referenceBasis(source), if (!is.null(masked)) !masked)
     rm(params)
     return(replayResponses(source, label, response_seed, function() gramNorms(gram, iter)))
   }
-  noise <- referenceNoise(source, label, ncores, reference_stimuli)
+  noise <- referenceNoise(source, label, ncores, reference_stimuli, masked)
   replayResponses(source, label, response_seed, function() renderedNorms(noise, iter))
 }
 
@@ -216,7 +219,11 @@ renderedNorms <- function(noise, iter) {
 # and the sum accumulated: no full-size copy of the basis is held, nor, for the
 # rendered build, the full S. Each block's t(P) P is sparse (about 1 in 1,000
 # entries at 512px), so the cross-product build stays sparse until G.
-stimulusGram <- function(params, p) {
+#
+# `pixels`, when given, is the logical vector of pixels to keep (#374). A pixel
+# left out contributes no entry to P, which is the same as rendering S and
+# dropping that row.
+stimulusGram <- function(params, p, pixels = NULL) {
   d <- dim(p$patches)
   npix <- d[1] * d[2]
   nparams <- max(p$patchIdx)
@@ -243,6 +250,11 @@ stimulusGram <- function(params, p) {
     # A 0 index is a cell of the layer a 0-based file never wrote; its patch
     # value is 0, so dropping it drops nothing (DECISIONS.md, "4096 -> 4092").
     keep <- index != 0
+    if (!is.null(pixels)) {
+      # The block's rows are its pixels in column-major order, offset by the
+      # columns before it.
+      keep <- keep & rep(pixels[(first - 1L) * d[1] + seq_len(d[1] * length(block))], d[3])
+    }
     basis <- Matrix::sparseMatrix(i = rep(seq_len(d[1] * length(block)), d[3])[keep],
                                   j = index[keep],
                                   x = p$patches[, block, , drop = FALSE][keep] / d[3],
@@ -285,17 +297,19 @@ gramNorms <- function(gram, iter, block = 1000L) {
 # A missing or NULL stimulus seed leaves no stream to replay: set.seed(NULL)
 # reseeds from the clock, so the default reference could never be reproduced
 # (#334). Checked before referenceNoise(), the slow step.
-requireStimulusSeed <- function(seed, rdata, baseimage = NULL, subset = FALSE) {
+requireStimulusSeed <- function(seed, rdata, baseimage = NULL, subset = FALSE, masked = FALSE) {
   if (is.null(seed)) {
     stop(rdata, ' has no stimulus seed to replay, so its default reference distribution ',
-         'could not be reproduced. ', seededReferenceAdvice(rdata, baseimage, subset), call. = FALSE)
+         'could not be reproduced. ', seededReferenceAdvice(rdata, baseimage, subset, masked),
+         call. = FALSE)
   }
   invisible(NULL)
 }
 
-seededReferenceAdvice <- function(rdata, baseimage = NULL, subset = FALSE) {
+seededReferenceAdvice <- function(rdata, baseimage = NULL, subset = FALSE, masked = FALSE) {
   base_arg <- if (is.null(baseimage)) '' else paste0(', baseimage = ', encodeString(baseimage, quote = '"'))
   if (subset) base_arg <- paste0(base_arg, ', reference_stimuli = <the same stimuli>')
+  if (masked) base_arg <- paste0(base_arg, ', mask = <the same mask>')
   paste0('Store a reproducible one with generateReferenceDistribution2IFC(',
          encodeString(rdata, quote = '"'), ', response_seed = <n>', base_arg,
          '); later computeInfoVal2IFC() calls reuse it. If the file cannot be written, ',
