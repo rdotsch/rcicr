@@ -16,10 +16,8 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 \value{
 The input \code{cis} list, with each element's \code{$scaled} matrix replaced by its
 autoscaled version. The scaling constant is printed to the console, and recorded in each
-element's \code{scaling} attribute (see \code{\link{generateCI}}): \code{method} is
-\code{'autoscale'} and \code{constant} the shared constant, both describing \code{$scaled}. Its
-\code{combined} element keeps the earlier record, which still describes \code{$combined}, or is
-\code{NULL} when the element had none.
+element's \code{scaling} attribute, which keeps the earlier record for \code{$combined};
+\code{vignette("stored-data")} lists its fields.
 
 \strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is returned exactly
 as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
