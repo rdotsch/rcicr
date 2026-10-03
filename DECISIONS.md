@@ -116,8 +116,8 @@ Older rcicr versions keep unknown fields while replacing the norms, so the marke
 
 A changed reference is reported with a message, not a warning, so that under `warn = 2` reporting the correction cannot stop the corrected value being returned. The cost: `warnings()` does not collect it and `suppressMessages()` hides it, which `NEWS.md` states. Iteration counts the caller chose still get the reliability warning.
 
-### Repopulating `ref_lookup` costs four measurements — and the two halves stand or fall together
-`AGENTS.md` says what the table is; this entry is the way out, because doing either half alone is worse than the present state. Repopulating means four numbers: `median(reference_norms)` and `mad(reference_norms)` under the current formula, for seed 1, 512px and 10000 iterations, at 100, 300, 500 and 1000 trials. The alternative is deleting the ~55 lines of matching and prompt code. **Do not do half of either**: delete the code while meaning to re-measure, and the feature becomes unrecoverable rather than dormant.
+### `ref_lookup` was deleted, not repopulated
+`computeInfoVal2IFC()` had a table of precomputed reference medians and MADs, empty since its rows were measured under the pre-erratum formula. Repopulating it was not "four measurements": its key (seed, `img_size`, `n_trials`, `iter`) cannot tell apart references that also depend on `nscales`, `noise_type`, `sigma`, `reference_stimuli`, the mask, `rng_kind` and `reference_method`, so a populated row would score other stimulus sets against the wrong null. It was also the only user of `dplyr`, `tibble` and `yesno`. Deleting it changed no InfoVal, since every lookup missed ([#392](https://github.com/rdotsch/rcicr/issues/392)). A stored reference in the `.Rdata` file is the cache.
 
 ---
 

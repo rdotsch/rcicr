@@ -47,6 +47,7 @@ test_that("parameter selection rejects IDs even when called directly", {
 })
 
 test_that("numeric tibbles survive coercion but mixed factor and logical lists do not", {
+  skip_if_not_installed("tibble")
   good <- rcicr:::coerceTrialVectors(tibble::tibble(id = c(3, 1, 3)),
                                      tibble::tibble(response = c(1, -1, 1)), tibble::tibble(pid = c("b", "a", "b")))
   expect_identical(good$stimuli, c(3, 1, 3))

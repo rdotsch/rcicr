@@ -32,7 +32,7 @@ make_fixture_rdata <- function(dir, img_size = 32, n_trials = 6, nscales = 1, se
 
 # Pre-seeds a `reference_norms` vector into an existing .Rdata fixture, so
 # computeInfoVal2IFC() takes the "already have a reference distribution" path
-# and never reaches generateReferenceDistribution2IFC() or yesno().
+# and never reaches generateReferenceDistribution2IFC().
 seed_reference_norms <- function(rdata_path, n = 50, seed = 1) {
   e <- new.env()
   load(rdata_path, envir = e)

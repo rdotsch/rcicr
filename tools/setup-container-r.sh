@@ -18,12 +18,12 @@
 # every dependency this package and its pinned v1.0.1 gate reference need,
 # except one. So: apt for everything, and a local stub for the exception.
 #
-# The exception is `yesno`. It has no Debian package. rcicr reaches it from a
-# single `if (interactive())` branch in computeInfoVal2IFC(), guarded by a
-# `ref_lookup` table whose data rows have been commented out since 2018 -- so
-# every lookup misses and the prompt is unreachable in a batch run. The stub
-# below therefore satisfies NAMESPACE's `import(yesno)` without pretending to
-# answer: calling it fails loudly, so nothing can quietly depend on a stub.
+# The exception is `yesno`. It has no Debian package. rcicr no longer imports
+# it (#392), but the gate's reference versions, v1.0.1 through 1.5.0, do, and
+# reach it only from a prompt behind an empty lookup table. The stub below
+# satisfies their `import(yesno)` without pretending to answer: calling it
+# fails loudly, so nothing can quietly depend on a stub. dplyr and tibble are
+# still installed for the same reason.
 #
 # Two things that are easy to get wrong:
 #   - spatstat deb names keep their dots (r-cran-spatstat.explore), unlike the

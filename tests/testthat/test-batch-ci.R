@@ -55,6 +55,11 @@ test_that("both functions give what a generateCI() call per unit gives", {
       expect_identical(pixels(actual), pixels(expected))
     }
   }
+})
+
+test_that("a tibble gives what the same rows as a data.frame give", {
+  skip_if_not_installed("tibble")
+  rdata <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
   expect_identical(pixels(quietly(batchGenerateCI(tibble::as_tibble(batch_data()), "cond", "stim",
                                                   "resp", "base", rdata, save_as_png = FALSE))),
                    pixels(per_unit_oracle(batch_data(), rdata)))

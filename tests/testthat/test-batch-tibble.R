@@ -21,6 +21,7 @@ for (fn_name in c("batchGenerateCI", "batchGenerateCI2IFC")) {
   fn <- get(fn_name)
 
   test_that(paste(fn_name, "groups a tibble like a data.frame"), {
+    skip_if_not_installed("tibble")
     tmp <- withr::local_tempdir()
     rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 8, nscales = 1, seed = 1)
 
@@ -35,6 +36,7 @@ for (fn_name in c("batchGenerateCI", "batchGenerateCI2IFC")) {
   })
 
   test_that(paste(fn_name, "drops rows without a group in a tibble too"), {
+    skip_if_not_installed("tibble")
     tmp <- withr::local_tempdir()
     rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 8, nscales = 1, seed = 1)
 
@@ -46,6 +48,7 @@ for (fn_name in c("batchGenerateCI", "batchGenerateCI2IFC")) {
   })
 
   test_that(paste(fn_name, "treats a factor group column like a character one"), {
+    skip_if_not_installed("tibble")
     tmp <- withr::local_tempdir()
     rdata_path <- make_fixture_rdata(tmp, img_size = 32, n_trials = 8, nscales = 1, seed = 1)
 
