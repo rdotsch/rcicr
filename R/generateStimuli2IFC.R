@@ -289,7 +289,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
       # write to file
       if (save_as_png) {
-        png::writePNG(combined, stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'ori'))
+        png::writePNG(clampUnit(combined), stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'ori'))
       }
 
       # compute inverted stimulus
@@ -300,7 +300,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
       # write to file
       if (save_as_png) {
-        png::writePNG(combined, stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'inv'))
+        png::writePNG(clampUnit(combined), stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'inv'))
       }
     }
 

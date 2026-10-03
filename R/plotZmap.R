@@ -141,6 +141,10 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     zmap <- applyMask(zmap, mask, img_size = c(nrow(zmap), ncol(zmap)), context = 'z-map')
   }
 
+  # generateCI() passes its combined image, which leaves [0, 1] under 'none'
+  # or 'constant' scaling, and rasterImage() stops on that (#373).
+  if (is.numeric(bgimage)) bgimage <- clampUnit(bgimage)
+
   # Plot
   outfile <- paste0(targetpath, '/', filename, '.png')
   png(filename = outfile, width = size, height = size, pointsize = pointsize)
