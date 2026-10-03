@@ -25,6 +25,7 @@ articles:
       - getting-started
       - reverse-correlation-walkthrough
       - recipes
+      - stored-data
   - title: Advisories
     contents:
       - articles/rcicr-individual-ci-advisory
