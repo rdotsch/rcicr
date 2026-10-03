@@ -170,3 +170,16 @@ test_that("a fully masked targetci gives an all-NA curve", {
   ))
   expect_true(all(is.na(correlations)))
 })
+
+test_that("a stimulus file without img_size still gives the same curve", {
+  rdata <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
+  responses <- c(1, -1, -1, 1, 1, 1, -1, 1)
+  curve <- function() suppressWarnings(computeCumulativeCICorrelation(1:8, responses, "base", rdata))
+  utils::capture.output(with_size <- curve())
+  mutate_rdata(rdata, .remove = "img_size")
+  utils::capture.output(without <- curve())
+  expect_identical(without, with_size)
+  # generateCI() needs img_size and still says so.
+  expect_error(suppressWarnings(generateCI(1:8, responses, "base", rdata, save_as_png = FALSE)),
+               "did not contain img_size")
+})
