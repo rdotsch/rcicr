@@ -310,6 +310,11 @@
   subset references already did. Every finite InfoVal is unchanged.
   ([\#377](https://github.com/rdotsch/rcicr/issues/377))
 
+- **An unknown `zmapmethod` now says so.** `generateCI(zmap = TRUE)`
+  with a method other than `"quick"` or `"t.test"` stopped with
+  “argument of length 0” from inside the plotting code; it now names the
+  two methods. ([\#388](https://github.com/rdotsch/rcicr/issues/388))
+
 - **A single generated trial or a single participant no longer stops
   with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`,
   and
