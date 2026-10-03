@@ -310,6 +310,14 @@
   subset references already did. Every finite InfoVal is unchanged.
   ([\#377](https://github.com/rdotsch/rcicr/issues/377))
 
+- **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  checks `n_trials` before writing anything.** `0`, negative and missing
+  values failed with messages such as “dimensions must be a positive
+  quantity”, depending on `save_as_png`. A fractional one, such as
+  `2.5`, wrote 2 trials into a stimulus file whose `n_trials` every
+  InfoVal then rejected. All now stop with “n_trials must be a positive
+  whole number”. ([\#385](https://github.com/rdotsch/rcicr/issues/385))
+
 - **An unknown `zmapmethod` now says so.** `generateCI(zmap = TRUE)`
   with a method other than `"quick"` or `"t.test"` stopped with
   “argument of length 0” from inside the plotting code; it now names the
