@@ -142,8 +142,9 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   }
 
   # generateCI() passes its combined image, which leaves [0, 1] under 'none'
-  # or 'constant' scaling, and rasterImage() stops on that (#373).
-  if (is.numeric(bgimage)) bgimage <- clampUnit(bgimage)
+  # or 'constant' scaling, and rasterImage() stops on that (#373). A
+  # nativeRaster is numeric too, but holds packed colours, not intensities.
+  if (is.numeric(bgimage) && !inherits(bgimage, 'nativeRaster')) bgimage <- clampUnit(bgimage)
 
   # Plot
   outfile <- paste0(targetpath, '/', filename, '.png')

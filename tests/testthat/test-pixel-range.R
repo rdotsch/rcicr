@@ -82,3 +82,18 @@ test_that("a z-map is drawn over a background outside [0, 1]", {
                              targetpath = out, filename = paste0("z", decoration), size = 200))
   }
 })
+
+test_that("a nativeRaster background is drawn as it is, not clamped", {
+  out <- withr::local_tempdir()
+  path <- file.path(out, "bg.png")
+  png::writePNG(matrix(seq(0, 1, length.out = 200 * 200), 200, 200), path)
+  native <- png::readPNG(path, native = TRUE)
+  zmap <- matrix(NA_real_, 200, 200)
+  zmap[1:10, 1:10] <- 5
+  draw <- function(bg, name) {
+    plotZmap(zmap, bgimage = bg, sigma = 3, decoration = FALSE, targetpath = out,
+             filename = name, size = 200)
+    png::readPNG(file.path(out, paste0(name, ".png")))
+  }
+  expect_identical(draw(native, "native"), draw(png::readPNG(path), "numeric"))
+})
