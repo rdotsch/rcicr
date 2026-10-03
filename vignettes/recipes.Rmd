@@ -252,6 +252,10 @@ c(gram = infoval_gram, images = infoval_images, difference = infoval_images - in
 
 Real references use `iter = 10000`; the smaller one here keeps the slower `"images"` calculation quick.
 
+### Per-participant images from a GitHub install of 0.4.1 to 1.2.3
+
+A direct `generateCI()` call with `participants` and `save_individual_cis = TRUE` could save an image under another participant's name in those versions. Rerunning such a version reproduces the wrong names; recomputing with this one gives the right names, so comparing old and new files by name can turn up differences where there are none. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected. CRAN releases never carried the bug.
+
 ```{r, include = FALSE}
 par(oldpar)
 ```
