@@ -1,7 +1,12 @@
 # The six messages that list the first few offending items, pinned in full,
 # for a list that fits and one that is cut with "...".
 
-msg <- function(expr) tryCatch({ expr; NA_character_ }, error = conditionMessage)
+msg <- function(expr) {
+  tryCatch({
+    expr
+    NA_character_
+  }, error = conditionMessage)
+}
 
 test_that("trial-input messages list up to five trials, then ...", {
   coerce <- function(...) rcicr:::coerceTrialVectors(...)
