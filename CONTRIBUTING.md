@@ -128,7 +128,7 @@ attaching a real face photo:
 
 - **`skip_if_not_installed()` is for `Suggests` packages only.** `withr`
   may genuinely be absent, so skipping on it is honest. A package in
-  `Imports` (`png`, `jpeg`, `matlab`) cannot be absent, because the
+  `Imports` (`png`, `jpeg`, `Matrix`) cannot be absent, because the
   package will not load without it. Such a skip never fires for a real
   reason, and if it somehow did, it would hide the test instead of
   failing it. At a glance a skip reads as “passed”, which is the
@@ -242,7 +242,7 @@ because nothing outside the package can call them.
 | Returns | explicit [`return()`](https://rdrr.io/r/base/function.html) at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md); `zzz.R` holds the [`globalVariables()`](https://rdrr.io/r/utils/globalVariables.html) declarations. |
 | Roxygen | exported functions only | `man/` holds exactly the exports plus the package page. Internal helpers use plain `#` comments, even when they share a file with an export: roxygen on an unexported function either publishes a page no user can reach or needs `@noRd`. |
-| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked [`base::sum()`](https://rdrr.io/r/base/sum.html) with MATLAB semantics across six files (#182); the package now calls `matlab::` explicitly. |
+| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked [`base::sum()`](https://rdrr.io/r/base/sum.html) with MATLAB semantics across six files (#182). `matlab` is no longer a dependency (#208). |
 
 Line length is not enforced, and some lines in `R/` exceed 100
 characters. Wrap new code at something reasonable instead of reflowing

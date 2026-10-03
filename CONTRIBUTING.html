@@ -84,7 +84,7 @@
 </ul><div class="section level3">
 <h3 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h3>
 <ul><li>
-<strong><code>skip_if_not_installed()</code> is for <code>Suggests</code> packages only.</strong> <code>withr</code> may genuinely be absent, so skipping on it is honest. A package in <code>Imports</code> (<code>png</code>, <code>jpeg</code>, <code>matlab</code>) cannot be absent, because the package will not load without it. Such a skip never fires for a real reason, and if it somehow did, it would hide the test instead of failing it. At a glance a skip reads as “passed”, which is the opposite of what you need to know.</li>
+<strong><code>skip_if_not_installed()</code> is for <code>Suggests</code> packages only.</strong> <code>withr</code> may genuinely be absent, so skipping on it is honest. A package in <code>Imports</code> (<code>png</code>, <code>jpeg</code>, <code>Matrix</code>) cannot be absent, because the package will not load without it. Such a skip never fires for a real reason, and if it somehow did, it would hide the test instead of failing it. At a glance a skip reads as “passed”, which is the opposite of what you need to know.</li>
 <li>
 <strong>When mutating the code repeatedly, keep backups with <code>cp</code> in a scratch directory, and never restore with <code>git checkout &lt;file&gt;</code>.</strong> That discards unstaged work, and it has destroyed an in-progress implementation here. <code>git stash push -- R/</code> is right for proving a single fix; it is the restore that bites. Guard each mutation with a <code>grep -q MUTANT</code> check too: a mutation that silently failed to apply looks like a surviving mutant.</li>
 <li>
@@ -166,7 +166,7 @@
 <code>pkg::fn()</code> or <code>@importFrom pkg fn</code>, not <code>@import pkg</code>
 </td>
 <td>
-<code>@import matlab</code> once masked <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files (#182); the package now calls <code>matlab::</code> explicitly.</td>
+<code>@import matlab</code> once masked <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files (#182). <code>matlab</code> is no longer a dependency (#208).</td>
 </tr></tbody></table><p>Line length is not enforced, and some lines in <code>R/</code> exceed 100 characters. Wrap new code at something reasonable instead of reflowing what is there.</p>
 <p><strong>Do not line-wrap Markdown prose: write one line per paragraph and let the reader’s editor wrap it. Avoid em dashes</strong>; use a full stop, comma, colon or parentheses instead.</p>
 <p><strong>Show why something matters; never just say that it does.</strong> Cut “It is worth …”, “it matters because”, “in ways that matter” and similar, and state the consequence. Not “worth running first” but “a <code>TRUE</code> ends the matter”.</p>

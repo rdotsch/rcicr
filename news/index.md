@@ -163,6 +163,17 @@
   interactive prompt it could have shown never ran.
   ([\#392](https://github.com/rdotsch/rcicr/issues/392))
 
+- **`matlab` and `scales` are no longer dependencies.** Their calls in
+  the noise basis and
+  [`simulateNoiseIntensities()`](https://rdotsch.github.io/rcicr/reference/simulateNoiseIntensities.md)
+  are base R now, written from the packages’ own definitions. Every
+  sinusoid and Gabor patch and every noise pattern is identical to
+  before, including the 1-pixel patches of an `img_size` equal to
+  `2^(nscales - 1)`. With `dplyr` and `yesno` gone too, and `tibble`
+  only suggested, rcicr imports 10 packages where 1.5.0 imported 14,
+  `Matrix` included.
+  ([\#208](https://github.com/rdotsch/rcicr/issues/208))
+
 - `Matrix`, an R recommended package that rcicr already depended on
   through spatstat, is now a direct import.
 
