@@ -78,6 +78,24 @@
   generator. Under the session’s own kind it still advances the stream
   as before.
 
+- **A masked classification image now gets an InfoVal instead of `NA`.**
+  `generateCI(mask = )` stores `NA` in masked pixels, and
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  and
+  [`batchComputeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/batchComputeInfoVal2IFC.md)
+  returned `NA` for such a CI without saying why. The InfoVal is now
+  computed over the unmasked pixels, against a reference built over the
+  same pixels from the same stimuli and the same replayed response
+  stream, so it is reproducible from the stimulus file. The mask is read
+  from the CI’s own `NA` pixels. Each mask’s reference is simulated once
+  and stored in the `.Rdata` file apart from the default one, and
+  [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+  gains a `mask` argument to store one in advance, for example with a
+  `response_seed` for a file without a stimulus seed. An InfoVal over
+  part of the image is not comparable with one over the whole image.
+  Unmasked classification images are unaffected.
+  ([\#374](https://github.com/rdotsch/rcicr/issues/374))
+
 - **Logical, missing, infinite and non-numeric responses now stop
   [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
   and the functions built on it.** A script that passed logical

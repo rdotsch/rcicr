@@ -77,6 +77,11 @@ reads the file twice per image and, when the reference cannot be stored
 simulates it again for every image. The values are identical to that
 loop's.
 
+A masked classification image is scored over its unmasked pixels, as
+described under "Masked classification images" in
+[`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md).
+Images with the same stimuli and the same mask share one reference.
+
 Messages about the trial design (see "Matching the reference to the
 classification image" in
 [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md))

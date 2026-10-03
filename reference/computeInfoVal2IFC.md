@@ -141,6 +141,20 @@ response per stimulus from one responder. For participants who each saw
 every stimulus once, compute the InfoVal of each participant's own CI
 instead.
 
+## Masked classification images
+
+A classification image computed with `mask` (see
+[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md))
+holds `NA` in its masked pixels. Its InfoVal is computed over the
+unmasked pixels only, against a reference built over the same pixels
+from the same stimuli: Brinkman et al.'s (2019) statistic for the region
+analysed. The mask is read from the classification image itself. Each
+mask gets its own reference, simulated once and stored in the `rdata`
+file apart from the default one;
+`generateReferenceDistribution2IFC(mask = )` stores one in advance. An
+InfoVal over part of the image is not comparable with one over the whole
+image.
+
 For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van
 Haren, N. E. M., Dotsch, R., & Aarts, H. (2019). Quantifying the
 informational value of classification images. *Behavior Research

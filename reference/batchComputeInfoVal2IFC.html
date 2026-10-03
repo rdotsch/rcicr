@@ -101,6 +101,9 @@ simulated. A loop over <code><a href="computeInfoVal2IFC.html">computeInfoVal2IF
 per image and, when the reference cannot be stored (a read-only file, a <code>response_seed</code>,
 or <code>force_gen_ref_dist = TRUE</code>), simulates it again for every image. The values are
 identical to that loop's.</p>
+<p>A masked classification image is scored over its unmasked pixels, as described under "Masked
+classification images" in <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code>. Images with the same stimuli and
+the same mask share one reference.</p>
 <p>Messages about the trial design (see "Matching the reference to the classification image" in
 <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code>) are collected into one message per kind, naming the
 classification images concerned, rather than one per image.</p>

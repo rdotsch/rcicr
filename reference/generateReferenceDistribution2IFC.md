@@ -13,7 +13,8 @@ generateReferenceDistribution2IFC(
   save_rdata = TRUE,
   baseimage = NULL,
   reference_stimuli = NULL,
-  reference_method = c("gram", "images")
+  reference_method = c("gram", "images"),
+  mask = NA
 )
 ```
 
@@ -78,6 +79,18 @@ generateReferenceDistribution2IFC(
   `"gram"` (the default) or `"images"`: how the reference norms are
   computed. `"images"` reproduces rcicr 1.5.0 and earlier bit for bit.
   See "Reference method" below.
+
+- mask:
+
+  Optional mask, in any form
+  [`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  accepts: a 0/1 matrix or the path to a PNG, black (0) where masked.
+  The reference is then built over the unmasked pixels only, as
+  [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  needs for a classification image computed with that mask, and stored
+  apart from the default one. The default, `NA`, uses every pixel. See
+  "Masked classification images" in
+  [`computeInfoVal2IFC`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md).
 
 ## Value
 

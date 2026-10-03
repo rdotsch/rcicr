@@ -47,7 +47,8 @@
 <span>  save_rdata <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  baseimage <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reference_stimuli <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  reference_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gram"</span>, <span class="st">"images"</span><span class="op">)</span></span>
+<span>  reference_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gram"</span>, <span class="st">"images"</span><span class="op">)</span>,</span>
+<span>  mask <span class="op">=</span> <span class="cn">NA</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -102,6 +103,14 @@ same as the default, <code>NULL</code>.</p></dd>
 <dd><p><code>"gram"</code> (the default) or <code>"images"</code>: how the reference
 norms are computed. <code>"images"</code> reproduces rcicr 1.5.0 and earlier bit for bit. See
 "Reference method" below.</p></dd>
+
+
+<dt id="arg-mask">mask<a class="anchor" aria-label="anchor" href="#arg-mask"></a></dt>
+<dd><p>Optional mask, in any form <code><a href="generateCI.html">generateCI</a></code> accepts: a 0/1 matrix or the
+path to a PNG, black (0) where masked. The reference is then built over the unmasked pixels
+only, as <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code> needs for a classification image computed with
+that mask, and stored apart from the default one. The default, <code>NA</code>, uses every pixel.
+See "Masked classification images" in <code><a href="computeInfoVal2IFC.html">computeInfoVal2IFC</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

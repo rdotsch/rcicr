@@ -158,9 +158,10 @@ re-saved its whole frame, so the files it wrote contained `rdata` and
 `ncores`. A second call then ignored the caller’s `ncores` and wrote
 back to the path recorded by the first. It is fixed at the source, by
 leaving the function’s own arguments out of the save, *and* defensively
-on read, for files older versions already wrote. `reference_stimuli` is
-removed *before* [`load()`](https://rdrr.io/r/base/load.html), so a
-file’s own object of that name survives.
+on read, for files older versions already wrote. `reference_stimuli` and
+`mask` are removed *before*
+[`load()`](https://rdrr.io/r/base/load.html), so a file’s own object of
+either name survives.
 
 ### The InfoVal formula is already correct — do not “fix” it
 
@@ -299,6 +300,21 @@ researcher’s call: `reference_stimuli` builds the paper’s reference, and
 a `trial_design` attribute flags a mismatch. The paper defines none for
 repeats or participant averages. Cost:
 [`analyses/infoval-design-mismatch.md`](https://rdotsch.github.io/rcicr/analyses/infoval-design-mismatch.md).
+
+### A masked CI is scored over its unmasked pixels, against a reference over the same pixels
+
+`generateCI(mask =)` stores `NA` in masked pixels, so the norm, and the
+InfoVal, used to be `NA`
+([\#374](https://github.com/rdotsch/rcicr/issues/374)). Dropping the
+`NA`s alone was rejected: the CI’s norm would cover fewer pixels than
+the reference norms it is compared with. The InfoVal is Brinkman et
+al.’s (2019) statistic with *both* sides restricted to the same pixels,
+and the same stimuli and replayed response stream as every other
+reference. The mask is read from the CI’s own `NA` pixels, so a CI
+cannot be scored against another mask. Stored references are keyed on
+the mask’s run-length encoding, which is exact under
+[`identical()`](https://rdrr.io/r/base/identical.html) and small for a
+drawn shape. An unmasked CI takes the unchanged default path.
 
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 
