@@ -192,6 +192,19 @@
   different `label` or `stimulus_path`.
   ([\#350](https://github.com/rdotsch/rcicr/issues/350))
 
+- **Every InfoVal reference path makes the same checks.**
+  [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
+  checks `iter` before anything is loaded or simulated: on a file whose
+  base images share their parameters, `iter = 2.5` used to run 2
+  iterations, and `0` or `NA` failed inside a progress bar. A reference
+  with a MAD of 0 now stops
+  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
+  on every path, where only a `reference_stimuli` reference did before
+  and the others returned an infinite or `NaN` InfoVal; a stored default
+  reference holding `NA` or infinite values stops as stored per-base and
+  subset references already did. Every finite InfoVal is unchanged.
+  ([\#377](https://github.com/rdotsch/rcicr/issues/377))
+
 - **A single generated trial or a single participant no longer stops
   with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`,
   and
