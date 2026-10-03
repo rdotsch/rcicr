@@ -107,8 +107,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
                        n_cores = default_ncores(), mask = NA,
                        # Appended, never inserted: a new formal in the middle
                        # rebinds every positional argument after it in scripts
-                       # that already exist. Here it would have taken sigma's
-                       # value and left the z-map blurred at the default.
+                       # that already exist.
                        zmappointsize = 12) {
 
   # Preprocessing -----------------------------------------------------------
@@ -133,14 +132,9 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     ))
   }
 
-  # Bind targetpath even when it was not supplied. foreach::getexports() scans
-  # the %dopar% body for free variables and get()s each one, including the
-  # targetpath inside the save_individual_cis branch below - a branch that
-  # cannot run when targetpath is absent. Leaving it unbound aborted every
-  # participant-CI call with n_cores > 1, which is the default (#235).
-  #
-  # Must stay below the missing() checks above, which stop being reliable for an
-  # argument once it has been assigned to.
+  # Bound even when absent: foreach::getexports() get()s every free variable of
+  # the %dopar% body, including targetpath in a branch that cannot run (#235).
+  # Below the missing() checks, which stop being reliable once it is assigned.
   targetpath <- if (missing(targetpath)) NULL else targetpath
 
   trials <- coerceTrialVectors(stimuli, responses, participants)
@@ -179,7 +173,6 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
 
   # Generate CI(s) ----------------------------------------------------------
 
-  # Invert parameters if antiCI is to be generated
   if (antiCI == TRUE) {
     params <- -params
   }
@@ -232,10 +225,6 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
       stop('zmapmethod must be "quick" or "t.test".', call. = FALSE)
     )
 
-    # Pass zmap object to plotZmap for plotting. targetpath was previously not
-    # forwarded, so the documented zmaptargetpath argument was silently ignored
-    # and every z-map went to plotZmap()'s own default ('zmaps', relative to the
-    # working directory) no matter what the caller asked for.
     plotZmap(zmap = zmap_matrix, bgimage = combined, filename = baseimage,
       sigma = sigma, threshold = threshold, size = img_size,
       decoration = zmapdecoration, pointsize = zmappointsize,
@@ -252,15 +241,10 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
 
 # Functions ---------------------------------------------------------------
 
-# Apply masking to a CI
-# Has the user actually supplied a mask?
-# The `mask` argument defaults to NA, so a plain `!is.na(mask)` test returns a
-# whole matrix when a mask *is* supplied - which R >= 4.2 rejects outright with
-# "the condition has length > 1". This collapses the test to a single logical.
-# The sentinel is specifically an atomic scalar with no dim: matrix(NA, 1, 1)
-# and list(NA) are also length 1 and is.na(), and both used to be read as "no
-# mask" and discarded in silence rather than reaching the validation that
-# rejects them.
+# Has the caller supplied a mask? One logical whatever the mask: !is.na() on a
+# matrix is a matrix, which if() rejects. Only an atomic scalar NA without dim
+# means "no mask"; matrix(NA, 1, 1) and list(NA) go on to the validation that
+# rejects them (NEWS 1.3.0).
 # Input: mask (NA, NULL, a string path, or a matrix)
 # Output: TRUE if a mask was supplied
 hasMask <- function(mask) {
@@ -291,19 +275,14 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
       if (n_color > 1 && !all(sapply(2:n_color, function(i) {
         identical(mask_matrix[, , i], mask_matrix[, , 1])
       }))) {
-        # Only error if the colour channels genuinely differ. This stop() used
-        # to run unconditionally, so even a convertible greyscale-as-RGB PNG
-        # failed.
         stop(paste0('This PNG is not encoded with a greyscale color palette and ',
           'could not be converted to this encoding either. In other ',
           'words, this is not a greyscale image.'
         ))
       }
-      # `[, , 1]` alone would also drop a singleton *spatial* dimension, leaving
-      # a dim-less vector -- and `all(NULL == img_size)` is vacuously TRUE, so a
-      # 1-by-8 mask would pass the size check below for a 2-by-4 target and then
-      # be applied by linear indexing. plotZmap()'s previous inline code checked
-      # the PNG's spatial dimensions before dropping channels and so rejected it.
+      # `[, , 1]` alone would also drop a singleton *spatial* dimension, and
+      # `all(NULL == img_size)` is vacuously TRUE, so a 1-by-8 mask would pass
+      # the size check below for a 2-by-4 target (NEWS 1.3.0).
       spatial <- dim(mask_matrix)[1:2]
       mask_matrix <- matrix(mask_matrix[, , 1],
         nrow = spatial[1], ncol = spatial[2]
@@ -315,12 +294,8 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
     stop('The mask argument is neither a string nor a matrix!')
   }
 
-  # Check if mask is of the same size as the target (i.e. img_size). This used
-  # to compare against a hardcoded 512, so masks failed for every other
-  # stimulus size, and reported img_size - which is not in scope here - in the
-  # error message. img_size[1] / img_size[length(img_size)] read correctly
-  # whether img_size is a scalar (generateCI()'s calls) or the length-2
-  # c(rows, cols) plotZmap() passes for a possibly-rectangular zmap.
+  # img_size[1] and img_size[length(img_size)] read a scalar (generateCI()) and
+  # the c(rows, cols) of a possibly rectangular z-map (plotZmap()) alike.
   if (!all(dim(mask_matrix) == img_size)) {
     stop(paste0('Mask is not of the same dimensions as the ', context, '! ',
       '(', context, ' dimensions: ', img_size[1], ' x ',
@@ -338,10 +313,8 @@ applyMask <- function(ci, mask, img_size = nrow(ci), context = 'stimuli') {
   # Convert mask to boolean matrix (black == 0 == masked)
   mask <- mask_matrix == 0
 
-  # Apply the mask to the CI. This replaces all the masked pixels with NA
   ci[mask] <- NA
 
-  # Return the masked CI
   return(ci)
 }
 
@@ -395,7 +368,6 @@ applyScaling <- function(base, ci, scaling, constant) {
     scaled <- ci
   }
 
-  # Return the scaled CI
   return(scaled)
 }
 
@@ -472,13 +444,10 @@ saveToImage <- function(baseimage, combined, targetpath, filename, antiCI) {
     filename <- paste0('ci_', filename)
   }
 
-  # Add extension to filename
   filename <- paste0(filename, '.png')
 
-  # Create output directory
   dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
-  # Write CI to image file
   png::writePNG(clampUnit(combined), paste0(targetpath, '/', filename))
 }
 

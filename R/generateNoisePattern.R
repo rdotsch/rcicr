@@ -23,7 +23,6 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
   # Number of patch layers needed
   nrPatches <- length(scales) * length(orientations) * length(phases)
 
-  # Preallocate memory
   patches <- matlab::zeros(c(img_size, img_size, nrPatches))
   patchIdx <- matlab::zeros(c(img_size, img_size, nrPatches))
 
@@ -39,7 +38,6 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
   for (scale in scales) {
     for (orientation in orientations) {
       for (phase in phases) {
-        # Generate single patch
         size <- img_size / scale
 
         if (noise_type == 'gabor') {
@@ -58,13 +56,11 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
             # Insert absolute index for later contrast weighting
             patchIdx[(size * (row - 1) + 1):(size * row), (size * (col - 1) + 1):(size * col), co] <- idx
 
-            # Update contrast counter
             idx <- idx + 1
 
           }
         }
 
-        # Update layer counter
         co <- co + 1
 
       }
@@ -91,8 +87,8 @@ validateTiling <- function(img_size, nscales) {
        ", or nscales = ", max_scales, if (max_scales > 1) " or fewer", ".", call. = FALSE)
 }
 
-# Exact, not match.arg(): partial matching would turn "gab", sinusoid noise
-# until this check existed, into Gabor noise without a word (#376).
+# Exact, not match.arg(): partial matching would silently turn "gab" from
+# sinusoid into Gabor noise (#376).
 validateNoiseType <- function(noise_type) {
   if (!is.character(noise_type) || length(noise_type) != 1L || is.na(noise_type) ||
         !noise_type %in% c('sinusoid', 'gabor')) {

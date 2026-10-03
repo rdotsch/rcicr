@@ -32,7 +32,6 @@ batchCIs <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png
   if (!is.null(participants)) requireParticipantIds(data, by, participants)
   requireBatchResponses(data, by, responses)
 
-  # dplyr::progress_estimated() is deprecated; use the base R progress bar
   pb <- txtProgressBar(min = 0, max = length(by.levels), style = 3)
   cis <- list()
   pb_i <- 0

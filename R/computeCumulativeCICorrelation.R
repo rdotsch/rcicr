@@ -86,15 +86,12 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   params <- matrix(selectStimulusParams(loaded$stimuli_params, baseimage, stimuli),
                    nrow = length(stimuli))
 
-  # Compute final classification image if necessary
   if (length(targetci) == 0) {
     finalCI <- generateCINoise(params, responses, p)
   } else {
     finalCI <- targetci$ci
   }
 
-  # Compute correlations with final CI with cumulative CI
-  # dplyr::progress_estimated() is deprecated; use the base R progress bar
   pb <- txtProgressBar(min = 0, max = length(responses), style = 3)
 
   correlations <- vector()
@@ -109,6 +106,5 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   }
   close(pb)
 
-  # Return correlations
   return(correlations)
 }

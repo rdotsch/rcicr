@@ -5,12 +5,8 @@
 # One CI per participant, plus their average as the group CI.
 #
 # Every value the %dopar% body reads is a formal of this function or is built
-# above the loop, and that is load-bearing rather than tidiness.
-# foreach::getexports() scans the body for free variables and get()s each one
-# from the environment the loop is evaluated in, so what is in scope decides
-# whether the call runs at all -- #235 was an absent-and-required `targetpath`
-# aborting every participant call at the default core count, from a branch that
-# could not even execute.
+# above the loop. foreach::getexports() get()s every free variable of the body,
+# so one that is unbound aborts the call, even in a branch that cannot run (#235).
 #
 # Returns both the group CI and the per-participant stack: the t.test z-map
 # short-circuits to the latter instead of rebuilding a noise image per trial,
@@ -42,13 +38,10 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
     # Serial path only; in parallel .options.snow ticks the bar in the parent.
     if (is.null(cl)) setTxtProgressBar(pb, obs)
 
-    # Select only the observations of the current participant
     pid.rows <- pids == obs # nolint: object_name_linter.
 
-    # Construct the noise pattern
     ci <- generateCINoise(params[pid.rows, ], responses[pid.rows], p)
 
-    # Check if individual CIs should be saved. If so, generate and save them
     if (save_individual_cis) {
       if (hasMask(mask)) {
         individual_ci <- applyMask(ci, mask, img_size)
@@ -59,17 +52,14 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
         individual_scaling_constant
       )
       combined <- combine(scaled, base)
-      # sort(), not unique(): obs indexes the *sorted* factor levels built
-      # above, so naming the file from appearance order gave every participant
-      # someone else's ID whenever the two orders disagreed. sort(unique(x))
-      # is factor()'s own level order, and keeps the caller's type so numeric
-      # IDs still format exactly as they did.
+      # sort(), not unique(): obs indexes factor()'s sorted levels, and
+      # sort(unique(x)) keeps the caller's type, so numeric IDs format as
+      # before (#267).
       saveToImage(baseimage, combined, paste0(targetpath, '/individual_cis'),
         sort(unique(participants))[obs], antiCI
       )
     }
 
-    # Return the CI
     return(ci)
   }
   if (!is.null(cl)) {
@@ -80,7 +70,6 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
   cl <- NULL
   dim(pid.cis) <- c(img_size, img_size, npids) # nolint: object_name_linter.
 
-  # Average across participants for final CI and return to original variance
   return(list(ci = apply(pid.cis, c(1, 2), mean), pid_cis = pid.cis)) #* sqrt(npids)
 }
 

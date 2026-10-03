@@ -14,19 +14,13 @@
 simulateNoiseIntensities <- function(nrep = 1000, img_size = 512) {
 
   results <- matlab::zeros(nrep, 2)
-  # img_size was previously ignored here, hardcoding a 512px noise pattern
-  # regardless of what the caller asked for.
   s <- generateNoisePattern(img_size = img_size)
 
-  # The progress bar used to be sized with `data[, by]`, neither of which is a
-  # parameter of this function - `data` resolved to utils::data, so every call
-  # failed with "object of type 'closure' is not subsettable".
   pb <- txtProgressBar(min = 0, max = nrep, style = 3)
   for (i in 1:nrep) {
     setTxtProgressBar(pb, i)
 
-    # One contrast weight per patch index, matching the noise pattern actually
-    # generated above rather than a hardcoded 4096.
+    # One contrast weight per patch index of the pattern above.
     params <- (runif(max(s$patchIdx)) * 2) - 1
 
     noise <- generateNoiseImage(params, s)

@@ -81,8 +81,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   validateTiling(img_size, nscales)
 
   # Only create the directory when something is written to it.
-  # generateReferenceDistribution2IFC() calls this with both save flags FALSE
-  # and used to leave a stray ./stimuli directory behind.
   if (writes_to_disk) {
     dir.create(stimulus_path, recursive = TRUE, showWarnings = FALSE)
   } else if (missing(stimulus_path)) {
@@ -135,7 +133,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   nparams <- sum(6 * 2 * (2^(0:(nscales - 1)))^2)
   stimuli_params <- drawStimulusParams(n_trials, nparams, names(base_faces), use_same_parameters)
 
-  # Generate stimuli
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
 
   # NULL when ncores == 1: the loop below then runs in this process instead of
@@ -151,13 +148,9 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     trial = seq_len(n_trials), .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(seq_len(n_trials))), .combine = 'cbind', .multicombine = TRUE,
     .options.snow = progressOption(pb, cl)
   ) %dopar% {
-    # Each iteration only ever needs the noise for its own trial, so this is a
-    # plain matrix. It used to write into a preallocated
-    # zeros(img_size, img_size, n_trials) array declared before the cluster was
-    # created - at the defaults that is a 1.5 GB object (512 x 512 x 770), and
-    # because it existed in the parent environment foreach exported a full copy
-    # to *every* worker. Each worker then wrote one slice into its own private
-    # copy and discarded it, so the memory was pure overhead. See issue #12.
+    # Each iteration needs only its own trial's noise. An n_trials array in the
+    # parent would be exported in full to every worker: 1.5 GB at the
+    # defaults (#12).
     if (use_same_parameters) {
       # One parameter set is shared by every base face, so any key gives the
       # same values; take the first explicitly rather than relying on `base_face`
@@ -174,7 +167,6 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
     for (base_face in trial_bases) {
       if (!use_same_parameters) {
-        # compute noise pattern unique to this base face
         trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], p)
       }
 
@@ -212,30 +204,18 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   # call must not signal them.
   worker_pids <- NULL
 
-  # Save all to image file (IMPORTANT, this file is necessary to analyze your data later and create classification images)
-  #
-  # This records which rcicr wrote the file. It was a hardcoded '0.4.0' string
-  # from 2016 until 1.2.0, so *every* .Rdata written by 0.4.0 through 1.1.0
-  # claims to come from 0.4.0 no matter what actually wrote it. Anything reading
-  # this field must therefore treat '0.4.0' as "unknown, somewhere in that
-  # range" rather than as a real version, and must accept both a character
-  # string (old files) and the package_version object written here (new ones) --
-  # note that comparing versions as strings is wrong anyway, since '0.10.0' sorts
-  # below '0.4.0'. p$generator_version has always held the real version and is
-  # the more trustworthy of the two on any file that has it.
+  # Older files record '0.4.0' here whatever wrote them (DECISIONS.md,
+  # "`generator_version` in old `.Rdata` files is not trustworthy").
   generator_version <- utils::packageVersion('rcicr') # nolint: object_usage_linter. Saved by name below.
 
   if (save_rdata) {
-    # nscales and sigma are saved so that anything re-generating this stimulus
-    # set later (notably generateReferenceDistribution2IFC(), which builds the
-    # infoVal null distribution) reproduces the same noise basis. They were
-    # previously omitted, so re-generation silently fell back to the defaults.
+    # Everything analysing the responses later needs, read back by name. nscales
+    # and sigma describe the noise basis (NEWS 1.1.0).
     saveStimulusFile(c("base_face_files", "base_faces", "img_size", "label", "n_trials", "noise_type", "nscales", "sigma", "p", "seed", "stimuli_params", "stimulus_path", "use_same_parameters", "generator_version", "rng_kind"), rdata_file, environment())
   }
 
   finished <- TRUE
 
-  # Return CIs
   if (return_as_dataframe) {
     return(stims)
   }
@@ -257,7 +237,6 @@ readBaseFace <- function(label, filename, img_size, maximize_contrast) {
     }
   )
 
-  # Check if base face is square. If not, throw an error
   if (dim(img)[1] != dim(img)[2]) {
     stop('Base image "', label, '" (', filename, ') is not square! It\'s ', dim(img)[1],
          ' by ', dim(img)[2], ' pixels. Please use a square base face.', call. = FALSE)
@@ -267,19 +246,15 @@ readBaseFace <- function(label, filename, img_size, maximize_contrast) {
   #
   # Alpha is not a colour, so it is dropped rather than averaged in. Two
   # channels is grey plus alpha and keeps the first; three or four is RGB or
-  # RGBA and averages the first three. Averaging every channel turned an
-  # opaque black pixel into 0.5 for grey-plus-alpha and 0.25 for RGBA.
+  # RGBA and averages the first three.
   if (length(dim(img)) == 3) {
     channels <- dim(img)[3]
     keep <- if (channels == 2) 1L else seq_len(min(3, channels))
     img <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
   }
 
-  # Check that the base face matches the requested stimulus size. Automatic
-  # resizing used to happen here via biOps, but that dependency was dropped
-  # and never replaced, so a mismatch would otherwise surface much later as
-  # an opaque "non-conformable arrays" error from inside a parallel worker
-  # (when the noise is added to the base image).
+  # rcicr does not resize base images; a mismatch would otherwise surface as
+  # "non-conformable arrays" inside a worker (#124).
   if (nrow(img) != img_size) {
     stop('Base image "', label, '" (', filename, ') is ', nrow(img), ' by ', ncol(img),
          ' pixels, but img_size is ', img_size, '. rcicr does not resize base images: ',
@@ -288,7 +263,6 @@ readBaseFace <- function(label, filename, img_size, maximize_contrast) {
          call. = FALSE)
   }
 
-  # If necessary, rescale to maximize contrast
   if (maximize_contrast) {
     # (img - min) / (max - min) is 0/0 on a uniform image, and the all-NaN
     # base face went into the .Rdata unremarked (#176). Only an error here:
@@ -330,8 +304,8 @@ renderStimulus <- function(noise, base) {
 
 # Which reader a base image needs: 'png', 'jpeg', or NA.
 #
-# Anchored to the extension. The old grepl('png|PNG', filename) matched anywhere
-# in the path, so a JPEG under a directory named "png" went to png::readPNG().
+# Anchored to the extension, so a JPEG under a folder named "png" is read as a
+# JPEG.
 baseImageFormat <- function(filename) {
   if (grepl('\\.png$', filename, ignore.case = TRUE)) {
     return('png')
@@ -344,9 +318,8 @@ baseImageFormat <- function(filename) {
 
 # Check base_face_files up front and name the offending entry.
 #
-# Each of these used to surface far from its cause: a bare stop() carrying an
-# empty message, or "attempt to select less than one element in get1index" from
-# inside a parallel worker. See issues #124 and #180.
+# Each would otherwise surface far from its cause, inside a parallel worker
+# (#124, #180).
 validateBaseFaceFiles <- function(base_face_files) {
   example <- 'e.g. base_face_files = list(aName = "baseface.jpg")'
 
