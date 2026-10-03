@@ -32,8 +32,9 @@ captureArgs <- function(env) {
 #
 # p$generator_version is preferred because the top-level field was a hardcoded
 # '0.4.0' from 0.4.0 through 1.1.0 -- see DECISIONS.md, "`generator_version` in
-# old `.Rdata` files is not trustworthy". Either may be a character string (old
-# files) or a package_version (since 1.2.0).
+# old `.Rdata` files is not trustworthy". The top-level field is a character
+# string in files from before 1.2.0; p$generator_version is a package_version
+# back to 0.3.3, the oldest version in the history.
 rdataWriterNote <- function(env) {
   field <- function(name, from = env) {
     if (exists(name, envir = from, inherits = FALSE)) get(name, envir = from, inherits = FALSE)

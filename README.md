@@ -67,12 +67,13 @@ Every function that writes files needs its destination spelled out: `stimulus_pa
 
 The function reference, the vignettes and the changelog are also online at **<https://rdotsch.github.io/rcicr/>**, so you can read them before installing.
 
-Three vignettes ship with the package:
+Four vignettes ship with the package:
 
 ``` r
 vignette("getting-started", package = "rcicr")  # shortest working example
 vignette("reverse-correlation-walkthrough", package = "rcicr")  # the full method
 vignette("recipes", package = "rcicr")  # answers to common follow-up questions
+vignette("stored-data", package = "rcicr")  # every field of the .Rdata file and of a CI
 ```
 
 The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version. The recipes cover noise-only stimuli, rating scales as responses, matching the informational-value reference to dropped trials, masks, batches and group averages, and reproducing a number from an earlier version.
@@ -101,7 +102,7 @@ base face image(s) ─┐
 
 **2. Analysis.** `generateCI()` loads the stimulus file and looks up the parameters of the stimuli a participant saw. It weights each by the response (`1` = original chosen, `-1` = inverted chosen) and averages them into one image: the classification image. After that, `autoscale()` puts a batch of CIs on one scale so they can be compared by eye, `computeInfoVal2IFC()` scores a CI against a simulated null distribution (`batchComputeInfoVal2IFC()` scores a list of them), and `plotZmap()` shows which regions carry reliable signal.
 
-**The `.Rdata` file is the only link between the two halves.** Without it, nothing about your stimuli can be recovered: not from the PNGs, and not from the seed alone. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else.
+**The `.Rdata` file is the only link between the two halves.** Without it, nothing about your stimuli can be recovered: not from the PNGs, and not from the seed alone. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else. `vignette("stored-data")` lists everything in it, and in the classification image `generateCI()` returns.
 
 **Compare numbers, not figures, across machines.** Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system. The test suite pins them to fixed values, and they hold on Linux and macOS ARM64 alike. The one exception is the PNG that `plotZmap()` writes, because it is the only function here that draws through a graphics device. Devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map gives figures that look identical but are not byte-identical. A z-map image that differs pixel for pixel on a colleague's machine is not a different result. Every other PNG the package writes comes straight from the pixel array via `png::writePNG()`, so this does not apply to them. See `?plotZmap`.
 
@@ -121,39 +122,6 @@ The usual starting point is `generateCI()`. Its body is one call per step (valid
 | `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
 
 The mask helpers live in `R/generateCI.R` rather than in a file of their own because `plotZmap()` uses them too: masking a z-map and masking a CI are the same operation.
-
-## Anatomy of the `.Rdata` file
-
-`generateStimuli2IFC()` writes one file named `<label>_seed_<seed>_time_<timestamp>.Rdata`. `load()` it and you get these objects:
-
-| Object | What it is |
-|---|---|
-| `p` | The noise basis. A list of `patches` (an `img_size × img_size × 12·nscales` array of sinusoid/Gabor layers), `patchIdx` (which parameter drives each pixel of each layer), `noise_type`, and `generator_version`. This is the expensive part and the reason the file exists. |
-| `stimuli_params` | Named list, one entry per base image, each an `n_trials × nparams` matrix of contrast weights in `[-1, 1]`. **Row *i* is the noise of stimulus *i***: this is what `generateCI()` looks up and weights by the responses. |
-| `base_faces` | Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained. |
-| `base_face_files` | The paths they were read from, for reference. |
-| `img_size`, `n_trials`, `nscales`, `sigma`, `noise_type` | The generation parameters, for reference. The InfoVal reference distribution reads the saved `p` (or `s` in old files) and `stimuli_params` directly and uses `n_trials` to select trial rows; it never rebuilds the basis from these settings. |
-| `seed` | The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same `RNGkind()`. |
-| `rng_kind` | `RNGkind()` when the stimuli were drawn. InfoVal references replay the seed's stream under it, so they do not depend on the kind of the session that computes them. Files without it replay under the session's kind. Added in the development version. |
-| `use_same_parameters` | Whether every base image shared one parameter set (`TRUE`) or each got its own. |
-| `label`, `stimulus_path` | What the files were called and where they were written. |
-| `generator_version` | The rcicr version that wrote the file; see the caveat below. |
-
-The first time you compute an informational value, `computeInfoVal2IFC()` and `generateReferenceDistribution2IFC()` **add** fields to the same file. Which ones depends on whether the base images share one parameter matrix:
-
-| Object | What it is |
-|---|---|
-| `reference_norms` | The simulated null distribution: the norms of `iter` classification images built from random responses. Stored because simulating it is slow. Written when the base images share one parameter matrix. |
-| `reference_norms_seed` | The `response_seed` those norms were drawn with, or `NULL` for the default stream. Added in 1.2.0. |
-| `reference_norms_source` | What `reference_norms` was built from: `"saved_noise"` means the file's own saved parameters and basis. A default-stream reference (`reference_norms_seed` absent or `NULL`) without this marker and a matching `reference_norms_fingerprint` is rebuilt and, if the file is writable, saved. A reference drawn with a `response_seed` is kept; if it was built from an incorrect reconstruction, regenerate it yourself before recomputing InfoVal. Added in 1.4.0. |
-| `reference_norms_fingerprint` | A full copy of the norms, as `list(norms = ...)`, compared with `identical()`. It exists because an older rcicr can keep the marker while replacing the norms; if the copy no longer matches, a default-stream reference is rebuilt. It adds about 80 KB for 10,000 norms before compression. Added in 1.4.0. |
-| `reference_norms_by_base` | Written instead of the fields above when the base images have *different* parameter matrices, because each base then needs a null built from its own saved noise. A named list, one entry per base, each holding that base's `norms`, `response_seed`, `source` and `fingerprint` (same meaning as above). A `reference_norms` already in such a file is left in place and ignored. Added in 1.4.0. |
-| `reference_norms_by_stimuli` | References built over a subset of the saved stimuli, with `reference_stimuli`, for a CI that did not use them all. A list with one entry per stimulus set, each holding its `reference_stimuli`, `baseimage` (`NULL` when the bases share one parameter matrix), `norms`, `response_seed`, `source` and `fingerprint`. The default reference is never read or written for these. Added in the development version. |
-
-Before you write code against this file:
-
-- **Fields are only ever added.** They are never renamed or given a new meaning, so newer rcicr reads older files. `nscales` and `sigma` arrived in 1.1.0 and `noise_type` earlier. The reference distribution uses the saved basis, so it works when those fields are missing.
-- **`generator_version` is unreliable in older files.** It was hardcoded as `'0.4.0'` until 1.2.0, so every file written by 0.4.0 through 1.1.0 claims to be 0.4.0. `p$generator_version` has always held the real value. Compare versions with `numeric_version()`, never as text.
 
 ## Citation
 
