@@ -75,7 +75,7 @@ vignette("reverse-correlation-walkthrough", package = "rcicr")  # the full metho
 vignette("recipes", package = "rcicr")  # answers to common follow-up questions
 ```
 
-The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version. The recipes cover noise-only stimuli, rating scales as responses, and matching the informational-value reference to dropped trials, masks, batches and group averages.
+The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version. The recipes cover noise-only stimuli, rating scales as responses, matching the informational-value reference to dropped trials, masks, batches and group averages, and reproducing a number from an earlier version.
 
 For example datasets and analysis scripts, see [rcicr_examples](https://github.com/rdotsch/rcicr_examples/).
 

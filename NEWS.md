@@ -66,6 +66,7 @@
 ## Documentation
 
 - **A new vignette, `vignette("recipes")`, answers questions that come up after the basics.** It covers noise-only stimuli from a uniform grey base image, which needs `maximize_baseimage_contrast = FALSE`; rating scales as response weights, and how to check their direction; and matching the InfoVal reference to the design: dropped trials (`reference_stimuli`), masked classification images, scoring a batch, and why a CI averaged over participants has no calibrated InfoVal. It runs at 64 pixels and builds in seconds. (#69, #6)
+- **`vignette("recipes")` has a recipe for reproducing a number from an earlier version**: running that release from a library of its own, or recomputing with this one. It says which stored InfoVal references are reused and which are rebuilt, and shows that `reference_method = "images"` rebuilds one with the calculation of 1.5.0 and earlier.
 - The README says how to cite rcicr and the method behind it, and lists all three vignettes.
 
 # rcicr 1.5.0 (2026-09-25)
