@@ -224,7 +224,7 @@ Older releases import packages this one no longer needs; `install_github()` inst
 
 Classification images come out the same unless `NEWS.md` lists your situation under "Reproducibility impact", in the releases after the one you used. For a version before 1.1.0, check `ChangeLog` too: `NEWS.md` starts at 1.1.0.
 
-Their file names can differ, though, for per-participant images from a GitHub install of 0.4.1 to 1.2.3. In those versions, a direct `generateCI()` call with `participants` and `save_individual_cis = TRUE` could save an image under another participant's name. Rerunning such a version reproduces the wrong names; recomputing with this one gives the right names, so comparing old and new files by name can turn up differences where there are none. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected. CRAN releases never carried the bug.
+Their file names can differ, though, for per-participant images from a GitHub install before 1.3.0. In affected versions, a direct `generateCI()` call with `participants` and `save_individual_cis = TRUE` could save an image under another participant's name. Rerunning such a version reproduces the wrong names; recomputing with this one gives the right names, so comparing old and new files by name can turn up differences where there are none. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected. CRAN releases never carried the bug.
 
 An InfoVal depends on the reference distribution stored in the `.Rdata` file:
 
