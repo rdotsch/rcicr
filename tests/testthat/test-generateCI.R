@@ -114,3 +114,30 @@ test_that("generateCI rejects a one-cell NA mask instead of silently ignoring it
   # so every unmasked call depends on it -- and gives an unmasked CI.
   expect_false(anyNA(do.call(generateCI, c(args, list(mask = NA)))$ci))
 })
+
+test_that("the returned list has the same fields, order and attributes with and without a z-map", {
+  rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6, nscales = 1)
+  out <- withr::local_tempdir()
+  responses <- c(1, -1, -1, 1, 1, -1)
+  for (zmap in c(FALSE, TRUE)) {
+    ci <- suppressWarnings(generateCI(1:6, responses, "base", rdata, save_as_png = FALSE,
+                                      n_cores = 1, zmap = zmap, zmapdecoration = FALSE,
+                                      zmaptargetpath = out))
+    fields <- list(ci = ci$ci, scaled = ci$scaled, base = ci$base, combined = ci$combined)
+    if (zmap) fields$zmap <- ci$zmap
+    expect_identical(ci, structure(fields, trial_design = attr(ci, "trial_design"),
+                                   scaling = attr(ci, "scaling")))
+    expect_identical(names(attributes(ci)), c("names", "trial_design", "scaling"))
+    expect_identical(is.matrix(ci$zmap), zmap)
+  }
+})
+
+test_that("an unknown zmapmethod stops with a message naming the two methods", {
+  rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 32, n_trials = 6, nscales = 1)
+  out <- withr::local_tempdir()
+  expect_error(suppressWarnings(generateCI(1:6, c(1, -1, -1, 1, 1, -1), "base", rdata,
+                                           save_as_png = FALSE, n_cores = 1, zmap = TRUE,
+                                           zmapmethod = "Quick", zmaptargetpath = out)),
+               'zmapmethod must be "quick" or "t.test"', fixed = TRUE)
+  expect_length(list.files(out), 0)
+})
