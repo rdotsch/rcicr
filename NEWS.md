@@ -56,6 +56,8 @@
 
 - **Every InfoVal reference path makes the same checks.** `generateReferenceDistribution2IFC()` checks `iter` before anything is loaded or simulated: on a file whose base images share their parameters, `iter = 2.5` used to run 2 iterations, and `0` or `NA` failed inside a progress bar. A reference with a MAD of 0 now stops `computeInfoVal2IFC()` on every path, where only a `reference_stimuli` reference did before and the others returned an infinite or `NaN` InfoVal; a stored default reference holding `NA` or infinite values stops as stored per-base and subset references already did. Every finite InfoVal is unchanged. (#377)
 
+- **An unknown `zmapmethod` now says so.** `generateCI(zmap = TRUE)` with a method other than `"quick"` or `"t.test"` stopped with "argument of length 0" from inside the plotting code; it now names the two methods. (#388)
+
 - **A single generated trial or a single participant no longer stops with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`, and `generateCI()` with one participant ID, now run: the progress bars start at 0. So does one participant with one trial. Where each stimulus appears once, one participant's CI is the same as the pooled CI of their trials. With repeated presentations the two weight trials differently, as `?generateCI` describes. A `t.test` z-map over fewer than two images, one participant or one distinct stimulus, cannot be computed. It now stops before any work with a message that says so and suggests `zmapmethod = "quick"`, instead of failing inside `t.test()`. No result that was computed before changes. (#351)
 
 # rcicr 1.5.0 (2026-09-25)
