@@ -42,7 +42,9 @@ batchGenerateCI(
 - responses:
 
   Name of the column holding the responses: 1 where the original
-  stimulus was chosen, -1 where the inverted one was.
+  stimulus was chosen, -1 where the inverted one was. The column must be
+  numeric with no missing or infinite values; the call stops before
+  computing anything otherwise.
 
 - baseimage:
 

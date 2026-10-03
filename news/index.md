@@ -78,6 +78,25 @@
   generator. Under the session’s own kind it still advances the stream
   as before.
 
+- **Logical, missing, infinite and non-numeric responses now stop
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  and the functions built on it.** A script that passed logical
+  responses got a classification image and now gets an error:
+  `TRUE`/`FALSE` weighted every `FALSE` trial 0 rather than -1, so half
+  the trials did not count. To keep exactly the old numbers, pass
+  `as.numeric(responses)`; for the CI a two-image choice means, pass
+  `ifelse(responses, 1, -1)`. The error says both. Missing values never
+  gave a usable result: one `NA` response made every pixel `NA` (the PNG
+  black), with only R’s own “no non-missing arguments to min” warnings;
+  factor and character responses did the same, and an infinite one made
+  the CI `NaN`. The error names the trials.
+  [`batchGenerateCI()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI.md)
+  and
+  [`batchGenerateCI2IFC()`](https://rdotsch.github.io/rcicr/reference/batchGenerateCI2IFC.md)
+  check the whole response column first and name the groups affected.
+  Finite numeric responses, including ratings, are unaffected.
+  ([\#372](https://github.com/rdotsch/rcicr/issues/372))
+
 ### Performance and dependencies
 
 - **Reference distributions are much faster and need less memory.** At

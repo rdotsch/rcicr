@@ -62,7 +62,7 @@
 
 
 <dt id="arg-responses">responses<a class="anchor" aria-label="anchor" href="#arg-responses"></a></dt>
-<dd><p>Vector of responses in the same order as <code>stimuli</code>: 1 where the original stimulus was chosen, -1 where the inverted one was.</p></dd>
+<dd><p>Vector of responses in the same order as <code>stimuli</code>: 1 where the original stimulus was chosen, -1 where the inverted one was. Must be numeric and finite; other finite numbers, such as ratings, weight the trials accordingly. Factors, characters and logicals are rejected, as are <code>NA</code>, <code>NaN</code> and infinite values: remove trials without a response from every argument alike.</p></dd>
 
 
 <dt id="arg-baseimage">baseimage<a class="anchor" aria-label="anchor" href="#arg-baseimage"></a></dt>

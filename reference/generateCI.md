@@ -46,7 +46,11 @@ generateCI(
 - responses:
 
   Vector of responses in the same order as `stimuli`: 1 where the
-  original stimulus was chosen, -1 where the inverted one was.
+  original stimulus was chosen, -1 where the inverted one was. Must be
+  numeric and finite; other finite numbers, such as ratings, weight the
+  trials accordingly. Factors, characters and logicals are rejected, as
+  are `NA`, `NaN` and infinite values: remove trials without a response
+  from every argument alike.
 
 - baseimage:
 
