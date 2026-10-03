@@ -45,11 +45,12 @@ test_that("generateStimuli2IFC writes every base image's stimuli when returning 
           expected <- ((signs[[suffix]] * noise + 0.3) / 0.6 + e$base_faces[[base]]) / 2
           stimulus <- sprintf("rcic_%s_31_%05d_%s.png", base, trial, suffix)
           written <- png::readPNG(file.path(out, stimulus))
-          # Compared through the same writer rather than against the matrix:
-          # 8-bit quantisation, and what png does with the few pixels that noise
-          # beyond the nominal +/-0.3 puts outside [0, 1], then apply to both.
+          # Compared through the same writer rather than against the matrix, so
+          # 8-bit quantisation applies to both, and clipped as rcicr clips the
+          # few pixels that noise beyond the nominal +/-0.3 puts outside [0, 1]
+          # (#371).
           reference <- tempfile(fileext = ".png")
-          png::writePNG(expected, reference)
+          png::writePNG(rcicr:::clampUnit(expected), reference)
           expect_equal(written, png::readPNG(reference),
                        info = paste(base, trial, suffix, "shared:", shared))
         }
