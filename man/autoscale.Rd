@@ -9,7 +9,7 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 \arguments{
 \item{cis}{List of classification images, each a list of pixel matrices holding at least the noise (\code{$ci}), plus the base image (\code{$base}) if PNGs are to be written.}
 
-\item{save_as_pngs}{Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in \code{cis}.}
+\item{save_as_pngs}{Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in \code{cis}. Every element then needs a name of its own; with \code{FALSE}, names are not needed.}
 
 \item{targetpath}{Directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.}
 }

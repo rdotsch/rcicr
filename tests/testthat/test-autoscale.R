@@ -57,3 +57,53 @@ test_that("autoscale writes a PNG built from the autoscaled noise, not from $com
   written <- png::readPNG(file.path(tmp, "a_autoscaled.png"))
   expect_equal(written, (result$a$scaled + result$a$base) / 2, tolerance = 1 / 255)
 })
+
+autoscale_pair <- function() {
+  list(a = list(ci = matrix(c(-1, 1, 0, 0), 2), base = matrix(0.5, 2, 2)),
+       b = list(ci = matrix(c(-3, 3, 0, 0), 2), base = matrix(0.5, 2, 2)))
+}
+
+test_that("autoscale scales every element when names repeat or are absent (#375)", {
+  named <- autoscale(autoscale_pair(), save_as_pngs = FALSE)
+  expect_identical(attr(named$b, "scaling")$constant, 3)
+
+  dup <- autoscale_pair()
+  names(dup) <- c("a", "a")
+  dup <- autoscale(dup, save_as_pngs = FALSE)
+  unnamed <- autoscale(unname(autoscale_pair()), save_as_pngs = FALSE)
+  for (out in list(dup, unnamed)) {
+    expect_identical(out[[1]]$scaled, named$a$scaled)
+    expect_identical(out[[2]]$scaled, named$b$scaled)
+    expect_identical(attr(out[[2]], "scaling")$constant, 3)
+  }
+  # The first element alone needs a constant of 1, which a by-name lookup used.
+  expect_false(identical(dup[[1]]$scaled, autoscale(autoscale_pair()[1], save_as_pngs = FALSE)$a$scaled))
+})
+
+test_that("autoscale writes no PNG when names cannot name the files", {
+  dup <- autoscale_pair()
+  names(dup) <- c("a", "a")
+  partly <- autoscale_pair()
+  names(partly) <- c("a", "")
+  for (case in list(list(dup, "occur more than once: a"), list(unname(dup), "needs a name"),
+                    list(partly, "needs a name"))) {
+    dir <- file.path(withr::local_tempdir(), "out")
+    expect_error(autoscale(case[[1]], targetpath = dir), case[[2]], fixed = TRUE)
+    expect_false(dir.exists(dir))
+  }
+  expect_error(autoscale(list(), save_as_pngs = FALSE), "non-empty list")
+})
+
+test_that("a uniquely named list comes back as before, other attributes included", {
+  cis <- autoscale_pair()
+  attr(cis$a, "trial_design") <- list(stimuli = 1:3)
+  attr(cis$b, "scaling") <- list(method = "none", constant = NA_real_, individual = list(method = "none"))
+  out <- autoscale(cis, save_as_pngs = FALSE)
+  expect_identical(names(out), c("a", "b"))
+  expect_identical(attr(out$a, "trial_design"), list(stimuli = 1:3))
+  expect_identical(attr(out$b, "scaling")$individual, list(method = "none"))
+  for (nm in names(cis)) {
+    expect_identical(out[[nm]]$scaled, (cis[[nm]]$ci + 3) / 6)
+    expect_identical(out[[nm]][c("ci", "base")], cis[[nm]][c("ci", "base")])
+  }
+})
