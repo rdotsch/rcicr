@@ -318,9 +318,6 @@ seedResponseStream <- function(source, baseimage, response_seed, kind = NULL) {
 generateBaseReference <- function(selection, rdata, iter, ncores, response_seed, save_rdata,
                                   reference_method) {
   source <- selection$source
-  if (length(iter) != 1L || !is.finite(iter) || iter < 1 || iter != trunc(iter)) {
-    stop('iter must be a positive integer.')
-  }
   if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, selection$baseimage)
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
   norms <- referenceNorms(source, selection$baseimage, NULL, iter, ncores, response_seed,
@@ -348,12 +345,35 @@ baseReference <- function(rdata, iter, force_gen_ref_dist, response_seed, select
                                  force_gen_ref_dist, response_seed, selection$baseimage,
                                  seedless = is.null(selection$source$seed),
                                  reference_method = reference_method)
-  if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
-    stop('Invalid cached reference for baseimage ', selection$baseimage,
-         '. Use force_gen_ref_dist = TRUE to regenerate it.')
+  referenceSummary(norms, paste0('for baseimage ', selection$baseimage),
+                   paste0('for baseimage ', selection$baseimage),
+                   paste0('baseimage = ', selection$baseimage, '; '))
+}
+
+# One check for every path that simulates a reference, made before anything is
+# loaded or simulated (#377).
+validateIter <- function(iter) {
+  if (!is.numeric(iter) || length(iter) != 1L || !is.finite(iter) || iter < 1 ||
+        iter != trunc(iter)) {
+    stop('iter must be a positive integer.', call. = FALSE)
   }
-  list(median = median(norms), mad = mad(norms), iter = length(norms),
-       note = paste0('baseimage = ', selection$baseimage, '; '))
+  invisible(NULL)
+}
+
+# The scoring numbers of a reference, as list(median, mad, iter, note), for all
+# three resolvers. A stored reference can be damaged, and a reference over few
+# stimuli can have too few distinct norms: one gives one, so the MAD is 0 and
+# the InfoVal would be infinite or NaN rather than a number.
+referenceSummary <- function(norms, cached, described, note) {
+  if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
+    stop('Invalid cached reference ', cached, '. Use force_gen_ref_dist = TRUE to regenerate it.',
+         call. = FALSE)
+  }
+  if (mad(norms) == 0) {
+    stop('The reference ', described, ' has a MAD of 0, so no InfoVal can be computed from it: ',
+         'too few stimuli for random responses to give distinct norms.', call. = FALSE)
+  }
+  list(median = median(norms), mad = mad(norms), iter = length(norms), note = note)
 }
 
 # Named so tests can model read-only archives even when running as root.
