@@ -58,6 +58,8 @@
 
 - **`generateStimuli2IFC()` checks `n_trials` before writing anything.** `0`, negative and missing values failed with messages such as "dimensions must be a positive quantity", depending on `save_as_png`. A fractional one, such as `2.5`, wrote 2 trials into a stimulus file whose `n_trials` every InfoVal then rejected. All now stop with "n_trials must be a positive whole number". (#385)
 
+- **An unknown `zmapmethod` now says so.** `generateCI(zmap = TRUE)` with a method other than `"quick"` or `"t.test"` stopped with "argument of length 0" from inside the plotting code; it now names the two methods. (#388)
+
 - **A single generated trial or a single participant no longer stops with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`, and `generateCI()` with one participant ID, now run: the progress bars start at 0. So does one participant with one trial. Where each stimulus appears once, one participant's CI is the same as the pooled CI of their trials. With repeated presentations the two weight trials differently, as `?generateCI` describes. A `t.test` z-map over fewer than two images, one participant or one distinct stimulus, cannot be computed. It now stops before any work with a message that says so and suggests `zmapmethod = "quick"`, instead of failing inside `t.test()`. No result that was computed before changes. (#351)
 
 # rcicr 1.5.0 (2026-09-25)

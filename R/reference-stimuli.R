@@ -17,8 +17,7 @@ canonicalReferenceStimuli <- function(reference_stimuli, n_trials) {
   }, error = function(e) stop('reference_stimuli: ', conditionMessage(e), call. = FALSE))
   repeated <- unique(ids[duplicated(ids)])
   if (length(repeated) > 0L) {
-    shown <- paste(utils::head(sort(repeated), 5), collapse = ', ')
-    if (length(repeated) > 5) shown <- paste0(shown, ', ...')
+    shown <- firstFew(sort(repeated))
     stop('reference_stimuli lists stimulus ', shown, ' more than once. A reference ',
          'assumes one response per stimulus from one responder, so it cannot describe ',
          'repeated presentations or several participants.', call. = FALSE)

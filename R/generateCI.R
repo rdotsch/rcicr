@@ -224,40 +224,30 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
     saveToImage(baseimage, combined, targetpath, filename, antiCI)
   }
 
-  # Rename zmap to zmapbool so we can use zmap for the actual zmap
-  zmapbool <- zmap
-  if (zmapbool) {
+  if (zmap) {
 
-    if (zmapmethod == 'quick') {
-      zmap <- computeZmapQuick(ci, sigma, threshold, img_size)
-    }
-
-    if (zmapmethod == 't.test') {
-      zmap <- computeZmapTTest(ci, params, responses, p, pid.cis, img_size,
-        n_cores
-      )
-    }
+    zmap_matrix <- switch(as.character(zmapmethod),
+      quick = computeZmapQuick(ci, sigma, threshold, img_size),
+      t.test = computeZmapTTest(ci, params, responses, p, pid.cis, img_size, n_cores),
+      stop('zmapmethod must be "quick" or "t.test".', call. = FALSE)
+    )
 
     # Pass zmap object to plotZmap for plotting. targetpath was previously not
     # forwarded, so the documented zmaptargetpath argument was silently ignored
     # and every z-map went to plotZmap()'s own default ('zmaps', relative to the
     # working directory) no matter what the caller asked for.
-    plotZmap(zmap = zmap, bgimage = combined, filename = baseimage,
+    plotZmap(zmap = zmap_matrix, bgimage = combined, filename = baseimage,
       sigma = sigma, threshold = threshold, size = img_size,
       decoration = zmapdecoration, pointsize = zmappointsize,
       targetpath = zmaptargetpath
     )
   }
 
-  # Return data. The design and scaling are attributes, not fields: scripts
-  # iterate the fields and expect pixel matrices.
-  if (zmapbool) {
-    return(structure(list(ci = ci, scaled = scaled, base = base, combined = combined, zmap = zmap),
-                     trial_design = design, scaling = scaling_record))
-  } else {
-    return(structure(list(ci = ci, scaled = scaled, base = base, combined = combined),
-                     trial_design = design, scaling = scaling_record))
-  }
+  # The design and scaling are attributes, not fields: scripts iterate the
+  # fields and expect pixel matrices.
+  result <- list(ci = ci, scaled = scaled, base = base, combined = combined)
+  if (zmap) result$zmap <- zmap_matrix
+  return(structure(result, trial_design = design, scaling = scaling_record))
 }
 
 # Functions ---------------------------------------------------------------

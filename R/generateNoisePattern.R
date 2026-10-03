@@ -20,10 +20,6 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
   phases <- c(0, pi / 2)
   scales <- 2^(0:(nscales - 1))
 
-  # Size of patches per scale
-  mg <- matlab::meshgrid(1:img_size, 1:img_size, 1:length(scales)) # nolint: seq_linter.
-  patchSize <- mg$x / mg$y
-
   # Number of patch layers needed
   nrPatches <- length(scales) * length(orientations) * length(phases)
 
@@ -44,7 +40,7 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
     for (orientation in orientations) {
       for (phase in phases) {
         # Generate single patch
-        size <- patchSize[scale, img_size]
+        size <- img_size / scale
 
         if (noise_type == 'gabor') {
           p <- generateGabor(size, 1.5, orientation, phase, sigma, 1)
@@ -56,8 +52,8 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
         patches[, , co] <- matlab::repmat(p, scale)
 
         # Create index matrix
-        for (col in 1:scale) {
-          for (row in 1:scale) {
+        for (col in seq_len(scale)) {
+          for (row in seq_len(scale)) {
 
             # Insert absolute index for later contrast weighting
             patchIdx[(size * (row - 1) + 1):(size * row), (size * (col - 1) + 1):(size * col), co] <- idx
