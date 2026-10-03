@@ -13,7 +13,10 @@ generateSinusoid <- function(img_size, cycles, angle, phase, contrast) {
 
   # Generates an image matrix containing a sinusoid, angle (in degrees) of 0 will give vertical, 90 horizontally oriented sinusoid
   angle <- deg2rad(angle)
-  sinepatch <- matlab::repmat(matlab::linspace(0, cycles, img_size), img_size, 1)
+  # A ramp from 0 to `cycles` along each row. As matlab::linspace() and
+  # repmat() built it (#208), a single pixel holds `cycles`, not 0.
+  ramp <- if (img_size < 2) cycles else seq(0, cycles, length.out = img_size)
+  sinepatch <- if (img_size == 1) ramp else matrix(ramp, img_size, img_size, byrow = TRUE)
   sinusoid <- (sinepatch * cos(angle) + t(sinepatch) * sin(angle)) * 2 * pi
   sinusoid <- contrast * sin(sinusoid + phase)
   return(sinusoid)

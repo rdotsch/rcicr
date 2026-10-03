@@ -11,9 +11,10 @@ test_that("generateGabor equals sinusoid times gaussian mask", {
   sigma <- 25
   contrast <- 1
 
-  x0 <- scales::rescale(1:img_size, to = c(-.5, .5))
-  gauss <- matlab::meshgrid(x0, x0)
-  gauss_mask <- exp(-(((gauss$x^2) + (gauss$y^2)) / (2 * (sigma / img_size)^2)))
+  # A Gaussian over pixel coordinates from -0.5 to 0.5, from the definition
+  # rather than the implementation's arithmetic.
+  coords <- seq(-0.5, 0.5, length.out = img_size)
+  gauss_mask <- exp(-outer(coords^2, coords^2, "+") / (2 * (sigma / img_size)^2))
 
   expected <- generateSinusoid(img_size, cycles, angle, phase, contrast) * gauss_mask
   expect_equal(generateGabor(img_size, cycles, angle, phase, sigma, contrast), expected)

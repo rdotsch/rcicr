@@ -23,8 +23,8 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
   # Number of patch layers needed
   nrPatches <- length(scales) * length(orientations) * length(phases)
 
-  patches <- matlab::zeros(c(img_size, img_size, nrPatches))
-  patchIdx <- matlab::zeros(c(img_size, img_size, nrPatches))
+  patches <- array(0, c(img_size, img_size, nrPatches))
+  patchIdx <- array(0, c(img_size, img_size, nrPatches))
 
   # Counters
   if (pre_0.3.0) {
@@ -47,7 +47,7 @@ generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinu
         }
 
         # Repeat to fill scale
-        patches[, , co] <- matlab::repmat(p, scale)
+        patches[, , co] <- if (scale == 1) p else kronecker(array(1, c(scale, scale)), p)
 
         # Create index matrix
         for (col in seq_len(scale)) {

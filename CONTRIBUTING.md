@@ -57,7 +57,7 @@ The most useful report gives the `.Rdata` file's `img_size`, `nscales` and `nois
 
 ### Testing
 
-- **`skip_if_not_installed()` is for `Suggests` packages only.** `withr` may genuinely be absent, so skipping on it is honest. A package in `Imports` (`png`, `jpeg`, `matlab`) cannot be absent, because the package will not load without it. Such a skip never fires for a real reason, and if it somehow did, it would hide the test instead of failing it. At a glance a skip reads as "passed", which is the opposite of what you need to know.
+- **`skip_if_not_installed()` is for `Suggests` packages only.** `withr` may genuinely be absent, so skipping on it is honest. A package in `Imports` (`png`, `jpeg`, `Matrix`) cannot be absent, because the package will not load without it. Such a skip never fires for a real reason, and if it somehow did, it would hide the test instead of failing it. At a glance a skip reads as "passed", which is the opposite of what you need to know.
 - **When mutating the code repeatedly, keep backups with `cp` in a scratch directory, and never restore with `git checkout <file>`.** That discards unstaged work, and it has destroyed an in-progress implementation here. `git stash push -- R/` is right for proving a single fix; it is the restore that bites. Guard each mutation with a `grep -q MUTANT` check too: a mutation that silently failed to apply looks like a surviving mutant.
 - **When a test reads pixels back from a graphics device, assert only relationships between renders.** Every absolute property of those pixels belongs to the device: the channel count (cairo writes RGB, macOS quartz RGBA) and the values (quartz renders a 0.5 background at about 0.573 where cairo gives 0.502). Render onto a *uniform* background, so "drew nothing" becomes "the image is one flat value"; count distinct values over the colour channels only; and compare two renders instead of pinning a number. [`DECISIONS.md`](DECISIONS.md#pixel-assertions-have-measured-the-graphics-device-twice) has the two failures behind this rule.
 - **Check figures by looking at them.** Three problems in the walkthrough vignette passed every assertion and were obvious on sight; [`DECISIONS.md`](DECISIONS.md#three-vignette-figures-were-wrong-in-ways-only-viewing-them-showed) lists them.
@@ -112,7 +112,7 @@ The rest is ordinary consistency. Internal helpers are free to change, because n
 | Returns | explicit `return()` at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds `generateCI()`; `zzz.R` holds the `globalVariables()` declarations. |
 | Roxygen | exported functions only | `man/` holds exactly the exports plus the package page. Internal helpers use plain `#` comments, even when they share a file with an export: roxygen on an unexported function either publishes a page no user can reach or needs `@noRd`. |
-| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked `base::sum()` with MATLAB semantics across six files (#182); the package now calls `matlab::` explicitly. |
+| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked `base::sum()` with MATLAB semantics across six files (#182). `matlab` is no longer a dependency (#208). |
 
 Line length is not enforced, and some lines in `R/` exceed 100 characters. Wrap new code at something reasonable instead of reflowing what is there.
 

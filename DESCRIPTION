@@ -16,10 +16,8 @@ Encoding: UTF-8
 Depends:
     R (>= 4.1)
 Imports:
-    matlab,
     png,
     jpeg,
-    scales,
     viridis,
     utils,
     parallel,

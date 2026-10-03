@@ -13,7 +13,7 @@
 #' simulateNoiseIntensities(nrep = 10, img_size = 64)
 simulateNoiseIntensities <- function(nrep = 1000, img_size = 512) {
 
-  results <- matlab::zeros(nrep, 2)
+  results <- array(0, c(nrep, 2))
   s <- generateNoisePattern(img_size = img_size)
 
   pb <- txtProgressBar(min = 0, max = nrep, style = 3)
