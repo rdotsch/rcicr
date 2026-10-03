@@ -22,6 +22,7 @@
 #' \code{\link{batchGenerateCI2IFC}}. Both scale with \code{'none'} before calling this
 #' function, so their \code{$combined} overlays the \emph{unscaled} noise and looks almost blank,
 #' while \code{$scaled} is the image you want.
+#' @seealso \code{vignette("reverse-correlation-walkthrough")}, sections "Scaling" and "Several participants at once".
 #' @examples
 #' cis <- list(
 #'   participant1 = list(ci = matrix(runif(64, -0.2, 0.2), 8, 8), base = matrix(0.5, 8, 8)),

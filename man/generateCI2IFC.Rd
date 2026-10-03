@@ -91,3 +91,6 @@ ci <- generateCI2IFC(
   rdata = rdata_file, save_as_png = FALSE
 )
 }
+\seealso{
+\code{\link{generateCI}}, which new code should use; \code{vignette("reverse-correlation-walkthrough")}, section "Computing one classification image".
+}

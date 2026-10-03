@@ -66,6 +66,7 @@
 ## Documentation
 
 - **A new vignette, `vignette("recipes")`, answers questions that come up after the basics.** It covers noise-only stimuli from a uniform grey base image, which needs `maximize_baseimage_contrast = FALSE`; rating scales as response weights, and how to check their direction; and matching the InfoVal reference to the design: dropped trials (`reference_stimuli`), masked classification images, scoring a batch, and why a CI averaged over participants has no calibrated InfoVal. It runs at 64 pixels and builds in seconds. (#69, #6)
+- The help pages of `generateStimuli2IFC()`, `generateCI()`, `autoscale()`, `computeInfoVal2IFC()` and the other functions the vignettes use link to the vignette sections that show them, and `?rcicr` names all the vignettes.
 - The README says how to cite rcicr and the method behind it, and lists all three vignettes.
 
 # rcicr 1.5.0 (2026-09-25)

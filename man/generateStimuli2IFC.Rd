@@ -78,3 +78,6 @@ generateStimuli2IFC(
   nscales = 1
 )
 }
+\seealso{
+\code{vignette("getting-started")} for the shortest working example; \code{vignette("reverse-correlation-walkthrough")}, section "Generating stimuli", for choosing the settings; \code{vignette("recipes")}, "Noise-only stimuli", for stimuli without a face.
+}

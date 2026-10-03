@@ -86,3 +86,6 @@ cis <- suppressWarnings(batchGenerateCI2IFC(
   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 ))
 }
+\seealso{
+\code{vignette("reverse-correlation-walkthrough")}, section "Several participants at once"; \code{vignette("recipes")}, "Several classification images at once".
+}

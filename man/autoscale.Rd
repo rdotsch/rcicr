@@ -42,3 +42,6 @@ cis <- list(
 )
 scaled_cis <- autoscale(cis, save_as_pngs = FALSE)
 }
+\seealso{
+\code{vignette("reverse-correlation-walkthrough")}, sections "Scaling" and "Several participants at once".
+}

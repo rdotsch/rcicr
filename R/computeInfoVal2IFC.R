@@ -86,6 +86,7 @@
 #' reference already stored in \code{rdata} is reused whichever is given. See "Reference method" in
 #' \code{\link{generateReferenceDistribution2IFC}}.
 #' @return The Informational Value, a z-score.
+#' @seealso \code{vignette("reverse-correlation-walkthrough")}, section "Is there actually signal?"; \code{vignette("recipes")}, "Matching the InfoVal reference to the design", for dropped trials, masks, batches and group averages.
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")

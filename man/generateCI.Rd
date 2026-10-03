@@ -149,3 +149,6 @@ ci <- generateCI(
   rdata = rdata_file, save_as_png = FALSE
 )
 }
+\seealso{
+\code{vignette("reverse-correlation-walkthrough")}, sections "Computing one classification image" and "Scaling"; \code{vignette("recipes")} for rating scales as responses and for masked classification images.
+}

@@ -36,6 +36,7 @@
 #' recorded, pass \code{lapply(target_cis, function(ci) attr(ci, "trial_design")$stimuli)}.
 #' @return A numeric vector of Informational Values, one per classification image, named as
 #' \code{target_cis} is.
+#' @seealso \code{vignette("recipes")}, "Several classification images at once".
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")

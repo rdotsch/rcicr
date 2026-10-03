@@ -20,6 +20,7 @@
 #' @param constant Scaling constant for the noise. Used only when \code{scaling = 'constant'}.
 #' @param participants Optional name of a column holding a participant ID per trial. When given, each unit's CI is computed as \code{\link{generateCI}} does with \code{participants}: one CI per participant in the unit, then their average. With \code{by} naming a condition, that gives one CI per condition with participants nested in it, and each participant counts equally however many trials they contributed. Every row needs an ID; the call stops before computing anything if any is missing. Default: \code{NULL}, all of a unit's trials pooled into one CI.
 #' @return Named list with one classification image per unit. Each is itself a list of pixel matrices: the raw noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
+#' @seealso \code{vignette("reverse-correlation-walkthrough")}, section "Several participants at once"; \code{vignette("recipes")}, "Several classification images at once".
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")

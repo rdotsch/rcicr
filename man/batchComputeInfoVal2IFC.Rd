@@ -96,3 +96,6 @@ suppressWarnings(batchComputeInfoVal2IFC(
   reference_stimuli = list(1:3, 4:6)
 ))
 }
+\seealso{
+\code{vignette("recipes")}, "Several classification images at once".
+}
