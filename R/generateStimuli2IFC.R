@@ -259,10 +259,8 @@ readBaseFace <- function(label, filename, img_size, maximize_contrast) {
 
   # Check if base face is square. If not, throw an error
   if (dim(img)[1] != dim(img)[2]) {
-    stop(paste0('Base image "', label, '" (', filename, ') is not ',
-      'square! It\'s ', dim(img)[1], ' by ', dim(img)[2],
-      ' pixels. Please use a square base face.'
-    ), call. = FALSE)
+    stop('Base image "', label, '" (', filename, ') is not square! It\'s ', dim(img)[1],
+         ' by ', dim(img)[2], ' pixels. Please use a square base face.', call. = FALSE)
   }
 
   # Change base face to greyscale if necessary.
@@ -283,13 +281,11 @@ readBaseFace <- function(label, filename, img_size, maximize_contrast) {
   # an opaque "non-conformable arrays" error from inside a parallel worker
   # (when the noise is added to the base image).
   if (nrow(img) != img_size) {
-    stop(paste0('Base image "', label, '" (', filename, ') is ',
-      nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
-      img_size, '. rcicr does not resize base images: please ',
-      'either resize the image to ', img_size, ' by ', img_size,
-      ' pixels, or call generateStimuli2IFC() with img_size = ',
-      nrow(img), '.'
-    ), call. = FALSE)
+    stop('Base image "', label, '" (', filename, ') is ', nrow(img), ' by ', ncol(img),
+         ' pixels, but img_size is ', img_size, '. rcicr does not resize base images: ',
+         'please either resize the image to ', img_size, ' by ', img_size,
+         ' pixels, or call generateStimuli2IFC() with img_size = ', nrow(img), '.',
+         call. = FALSE)
   }
 
   # If necessary, rescale to maximize contrast
@@ -299,13 +295,11 @@ readBaseFace <- function(label, filename, img_size, maximize_contrast) {
     # with the rescale off a flat base image is usable and produces valid
     # stimuli, so rejecting it outright would break a legitimate call.
     if (max(img) == min(img)) {
-      stop(paste0('Base image "', label, '" (', filename, ') has no ',
-        'contrast: every pixel is ', min(img), '. Contrast cannot ',
-        'be maximized on a uniform image, and doing so would make ',
-        'the base image entirely NaN. Use a base image with some ',
-        'variation, or call generateStimuli2IFC() with ',
-        'maximize_baseimage_contrast = FALSE.'
-      ), call. = FALSE)
+      stop('Base image "', label, '" (', filename, ') has no contrast: every pixel is ',
+           min(img), '. Contrast cannot be maximized on a uniform image, and doing so ',
+           'would make the base image entirely NaN. Use a base image with some variation, ',
+           'or call generateStimuli2IFC() with maximize_baseimage_contrast = FALSE.',
+           call. = FALSE)
     }
 
     img <- (img - min(img)) / (max(img) - min(img))
