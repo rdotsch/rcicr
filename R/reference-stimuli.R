@@ -77,9 +77,6 @@ subsetReferenceIndex <- function(cache, reference_stimuli, base_key) {
 # reference is reproducible from the file alone.
 generateSubsetReference <- function(source, rdata, selection, reference_stimuli, iter,
                                     ncores, response_seed, save_rdata, reference_method) {
-  if (length(iter) != 1L || !is.finite(iter) || iter < 1 || iter != trunc(iter)) {
-    stop('iter must be a positive integer.')
-  }
   label <- referenceLabel(source, selection)
   base_key <- if (selection$independent) label else NULL
   if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, base_key, subset = TRUE)
@@ -118,21 +115,11 @@ subsetReference <- function(rdata, iter, force_gen_ref_dist, response_seed, sour
                                  base_key, seedless = is.null(source$seed),
                                  reference_stimuli = reference_stimuli,
                                  reference_method = reference_method)
-  if (!is.numeric(norms) || !length(norms) || any(!is.finite(norms))) {
-    stop('Invalid cached reference for these reference_stimuli. ',
-         'Use force_gen_ref_dist = TRUE to regenerate it.')
-  }
-  # Few stimuli give few distinct norms: one gives one, so the MAD is 0 and the
-  # InfoVal would be infinite or NaN rather than a number.
-  if (mad(norms) == 0) {
-    stop('The reference over these ', length(reference_stimuli), ' stimuli has a MAD of 0, ',
-         'so no InfoVal can be computed from it: too few stimuli for random responses to ',
-         'give distinct norms.', call. = FALSE)
-  }
   base_note <- if (is.null(base_key)) '' else paste0('baseimage = ', base_key, '; ')
-  list(median = median(norms), mad = mad(norms), iter = length(norms),
-       note = paste0(base_note, 'reference over ', length(reference_stimuli), ' of ',
-                     source$n_trials, ' stimuli; '))
+  referenceSummary(norms, 'for these reference_stimuli',
+                   paste0('over these ', length(reference_stimuli), ' stimuli'),
+                   paste0(base_note, 'reference over ', length(reference_stimuli), ' of ',
+                          source$n_trials, ' stimuli; '))
 }
 
 # A message, never a warning: whether the design and the reference match is
