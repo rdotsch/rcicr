@@ -16,7 +16,7 @@ computeCumulativeCICorrelation(
 \arguments{
 \item{stimuli}{Numeric vector of stimulus numbers, one per response and in the same order. Each must be a positive whole number no larger than the number of trials saved for the selected base image. Numbers may repeat and need not be consecutive. Factors, characters and logicals are rejected: if your data hold stimulus labels, check them against the generated stimulus filenames before converting them to numbers.}
 
-\item{responses}{Vector of responses in the same order as \code{stimuli}: 1 where the original stimulus was chosen, -1 where the inverted one was.}
+\item{responses}{Vector of responses in the same order as \code{stimuli}: 1 where the original stimulus was chosen, -1 where the inverted one was. Must be numeric and finite; other finite numbers, such as ratings, weight the trials accordingly. Factors, characters and logicals are rejected, as are \code{NA}, \code{NaN} and infinite values: remove trials without a response from every argument alike.}
 
 \item{baseimage}{String naming the base image: not its file name, but its key in the \code{base_face_files} list passed to \code{\link{generateStimuli2IFC}}.}
 
