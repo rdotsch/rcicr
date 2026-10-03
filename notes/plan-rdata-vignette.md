@@ -11,9 +11,9 @@ A **vignette**, not a pkgdown article: `vignettes/articles/` is `.Rbuildignore`d
 
 ## Verified layouts
 
-All at 64px with 20 trials; each layout below was printed by generating it and listing `names()` and `names(attributes())`, recursively.
+All at 64px with 20 trials; each layout below was printed by generating it and walking `names()` and `attributes()` recursively, `class` included.
 
-**`.Rdata` file.** After `generateStimuli2IFC()`: `base_face_files base_faces generator_version img_size label n_trials noise_type nscales p rng_kind seed sigma stimuli_params stimulus_path use_same_parameters`; `p` holds `patches patchIdx noise_type generator_version`. After `computeInfoVal2IFC()` the file also holds `reference_norms reference_norms_fingerprint reference_norms_method reference_norms_seed reference_norms_source`. A masked CI's reference goes to `reference_norms_by_stimuli`, whose entries hold `reference_stimuli baseimage mask norms response_seed source fingerprint method`. No object in the file carries an attribute beyond `names`/`dim`.
+**`.Rdata` file.** After `generateStimuli2IFC()`: `base_face_files base_faces generator_version img_size label n_trials noise_type nscales p rng_kind seed sigma stimuli_params stimulus_path use_same_parameters`; `p` holds `patches patchIdx noise_type generator_version`. After `computeInfoVal2IFC()` the file also holds `reference_norms reference_norms_fingerprint reference_norms_method reference_norms_seed reference_norms_source`. A masked CI's reference goes to `reference_norms_by_stimuli`, whose entries hold `reference_stimuli baseimage mask norms response_seed source fingerprint method`. The only attribute beyond `names` and `dim` is `class`: `generator_version` and `p$generator_version` are `package_version` objects. Files from before 1.2.0 hold a character string there instead (`R/rdata.R:34-36`), so the vignette gives the type and its history.
 
 Three of these fields are written but missing from the README table:
 
@@ -37,7 +37,7 @@ Three of these fields are written but missing from the README table:
 
 The tables are R data frames rendered with `knitr::kable()`, so the documentation is data. A hidden chunk builds every layout above and `stop()`s when:
 
-- a field, list element or attribute in a generated object, at any depth listed above, has no row; or
+- a field, list element or attribute in a generated object, at any depth listed above, has no row; attributes other than `names` and `dim` count, `class` included; or
 - a row names one that no generated object contains.
 
 The build then fails in `R CMD check`, pkgdown and CI on the PR that adds a field, while its reasoning is to hand. On CRAN it can only fail if a release ships with drift that CI already reported.
