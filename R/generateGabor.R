@@ -14,9 +14,12 @@
 generateGabor <- function(img_size, cycles, angle, phase, sigma, contrast) {
 
   s <- generateSinusoid(img_size, cycles, angle, phase, contrast)
-  x0 <- scales::rescale(1:img_size, to = c(-.5, .5))
-  gauss <- matlab::meshgrid(x0, x0)
-  gauss_mask <- exp(-(((gauss$x^2) + (gauss$y^2)) / (2 * (sigma / img_size)^2)))
+  # Coordinates from -0.5 to 0.5, as scales::rescale() gave them (#208): 0 for
+  # a single pixel.
+  x0 <- if (img_size == 1) 0 else (seq_len(img_size) - 1) / (img_size - 1) - 0.5
+  gauss_x <- matrix(x0, img_size, img_size, byrow = TRUE)
+  gauss_y <- matrix(x0, img_size, img_size)
+  gauss_mask <- exp(-(((gauss_x^2) + (gauss_y^2)) / (2 * (sigma / img_size)^2)))
   return(gauss_mask * s)
 
 }
