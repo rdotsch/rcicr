@@ -245,10 +245,7 @@ sharedReference <- function(rdata, iter, force_gen_ref_dist, response_seed, refe
                                              seedless = is.null(get0('seed', envir = environment(), inherits = FALSE)),
                                              reference_method = reference_method)
 
-    # Compute reference values
-    ref_median <- median(reference_norms)
-    ref_mad <- mad(reference_norms)
-    ref_iter <- length(reference_norms)
+    return(referenceSummary(reference_norms, 'in the stimulus file', 'in the stimulus file', ''))
   }
 
   list(median = ref_median, mad = ref_mad, iter = ref_iter, note = '')
