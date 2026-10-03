@@ -76,70 +76,15 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   stimuli <- trials$stimuli
   responses <- trials$responses
 
-  # load() assigns straight into this function's frame, so any object stored in
-  # the .Rdata file silently overwrites an argument of the same name - the same
-  # hazard handled in generateCI() and generateReferenceDistribution2IFC(). No
-  # field written today collides with these arguments, so this changes nothing
-  # now; it is here because the collision that actually bit us (the z-map
-  # `sigma`, fixed in #146) was created from the .Rdata side, by adding a field,
-  # not by adding an argument.
-  #
-  # Captured after the unlist() above, so the coerced vectors are what gets
-  # restored rather than the original tibble columns.
-  .args <- captureArgs(environment())
-
-  # Load parameter file (created when generating stimuli)
-  loadRdata(rdata, environment())
-
-  list2env(.args, envir = environment())
-
-  # Check whether critical variables have been loaded
-  if (!exists('s', envir = environment(), inherits = FALSE) && !exists('p', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata argument did not contain s or p variable.', rdataWriterNote(environment()))
-  }
-
-  if (!exists('base_faces', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata argument did not contain base_faces variable.', rdataWriterNote(environment()))
-  }
-
-  if (!exists('stimuli_params', envir = environment(), inherits = FALSE)) {
-    stop('File specified in rdata argument did not contain stimuli_params variable.', rdataWriterNote(environment()))
-  }
-
-  # Convert s to p (if rdata file originates from pre-0.3.3)
-  if (exists('s', envir = environment(), inherits = FALSE)) {
-    p <- list(patches = s$sinusoids, patchIdx = s$sinIdx, noise_type = 'sinusoid')
-    rm(s)
-  }
-
-
-  # Get base image
-  base <- base_faces[[baseimage]]
-  if (is.null(base)) {
-    stop(paste0('File specified in rdata argument did not contain any reference to base image label: ', baseimage, ' (NOTE: file contains references to the following base image label(s): ', paste(names(base_faces), collapse = ', '), ')'))
-  }
-
-
-  # Retrieve parameters of actually presented stimuli (this will work with
-  # non-consecutive stims as well). drop = FALSE keeps a single presented stimulus
-  # a one-row matrix rather than a vector, so the params[1:trial, ] slice in the
-  # cumulative loop below stays valid; without it a length-1 `stimuli` aborted
-  # with "incorrect number of dimensions" regardless of parameter count.
-  validateStimulusIds(stimuli, nrow(stimuli_params[[baseimage]]))
-  params <- stimuli_params[[baseimage]][stimuli, , drop = FALSE]
-
-  # Check whether parameters were found in this .rdata file
-  if (length(params) == 0) {
-    stop(paste0('No parameters found for base image: ', baseimage))
-  }
-
-  # Truncate a pre-0.3.0 parameter set from 4096 to 4092, exactly as generateCI()
-  # does, so this function can read the same old files. Without it the extra four
-  # unused contrasts reach generateNoiseImage() as a length mismatch and abort.
-  # See generateCI() and ChangeLog 0.3.0-29 for why 4096 was over-allocated.
-  if (ncol(params) == 4096) {
-    params <- params[, 1:4092, drop = FALSE]
-  }
+  # Loaded in a frame of its own, so no field of the .Rdata can replace an
+  # argument (see loadStimulusParams()). This function never needs img_size.
+  loaded <- loadStimulusParams(rdata, require_img_size = FALSE)
+  p <- loaded$p
+  selectBaseImage(loaded$base_faces, baseimage)
+  # A one-row matrix for a single stimulus, which the params[1:trial, ] slice
+  # in the cumulative loop below needs.
+  params <- matrix(selectStimulusParams(loaded$stimuli_params, baseimage, stimuli),
+                   nrow = length(stimuli))
 
   # Compute final classification image if necessary
   if (length(targetci) == 0) {
