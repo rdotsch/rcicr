@@ -74,12 +74,13 @@ test_that("the PNG collision message lists up to three files, then ...", {
   dir <- withr::local_tempdir()
   paths <- file.path(dir, paste0("s", 1:5, ".png"))
   file.create(paths[1])
-  expect_match(msg(rcicr:::reserveStimulusPngs(paths)),
-               paste0("^1 of the 5 PNG files this call would write already exist \\(",
-                      paths[1], "\\), and"))
+  # Fixed, not regular expressions: a Windows path is full of backslashes.
+  expect_true(startsWith(msg(rcicr:::reserveStimulusPngs(paths)),
+                         paste0("1 of the 5 PNG files this call would write already exist (",
+                                paths[1], "), and")))
   file.create(paths)
   expect_match(msg(rcicr:::reserveStimulusPngs(paths)),
-               paste0("exist \\(", paste(paths[1:3], collapse = ", "), ", \\.\\.\\.\\), and"))
+               paste0("exist (", paste(paths[1:3], collapse = ", "), ", ...), and"), fixed = TRUE)
 })
 
 test_that("firstFew cuts only past n, not at n", {
