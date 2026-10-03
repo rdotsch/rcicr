@@ -489,5 +489,14 @@ saveToImage <- function(baseimage, combined, targetpath, filename, antiCI) {
   dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
   # Write CI to image file
-  png::writePNG(combined, paste0(targetpath, '/', filename))
+  png::writePNG(clampUnit(combined), paste0(targetpath, '/', filename))
+}
+
+# png::writePNG() does not clip: it wraps a value above 1 around, so a pixel
+# just above white is written black (1.004 becomes 0, 1.1 becomes 0.098), while
+# a value below 0 is clipped. rasterImage() refuses either (#371, #373). Every
+# image written or drawn goes through this; returned matrices never do, so no
+# number changes. NA, a masked pixel, stays NA.
+clampUnit <- function(x) {
+  pmin(pmax(x, 0), 1)
 }
