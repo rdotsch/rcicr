@@ -11,6 +11,10 @@
 #' or \code{force_gen_ref_dist = TRUE}), simulates it again for every image. The values are
 #' identical to that loop's.
 #'
+#' A masked classification image is scored over its unmasked pixels, as described under "Masked
+#' classification images" in \code{\link{computeInfoVal2IFC}}. Images with the same stimuli and
+#' the same mask share one reference.
+#'
 #' Messages about the trial design (see "Matching the reference to the classification image" in
 #' \code{\link{computeInfoVal2IFC}}) are collected into one message per kind, naming the
 #' classification images concerned, rather than one per image.
@@ -88,7 +92,12 @@ batchComputeInfoVal2IFC <- function(target_cis, rdata, iter = 10000, force_gen_r
   source <- referenceSource(rdata, selection)
   if (!validTrialCount(source$n_trials)) stop('The stimulus file must contain a positive integer n_trials.')
   canonical <- lapply(requested, canonicalReferenceStimuli, n_trials = source$n_trials)
-  keys <- vapply(canonical, function(ids) paste(ids, collapse = ','), character(1))
+  masks <- lapply(target_cis, function(ci) referenceMask(ciMask(ci), source$img_size))
+  keys <- vapply(seq_len(n), function(i) {
+    key <- maskKey(masks[[i]])
+    paste(paste(canonical[[i]], collapse = ','), paste(key$lengths, collapse = ','),
+          key$values[1], sep = '|')
+  }, character(1))
   groups <- split(seq_len(n), factor(keys, levels = unique(keys)))
 
   issues <- lapply(seq_len(n), function(i) {
@@ -100,9 +109,10 @@ batchComputeInfoVal2IFC <- function(target_cis, rdata, iter = 10000, force_gen_r
   quiet <- function(n_trials, reference_stimuli) NULL
   for (members in groups) {
     ids <- canonical[[members[1]]]
-    reference <- if (!is.null(ids)) {
+    masked <- masks[[members[1]]]
+    reference <- if (!is.null(ids) || !is.null(masked)) {
       subsetReference(rdata, iter, force_gen_ref_dist, response_seed, source, selection, ids,
-                      reference_method, quiet)
+                      reference_method, quiet, masked)
     } else if (selection$independent) {
       baseReference(rdata, iter, force_gen_ref_dist, response_seed, selection, reference_method,
                     quiet)
@@ -113,7 +123,7 @@ batchComputeInfoVal2IFC <- function(target_cis, rdata, iter = 10000, force_gen_r
                  reference$note, 'reference median = ', reference$median, '; MAD = ',
                  reference$mad, '; iterations = ', reference$iter, ')'), stdout())
     for (i in members) {
-      cinorm <- norm(matrix(target_cis[[i]][['ci']]), 'f')
+      cinorm <- ciNorm(target_cis[[i]])
       info_vals[i] <- (cinorm - reference$median) / reference$mad
     }
   }

@@ -88,6 +88,11 @@
 #' @param reference_method \code{"gram"} (the default) or \code{"images"}: how the reference
 #' norms are computed. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit. See
 #' "Reference method" below.
+#' @param mask Optional mask, in any form \code{\link{generateCI}} accepts: a 0/1 matrix or the
+#' path to a PNG, black (0) where masked. The reference is then built over the unmasked pixels
+#' only, as \code{\link{computeInfoVal2IFC}} needs for a classification image computed with
+#' that mask, and stored apart from the default one. The default, \code{NA}, uses every pixel.
+#' See "Masked classification images" in \code{\link{computeInfoVal2IFC}}.
 #' @section Independent base images:
 #' When the base images have different parameter matrices, \code{baseimage} says whose noise to
 #' use. The distributions are then stored in \code{reference_norms_by_base}, one entry per base
@@ -123,17 +128,18 @@
 #'
 #' # iter is kept tiny here for a fast example; in practice use iter >= 10000.
 #' suppressWarnings(generateReferenceDistribution2IFC(rdata_file, iter = 3, ncores = 1))
-generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images")) { # nolint: object_length_linter.
+generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = default_ncores(), response_seed = NULL, save_rdata = TRUE, baseimage = NULL, reference_stimuli = NULL, reference_method = c("gram", "images"), mask = NA) { # nolint: object_length_linter.
 
   reference_method <- match.arg(reference_method)
   validateIter(iter)
   reference_selection <- selectReferenceBase(rdata, baseimage)
   # Only a proper subset leaves here; an explicit full set takes the default path.
-  subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli)
+  subset <- subsetReferenceFor(rdata, reference_selection, reference_stimuli, mask)
   if (!is.null(subset)) {
     return(invisible(generateSubsetReference(subset$source, rdata, reference_selection,
                                              subset$reference_stimuli, iter, ncores,
-                                             response_seed, save_rdata, reference_method)))
+                                             response_seed, save_rdata, reference_method,
+                                             subset$masked)))
   }
   if (reference_selection$independent) {
     return(invisible(generateBaseReference(reference_selection, rdata, iter,
@@ -160,7 +166,7 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # Removed before load() so the frame re-saved at the end holds the file's own
   # objects of these names, if any, and nothing else; the method is read from
   # .args below.
-  rm(reference_stimuli, subset, reference_method)
+  rm(reference_stimuli, subset, reference_method, mask)
 
   # Load parameter file (created when generating stimuli)
   loadRdata(rdata, environment())
