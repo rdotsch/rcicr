@@ -1,8 +1,9 @@
-# References over a subset of the saved stimuli (#349). Brinkman et al. (2019)
-# require the reference to use the stimuli the CI was built from; the default
-# reference uses every saved stimulus, so a CI from a subset needs its own.
-# Matching the reference to the design is the researcher's call, so nothing
-# here changes a default: these paths run only when reference_stimuli is given.
+# References over a subset of the saved stimuli (#349), or of the pixels (#374).
+# Brinkman et al. (2019) require the reference to use the stimuli the CI was
+# built from; the default reference uses every saved stimulus, so a CI from a
+# subset needs its own. Matching the reference to the design is the
+# researcher's call, so nothing here changes a default: these paths run only
+# when reference_stimuli is given or the CI is masked.
 
 # NULL for the full saved set, so an explicit full set takes the unchanged
 # default path; otherwise sorted distinct integers. IDs often arrive as doubles,
@@ -40,14 +41,53 @@ referenceSource <- function(rdata, selection) {
   source
 }
 
-# NULL when the default reference applies: no reference_stimuli, or all of them.
-subsetReferenceFor <- function(rdata, selection, reference_stimuli) {
-  if (is.null(reference_stimuli)) return(NULL)
+# NULL when the default reference applies: every stimulus (no reference_stimuli,
+# or all of them) and every pixel (no mask, or one that masks nothing).
+subsetReferenceFor <- function(rdata, selection, reference_stimuli, mask = NA) {
+  if (is.null(reference_stimuli) && !hasMask(mask)) return(NULL)
   source <- referenceSource(rdata, selection)
   if (!validTrialCount(source$n_trials)) stop('The stimulus file must contain a positive integer n_trials.')
   ids <- canonicalReferenceStimuli(reference_stimuli, source$n_trials)
-  if (is.null(ids)) return(NULL)
-  list(source = source, reference_stimuli = ids)
+  masked <- referenceMask(mask, source$img_size)
+  if (is.null(ids) && is.null(masked)) return(NULL)
+  list(source = source, reference_stimuli = ids, masked = masked)
+}
+
+# A mask in any form generateCI() accepts, as the logical vector of masked
+# pixels the reference leaves out, or NULL when it masks nothing.
+referenceMask <- function(mask, img_size) {
+  if (!hasMask(mask)) return(NULL)
+  masked <- as.vector(is.na(applyMask(matrix(0, img_size, img_size), mask, img_size)))
+  if (!any(masked)) return(NULL)
+  if (all(masked)) {
+    stop('Every pixel is masked (NA), so there is nothing to compute an InfoVal over.',
+         call. = FALSE)
+  }
+  masked
+}
+
+# The mask a CI was computed with: its NA pixels, as a 0/1 matrix in
+# generateCI()'s convention, or NA when it has none.
+ciMask <- function(target_ci) {
+  ci <- target_ci[['ci']]
+  if (!anyNA(ci)) return(NA)
+  ifelse(is.na(ci), 0, 1)
+}
+
+ciNorm <- function(target_ci) {
+  ci <- target_ci[['ci']]
+  norm(matrix(ci[!is.na(ci)]), 'f')
+}
+
+# Stored with the reference: exact under identical(), and small for a mask
+# drawn as a shape, where a list of masked pixels would hold up to 262,144.
+maskKey <- function(masked) {
+  if (is.null(masked)) NULL else unclass(rle(masked))
+}
+
+maskMatrix <- function(masked) {
+  n <- sqrt(length(masked))
+  matrix(as.numeric(!masked), n, n)
 }
 
 referenceLabel <- function(source, selection) {
@@ -62,10 +102,12 @@ subsetReferenceCache <- function(source) {
 
 # Shared-parameter files key their entries on a NULL base: every base has the
 # same noise, so one reference serves them all.
-subsetReferenceIndex <- function(cache, reference_stimuli, base_key) {
+# An entry without a mask was stored for the whole image.
+subsetReferenceIndex <- function(cache, reference_stimuli, base_key, mask_key = NULL) {
   for (i in seq_along(cache)) {
     if (identical(cache[[i]]$reference_stimuli, reference_stimuli) &&
-          identical(cache[[i]]$baseimage, base_key)) {
+          identical(cache[[i]]$baseimage, base_key) &&
+          identical(cache[[i]]$mask, mask_key)) {
       return(i)
     }
   }
@@ -76,23 +118,27 @@ subsetReferenceIndex <- function(cache, reference_stimuli, base_key) {
 # still replays the generator's draws for every saved trial, so a subset
 # reference is reproducible from the file alone.
 generateSubsetReference <- function(source, rdata, selection, reference_stimuli, iter,
-                                    ncores, response_seed, save_rdata, reference_method) {
+                                    ncores, response_seed, save_rdata, reference_method,
+                                    masked = NULL) {
   label <- referenceLabel(source, selection)
   base_key <- if (selection$independent) label else NULL
-  if (is.null(response_seed)) requireStimulusSeed(source$seed, rdata, base_key, subset = TRUE)
+  if (is.null(response_seed)) {
+    requireStimulusSeed(source$seed, rdata, base_key, subset = !is.null(reference_stimuli),
+                        masked = !is.null(masked))
+  }
   write('Building the reference from the saved noise, please wait...', stdout())
   if (iter < 10000) warning('You should set iter >= 10000 for InfoVal statistic to be reliable')
   write('Computing reference distribution, please wait...', stdout())
   norms <- referenceNorms(source, label, reference_stimuli, iter, ncores, response_seed,
-                          reference_method)
+                          reference_method, masked)
   if (save_rdata) {
     cache <- subsetReferenceCache(source)
     entry <- list(
-      reference_stimuli = reference_stimuli, baseimage = base_key, norms = norms,
-      response_seed = response_seed, source = 'saved_noise',
+      reference_stimuli = reference_stimuli, baseimage = base_key, mask = maskKey(masked),
+      norms = norms, response_seed = response_seed, source = 'saved_noise',
       fingerprint = referenceSnapshot(norms), method = reference_method
     )
-    i <- subsetReferenceIndex(cache, reference_stimuli, base_key)
+    i <- subsetReferenceIndex(cache, reference_stimuli, base_key, entry$mask)
     if (is.na(i)) i <- length(cache) + 1L
     cache[[i]] <- entry
     source$reference_norms_by_stimuli <- cache
@@ -104,22 +150,28 @@ generateSubsetReference <- function(source, rdata, selection, reference_stimuli,
 }
 
 subsetReference <- function(rdata, iter, force_gen_ref_dist, response_seed, source, selection,
-                            reference_stimuli, reference_method, report) {
+                            reference_stimuli, reference_method, report, masked = NULL) {
   label <- referenceLabel(source, selection)
   base_key <- if (selection$independent) label else NULL
   report(source$n_trials, reference_stimuli)
   cache <- subsetReferenceCache(source)
-  i <- subsetReferenceIndex(cache, reference_stimuli, base_key)
+  i <- subsetReferenceIndex(cache, reference_stimuli, base_key, maskKey(masked))
   entry <- if (is.na(i)) NULL else cache[[i]]
   norms <- resolveReferenceNorms(entry, rdata, iter, force_gen_ref_dist, response_seed,
                                  base_key, seedless = is.null(source$seed),
                                  reference_stimuli = reference_stimuli,
-                                 reference_method = reference_method)
-  base_note <- if (is.null(base_key)) '' else paste0('baseimage = ', base_key, '; ')
-  referenceSummary(norms, 'for these reference_stimuli',
-                   paste0('over these ', length(reference_stimuli), ' stimuli'),
-                   paste0(base_note, 'reference over ', length(reference_stimuli), ' of ',
-                          source$n_trials, ' stimuli; '))
+                                 reference_method = reference_method, masked = masked)
+  n_used <- if (is.null(reference_stimuli)) source$n_trials else length(reference_stimuli)
+  over <- paste0('over ', if (is.null(reference_stimuli)) 'all ' else 'these ', n_used,
+                 ' stimuli', if (is.null(masked)) '' else ' and the unmasked pixels')
+  note <- paste0(if (is.null(base_key)) '' else paste0('baseimage = ', base_key, '; '),
+                 if (is.null(reference_stimuli)) '' else
+                   paste0('reference over ', n_used, ' of ', source$n_trials, ' stimuli; '),
+                 if (is.null(masked)) '' else
+                   paste0('reference over the ', sum(!masked), ' of ', length(masked),
+                          ' pixels left unmasked; '))
+  what <- if (is.null(masked)) 'for these reference_stimuli' else 'for this mask'
+  referenceSummary(norms, what, over, note)
 }
 
 # A message, never a warning: whether the design and the reference match is

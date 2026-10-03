@@ -98,6 +98,17 @@ No reference is defined for a CI that averages repeated presentations of a stimu
 participants: every reference here assumes one response per stimulus from one responder. For
 participants who each saw every stimulus once, compute the InfoVal of each participant's own
 CI instead.
+}
+
+\section{Masked classification images}{
+
+A classification image computed with \code{mask} (see \code{\link{generateCI}}) holds
+\code{NA} in its masked pixels. Its InfoVal is computed over the unmasked pixels only, against
+a reference built over the same pixels from the same stimuli: Brinkman et al.'s (2019)
+statistic for the region analysed. The mask is read from the classification image itself.
+Each mask gets its own reference, simulated once and stored in the \code{rdata} file apart
+from the default one; \code{generateReferenceDistribution2IFC(mask = )} stores one in
+advance. An InfoVal over part of the image is not comparable with one over the whole image.
 
 For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van Haren, N. E. M.,
 Dotsch, R., & Aarts, H. (2019). Quantifying the informational value of classification

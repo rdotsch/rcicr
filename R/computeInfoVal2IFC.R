@@ -40,6 +40,15 @@
 #' participants who each saw every stimulus once, compute the InfoVal of each participant's own
 #' CI instead.
 #'
+#' @section Masked classification images:
+#' A classification image computed with \code{mask} (see \code{\link{generateCI}}) holds
+#' \code{NA} in its masked pixels. Its InfoVal is computed over the unmasked pixels only, against
+#' a reference built over the same pixels from the same stimuli: Brinkman et al.'s (2019)
+#' statistic for the region analysed. The mask is read from the classification image itself.
+#' Each mask gets its own reference, simulated once and stored in the \code{rdata} file apart
+#' from the default one; \code{generateReferenceDistribution2IFC(mask = )} stores one in
+#' advance. An InfoVal over part of the image is not comparable with one over the whole image.
+#'
 #' For the method, see Brinkman, L., Goffin, S., van de Schoot, R., van Haren, N. E. M.,
 #' Dotsch, R., & Aarts, H. (2019). Quantifying the informational value of classification
 #' images. \emph{Behavior Research Methods}, \emph{51}, 2059-2073.
@@ -114,10 +123,10 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
   reference_method <- match.arg(reference_method)
   selection <- selectReferenceBase(rdata, baseimage)
   report <- function(n_trials, reference_stimuli) reportTrialDesign(target_ci, n_trials, reference_stimuli)
-  subset <- subsetReferenceFor(rdata, selection, reference_stimuli)
+  subset <- subsetReferenceFor(rdata, selection, reference_stimuli, ciMask(target_ci))
   reference <- if (!is.null(subset)) {
     subsetReference(rdata, iter, force_gen_ref_dist, response_seed, subset$source, selection,
-                    subset$reference_stimuli, reference_method, report)
+                    subset$reference_stimuli, reference_method, report, subset$masked)
   } else if (selection$independent) {
     baseReference(rdata, iter, force_gen_ref_dist, response_seed, selection, reference_method,
                   report)
@@ -125,7 +134,7 @@ computeInfoVal2IFC <- function(target_ci, rdata, iter = 10000, force_gen_ref_dis
     sharedReference(rdata, iter, force_gen_ref_dist, response_seed, reference_method, report)
   }
 
-  cinorm <- norm(matrix(target_ci[['ci']]), 'f')
+  cinorm <- ciNorm(target_ci)
   info_val <- (cinorm - reference$median) / reference$mad
   write(paste0('Informational value: z = ', info_val, ' (', reference$note, 'ci norm = ', cinorm,
                '; reference median = ', reference$median, '; MAD = ', reference$mad,

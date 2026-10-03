@@ -52,6 +52,10 @@ per image and, when the reference cannot be stored (a read-only file, a \code{re
 or \code{force_gen_ref_dist = TRUE}), simulates it again for every image. The values are
 identical to that loop's.
 
+A masked classification image is scored over its unmasked pixels, as described under "Masked
+classification images" in \code{\link{computeInfoVal2IFC}}. Images with the same stimuli and
+the same mask share one reference.
+
 Messages about the trial design (see "Matching the reference to the classification image" in
 \code{\link{computeInfoVal2IFC}}) are collected into one message per kind, naming the
 classification images concerned, rather than one per image.
