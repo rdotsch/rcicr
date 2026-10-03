@@ -63,6 +63,10 @@
 
 - **A single generated trial or a single participant no longer stops with `must have 'max' > 'min'`.** `generateStimuli2IFC(n_trials = 1)`, and `generateCI()` with one participant ID, now run: the progress bars start at 0. So does one participant with one trial. Where each stimulus appears once, one participant's CI is the same as the pooled CI of their trials. With repeated presentations the two weight trials differently, as `?generateCI` describes. A `t.test` z-map over fewer than two images, one participant or one distinct stimulus, cannot be computed. It now stops before any work with a message that says so and suggests `zmapmethod = "quick"`, instead of failing inside `t.test()`. No result that was computed before changes. (#351)
 
+## Documentation
+
+- **A new vignette, `vignette("recipes")`, answers questions that come up after the basics.** It covers noise-only stimuli from a uniform grey base image, which needs `maximize_baseimage_contrast = FALSE`; rating scales as response weights, and how to check their direction; and matching the InfoVal reference to the design: dropped trials (`reference_stimuli`), masked classification images, scoring a batch, and why a CI averaged over participants has no calibrated InfoVal. It runs at 64 pixels and builds in seconds. (#69, #6)
+
 # rcicr 1.5.0 (2026-09-25)
 
 ## Reproducibility impact
