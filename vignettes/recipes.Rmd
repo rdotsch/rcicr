@@ -210,7 +210,7 @@ A classification image or InfoVal reported years ago can be reproduced in two wa
 
 ### Run the version that computed it
 
-This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record; R's default has not changed. Use the version your analysis script or its session info records. `p$generator_version` in the `.Rdata` file names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
+This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record (R's default has not changed), and the same BLAS library. Use the version your analysis script or its session info records. `p$generator_version` in the `.Rdata` file names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
 
 ```{r old-version, eval = FALSE}
 dir.create("rcicr-1.4.1")
@@ -234,6 +234,7 @@ An InfoVal depends on the reference distribution stored in the `.Rdata` file:
     - The old version reconstructed the stimuli correctly. That excludes pre-0.3.0 files; files written before 1.1.0 with a non-default `nscales` (or `sigma`, for Gabor noise), which older versions reconstructed with the defaults; and pre-1.4.0 references for the second and later base images when each base had parameters of its own, which were scored against the first base's reference.
     - The rebuild uses the original `iter`, and the original `response_seed` if there was one.
     - The random draws use the same generator. Files from before `rng_kind` was stored draw under the session's `RNGkind()`; R's default has not changed, so this matters only if the original session set another kind.
+    - R uses the same BLAS library as the original computation. An optimised BLAS adds sums up in a different order, by amounts that have not been measured; `sessionInfo()` names the BLAS in use.
 - **A reference drawn with a `response_seed` is kept as stored**, whichever method you ask for.
 
 To rebuild a reference with the earlier calculation, store it with `generateReferenceDistribution2IFC()`, passing the original `iter` (the length of the stored norms, if the file still holds them); later `computeInfoVal2IFC()` calls reuse it. Here both methods score the same classification image, each on its own copy of the file:
