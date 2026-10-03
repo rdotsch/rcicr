@@ -13,7 +13,15 @@ A **vignette**, not a pkgdown article: `vignettes/articles/` is `.Rbuildignore`d
 
 All at 64px with 20 trials; each layout below was printed by generating it and walking `names()` and `attributes()` recursively, `class` included.
 
-**`.Rdata` file.** After `generateStimuli2IFC()`: `base_face_files base_faces generator_version img_size label n_trials noise_type nscales p rng_kind seed sigma stimuli_params stimulus_path use_same_parameters`; `p` holds `patches patchIdx noise_type generator_version`. After `computeInfoVal2IFC()` the file also holds `reference_norms reference_norms_fingerprint reference_norms_method reference_norms_seed reference_norms_source`. A masked CI's reference goes to `reference_norms_by_stimuli`, whose entries hold `reference_stimuli baseimage mask norms response_seed source fingerprint method`. The only attribute beyond `names` and `dim` is `class`: `generator_version` and `p$generator_version` are `package_version` objects. Files from before 1.2.0 hold a character string there instead (`R/rdata.R:34-36`), so the vignette gives the type and its history.
+**`.Rdata` file.** After `generateStimuli2IFC()`: `base_face_files base_faces generator_version img_size label n_trials noise_type nscales p rng_kind seed sigma stimuli_params stimulus_path use_same_parameters`; `p` holds `patches patchIdx noise_type generator_version`. After `computeInfoVal2IFC()` the file also holds `reference_norms reference_norms_fingerprint reference_norms_method reference_norms_seed reference_norms_source`. The other reference layouts:
+
+| file and call | where the reference goes | entry fields |
+|---|---|---|
+| two bases, `use_same_parameters = FALSE`; `computeInfoVal2IFC(baseimage = "b")` | `reference_norms_by_base$b`, and no top-level `reference_norms*` | `norms response_seed source fingerprint method` |
+| a masked CI (`generateCI(mask = )`) | `reference_norms_by_stimuli[[i]]` | `reference_stimuli baseimage mask norms response_seed source fingerprint method` |
+| a CI over a subset (`reference_stimuli`) | `reference_norms_by_stimuli[[i]]` | same, with `mask` `NULL` |
+
+The check builds all four layouts: shared, per-base, masked and subset. The only attribute beyond `names` and `dim` is `class`: `generator_version` and `p$generator_version` are `package_version` objects. Files from before 1.2.0 hold a character string there instead (`R/rdata.R:34-36`), so the vignette gives the type and its history.
 
 Three of these fields are written but missing from the README table:
 
