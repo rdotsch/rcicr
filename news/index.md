@@ -211,6 +211,17 @@
   different `label` or `stimulus_path`.
   ([\#350](https://github.com/rdotsch/rcicr/issues/350))
 
+- **An unrecognised `noise_type` now stops
+  [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
+  and
+  [`generateNoisePattern()`](https://rdotsch.github.io/rcicr/reference/generateNoisePattern.md).**
+  Anything but exactly `"sinusoid"` or `"gabor"` used to produce
+  sinusoid noise and record the value as given, so
+  `noise_type = "Gabor"` wrote sinusoid stimuli into a file that said
+  Gabor. The check runs before anything is written. Every value still
+  accepted produces the same noise as before.
+  ([\#376](https://github.com/rdotsch/rcicr/issues/376))
+
 - **Every InfoVal reference path makes the same checks.**
   [`generateReferenceDistribution2IFC()`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md)
   checks `iter` before anything is loaded or simulated: on a file whose
