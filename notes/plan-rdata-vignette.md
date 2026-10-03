@@ -1,23 +1,21 @@
-# Plan: the `.Rdata` anatomy becomes a vignette
+# Plan: what rcicr stores becomes a checked vignette
 
 ## What changes
 
-The README's "Anatomy of the `.Rdata` file" (745 of its ~2000 words) moves to a new shipped vignette, `vignette("rdata-file")`. The README keeps its "How it works" paragraph on the file being the only link between the two halves, plus one link to the vignette.
+A new shipped vignette, `vignette("stored-data")` ("What rcicr stores"), documents the two objects that outlive a session:
+
+1. **The stimulus `.Rdata` file.** Its anatomy moves here from the README (745 of the README's ~2000 words). The README keeps its "How it works" paragraph on the file being the only link between the two halves, plus a link.
+2. **The classification image `generateCI()` returns**, which researchers save themselves (`saveRDS()`). Its list elements and its `trial_design` and `scaling` attributes are documented today only in `?generateCI` and `?autoscale`.
 
 A **vignette**, not a pkgdown article: `vignettes/articles/` is `.Rbuildignore`d, so an article exists only on the website and only for `main`. A vignette installs with each version and reads offline, which is what someone reopening an old analysis has.
 
-## The README table is already wrong
+## Verified layouts
 
-Generating a 64px, 20-trial file and computing an InfoVal on it (`generateStimuli2IFC()`, `generateCI()`, `computeInfoVal2IFC(iter = 1000)`, then `ls()` of the loaded file) gives:
+All at 64px with 20 trials; each layout below was printed by generating it and listing `names()` and `names(attributes())`, recursively.
 
-```
-after generate: base_face_files base_faces generator_version img_size label n_trials noise_type
-                nscales p rng_kind seed sigma stimuli_params stimulus_path use_same_parameters
-after infoval:  ... reference_norms reference_norms_fingerprint reference_norms_method
-                reference_norms_seed reference_norms_source ...
-```
+**`.Rdata` file.** After `generateStimuli2IFC()`: `base_face_files base_faces generator_version img_size label n_trials noise_type nscales p rng_kind seed sigma stimuli_params stimulus_path use_same_parameters`; `p` holds `patches patchIdx noise_type generator_version`. After `computeInfoVal2IFC()` the file also holds `reference_norms reference_norms_fingerprint reference_norms_method reference_norms_seed reference_norms_source`. A masked CI's reference goes to `reference_norms_by_stimuli`, whose entries hold `reference_stimuli baseimage mask norms response_seed source fingerprint method`. No object in the file carries an attribute beyond `names`/`dim`.
 
-Three fields are written but not documented:
+Three of these fields are written but missing from the README table:
 
 | field | written by |
 |---|---|
@@ -25,28 +23,32 @@ Three fields are written but not documented:
 | `method` in each `reference_norms_by_base` and `reference_norms_by_stimuli` entry | `R/reference-base.R:357`, `R/reference-stimuli.R:138` (#358) |
 | `mask` in each `reference_norms_by_stimuli` entry | `R/reference-stimuli.R:136` (#380) |
 
-The vignette documents all three.
+**Classification image.**
 
-A masked CI (`generateCI(mask = )`, then `computeInfoVal2IFC()`) writes its reference to `reference_norms_by_stimuli`; that entry's names are `reference_stimuli baseimage mask norms response_seed source fingerprint method`.
+| call | list elements | `trial_design` | `scaling` |
+|---|---|---|---|
+| `generateCI()` | `ci scaled base combined` | `stimuli repeated n_participants` | `method constant` |
+| with `participants` | same | same | adds `individual` (`method constant`) |
+| with `zmap = TRUE` | adds `zmap` | same | same |
+| after `autoscale()` | same | same | `method constant combined`, plus `individual` if present |
+| `batchGenerateCI2IFC()` | a named list of such CIs | same | as after `autoscale()` |
 
-## Decision for review: show the fields, or check them
+## The tables check themselves
 
-**(a) Show.** The vignette generates a small file and prints `ls()` next to the tables. A reader sees the real file, but nothing fails when a field goes undocumented: the three above went unnoticed through two PRs.
+The tables are R data frames rendered with `knitr::kable()`, so the documentation is data. A hidden chunk builds every layout above and `stop()`s when:
 
-**(b) Check (recommended).** The tables are R data frames rendered with `knitr::kable()`, so the documentation *is* data. A hidden chunk builds the four file shapes the package writes (shared parameters; per-base parameters, `use_same_parameters = FALSE` with two bases; a `reference_stimuli` subset; a masked CI) and `stop()`s when:
+- a field, list element or attribute in a generated object, at any depth listed above, has no row; or
+- a row names one that no generated object contains.
 
-- a field in a generated file, top-level or inside a `reference_norms_by_*` entry, has no row; or
-- a row names a field that no generated file contains.
+The build then fails in `R CMD check`, pkgdown and CI on the PR that adds a field, while its reasoning is to hand. On CRAN it can only fail if a release ships with drift that CI already reported.
 
-The build then fails in `R CMD check`, pkgdown and CI on the PR that adds a field, which is when the reasoning is to hand. On CRAN it can only fail if a release ships with drift that CI already reported.
-
-Everything runs at 64px with `iter = 1000`. Before the PR leaves draft, the complete vignette is timed with `tools::buildVignettes()` and compared with the other three vignettes on the same machine; it must not be the slowest of them.
+Everything runs at 64px with `iter = 1000` and an undecorated z-map (a decorated one needs at least 148px at the default pointsize). Before the PR leaves draft, the complete vignette is timed with `tools::buildVignettes()` and compared with the other three vignettes on the same machine; it must not be the slowest of them.
 
 ## Other edits in the same PR
 
-- `DECISIONS.md` → "The `.Rdata` anatomy belongs in `README.md`": rewritten in place for the vignette, with the reason above and (if (b)) why the table checks itself.
-- `AGENTS.md:112` and `CONTRIBUTING.md:12` point to the vignette instead of the README section. Both files are near their budgets (99 and 172 words spare); the edits replace words, not add them.
-- `?generateStimuli2IFC`: `@return` says "Nothing: everything is saved to files"; it gains a pointer to `vignette("rdata-file")`. Regenerate `man/` with `roxygen2::roxygenise()`.
+- `?generateCI` and `?autoscale`: `@return` keeps one sentence on what each attribute is for and points to `vignette("stored-data")` for its fields, so the field lists exist once. `?generateStimuli2IFC`'s `@return` ("Nothing: everything is saved to files") points there too. `man/` regenerated with `roxygen2::roxygenise()`.
+- `DECISIONS.md` → "The `.Rdata` anatomy belongs in `README.md`": rewritten in place for the vignette, with why it is a vignette and why its tables check themselves.
+- `AGENTS.md:112` and `CONTRIBUTING.md:12` point to the vignette. Both files are near their budgets (99 and 172 words spare); the edits replace words, not add them.
 - `_pkgdown.yml`: the vignette goes under "Get started", after `recipes`.
 - `NEWS.md` → Documentation: one bullet.
 - README → Documentation lists four vignettes.
