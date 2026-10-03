@@ -302,7 +302,7 @@ matches <- function(rdata, png_dir, label = "rcic", base = "face", seed = 5) {
   load(rdata, envir = stored)
   params <- stored$stimuli_params[[base]]
   vapply(seq_len(nrow(params)), function(i) {
-    ori_file <- file.path(png_dir, sprintf("%s_%s_%d_%05d_ori.png", label, base, seed, i))
+    ori_file <- file.path(png_dir, paste(label, base, seed, sprintf("%05d_ori.png", i), sep = "_"))
     ori <- png::readPNG(ori_file)
     inv <- png::readPNG(sub("_ori.png", "_inv.png", ori_file, fixed = TRUE))
     if (length(dim(ori)) == 3) {
@@ -326,7 +326,7 @@ setNames(vapply(files, function(f) min(matches(f, archive)), numeric(1)),
          paste("nscales =", candidates))
 ```
 
-The right settings match every trial. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. With the right settings found, regenerate the file once more, with the original base images if you still have them so that `combined` shows the face, and use it as the `.Rdata` file. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
+The right settings match every trial. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. With the right settings found, regenerate the file once more, with the original base images and the original `maximize_baseimage_contrast` if you still have them, so that `base` and `combined` show the face as before, and use it as the `.Rdata` file. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
 
 ```{r, include = FALSE}
 par(oldpar)
