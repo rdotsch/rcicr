@@ -78,6 +78,33 @@
   generator. Under the session’s own kind it still advances the stream
   as before.
 
+- **Pixels above white are written white, not dark, in stimulus and
+  classification-image PNGs.**
+  [`png::writePNG()`](https://rdrr.io/pkg/png/man/writePNG.html) does
+  not clip values above 1; it wraps them, so a pixel at 1.004 was
+  written black and one at 1.1 almost black, while values below 0 were
+  clipped. Every PNG rcicr writes is now clipped to \[0, 1\] first,
+  which changes the files only at pixels that were above 1. No returned
+  matrix, `.Rdata` value, CI or InfoVal changes.
+
+  - **Stimulus PNGs**, the images participants saw, went above 1 where
+    noise above 0.3 met a white base pixel (less on a near-white one).
+    Out of 200 trials at 128 pixels per setting, 67% had such noise at
+    `nscales = 1`, 12.5% at 2, 2% at 3 and 0.5% at 4. None was found at
+    the default `nscales = 5`, in 20 trials each of sinusoid and Gabor
+    noise at 512 pixels. Only those pixels on a bright part of the base
+    wrapped. Stimuli already shown cannot be corrected; if you used
+    fewer than 5 scales on a base with white areas, regenerating the
+    stimuli with the same seed shows which pixels were affected.
+  - **Classification-image PNGs** went above 1 under
+    `scaling = "constant"` with a constant too small for the CI, whose
+    warning already said “clipping will occur”, and under
+    `scaling = "none"` with rating weights large enough to push the
+    noise past the base. On a mostly white 32-pixel base with
+    `scaling_constant = 0.01`, 311 of 1024 pixels were above 1 and 248
+    of them were written darker than 0.5.
+    ([\#371](https://github.com/rdotsch/rcicr/issues/371))
+
 - **A masked classification image now gets an InfoVal instead of `NA`.**
   `generateCI(mask = )` stores `NA` in masked pixels, and
   [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
@@ -236,6 +263,16 @@
   set on purpose, delete its PNGs and its `.Rdata` first, or use a
   different `label` or `stimulus_path`.
   ([\#350](https://github.com/rdotsch/rcicr/issues/350))
+
+- **`generateCI(zmap = TRUE)` no longer stops with
+  `color intensity ... not in [0,1]` under `scaling = "none"` or an
+  out-of-range `"constant"`.** The z-map is drawn over the combined
+  image, which then leaves \[0, 1\]: under `"none"`, wherever the base
+  is black and the CI negative, and contrast maximization always makes
+  one base pixel black. The background is now clipped to \[0, 1\] where
+  it is drawn, in
+  [`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+  too. ([\#373](https://github.com/rdotsch/rcicr/issues/373))
 
 - **[`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
   scales every element of its list, whatever the names.** It looked
