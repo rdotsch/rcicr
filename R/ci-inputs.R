@@ -16,6 +16,7 @@
 coerceTrialVectors <- function(stimuli, responses, participants) {
   stimuli <- coerceStimulusIds(stimuli)
   responses <- unlist(responses, use.names = FALSE)
+  validateResponses(responses)
   if (!all(is.na(participants))) {
     participants <- unlist(participants, use.names = FALSE)
   }
@@ -50,6 +51,32 @@ coerceTrialVectors <- function(stimuli, responses, participants) {
   return(list(stimuli = stimuli, responses = responses,
     participants = participants
   ))
+}
+
+# A missing response made the whole CI NA, a factor or character one did the
+# same through mean(), and a logical one weighted its FALSE trials 0 (#372).
+# Stopping is the rule for trial data (DECISIONS.md, "Trial alignment errors
+# stop computation"): dropping the trials would guess what the gap means.
+validateResponses <- function(responses) {
+  if (is.factor(responses) || !typeof(responses) %in% c('integer', 'double')) {
+    hint <- if (is.logical(responses)) {
+      paste0(' Recode with ifelse(responses, 1, -1) if TRUE means the original was chosen, ',
+             'or as.numeric(responses) to weight the trials 1 and 0.')
+    } else {
+      ' Check the values, then convert them with as.numeric(as.character(responses)).'
+    }
+    stop('responses must be numeric: 1 where the original stimulus was chosen, -1 where the ',
+         'inverted one was. These are ', class(responses)[1], '.', hint, call. = FALSE)
+  }
+  bad <- which(!is.finite(responses))
+  if (length(bad) > 0) {
+    shown <- paste(utils::head(bad, 5), collapse = ', ')
+    if (length(bad) > 5) shown <- paste0(shown, ', ...')
+    stop('responses has no finite value for ', length(bad), ' of ', length(responses), ' trials (',
+         if (length(bad) == 1) 'trial ' else 'trials ', shown, '). Give every trial a response, ',
+         'or remove those trials from stimuli, responses and participants alike.', call. = FALSE)
+  }
+  invisible(NULL)
 }
 
 # Check before unlist() can turn factor codes or logicals into numeric indices.
