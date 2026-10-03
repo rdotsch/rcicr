@@ -12,6 +12,7 @@
 #' @examples
 #' generateNoisePattern(256)
 generateNoisePattern <- function(img_size = 512, nscales = 5, noise_type = 'sinusoid', sigma = 25, pre_0.3.0 = FALSE) { # nolint: object_name_linter.
+  validateNoiseType(noise_type)
   validateTiling(img_size, nscales)
 
   # Settings of sinusoids
@@ -92,4 +93,15 @@ validateTiling <- function(img_size, nscales) {
        " for nscales = ", nscales, ": the finest scale tiles the image with ", tiles,
        " patches per side. Use img_size ", paste(sizes, collapse = " or "),
        ", or nscales = ", max_scales, if (max_scales > 1) " or fewer", ".", call. = FALSE)
+}
+
+# Exact, not match.arg(): partial matching would turn "gab", sinusoid noise
+# until this check existed, into Gabor noise without a word (#376).
+validateNoiseType <- function(noise_type) {
+  if (!is.character(noise_type) || length(noise_type) != 1L || is.na(noise_type) ||
+        !noise_type %in% c('sinusoid', 'gabor')) {
+    stop('noise_type must be "sinusoid" or "gabor", exactly; got ',
+         paste(deparse(noise_type), collapse = ''), '.', call. = FALSE)
+  }
+  invisible(NULL)
 }
