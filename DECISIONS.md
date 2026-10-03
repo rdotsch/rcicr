@@ -744,11 +744,30 @@ documented feature because it was never built.
 “This changes rendered output” is not on its own a reason to leave
 something broken; ask who *relies* on the broken output.
 
-### The `.Rdata` anatomy belongs in `README.md`
+### What rcicr stores is documented in a vignette whose tables check themselves
 
-The file is the only link between the two halves of the package, and
-nothing about a stimulus set can be recovered without it. The
-field-by-field table there was written by inspecting a real generated
-file rather than by reading the
-[`save()`](https://rdrr.io/r/base/save.html) call, which is how `trial`
-was identified as a leftover loop counter carrying no information.
+[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+lists every field of the stimulus `.Rdata` file and every element and
+attribute of the classification image
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+returns. The file is the only link between the two halves of the
+package, and the CI’s `trial_design` and `scaling` attributes travel
+with saved results.
+
+- **A vignette, not the README or a pkgdown article.** It installs with
+  each version and reads offline, so someone reopening an old analysis
+  gets the description that matches their installed version. Articles
+  under `vignettes/articles/` are `.Rbuildignore`d and exist only on the
+  website, for `main`.
+- **The tables are data frames, and a hidden chunk compares them with
+  freshly generated objects in both directions.** It builds every layout
+  the package writes: shared, per-base, subset and masked references;
+  plain, per-participant, z-map, autoscaled and batch CIs. Any field,
+  list element or attribute other than `names` and `dim` without a row,
+  or any row that nothing writes, stops the build. When the anatomy was
+  a hand-kept README table, three fields went undocumented through the
+  two PRs that added them (`reference_norms_method`, and `method` and
+  `mask` in reference entries).
+- The help pages say what each attribute is for and point to the
+  vignette for its fields, so the field lists exist once, in the copy
+  that is checked.

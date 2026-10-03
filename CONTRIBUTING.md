@@ -21,8 +21,10 @@ returns can invalidate a published result without anyone noticing. So:
 - Do not change existing call syntax, argument meanings or numeric
   output silently. Deprecate rather than delete.
 - Treat the `.Rdata` file’s contents as **append-only**: add fields,
-  never rename them or change their meaning. The README documents its
-  layout.
+  never rename them or change their meaning.
+  [`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+  documents its layout, and its build fails on a field without a row, so
+  add the row in the same PR.
 - A change that *does* alter numeric output is not automatically wrong,
   but it must be deliberate and described in `NEWS.md` under a
   “Reproducibility impact” heading: who is affected, and what they

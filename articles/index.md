@@ -7,6 +7,8 @@
 - [A reverse correlation
   walkthrough](https://rdotsch.github.io/rcicr/articles/reverse-correlation-walkthrough.md):
 - [Recipes](https://rdotsch.github.io/rcicr/articles/recipes.md):
+- [What rcicr
+  stores](https://rdotsch.github.io/rcicr/articles/stored-data.md):
 
 ### Advisories
 

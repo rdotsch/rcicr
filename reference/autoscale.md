@@ -33,12 +33,10 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 
 The input `cis` list, with each element's `$scaled` matrix replaced by
 its autoscaled version. The scaling constant is printed to the console,
-and recorded in each element's `scaling` attribute (see
-[`generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)):
-`method` is `'autoscale'` and `constant` the shared constant, both
-describing `$scaled`. Its `combined` element keeps the earlier record,
-which still describes `$combined`, or is `NULL` when the element had
-none.
+and recorded in each element's `scaling` attribute, which keeps the
+earlier record for `$combined`;
+[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+lists its fields.
 
 **Look at `$scaled`, not `$combined`.** `$combined` is returned exactly
 as it was passed in, on purpose, so that existing scripts that plot it

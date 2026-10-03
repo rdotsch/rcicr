@@ -305,9 +305,11 @@ deliberate non-fix, belongs in `DECISIONS.md`, not in an issue.
 
 The package has two halves that share state only through an `.Rdata`
 file written when the stimuli are generated. The per-function
-walkthrough, the data-flow diagram and the anatomy of the `.Rdata` file
-are in `README.md`, sections “How it works” and “Anatomy of the `.Rdata`
-file”. Read them there; two copies would drift.
+walkthrough and the data-flow diagram are in `README.md` → “How it
+works”; every field of the `.Rdata` file and of a returned CI is in
+[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md),
+whose build fails when a field has no row. Read them there; two copies
+would drift.
 
 ### Conventions in this codebase
 

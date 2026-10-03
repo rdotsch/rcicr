@@ -142,8 +142,10 @@ generateStimuli2IFC(
 
 ## Value
 
-Nothing: everything is saved to files. With
-`return_as_dataframe = TRUE`, the data frame described there.
+Nothing: everything is saved to files.
+[`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+lists what the `.Rdata` file holds. With `return_as_dataframe = TRUE`,
+the data frame described there.
 
 ## Details
 

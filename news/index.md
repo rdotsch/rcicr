@@ -365,8 +365,23 @@
   builds in seconds.
   ([\#69](https://github.com/rdotsch/rcicr/issues/69),
   [\#6](https://github.com/rdotsch/rcicr/issues/6))
+- **A new vignette,
+  [`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md),
+  lists every field of the stimulus `.Rdata` file and every element and
+  attribute of the classification image
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  returns.** It replaces the README’s table of the file, which lacked
+  `reference_norms_method` and the `method` and `mask` fields of
+  reference entries. The vignette’s build checks its tables against
+  freshly generated files and classification images, so they always
+  describe the installed version.
+  [`?generateCI`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+  and
+  [`?autoscale`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
+  now point there for the fields of the `trial_design` and `scaling`
+  attributes.
 - The README says how to cite rcicr and the method behind it, and lists
-  all three vignettes.
+  all four vignettes.
 
 ## rcicr 1.5.0 (2026-09-25)
 

@@ -115,11 +115,12 @@
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
 <p>The function reference, the vignettes and the changelog are also online at <strong><a href="https://rdotsch.github.io/rcicr/" class="uri">https://rdotsch.github.io/rcicr/</a></strong>, so you can read them before installing.</p>
-<p>Three vignettes ship with the package:</p>
+<p>Four vignettes ship with the package:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># shortest working example</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"reverse-correlation-walkthrough"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># the full method</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"recipes"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># answers to common follow-up questions</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"recipes"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># answers to common follow-up questions</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"stored-data"</span>, package <span class="op">=</span> <span class="st">"rcicr"</span><span class="op">)</span>  <span class="co"># every field of the .Rdata file and of a CI</span></span></code></pre></div>
 <p>The walkthrough covers designing a study, generating stimuli, computing classification images for several participants, choosing a scaling method, and telling signal from noise. Its code runs whenever the package is built, so it keeps working with the current version. The recipes cover noise-only stimuli, rating scales as responses, and matching the informational-value reference to dropped trials, masks, batches and group averages.</p>
 <p>For example datasets and analysis scripts, see <a href="https://github.com/rdotsch/rcicr_examples/" class="external-link">rcicr_examples</a>.</p>
 </div>
@@ -140,7 +141,7 @@
                                   autoscale()      computeInfoVal2IFC()      plotZmap()</code></pre>
 <p><strong>1. Stimulus generation.</strong> <code><a href="reference/generateNoisePattern.html">generateNoisePattern()</a></code> builds the <em>noise basis</em>: a stack of sinusoid (or Gabor) patches at several orientations, phases and spatial scales. It is built once and reused for every trial. <code><a href="reference/generateNoiseImage.html">generateNoiseImage()</a></code> combines one random contrast weight per patch into a single noise image. <code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> repeats that for every trial and writes two PNGs per trial per base face: the base image with the noise added, and with it subtracted.</p>
 <p><strong>2. Analysis.</strong> <code><a href="reference/generateCI.html">generateCI()</a></code> loads the stimulus file and looks up the parameters of the stimuli a participant saw. It weights each by the response (<code>1</code> = original chosen, <code>-1</code> = inverted chosen) and averages them into one image: the classification image. After that, <code><a href="reference/autoscale.html">autoscale()</a></code> puts a batch of CIs on one scale so they can be compared by eye, <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> scores a CI against a simulated null distribution (<code><a href="reference/batchComputeInfoVal2IFC.html">batchComputeInfoVal2IFC()</a></code> scores a list of them), and <code><a href="reference/plotZmap.html">plotZmap()</a></code> shows which regions carry reliable signal.</p>
-<p><strong>The <code>.Rdata</code> file is the only link between the two halves.</strong> Without it, nothing about your stimuli can be recovered: not from the PNGs, and not from the seed alone. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else.</p>
+<p><strong>The <code>.Rdata</code> file is the only link between the two halves.</strong> Without it, nothing about your stimuli can be recovered: not from the PNGs, and not from the seed alone. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else. <code><a href="articles/stored-data.html">vignette("stored-data")</a></code> lists everything in it, and in the classification image <code><a href="reference/generateCI.html">generateCI()</a></code> returns.</p>
 <p><strong>Compare numbers, not figures, across machines.</strong> Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system. The test suite pins them to fixed values, and they hold on Linux and macOS ARM64 alike. The one exception is the PNG that <code><a href="reference/plotZmap.html">plotZmap()</a></code> writes, because it is the only function here that draws through a graphics device. Devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map gives figures that look identical but are not byte-identical. A z-map image that differs pixel for pixel on a colleague’s machine is not a different result. Every other PNG the package writes comes straight from the pixel array via <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code>, so this does not apply to them. See <code><a href="reference/plotZmap.html">?plotZmap</a></code>.</p>
 <div class="section level3">
 <h3 id="where-the-code-lives">Where the code lives<a class="anchor" aria-label="anchor" href="#where-the-code-lives"></a>
@@ -193,112 +194,6 @@
 </table>
 <p>The mask helpers live in <code>R/generateCI.R</code> rather than in a file of their own because <code><a href="reference/plotZmap.html">plotZmap()</a></code> uses them too: masking a z-map and masking a CI are the same operation.</p>
 </div>
-</div>
-<div class="section level2">
-<h2 id="anatomy-of-the-rdata-file">Anatomy of the <code>.Rdata</code> file<a class="anchor" aria-label="anchor" href="#anatomy-of-the-rdata-file"></a>
-</h2>
-<p><code><a href="reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> writes one file named <code>&lt;label&gt;_seed_&lt;seed&gt;_time_&lt;timestamp&gt;.Rdata</code>. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> it and you get these objects:</p>
-<table class="table">
-<colgroup>
-<col width="50%">
-<col width="50%">
-</colgroup>
-<thead><tr>
-<th>Object</th>
-<th>What it is</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><code>p</code></td>
-<td>The noise basis. A list of <code>patches</code> (an <code>img_size × img_size × 12·nscales</code> array of sinusoid/Gabor layers), <code>patchIdx</code> (which parameter drives each pixel of each layer), <code>noise_type</code>, and <code>generator_version</code>. This is the expensive part and the reason the file exists.</td>
-</tr>
-<tr>
-<td><code>stimuli_params</code></td>
-<td>Named list, one entry per base image, each an <code>n_trials × nparams</code> matrix of contrast weights in <code>[-1, 1]</code>. <strong>Row <em>i</em> is the noise of stimulus <em>i</em></strong>: this is what <code><a href="reference/generateCI.html">generateCI()</a></code> looks up and weights by the responses.</td>
-</tr>
-<tr>
-<td><code>base_faces</code></td>
-<td>Named list of the base images as greyscale matrices, after contrast maximization. The actual pixels, not paths, so the file is self-contained.</td>
-</tr>
-<tr>
-<td><code>base_face_files</code></td>
-<td>The paths they were read from, for reference.</td>
-</tr>
-<tr>
-<td>
-<code>img_size</code>, <code>n_trials</code>, <code>nscales</code>, <code>sigma</code>, <code>noise_type</code>
-</td>
-<td>The generation parameters, for reference. The InfoVal reference distribution reads the saved <code>p</code> (or <code>s</code> in old files) and <code>stimuli_params</code> directly and uses <code>n_trials</code> to select trial rows; it never rebuilds the basis from these settings.</td>
-</tr>
-<tr>
-<td><code>seed</code></td>
-<td>The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>.</td>
-</tr>
-<tr>
-<td><code>rng_kind</code></td>
-<td>
-<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> when the stimuli were drawn. InfoVal references replay the seed’s stream under it, so they do not depend on the kind of the session that computes them. Files without it replay under the session’s kind. Added in the development version.</td>
-</tr>
-<tr>
-<td><code>use_same_parameters</code></td>
-<td>Whether every base image shared one parameter set (<code>TRUE</code>) or each got its own.</td>
-</tr>
-<tr>
-<td>
-<code>label</code>, <code>stimulus_path</code>
-</td>
-<td>What the files were called and where they were written.</td>
-</tr>
-<tr>
-<td><code>generator_version</code></td>
-<td>The rcicr version that wrote the file; see the caveat below.</td>
-</tr>
-</tbody>
-</table>
-<p>The first time you compute an informational value, <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> and <code><a href="reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC()</a></code> <strong>add</strong> fields to the same file. Which ones depends on whether the base images share one parameter matrix:</p>
-<table class="table">
-<colgroup>
-<col width="50%">
-<col width="50%">
-</colgroup>
-<thead><tr>
-<th>Object</th>
-<th>What it is</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><code>reference_norms</code></td>
-<td>The simulated null distribution: the norms of <code>iter</code> classification images built from random responses. Stored because simulating it is slow. Written when the base images share one parameter matrix.</td>
-</tr>
-<tr>
-<td><code>reference_norms_seed</code></td>
-<td>The <code>response_seed</code> those norms were drawn with, or <code>NULL</code> for the default stream. Added in 1.2.0.</td>
-</tr>
-<tr>
-<td><code>reference_norms_source</code></td>
-<td>What <code>reference_norms</code> was built from: <code>"saved_noise"</code> means the file’s own saved parameters and basis. A default-stream reference (<code>reference_norms_seed</code> absent or <code>NULL</code>) without this marker and a matching <code>reference_norms_fingerprint</code> is rebuilt and, if the file is writable, saved. A reference drawn with a <code>response_seed</code> is kept; if it was built from an incorrect reconstruction, regenerate it yourself before recomputing InfoVal. Added in 1.4.0.</td>
-</tr>
-<tr>
-<td><code>reference_norms_fingerprint</code></td>
-<td>A full copy of the norms, as <code>list(norms = ...)</code>, compared with <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code>. It exists because an older rcicr can keep the marker while replacing the norms; if the copy no longer matches, a default-stream reference is rebuilt. It adds about 80 KB for 10,000 norms before compression. Added in 1.4.0.</td>
-</tr>
-<tr>
-<td><code>reference_norms_by_base</code></td>
-<td>Written instead of the fields above when the base images have <em>different</em> parameter matrices, because each base then needs a null built from its own saved noise. A named list, one entry per base, each holding that base’s <code>norms</code>, <code>response_seed</code>, <code>source</code> and <code>fingerprint</code> (same meaning as above). A <code>reference_norms</code> already in such a file is left in place and ignored. Added in 1.4.0.</td>
-</tr>
-<tr>
-<td><code>reference_norms_by_stimuli</code></td>
-<td>References built over a subset of the saved stimuli, with <code>reference_stimuli</code>, for a CI that did not use them all. A list with one entry per stimulus set, each holding its <code>reference_stimuli</code>, <code>baseimage</code> (<code>NULL</code> when the bases share one parameter matrix), <code>norms</code>, <code>response_seed</code>, <code>source</code> and <code>fingerprint</code>. The default reference is never read or written for these. Added in the development version.</td>
-</tr>
-</tbody>
-</table>
-<p>Before you write code against this file:</p>
-<ul>
-<li>
-<strong>Fields are only ever added.</strong> They are never renamed or given a new meaning, so newer rcicr reads older files. <code>nscales</code> and <code>sigma</code> arrived in 1.1.0 and <code>noise_type</code> earlier. The reference distribution uses the saved basis, so it works when those fields are missing.</li>
-<li>
-<strong><code>generator_version</code> is unreliable in older files.</strong> It was hardcoded as <code>'0.4.0'</code> until 1.2.0, so every file written by 0.4.0 through 1.1.0 claims to be 0.4.0. <code>p$generator_version</code> has always held the real value. Compare versions with <code><a href="https://rdrr.io/r/base/numeric_version.html" class="external-link">numeric_version()</a></code>, never as text.</li>
-</ul>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>

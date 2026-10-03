@@ -89,7 +89,9 @@
 <h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
 <ul><li>
 <strong>A new vignette, <code><a href="../articles/recipes.html">vignette("recipes")</a></code>, answers questions that come up after the basics.</strong> It covers noise-only stimuli from a uniform grey base image, which needs <code>maximize_baseimage_contrast = FALSE</code>; rating scales as response weights, and how to check their direction; and matching the InfoVal reference to the design: dropped trials (<code>reference_stimuli</code>), masked classification images, scoring a batch, and why a CI averaged over participants has no calibrated InfoVal. It runs at 64 pixels and builds in seconds. (<a href="https://github.com/rdotsch/rcicr/issues/69" class="external-link">#69</a>, <a href="https://github.com/rdotsch/rcicr/issues/6" class="external-link">#6</a>)</li>
-<li>The README says how to cite rcicr and the method behind it, and lists all three vignettes.</li>
+<li>
+<strong>A new vignette, <code><a href="../articles/stored-data.html">vignette("stored-data")</a></code>, lists every field of the stimulus <code>.Rdata</code> file and every element and attribute of the classification image <code><a href="../reference/generateCI.html">generateCI()</a></code> returns.</strong> It replaces the README’s table of the file, which lacked <code>reference_norms_method</code> and the <code>method</code> and <code>mask</code> fields of reference entries. The vignette’s build checks its tables against freshly generated files and classification images, so they always describe the installed version. <code><a href="../reference/generateCI.html">?generateCI</a></code> and <code><a href="../reference/autoscale.html">?autoscale</a></code> now point there for the fields of the <code>trial_design</code> and <code>scaling</code> attributes.</li>
+<li>The README says how to cite rcicr and the method behind it, and lists all four vignettes.</li>
 </ul></div>
 </div>
     <div class="section level2">
