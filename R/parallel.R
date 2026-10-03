@@ -19,11 +19,8 @@ default_ncores <- function() {
 # Register a foreach backend and return the cluster to stop afterwards, or NULL
 # when running serially.
 #
-# With ncores == 1 there is nothing to parallelise, but the old code built a
-# cluster anyway: makeCluster(1) starts a second R process, makes it
-# library(rcicr), ships each iteration to it and waits. That is pure overhead,
-# and it dominated R CMD check -- the test suite reported [8s/126s], eight
-# seconds of CPU against 126 elapsed, across 22 cluster spawns.
+# With ncores == 1 there is nothing to parallelise, and makeCluster(1) would
+# start a second R process only to ship every iteration to it.
 #
 # registerDoSEQ() runs the very same %dopar% loop in the current process, so no
 # loop body needed to change. Numeric output is unaffected: neither parallel

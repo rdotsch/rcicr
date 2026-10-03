@@ -123,20 +123,12 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
                 'Use tempdir() if you only want to try the function out.'))
   }
 
-  # Create target directory
   dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
-  # Apply threshold
   zmap[abs(zmap) < threshold] <- NA
 
-  # Import, validate and apply the mask -- shared with generateCI(), which
-  # applyMask() was written for first (see R/generateCI.R and issue #185).
-  # Masked cells drop out of the z-map exactly as sub-threshold cells do
-  # above, which is what the documentation has promised since 2016 -- commit
-  # 18e07cb landed the import half as "add mask import ... (todo: applying
-  # the mask)" and the todo was never picked up, so the argument was
-  # validated and then silently discarded in every released version until
-  # 1.2.0 (see NEWS.md).
+  # Masked cells drop out of the z-map as sub-threshold cells do above
+  # (DECISIONS.md, "plotZmap(mask = ...) was applied rather than deprecated").
   if (hasMask(mask)) {
     zmap <- applyMask(zmap, mask, img_size = c(nrow(zmap), ncol(zmap)), context = 'z-map')
   }
@@ -146,7 +138,6 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
   # nativeRaster is numeric too, but holds packed colours, not intensities.
   if (is.numeric(bgimage) && !inherits(bgimage, 'nativeRaster')) bgimage <- clampUnit(bgimage)
 
-  # Plot
   outfile <- paste0(targetpath, '/', filename, '.png')
   png(filename = outfile, width = size, height = size, pointsize = pointsize)
 
@@ -160,7 +151,6 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     if (!drawn) unlink(outfile)
   })
 
-  # With decoration
   if (decoration) {
     zmapMargins <- c(5.1, 4.1, 4.1, 6.1)
 
@@ -191,9 +181,7 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     on.exit(par(oldpar), add = TRUE, after = FALSE)
 
     # A col in ... replaces the palettes below rather than arriving alongside
-    # them, which errors before anything is drawn. ?plotZmap has always
-    # documented col as the way to change the palette, and it errored in every
-    # released version.
+    # them, which errors before anything is drawn (NEWS 1.3.0).
     dots <- list(...)
     user_col <- dots$col
     dots$col <- NULL
@@ -233,21 +221,13 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     # which leaves the device's user coordinates belonging to the bar rather
     # than to the map. Anything drawn into 0..1 afterwards -- the background,
     # the overlay, the boundary box -- would land in the bar's coordinate space
-    # instead. Drawn between the map and the box, the box came out as two thin
-    # lines across the middle of the figure.
+    # instead.
     drawZmapLegend(zmap, col = if (identical(bgimage, '')) base_col else overlay_col,
                    zlim = dots$zlim, breaks = dots$breaks)
-    # Without decoration
   }
   if (!decoration) {
-    # Initialize plot without margins. The order matters: plot.new() validates
-    # that the current margins fit inside the device, and the default margins
-    # (c(5.1, 4.1, 4.1, 2.1) *lines*) do not fit a small one. Setting them after
-    # plot.new(), as this did, meant any device below roughly 100 px failed with
-    # "figure margins too large" -- and generateCI() sizes the device to
-    # img_size, so small stimulus sets could not produce a z-map at all.
-    # Rendered output at usual sizes is unchanged: par(mar=) still takes effect
-    # before plot.window() either way.
+    # Margins first: plot.new() checks that the current margins fit the device,
+    # and the default ones do not fit a small one, such as a 64px z-map.
     #
     # par() returns the previous values of exactly the parameters being set, so
     # restoring `oldpar` restores `mar` and nothing else. par(no.readonly=TRUE)
@@ -258,17 +238,11 @@ plotZmap <- function(zmap, bgimage = '', sigma, threshold = 3, mask = NULL, deco
     plot.new()
     plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = 'i', yaxs = 'i')
 
-    # If specified, add bgimage. Must be identical(), not !=: bgimage is normally
-    # an image matrix, so `bgimage != ''` is a condition of length img_size^2.
-    # R >= 4.2 makes that an error rather than silently using the first element,
-    # so this branch could not run at all with a background image -- which is
-    # every call from generateCI(), as it always passes the combined CI. The
-    # decoration = TRUE branch above already used identical(); this one was
-    # missed. Same root cause as the `mask` bug fixed in 1.1.0.
+    # identical(), not !=: bgimage is normally a matrix, and a condition of
+    # length img_size^2 is an error in R >= 4.2.
     if (!identical(bgimage, '')) {
       rasterImage(bgimage, 0, 0, 1, 1)
     }
-    # Add Z-map
     drawZmapLayer(zmap, col = zmapDefaultPalette(), add = TRUE)
   }
 

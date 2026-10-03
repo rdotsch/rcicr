@@ -39,7 +39,6 @@ requireTTestStack <- function(n_images, by_participant) {
 computeZmapTTest <- function(ci, params, responses, p, pid_cis, img_size,
                              n_cores) {
   if (is.null(pid_cis)) {
-    # Weigh the stimulus parameters of each trial using the given responses
     weightedparameters <- params * responses
     n_observations <- length(responses)
 
@@ -50,7 +49,6 @@ computeZmapTTest <- function(ci, params, responses, p, pid_cis, img_size,
       on.exit(stopClusterSafely(cl), add = TRUE)
     }
 
-    # For each weighted stimulus, construct the complementary noise pattern
     noiseimages <- foreach::foreach(obs = 1:n_observations, .combine = 'c',
       .packages = 'rcicr',
       .options.snow = progressOption(pb, cl)
@@ -71,7 +69,6 @@ computeZmapTTest <- function(ci, params, responses, p, pid_cis, img_size,
     noiseimages <- pid_cis
   }
 
-  # Get p value for each pixel
   pmap <- apply(noiseimages, 1:2, function(x) unlist(t.test(x)['p.value']))
 
   return(sign(ci) * abs(qnorm(pmap / 2)))

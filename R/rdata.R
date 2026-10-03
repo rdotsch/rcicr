@@ -65,20 +65,12 @@ rdataWriterNote <- function(env) {
 # Read a stimulus .Rdata file into a frame of its own and return the four
 # objects the CI pipeline uses.
 #
-# The point is where it loads. load() assigns into whatever environment it is
-# given, so reading the file directly inside generateCI() put every field of it
-# in scope alongside that function's arguments, where a shared name silently
-# won: the noise `sigma` stored since 1.1.0 replaced the z-map blur `sigma`, and
-# the value the caller passed was ignored. That is why generateCI() and
-# computeCumulativeCICorrelation() do not call captureArgs(); computeInfoVal2IFC()
-# still loads into its own frame and still needs it.
-#
-# A dedicated environment rather than this function's own frame, because the
-# frame is not argument-free either: it holds `rdata`, and an older
-# generateReferenceDistribution2IFC() saved its own `rdata` argument into the
-# file, so that name occurs in real files. Loading into the frame would be safe
-# only for as long as nothing read `rdata` after the load -- a hazard narrowed
-# rather than removed.
+# The point is where it loads: load() assigns into the environment it is given,
+# so loading into a function's frame lets a stored field replace an argument of
+# the same name (the saved noise `sigma` once replaced the z-map's, #146). Its
+# callers therefore need no captureArgs(). Not this function's own frame
+# either: it holds `rdata`, which files from an older
+# generateReferenceDistribution2IFC() contain.
 loadStimulusParams <- function(rdata, require_img_size = TRUE) {
   env <- new.env(parent = emptyenv())
   loadRdata(rdata, env)

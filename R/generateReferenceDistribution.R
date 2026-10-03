@@ -146,13 +146,9 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
                                            ncores, response_seed, save_rdata, reference_method)))
   }
 
-  # load() assigns straight into this function's frame, so any object stored in
-  # the .Rdata file silently overwrites an argument of the same name. This
-  # function re-saves its frame at the end, so files it has already written
-  # contain `rdata` (and, since ncores was added, `ncores`) - meaning a second
-  # call on the same file would ignore the ncores the caller passed and write
-  # back to the path recorded during the first call. Keep private copies and
-  # restore them after loading.
+  # load() assigns into this frame, and the frame is re-saved at the end, so
+  # files this function wrote contain `rdata` and `ncores`. Private copies are
+  # restored after loading, so the caller's values win.
   #
   # This is also why the response seed is called `response_seed` and not `seed`:
   # `seed` is the stimulus seed stored in the file, so an argument of that name
@@ -168,7 +164,6 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
   # .args below.
   rm(reference_stimuli, subset, reference_method, mask)
 
-  # Load parameter file (created when generating stimuli)
   loadRdata(rdata, environment())
 
   rdata <- .args$rdata
@@ -197,7 +192,6 @@ generateReferenceDistribution2IFC <- function(rdata, iter = 10000, ncores = defa
 
   if (save_rdata) {
 
-    # Save reference norms to rdata file
     write("\nSaving simulated reference distribution to rdata file...", stdout())
 
     # Provenance belongs to the saved norms; function arguments and scratch state do not.

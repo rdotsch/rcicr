@@ -48,11 +48,7 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
 
   # Get range of each ci, by position: names may repeat or be absent (#375).
   #
-  # na.rm is required, not defensive: generateCI(mask = ...) sets masked pixels
-  # to NA by design, so a masked CI reaching this function used to make the
-  # constant NA and abort with "missing value where TRUE/FALSE needed" one line
-  # below. applyScaling() has always guarded its own reductions the same way --
-  # this was the one scaling path that did not.
+  # na.rm is required: generateCI(mask = ...) leaves masked pixels NA (NEWS 1.2.0).
   ranges <- matrix(0, length(cis), 2)
   for (i in seq_along(cis)) {
     ci_values <- cis[[i]]$ci
@@ -64,7 +60,6 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
     ranges[i, ] <- range(ci_values, na.rm = TRUE)
   }
 
-  # Determine the lowest possible scaling factor constant
   if (abs(min(ranges[, 1])) > max(ranges[, 2])) {
     constant <- abs(min(ranges[, 1]))
   }  else {
@@ -86,7 +81,6 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
     warning(msg, call. = FALSE)
   }
 
-  # Scale all noise patterns
   for (i in seq_along(cis)) {
     cis[[i]]$scaled <- if (degenerate) {
       neutralScaling(cis[[i]]$ci, 0.5)
@@ -95,12 +89,9 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
     }
     attr(cis[[i]], 'scaling') <- autoscaledRecord(attr(cis[[i]], 'scaling'), constant)
 
-    # Note that $combined is deliberately NOT updated here. It stays as the
-    # caller supplied it, so whatever combination was made before autoscaling
-    # survives this call unchanged. Use $scaled to see the autoscaled result;
-    # that is the field this function exists to produce, and it is what the
-    # PNG below is built from. Do not "fix" this by rewriting $combined -- it
-    # would silently change what existing analysis scripts plot.
+    # $combined is deliberately left as the caller supplied it: rewriting it
+    # would change what existing scripts plot. $scaled is the autoscaled
+    # result, and the PNG below is built from it.
     if (save_as_pngs) {
       ci <- (cis[[i]]$scaled + cis[[i]]$base) / 2
 

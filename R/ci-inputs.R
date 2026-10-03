@@ -183,12 +183,7 @@ selectStimulusParams <- function(stimuli_params, baseimage, stimuli) {
       params <- params[, 1:4092]
     }
   } else {
-    # In case we only have a single trial as input. This tested
-    # `length(params) == 4092` and then truncated to 4092 -- a no-op that could
-    # never fire on the 4096-parameter input it exists for, so a single-trial CI
-    # from a pre-0.3.0 file died in generateNoiseImage() with "number of
-    # parameters doesn't equal number of patches". The multi-trial branch above
-    # was always correct.
+    # A single trial arrives as a vector (NEWS 1.2.0).
     if (length(params) == 4096) {
       params <- params[1:4092]
     }
