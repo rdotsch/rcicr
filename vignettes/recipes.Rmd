@@ -222,7 +222,11 @@ Older releases import packages this one no longer needs; `install_github()` inst
 
 ### Recompute with the current version
 
-Classification images come out the same unless `NEWS.md` lists your situation under "Reproducibility impact", in the releases after the one you used. An InfoVal depends on the reference distribution stored in the `.Rdata` file:
+Classification images come out the same unless `NEWS.md` lists your situation under "Reproducibility impact", in the releases after the one you used.
+
+Their file names can differ, though, for per-participant images from a GitHub install of 0.4.1 to 1.2.3. In those versions, a direct `generateCI()` call with `participants` and `save_individual_cis = TRUE` could save an image under another participant's name. Rerunning such a version reproduces the wrong names; recomputing with this one gives the right names, so comparing old and new files by name can turn up differences where there are none. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected. CRAN releases never carried the bug.
+
+An InfoVal depends on the reference distribution stored in the `.Rdata` file:
 
 - **A reference stored by 1.4.0 or later is reused as stored**, so its InfoVal does not change. Such a file holds `reference_norms_source` (see `vignette("stored-data", package = "rcicr")`).
 - **An older reference is rebuilt** the first time, with a message that the new InfoVal supersedes earlier ones. By default it is computed through the stimulus Gram matrix, which differs from the calculation of 1.5.0 and earlier only by rounding. `reference_method = "images"` is that earlier calculation, unchanged.
@@ -251,10 +255,6 @@ c(gram = infoval_gram, images = infoval_images, difference = infoval_images - in
 ```
 
 Real references use `iter = 10000`; the smaller one here keeps the slower `"images"` calculation quick.
-
-### Per-participant images from a GitHub install of 0.4.1 to 1.2.3
-
-A direct `generateCI()` call with `participants` and `save_individual_cis = TRUE` could save an image under another participant's name in those versions. Rerunning such a version reproduces the wrong names; recomputing with this one gives the right names, so comparing old and new files by name can turn up differences where there are none. The [individual-CI filename advisory](https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html) explains how to tell whether you are affected. CRAN releases never carried the bug.
 
 ```{r, include = FALSE}
 par(oldpar)
