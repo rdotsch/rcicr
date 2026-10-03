@@ -65,10 +65,10 @@
     
     
 <p>Short answers to questions that come up once the basics in
-<code><a href="../articles/reverse-correlation-walkthrough.html">vignette("reverse-correlation-walkthrough")</a></code> are in place.
-Each recipe runs at a small size so this vignette builds in seconds;
-real studies use <code>img_size = 512</code> and several hundred
-trials.</p>
+<code><a href="../articles/reverse-correlation-walkthrough.html">vignette("reverse-correlation-walkthrough", package = "rcicr")</a></code>
+are in place. Each recipe runs at a small size so this vignette builds
+in seconds; real studies use <code>img_size = 512</code> and several
+hundred trials.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rdotsch.github.io/rcicr/">rcicr</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
@@ -280,6 +280,115 @@ calibrated.</p>
 reference the group CI scores below zero, although one of its
 participants scored 6.3 on their own. Score each participant’s own CI
 instead, as above.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="reproducing-a-number-from-an-earlier-version">Reproducing a number from an earlier version<a class="anchor" aria-label="anchor" href="#reproducing-a-number-from-an-earlier-version"></a>
+</h2>
+<p>A classification image or InfoVal reported years ago can be
+reproduced in two ways.</p>
+<div class="section level3">
+<h3 id="run-the-version-that-computed-it">Run the version that computed it<a class="anchor" aria-label="anchor" href="#run-the-version-that-computed-it"></a>
+</h3>
+<p>This reproduces everything the file already stores exactly. A
+reference the old release has to simulate anew also needs the original
+session’s <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>, which files from before
+<code>rng_kind</code> was stored do not record, and the same BLAS
+library. For a release, use the version your analysis script or its
+session info records. A development install from GitHub is identified
+only by its commit SHA, since snapshots share a version number: install
+the SHA you recorded,
+<code>remotes::install_github("rdotsch/rcicr@&lt;commit-sha&gt;")</code>,
+or keep the library it was installed in.
+<code>p$generator_version</code> in the <code>.Rdata</code> file (in
+files from 0.3.3 on) names the version that <em>generated the
+stimuli</em>, which need not be the one that analysed them. Install that
+release into a library of its own, so your current installation stays as
+it is, and load it in a fresh R session:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"rcicr-1.4.1"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rdotsch/rcicr@v1.4.1"</span>, lib <span class="op">=</span> <span class="st">"rcicr-1.4.1"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rdotsch.github.io/rcicr/">rcicr</a></span>, lib.loc <span class="op">=</span> <span class="st">"rcicr-1.4.1"</span><span class="op">)</span></span></code></pre></div>
+<p>Older releases import packages this one no longer needs;
+<code>install_github()</code> installs those too.</p>
+</div>
+<div class="section level3">
+<h3 id="recompute-with-the-current-version">Recompute with the current version<a class="anchor" aria-label="anchor" href="#recompute-with-the-current-version"></a>
+</h3>
+<p>Classification images come out the same unless <code>NEWS.md</code>
+lists your situation under “Reproducibility impact”, in the releases
+after the one you used. For a version before 1.1.0, check
+<code>ChangeLog</code> too: <code>NEWS.md</code> starts at 1.1.0.</p>
+<p>Their file names can differ, though, for per-participant images from
+a GitHub install before 1.3.0. In affected versions, a direct
+<code><a href="../reference/generateCI.html">generateCI()</a></code> call with <code>participants</code> and
+<code>save_individual_cis = TRUE</code> could save an image under
+another participant’s name. Rerunning such a version reproduces the
+wrong names; recomputing with this one gives the right names, so
+comparing old and new files by name can turn up differences where there
+are none. The <a href="https://rdotsch.github.io/rcicr/articles/rcicr-individual-ci-advisory.html">individual-CI
+filename advisory</a> explains how to tell whether you are affected.
+CRAN releases never carried the bug.</p>
+<p>An InfoVal depends on the reference distribution stored in the
+<code>.Rdata</code> file:</p>
+<ul>
+<li>
+<strong>A reference stored by 1.4.0 or later is reused as
+stored</strong>, so its InfoVal does not change, as long as no older
+rcicr has since replaced its norms. Such a reference carries a
+<code>source</code> marker;
+<code><a href="../articles/stored-data.html">vignette("stored-data", package = "rcicr")</a></code> shows where it
+sits for each way a reference is stored.</li>
+<li>
+<strong>A reference drawn with a <code>response_seed</code> is kept
+as stored</strong>, whichever method you ask for.</li>
+<li>
+<strong>Any other reference is rebuilt</strong> the first time, with
+a message that the new InfoVal supersedes earlier ones. By default it is
+computed through the stimulus Gram matrix, which differs from the
+calculation of 1.5.0 and earlier only by rounding;
+<code>reference_method = "images"</code> is that earlier calculation,
+unchanged. A file generated with <code>seed = NULL</code> cannot rebuild
+its reference; the error names the call that stores a reproducible one
+instead.</li>
+</ul>
+<p>To rebuild a reference the way earlier versions did, store it with
+<code><a href="../reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC()</a></code> and
+<code>reference_method = "images"</code>, passing the original
+<code>iter</code> (the length of the stored norms, if the file still
+holds them), the original <code>response_seed</code> if there was one,
+and, when the base images have parameters of their own, the
+classification image’s <code>baseimage</code>. Later
+<code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> calls reuse it. Whether it then
+matches the old reference exactly depends on what changed after your
+version, so read the “Reproducibility impact” entries in
+<code>NEWS.md</code> for every later release (and
+<code>ChangeLog</code>, for versions before 1.1.0). It also needs the
+original session’s random number generator and BLAS library;
+<code><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo()</a></code> names the BLAS, and lists the generator only
+when it differs from R’s default.</p>
+<p>Here both methods score the same classification image, each on its
+own copy of the file:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ci_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generateCI.html">generateCI</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">120</span>, <span class="va">choice</span>, <span class="st">"face"</span>, <span class="va">rdata_file</span>, save_as_png <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">gram_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".Rdata"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="va">rdata_file</span>, <span class="va">gram_file</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC</a></span><span class="op">(</span><span class="va">gram_file</span>, iter <span class="op">=</span> <span class="fl">1000</span>, ncores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; InfoVal reference computed with reference_method = "gram". References from rcicr 1.5.0 and earlier used "images"; pass reference_method = "images" to reproduce them bit for bit.</span></span>
+<span><span class="va">infoval_gram</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC</a></span><span class="op">(</span><span class="va">ci_all</span>, <span class="va">gram_file</span>, iter <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">images_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".Rdata"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="va">rdata_file</span>, <span class="va">images_file</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/generateReferenceDistribution2IFC.html">generateReferenceDistribution2IFC</a></span><span class="op">(</span><span class="va">images_file</span>, iter <span class="op">=</span> <span class="fl">1000</span>, ncores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                  reference_method <span class="op">=</span> <span class="st">"images"</span><span class="op">)</span></span>
+<span><span class="va">infoval_images</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC</a></span><span class="op">(</span><span class="va">ci_all</span>, <span class="va">images_file</span>, iter <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>gram <span class="op">=</span> <span class="va">infoval_gram</span>, images <span class="op">=</span> <span class="va">infoval_images</span>, difference <span class="op">=</span> <span class="va">infoval_images</span> <span class="op">-</span> <span class="va">infoval_gram</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         gram       images   difference </span></span>
+<span><span class="co">#&gt; 2.725105e+00 2.725105e+00 5.329071e-15</span></span></code></pre></div>
+<p>Real references use <code>iter = 10000</code>; the smaller one here
+keeps the slower <code>"images"</code> calculation quick.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

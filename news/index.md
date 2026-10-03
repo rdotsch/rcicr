@@ -380,6 +380,14 @@
   [`?autoscale`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
   now point there for the fields of the `trial_design` and `scaling`
   attributes.
+- **[`vignette("recipes")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+  has a recipe for reproducing a number from an earlier version**:
+  running that release from a library of its own, or recomputing with
+  this one. It says which stored InfoVal references are reused and which
+  are rebuilt, shows that `reference_method = "images"` rebuilds one
+  with the calculation of 1.5.0 and earlier, and points to the
+  individual-CI filename advisory for per-participant images from GitHub
+  installs before 1.3.0.
 - The README says how to cite rcicr and the method behind it, and lists
   all four vignettes.
 
