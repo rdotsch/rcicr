@@ -62,85 +62,18 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     ))
   }
 
+  if (!validTrialCount(n_trials)) {
+    stop('n_trials must be a positive whole number; it is ', format(n_trials), '.', call. = FALSE)
+  }
   validateNoiseType(noise_type)
   validateBaseFaceFiles(base_face_files)
 
   # Before the noise basis, which is slow at the default 512px, and before the
   # directory is created.
   base_faces <- list()
-
   for (base_face in names(base_face_files)) {
-    # Read base face
-    filename <- base_face_files[[base_face]]
-    img_format <- baseImageFormat(filename)
-
-    img <- tryCatch(
-      if (img_format == 'png') png::readPNG(filename) else jpeg::readJPEG(filename),
-      error = function(e) {
-        stop(paste0('Base image "', base_face, '" (', filename, ') could not ',
-            'be read as ', img_format, ': ', conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-
-    # Check if base face is square. If not, throw an error
-    if (dim(img)[1] != dim(img)[2]) {
-      stop(paste0('Base image "', base_face, '" (', filename, ') is not ',
-        'square! It\'s ', dim(img)[1], ' by ', dim(img)[2],
-        ' pixels. Please use a square base face.'
-      ))
-    }
-
-    # Change base face to greyscale if necessary.
-    #
-    # Alpha is not a colour, so it is dropped rather than averaged in. Two
-    # channels is grey plus alpha and keeps the first; three or four is RGB or
-    # RGBA and averages the first three. Averaging every channel turned an
-    # opaque black pixel into 0.5 for grey-plus-alpha and 0.25 for RGBA.
-    if (length(dim(img)) == 3) {
-      channels <- dim(img)[3]
-      keep <- if (channels == 2) 1L else seq_len(min(3, channels))
-      img <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
-    }
-
-    # Check that the base face matches the requested stimulus size. Automatic
-    # resizing used to happen here via biOps, but that dependency was dropped
-    # and never replaced, so a mismatch would otherwise surface much later as
-    # an opaque "non-conformable arrays" error from inside a parallel worker
-    # (when the noise is added to the base image).
-    if (nrow(img) != img_size) {
-      stop(paste0('Base image "', base_face, '" (', filename, ') is ',
-        nrow(img), ' by ', ncol(img), ' pixels, but img_size is ',
-        img_size, '. rcicr does not resize base images: please ',
-        'either resize the image to ', img_size, ' by ', img_size,
-        ' pixels, or call generateStimuli2IFC() with img_size = ',
-        nrow(img), '.'
-      ))
-    }
-
-    # If necessary, rescale to maximize contrast
-    if (maximize_baseimage_contrast) {
-      # (img - min) / (max - min) is 0/0 on a uniform image, and the all-NaN
-      # base face went into the .Rdata unremarked (#176). Only an error here:
-      # with the rescale off a flat base image is usable and produces valid
-      # stimuli, so rejecting it outright would break a legitimate call.
-      if (max(img) == min(img)) {
-        stop(paste0('Base image "', base_face, '" (', filename, ') has no ',
-          'contrast: every pixel is ', min(img), '. Contrast cannot ',
-          'be maximized on a uniform image, and doing so would make ',
-          'the base image entirely NaN. Use a base image with some ',
-          'variation, or call generateStimuli2IFC() with ',
-          'maximize_baseimage_contrast = FALSE.'
-        ))
-      }
-
-      img <- (img - min(img)) / (max(img) - min(img))
-    }
-
-    # Save base image to list
-    base_faces[[base_face]] <- img
+    base_faces[[base_face]] <- readBaseFace(base_face, base_face_files[[base_face]], img_size,
+                                            maximize_baseimage_contrast)
   }
 
   # The basis is built after the reservations below; its size check must still
@@ -199,36 +132,8 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   rng_kind <- RNGkind() # nolint: object_usage_linter. Saved by name below.
   set.seed(seed)
 
-  stimuli_params <- list()
-
-  # Compute number of parameters needed  #
   nparams <- sum(6 * 2 * (2^(0:(nscales - 1)))^2)
-
-  # Generate parameters #
-  if (use_same_parameters) {
-
-    # Generate stimuli parameters, one set for all base faces
-    params <- matlab::zeros(n_trials, nparams)
-    for (trial in 1:n_trials) {
-      params[trial, ] <- (runif(nparams) * 2) - 1
-    }
-
-    # Assign to each base face the same set
-    for (base_face in names(base_faces)) {
-      stimuli_params[[base_face]] <- params
-    }
-
-    rm(params)
-  } else {
-    for (base_face in names(base_faces)) {
-      # Generate stimuli parameters, unique to each base face
-      stimuli_params[[base_face]] <- matlab::zeros(n_trials, nparams)
-      for (trial in 1:n_trials) {
-        stimuli_params[[base_face]][trial, ] <- (runif(nparams) * 2) - 1
-      }
-    }
-
-  }
+  stimuli_params <- drawStimulusParams(n_trials, nparams, names(base_faces), use_same_parameters)
 
   # Generate stimuli
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
@@ -243,7 +148,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   }
 
   stims <- foreach::foreach(
-    trial = 1:n_trials, .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(1:n_trials)), .combine = 'cbind', .multicombine = TRUE,
+    trial = seq_len(n_trials), .packages = 'rcicr', .final = function(x) setNames(as.data.frame(x), as.character(seq_len(n_trials))), .combine = 'cbind', .multicombine = TRUE,
     .options.snow = progressOption(pb, cl)
   ) %dopar% {
     # Each iteration only ever needs the noise for its own trial, so this is a
@@ -281,27 +186,11 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
         returned_noise <- as.vector(trial_noise)
       }
 
-      # Scale noise (based on simulations, most values fall within this range [-0.3, 0.3], test
-      # for yourself with simulateNoiseIntensities())
-      stimulus <- ((trial_noise + 0.3) / 0.6)
-
-      # add base face
-      combined <- (stimulus + base_faces[[base_face]]) / 2
-
-      # write to file
       if (save_as_png) {
-        png::writePNG(clampUnit(combined), stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'ori'))
-      }
-
-      # compute inverted stimulus
-      stimulus <- ((-trial_noise + 0.3) / 0.6)
-
-      # add base face
-      combined <- (stimulus + base_faces[[base_face]]) / 2
-
-      # write to file
-      if (save_as_png) {
-        png::writePNG(clampUnit(combined), stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'inv'))
+        png::writePNG(renderStimulus(trial_noise, base_faces[[base_face]]),
+                      stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'ori'))
+        png::writePNG(renderStimulus(-trial_noise, base_faces[[base_face]]),
+                      stimulusPngPath(stimulus_path, label, base_face, seed, trial, 'inv'))
       }
     }
 
@@ -350,6 +239,93 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   if (return_as_dataframe) {
     return(stims)
   }
+}
+
+# One base image as the stimuli use it: read, checked square and of img_size,
+# greyscale, and contrast-maximized when asked.
+readBaseFace <- function(label, filename, img_size, maximize_contrast) {
+  img_format <- baseImageFormat(filename)
+
+  img <- tryCatch(
+    if (img_format == 'png') png::readPNG(filename) else jpeg::readJPEG(filename),
+    error = function(e) {
+      stop(paste0('Base image "', label, '" (', filename, ') could not ',
+          'be read as ', img_format, ': ', conditionMessage(e)
+        ),
+        call. = FALSE
+      )
+    }
+  )
+
+  # Check if base face is square. If not, throw an error
+  if (dim(img)[1] != dim(img)[2]) {
+    stop('Base image "', label, '" (', filename, ') is not square! It\'s ', dim(img)[1],
+         ' by ', dim(img)[2], ' pixels. Please use a square base face.', call. = FALSE)
+  }
+
+  # Change base face to greyscale if necessary.
+  #
+  # Alpha is not a colour, so it is dropped rather than averaged in. Two
+  # channels is grey plus alpha and keeps the first; three or four is RGB or
+  # RGBA and averages the first three. Averaging every channel turned an
+  # opaque black pixel into 0.5 for grey-plus-alpha and 0.25 for RGBA.
+  if (length(dim(img)) == 3) {
+    channels <- dim(img)[3]
+    keep <- if (channels == 2) 1L else seq_len(min(3, channels))
+    img <- apply(img[, , keep, drop = FALSE], c(1, 2), mean)
+  }
+
+  # Check that the base face matches the requested stimulus size. Automatic
+  # resizing used to happen here via biOps, but that dependency was dropped
+  # and never replaced, so a mismatch would otherwise surface much later as
+  # an opaque "non-conformable arrays" error from inside a parallel worker
+  # (when the noise is added to the base image).
+  if (nrow(img) != img_size) {
+    stop('Base image "', label, '" (', filename, ') is ', nrow(img), ' by ', ncol(img),
+         ' pixels, but img_size is ', img_size, '. rcicr does not resize base images: ',
+         'please either resize the image to ', img_size, ' by ', img_size,
+         ' pixels, or call generateStimuli2IFC() with img_size = ', nrow(img), '.',
+         call. = FALSE)
+  }
+
+  # If necessary, rescale to maximize contrast
+  if (maximize_contrast) {
+    # (img - min) / (max - min) is 0/0 on a uniform image, and the all-NaN
+    # base face went into the .Rdata unremarked (#176). Only an error here:
+    # with the rescale off a flat base image is usable and produces valid
+    # stimuli, so rejecting it outright would break a legitimate call.
+    if (max(img) == min(img)) {
+      stop('Base image "', label, '" (', filename, ') has no contrast: every pixel is ',
+           min(img), '. Contrast cannot be maximized on a uniform image, and doing so ',
+           'would make the base image entirely NaN. Use a base image with some variation, ',
+           'or call generateStimuli2IFC() with maximize_baseimage_contrast = FALSE.',
+           call. = FALSE)
+    }
+
+    img <- (img - min(img)) / (max(img) - min(img))
+  }
+
+  img
+}
+
+# One parameter matrix per base label, trials in rows, each value uniform on
+# [-1, 1]. Filled row by row from one runif() call, which consumes the stream
+# exactly as one runif(nparams) per trial does: seedResponseStream() replays
+# these draws. Shared parameters are one matrix under every label.
+drawStimulusParams <- function(n_trials, nparams, labels, same) {
+  draw <- function() matrix((runif(n_trials * nparams) * 2) - 1, n_trials, nparams, byrow = TRUE)
+  if (same) {
+    params <- draw()
+    return(stats::setNames(rep(list(params), length(labels)), labels))
+  }
+  stats::setNames(lapply(labels, function(label) draw()), labels)
+}
+
+# A stimulus as participants see it: the noise scaled from the range most of
+# it falls in, [-0.3, 0.3] (see simulateNoiseIntensities()), over the base
+# image, clipped for the PNG writer (#371).
+renderStimulus <- function(noise, base) {
+  clampUnit((((noise + 0.3) / 0.6) + base) / 2)
 }
 
 # Which reader a base image needs: 'png', 'jpeg', or NA.
