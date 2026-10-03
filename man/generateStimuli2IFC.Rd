@@ -54,7 +54,7 @@ generateStimuli2IFC(
 \item{save_rdata}{Boolean: save the \code{.Rdata} file with the stimulus parameters (default: \code{TRUE}). Computing classification images needs that file, so keep this \code{TRUE}; the argument exists mainly for internal use. The file is named \code{<label>_seed_<seed>_time_<month>_<day>_<year>_<hour>_<minute>.Rdata}, for the minute the call started. An existing file of that name is never overwritten: the call stops before generating anything. So does a call into the same folder with the same seed, started in the same minute, while another is still running.}
 }
 \value{
-Nothing: everything is saved to files. \code{vignette("stored-data")} lists what the \code{.Rdata} file holds. With \code{return_as_dataframe = TRUE}, the data frame described there.
+Nothing: everything is saved to files. \code{vignette("stored-data", package = "rcicr")} lists what the \code{.Rdata} file holds. With \code{return_as_dataframe = TRUE}, the data frame described there.
 }
 \description{
 Generate stimuli for a two-image forced-choice reverse correlation task.
@@ -77,4 +77,7 @@ generateStimuli2IFC(
   ncores = 1,
   nscales = 1
 )
+}
+\seealso{
+\code{vignette("getting-started", package = "rcicr")} for the shortest working example; \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Generating stimuli", for choosing the settings; \code{vignette("recipes", package = "rcicr")}, "Noise-only stimuli", for stimuli without a face.
 }

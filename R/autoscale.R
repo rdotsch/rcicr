@@ -8,7 +8,7 @@
 #' @return The input \code{cis} list, with each element's \code{$scaled} matrix replaced by its
 #' autoscaled version. The scaling constant is printed to the console, and recorded in each
 #' element's \code{scaling} attribute, which keeps the earlier record for \code{$combined};
-#' \code{vignette("stored-data")} lists its fields.
+#' \code{vignette("stored-data", package = "rcicr")} lists its fields.
 #'
 #' \strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is returned exactly
 #' as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
@@ -20,6 +20,7 @@
 #' \code{\link{batchGenerateCI2IFC}}. Both scale with \code{'none'} before calling this
 #' function, so their \code{$combined} overlays the \emph{unscaled} noise and looks almost blank,
 #' while \code{$scaled} is the image you want.
+#' @seealso \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, sections "Scaling" and "Several participants at once".
 #' @examples
 #' cis <- list(
 #'   participant1 = list(ci = matrix(runif(64, -0.2, 0.2), 8, 8), base = matrix(0.5, 8, 8)),
