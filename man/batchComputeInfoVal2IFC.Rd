@@ -97,5 +97,5 @@ suppressWarnings(batchComputeInfoVal2IFC(
 ))
 }
 \seealso{
-\code{vignette("recipes")}, "Several classification images at once".
+\code{vignette("recipes", package = "rcicr")}, "Several classification images at once".
 }

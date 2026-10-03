@@ -78,7 +78,7 @@ generateCI(
 \item{zmappointsize}{Text size of the z-map decoration, in points (default: 12). Passed to \code{\link{plotZmap}}, which makes the z-map image \code{img_size} pixels wide. The decoration needs roughly \code{12.3 * zmappointsize} pixels on a 72 ppi device and \code{16.4 * zmappointsize} on a 96 ppi one. At the default, a stimulus set smaller than about 160 to 200 pixels is too small for it, and \code{generateCI()} stops with an error naming the minimum for your device. Lower this value to fit the decoration on a small z-map, or set \code{zmapdecoration = FALSE}.}
 }
 \value{
-List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from, so that \code{\link{computeInfoVal2IFC}} can check that its reference matches the CI; its \code{scaling} attribute records how \code{scaled} was made, for the group CI and, with \code{participants}, for the individual CIs. \code{vignette("stored-data")} lists the fields of both. To keep them in a file, save the whole result with \code{saveRDS()}.
+List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from, so that \code{\link{computeInfoVal2IFC}} can check that its reference matches the CI; its \code{scaling} attribute records how \code{scaled} was made, for the group CI and, with \code{participants}, for the individual CIs. \code{vignette("stored-data", package = "rcicr")} lists the fields of both. To keep them in a file, save the whole result with \code{saveRDS()}.
 }
 \description{
 Generate a classification image for any reverse correlation task.
@@ -150,5 +150,5 @@ ci <- generateCI(
 )
 }
 \seealso{
-\code{vignette("reverse-correlation-walkthrough")}, sections "Computing one classification image" and "Scaling"; \code{vignette("recipes")} for rating scales as responses and for masked classification images.
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, sections "Computing one classification image" and "Scaling"; \code{vignette("recipes", package = "rcicr")} for rating scales as responses and for masked classification images.
 }

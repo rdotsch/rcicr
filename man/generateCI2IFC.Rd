@@ -92,5 +92,5 @@ ci <- generateCI2IFC(
 )
 }
 \seealso{
-\code{\link{generateCI}}, which new code should use; \code{vignette("reverse-correlation-walkthrough")}, section "Computing one classification image".
+\code{\link{generateCI}}, which new code should use; \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Computing one classification image".
 }

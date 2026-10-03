@@ -36,7 +36,7 @@
 #' @param scaling Scaling method: \code{none}, \code{constant}, \code{matched} or \code{independent} (default).
 #' @param constant Scaling constant for the noise. Used only when \code{scaling = 'constant'}.
 #' @return List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}).
-#' @seealso \code{\link{generateCI}}, which new code should use; \code{vignette("reverse-correlation-walkthrough")}, section "Computing one classification image".
+#' @seealso \code{\link{generateCI}}, which new code should use; \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Computing one classification image".
 #' @examples
 #' # a synthetic square grayscale image stands in for a real base face photo
 #' base_face <- tempfile(fileext = ".png")

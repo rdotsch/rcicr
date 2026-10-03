@@ -71,5 +71,5 @@ plotZmap(zmap, sigma = 3, threshold = 3, decoration = FALSE,
          targetpath = tempdir(), size = 200)
 }
 \seealso{
-\code{vignette("reverse-correlation-walkthrough")}, section "Is there actually signal?".
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?".
 }

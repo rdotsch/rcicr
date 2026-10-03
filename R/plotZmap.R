@@ -106,7 +106,7 @@ drawZmapLegend <- function(zmap, col, zlim = NULL, breaks = NULL) {
 #' @param pointsize Text size of the decoration, in points (default: 12, the graphics device's own default). Margins are measured in lines of text, so this also sets how much of the image the decoration takes up. The minimum image size is fixed in inches, so in pixels it depends on the device's resolution: roughly \code{12.3 * pointsize} pixels at 72 ppi (Linux, macOS) and \code{16.4 * pointsize} at 96 ppi (Windows), about 160 and 200 pixels at the default. Below that, \code{plotZmap()} stops and names the minimum for your device. A lower \code{pointsize} fits a decorated z-map onto a small image, at the cost of a smaller map: the margins shrink but the labels still need room. Ignored when \code{decoration = FALSE}, which has no margins and works at any size.
 #' @param ... Further arguments passed to \code{graphics::image}. Used only when \code{decoration = TRUE}.
 #' @return Nothing; the z-map is written as a PNG.
-#' @seealso \code{vignette("reverse-correlation-walkthrough")}, section "Is there actually signal?".
+#' @seealso \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?".
 #' @examples
 #' set.seed(1)
 #' zmap <- matrix(rnorm(64, sd = 5), 8, 8)

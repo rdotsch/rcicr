@@ -87,5 +87,5 @@ cis <- suppressWarnings(batchGenerateCI2IFC(
 ))
 }
 \seealso{
-\code{vignette("reverse-correlation-walkthrough")}, section "Several participants at once"; \code{vignette("recipes")}, "Several classification images at once".
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Several participants at once"; \code{vignette("recipes", package = "rcicr")}, "Several classification images at once".
 }

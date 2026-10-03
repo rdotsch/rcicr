@@ -87,5 +87,5 @@ cis <- suppressWarnings(batchGenerateCI(
 ))
 }
 \seealso{
-\code{vignette("reverse-correlation-walkthrough")}, section "Several participants at once".
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Several participants at once".
 }
