@@ -3,7 +3,7 @@
 #' @export
 #' @import png
 #' @param cis List of classification images, each a list of pixel matrices holding at least the noise (\code{$ci}), plus the base image (\code{$base}) if PNGs are to be written.
-#' @param save_as_pngs Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in \code{cis}.
+#' @param save_as_pngs Boolean: combine each autoscaled noise pattern with its base image and save it as a PNG, named after its key in \code{cis}. Every element then needs a name of its own; with \code{FALSE}, names are not needed.
 #' @param targetpath Directory to save PNGs to. Required when \code{save_as_pngs = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
 #' @return The input \code{cis} list, with each element's \code{$scaled} matrix replaced by its
 #' autoscaled version. The scaling constant is printed to the console, and recorded in each
@@ -39,22 +39,29 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
                 'them. Use tempdir() if you only want to try the function out.'))
   }
 
-  # Get range of each ci.
+  if (!is.list(cis) || !length(cis)) {
+    stop('cis must be a non-empty list of classification images.', call. = FALSE)
+  }
+  labels <- ciLabels(cis)
+  # Names become file names, so only a call that writes needs them unique.
+  if (save_as_pngs) requirePngNames(names(cis))
+
+  # Get range of each ci, by position: names may repeat or be absent (#375).
   #
   # na.rm is required, not defensive: generateCI(mask = ...) sets masked pixels
   # to NA by design, so a masked CI reaching this function used to make the
   # constant NA and abort with "missing value where TRUE/FALSE needed" one line
   # below. applyScaling() has always guarded its own reductions the same way --
   # this was the one scaling path that did not.
-  ranges <- matlab::zeros(length(names(cis)), 2)
-  for (ciname in names(cis)) {
-    ci_values <- cis[[ciname]]$ci
+  ranges <- matrix(0, length(cis), 2)
+  for (i in seq_along(cis)) {
+    ci_values <- cis[[i]]$ci
     if (all(is.na(ci_values))) {
-      stop(paste0('Classification image "', ciname, '" is entirely NA, so there ',
+      stop(paste0('Classification image "', labels[i], '" is entirely NA, so there ',
                   'is no range to scale it against. If it was masked, check that ',
                   'the mask does not cover the whole image.'))
     }
-    ranges[which(ciname == names(cis)), ] <- range(ci_values, na.rm = TRUE)
+    ranges[i, ] <- range(ci_values, na.rm = TRUE)
   }
 
   # Determine the lowest possible scaling factor constant
@@ -80,13 +87,13 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
   }
 
   # Scale all noise patterns
-  for (ciname in names(cis)) {
-    cis[[ciname]]$scaled <- if (degenerate) {
-      neutralScaling(cis[[ciname]]$ci, 0.5)
+  for (i in seq_along(cis)) {
+    cis[[i]]$scaled <- if (degenerate) {
+      neutralScaling(cis[[i]]$ci, 0.5)
     } else {
-      (cis[[ciname]]$ci + constant) / (2 * constant)
+      (cis[[i]]$ci + constant) / (2 * constant)
     }
-    attr(cis[[ciname]], 'scaling') <- autoscaledRecord(attr(cis[[ciname]], 'scaling'), constant)
+    attr(cis[[i]], 'scaling') <- autoscaledRecord(attr(cis[[i]], 'scaling'), constant)
 
     # Note that $combined is deliberately NOT updated here. It stays as the
     # caller supplied it, so whatever combination was made before autoscaling
@@ -95,16 +102,29 @@ autoscale <- function(cis, save_as_pngs = TRUE, targetpath) {
     # PNG below is built from. Do not "fix" this by rewriting $combined -- it
     # would silently change what existing analysis scripts plot.
     if (save_as_pngs) {
-      ci <- (cis[[ciname]]$scaled + cis[[ciname]]$base) / 2
+      ci <- (cis[[i]]$scaled + cis[[i]]$base) / 2
 
       dir.create(targetpath, recursive = TRUE, showWarnings = FALSE)
 
-      png::writePNG(ci, paste0(targetpath, '/', ciname, '_autoscaled.png'))
+      png::writePNG(ci, paste0(targetpath, '/', names(cis)[i], '_autoscaled.png'))
     }
 
   }
 
   return(cis)
+}
+
+requirePngNames <- function(nms) {
+  if (is.null(nms) || any(is.na(nms) | !nzchar(nms))) {
+    stop('save_as_pngs = TRUE names each PNG after its element of cis, so every element ',
+         'needs a name. Name them, or use save_as_pngs = FALSE.', call. = FALSE)
+  }
+  if (anyDuplicated(nms)) {
+    stop('save_as_pngs = TRUE names each PNG after its element of cis, and these names occur ',
+         'more than once: ', paste(unique(nms[duplicated(nms)]), collapse = ', '),
+         '. Give every element its own name, or use save_as_pngs = FALSE.', call. = FALSE)
+  }
+  invisible(NULL)
 }
 
 # The top level describes $scaled, which this function rewrites; `combined`
