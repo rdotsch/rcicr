@@ -140,7 +140,10 @@ Apart from `names` and `dim`, the only attributes in the file are classes:
 rdata_attributes <- data.frame(
   field = c("generator_version", "p$generator_version"),
   attribute = "class",
-  description = "`package_version`, so versions compare with `<` and `>=`. Files from before 1.2.0 hold a character string instead."
+  description = c(
+    "`package_version`, so versions compare with `<` and `>=`. Files from before 1.2.0 hold a character string instead.",
+    "`package_version`, in files from every version back to 0.3.3, the oldest in the repository's history."
+  )
 )
 x <- rdata_attributes
 x$field <- paste0("`", x$field, "`")
