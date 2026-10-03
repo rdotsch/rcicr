@@ -70,3 +70,6 @@ zmap <- matrix(rnorm(64, sd = 5), 8, 8)
 plotZmap(zmap, sigma = 3, threshold = 3, decoration = FALSE,
          targetpath = tempdir(), size = 200)
 }
+\seealso{
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Is there actually signal?".
+}

@@ -86,3 +86,6 @@ cis <- suppressWarnings(batchGenerateCI(
   baseimage = "face", rdata = rdata_file, save_as_png = FALSE
 ))
 }
+\seealso{
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, section "Several participants at once".
+}

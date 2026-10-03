@@ -17,7 +17,7 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 The input \code{cis} list, with each element's \code{$scaled} matrix replaced by its
 autoscaled version. The scaling constant is printed to the console, and recorded in each
 element's \code{scaling} attribute, which keeps the earlier record for \code{$combined};
-\code{vignette("stored-data")} lists its fields.
+\code{vignette("stored-data", package = "rcicr")} lists its fields.
 
 \strong{Look at \code{$scaled}, not \code{$combined}.} \code{$combined} is returned exactly
 as it was passed in, on purpose, so that existing scripts that plot it keep producing the same
@@ -39,4 +39,7 @@ cis <- list(
   participant2 = list(ci = matrix(runif(64, -0.3, 0.3), 8, 8), base = matrix(0.5, 8, 8))
 )
 scaled_cis <- autoscale(cis, save_as_pngs = FALSE)
+}
+\seealso{
+\code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, sections "Scaling" and "Several participants at once".
 }
