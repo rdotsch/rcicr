@@ -76,3 +76,11 @@ test_that("the PNG collision message lists up to three files, then ...", {
   expect_match(msg(rcicr:::reserveStimulusPngs(paths)),
                paste0("exist \\(", paste(paths[1:3], collapse = ", "), ", \\.\\.\\.\\), and"))
 })
+
+test_that("firstFew cuts only past n, not at n", {
+  expect_identical(rcicr:::firstFew(1:5), "1, 2, 3, 4, 5")
+  expect_identical(rcicr:::firstFew(1:6), "1, 2, 3, 4, 5, ...")
+  expect_identical(rcicr:::firstFew(1:3, 3), "1, 2, 3")
+  expect_identical(rcicr:::firstFew(1:4, 3), "1, 2, 3, ...")
+  expect_identical(rcicr:::firstFew(character()), "")
+})
