@@ -36,16 +36,8 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
   stale <- !is.null(entry) && is.null(entry$response_seed) &&
     !vouchedReference(entry$norms, entry$source, entry$fingerprint)
   if (!forced && !stale && !is.null(entry)) {
-    write('Using reference distribution found in rdata file.', stdout())
-    # A message, not a warning: under warn = 2 the notice must not cost the
-    # caller the value (see "A cached reference is trusted only on positive
-    # evidence" in DECISIONS.md).
-    if (seedless && is.null(entry$response_seed)) {
-      message(rdata, ' has no stimulus seed, so its stored reference distribution cannot ',
-              'be regenerated from it. It is used as stored. ',
-              seededReferenceAdvice(rdata, baseimage, !is.null(reference_stimuli), !is.null(masked)))
-    }
-    return(entry$norms)
+    return(useStoredReference(entry, rdata, baseimage, seedless,
+                              !is.null(reference_stimuli), !is.null(masked)))
   }
 
   # An unsolicited refresh must preserve the precision and RNG state of a cache hit.
@@ -78,7 +70,27 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     )
   }
   norms <- if (automatic) preserveRandomStream(simulate()) else simulate()
+  reportSimulatedReference(readonly, save_rdata, rdata, baseimage, response_seed,
+                           superseded = stale && is.null(response_seed) &&
+                             !identical(norms, entry$norms))
+  norms
+}
 
+useStoredReference <- function(entry, rdata, baseimage, seedless, subset, masked) {
+  write('Using reference distribution found in rdata file.', stdout())
+  # A message, not a warning: under warn = 2 the notice must not cost the
+  # caller the value (see "A cached reference is trusted only on positive
+  # evidence" in DECISIONS.md).
+  if (seedless && is.null(entry$response_seed)) {
+    message(rdata, ' has no stimulus seed, so its stored reference distribution cannot ',
+            'be regenerated from it. It is used as stored. ',
+            seededReferenceAdvice(rdata, baseimage, subset, masked))
+  }
+  entry$norms
+}
+
+reportSimulatedReference <- function(readonly, save_rdata, rdata, baseimage, response_seed,
+                                     superseded) {
   if (readonly) {
     label <- if (is.null(baseimage)) 'the reference' else paste0('the reference for baseimage ', baseimage)
     write(paste0('Built ', label, ' from saved noise, but ', rdata,
@@ -90,13 +102,13 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     write(paste0('Reference distribution simulated with response_seed = ', response_seed,
                  '. This independent draw has deliberately not been saved.'), stdout())
   }
-  if (stale && is.null(response_seed) && !identical(norms, entry$norms)) {
+  if (superseded) {
     message('This stimulus file carried a reference distribution ',
             'from before rcicr built references from the saved noise, and ',
             'rebuilding it from the saved noise gave different values. The ',
             'InfoVal this returns supersedes any computed from this file before.')
   }
-  norms
+  invisible(NULL)
 }
 
 savedReferenceParams <- function(source, baseimage) {
