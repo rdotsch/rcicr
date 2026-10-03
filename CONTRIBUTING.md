@@ -112,7 +112,7 @@ The rest is ordinary consistency. Internal helpers are free to change, because n
 | Returns | explicit `return()` at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds `generateCI()`; `zzz.R` holds the `globalVariables()` declarations. |
 | Roxygen | exported functions only | `man/` holds exactly the exports plus the package page. Internal helpers use plain `#` comments, even when they share a file with an export: roxygen on an unexported function either publishes a page no user can reach or needs `@noRd`. |
-| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked `base::sum()` with MATLAB semantics across six files (#182); the package now calls `matlab::` explicitly. |
+| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked `base::sum()` with MATLAB semantics across six files (#182). `matlab` is no longer a dependency (#208). |
 
 Line length is not enforced, and some lines in `R/` exceed 100 characters. Wrap new code at something reasonable instead of reflowing what is there.
 
