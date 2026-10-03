@@ -19,7 +19,8 @@ autoscale(cis, save_as_pngs = TRUE, targetpath)
 - save_as_pngs:
 
   Boolean: combine each autoscaled noise pattern with its base image and
-  save it as a PNG, named after its key in `cis`.
+  save it as a PNG, named after its key in `cis`. Every element then
+  needs a name of its own; with `FALSE`, names are not needed.
 
 - targetpath:
 

@@ -229,6 +229,18 @@
   different `label` or `stimulus_path`.
   ([\#350](https://github.com/rdotsch/rcicr/issues/350))
 
+- **[`autoscale()`](https://rdotsch.github.io/rcicr/reference/autoscale.md)
+  scales every element of its list, whatever the names.** It looked
+  elements up by name, so with a name used twice, as
+  [`c()`](https://rdrr.io/r/base/c.html) of two batch results with the
+  same participant IDs gives, only the first was read and scaled: the
+  shared constant ignored the others, and they were returned without
+  `$scaled`. An unnamed list failed with “dimensions must be a positive
+  quantity”. Lists with unique names get the same constant and output as
+  before. With `save_as_pngs = TRUE`, where names become file names, a
+  missing or repeated name now stops the call before anything is
+  written. ([\#375](https://github.com/rdotsch/rcicr/issues/375))
+
 - **An unrecognised `noise_type` now stops
   [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   and
