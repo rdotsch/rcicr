@@ -59,6 +59,12 @@ Each document has one job and **a word budget**; over budget, something comes ou
 
 Check them with `bash tools/check-word-budgets.sh`, which reads this table, counts with `LC_ALL=C.UTF-8 wc -w`, and runs in CI, where a file over budget fails the check.
 
+**Raise a budget only after pruning, and never in the PR that needs the room:**
+
+1. Prune first, in a PR of its own: what the file's job no longer covers, superseded entries, and history a linked issue already tells. State the words freed.
+2. Only if the file is then still within 10% of its budget, raise it by 10%, rounded to 100, in a separate PR the maintainer approves, giving the count before and after pruning.
+3. Change the table and the file's own "Keep under N words" line together.
+
 `DECISIONS.md` is where things are most often misfiled. Its subject is what `generateCI()` returns and why a number cannot change, **not** how CI is wired or how a release is cut. The test: would this still matter if the package were maintained somewhere else entirely?
 
 - **Update it when a decision is made**, not in a sweep at the end, while the reasoning and the numbers are still to hand.
