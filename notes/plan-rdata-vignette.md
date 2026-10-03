@@ -40,7 +40,7 @@ A masked CI (`generateCI(mask = )`, then `computeInfoVal2IFC()`) writes its refe
 
 The build then fails in `R CMD check`, pkgdown and CI on the PR that adds a field, which is when the reasoning is to hand. On CRAN it can only fail if a release ships with drift that CI already reported.
 
-Everything runs at 64px with `iter = 1000`. Generating plus one InfoVal took under a second each here, so four shapes stay well inside CRAN's vignette time.
+Everything runs at 64px with `iter = 1000`. Before the PR leaves draft, the complete vignette is timed with `tools::buildVignettes()` and compared with the other three vignettes on the same machine; it must not be the slowest of them.
 
 ## Other edits in the same PR
 
