@@ -259,19 +259,17 @@ Real references use `iter = 10000`; the smaller one here keeps the slower `"imag
 
 ## When the `.Rdata` file is lost
 
-The `.Rdata` file can be regenerated: `generateStimuli2IFC()` draws the same stimuli again from the same seed and settings. It needs:
+The `.Rdata` file can be regenerated: `generateStimuli2IFC()` draws the same stimuli again from the same seed and settings. The release gate checks, on every release, that this version draws the same stimulus parameters as 1.0.1, bit for bit, in the configurations it runs; files from earlier versions are not compared. Regenerating needs:
 
 - **The seed.** It is in the name of the `.Rdata` file, `<label>_seed_<seed>_time_<timestamp>.Rdata`, and of every stimulus PNG, `<label>_<base label>_<seed>_<trial>_ori.png`.
-- **Every generation setting**: `n_trials`, `img_size`, `nscales`, `noise_type`, `sigma` (for Gabor noise) and `use_same_parameters`. The defaults have been the same since 1.0.1: 770 trials, 512 pixels, 5 scales, sinusoid noise, `sigma = 25`, shared parameters. When each base image had parameters of its own, also the base labels, in their original order.
+- **Every generation setting**: `n_trials`, `img_size`, `nscales`, `noise_type`, `sigma` (for Gabor noise) and `use_same_parameters`. The defaults have been the same since 1.0.1: 770 trials, 512 pixels, 5 scales, sinusoid noise, `sigma = 25`, shared parameters. When each base image had parameters of its own, also the base labels, in their original order. `ncores`, `label` and `maximize_baseimage_contrast` do not change the parameters.
 - **The same random number generator.** Stimuli are drawn with `runif()`, so this matters only if the original session changed R's default generator.
 
 The base images are not needed for the numbers. The classification image's noise and its InfoVal depend only on the stimulus parameters and the noise basis, so a uniform grey stand-in gives the same values; only the image over the face (`combined`) needs the original. A uniform image needs `maximize_baseimage_contrast = FALSE`.
 
-The release gate compares this version's stimulus parameters with those of 1.0.1, bit for bit, in the configurations it runs, on every release. Files from earlier versions are not compared.
-
 ### Checking the settings against the stimulus PNGs
 
-If you still have the stimulus PNGs, they confirm the settings. Their count gives `n_trials` and their size `img_size`. And because an original and an inverted stimulus hold the same base, their difference is the trial's noise alone: `ori - inv` equals the noise divided by 0.6, up to 8-bit rounding, wherever neither image is clipped at black or white. So a regenerated file can be checked trial by trial without the base image.
+If you still have the stimulus PNGs, they confirm the settings. The number of `_ori` files per base image gives `n_trials`, and their size `img_size`. And because an original and an inverted stimulus hold the same base, their difference is the trial's noise alone: in PNGs from 1.0.1 on (older ones were not measured), `ori - inv` equals the noise divided by 0.6, up to 8-bit rounding, wherever neither image is clipped at black or white. So a regenerated file can be checked trial by trial without the base image.
 
 Here an archive keeps only its PNGs:
 
@@ -328,7 +326,7 @@ setNames(vapply(files, function(f) min(matches(f, archive)), numeric(1)),
          paste("nscales =", candidates))
 ```
 
-The right settings match every trial. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. The regenerated file with the right settings can then be used as the `.Rdata` file. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
+The right settings match every trial. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. With the right settings found, regenerate the file once more, with the original base images if you still have them so that `combined` shows the face, and use it as the `.Rdata` file. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
 
 ```{r, include = FALSE}
 par(oldpar)
