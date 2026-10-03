@@ -9,7 +9,7 @@
 #' @param data Data frame with one row per trial.
 #' @param by Name of the column that splits the data into units, such as participants or conditions. One CI is computed per unit.
 #' @param stimuli Name of the column holding the stimulus numbers of the presented stimuli.
-#' @param responses Name of the column holding the responses: 1 where the original stimulus was chosen, -1 where the inverted one was.
+#' @param responses Name of the column holding the responses: 1 where the original stimulus was chosen, -1 where the inverted one was. The column must be numeric with no missing or infinite values; the call stops before computing anything otherwise.
 #' @param baseimage String naming the base image: not its file name, but its key in the \code{base_face_files} list passed to \code{\link{generateStimuli2IFC}}.
 #' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
 #' @param save_as_png Boolean: also save the CI as a PNG image.
