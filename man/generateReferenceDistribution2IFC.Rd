@@ -12,7 +12,8 @@ generateReferenceDistribution2IFC(
   save_rdata = TRUE,
   baseimage = NULL,
   reference_stimuli = NULL,
-  reference_method = c("gram", "images")
+  reference_method = c("gram", "images"),
+  mask = NA
 )
 }
 \arguments{
@@ -48,6 +49,12 @@ same as the default, \code{NULL}.}
 \item{reference_method}{\code{"gram"} (the default) or \code{"images"}: how the reference
 norms are computed. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit. See
 "Reference method" below.}
+
+\item{mask}{Optional mask, in any form \code{\link{generateCI}} accepts: a 0/1 matrix or the
+path to a PNG, black (0) where masked. The reference is then built over the unmasked pixels
+only, as \code{\link{computeInfoVal2IFC}} needs for a classification image computed with
+that mask, and stored apart from the default one. The default, \code{NA}, uses every pixel.
+See "Masked classification images" in \code{\link{computeInfoVal2IFC}}.}
 }
 \value{
 The reference distribution, invisibly, as a numeric vector of \code{iter} norms.

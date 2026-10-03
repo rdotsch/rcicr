@@ -353,7 +353,8 @@ ULP       <- .Machine$double.eps      # 2.22e-16
 ULPS      <- 8
 INFOVAL_TOL <- 1e-9
 INFOVAL_KEYS <- c("infoval", "infoval_twice", "infoval_oracle_delta", "infoval_seeded",
-                  "infoval_subset", "infoval_batch", "infoval_images", "cross_kind_infoval")
+                  "infoval_subset", "infoval_batch", "infoval_images", "infoval_masked",
+                  "cross_kind_infoval")
 
 say <- function(...) cat(..., "\n", sep = "")
 die <- function(...) { say("ERROR: ", ...); quit(status = 2L) }
