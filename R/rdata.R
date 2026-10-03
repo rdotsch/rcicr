@@ -69,9 +69,9 @@ rdataWriterNote <- function(env) {
 # given, so reading the file directly inside generateCI() put every field of it
 # in scope alongside that function's arguments, where a shared name silently
 # won: the noise `sigma` stored since 1.1.0 replaced the z-map blur `sigma`, and
-# the value the caller passed was ignored. That is why generateCI() no longer
-# calls captureArgs(); computeInfoVal2IFC() and computeCumulativeCICorrelation()
-# still load into their own frames and still need it.
+# the value the caller passed was ignored. That is why generateCI() and
+# computeCumulativeCICorrelation() do not call captureArgs(); computeInfoVal2IFC()
+# still loads into its own frame and still needs it.
 #
 # A dedicated environment rather than this function's own frame, because the
 # frame is not argument-free either: it holds `rdata`, and an older
@@ -79,7 +79,7 @@ rdataWriterNote <- function(env) {
 # file, so that name occurs in real files. Loading into the frame would be safe
 # only for as long as nothing read `rdata` after the load -- a hazard narrowed
 # rather than removed.
-loadStimulusParams <- function(rdata) {
+loadStimulusParams <- function(rdata, require_img_size = TRUE) {
   env <- new.env(parent = emptyenv())
   loadRdata(rdata, env)
 
@@ -98,7 +98,7 @@ loadStimulusParams <- function(rdata) {
     stop('File specified in rdata did not contain stimuli_params variable.', rdataWriterNote(env))
   }
 
-  if (!has('img_size')) {
+  if (require_img_size && !has('img_size')) {
     stop('File specified in rdata did not contain img_size variable.', rdataWriterNote(env))
   }
 
@@ -113,7 +113,7 @@ loadStimulusParams <- function(rdata) {
   }
 
   return(list(p = p, base_faces = take('base_faces'),
-    stimuli_params = take('stimuli_params'), img_size = take('img_size')
+    stimuli_params = take('stimuli_params'), img_size = get0('img_size', envir = env, inherits = FALSE)
   ))
 }
 
