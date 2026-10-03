@@ -27,7 +27,7 @@ batchGenerateCI(
 
 \item{stimuli}{Name of the column holding the stimulus numbers of the presented stimuli.}
 
-\item{responses}{Name of the column holding the responses: 1 where the original stimulus was chosen, -1 where the inverted one was.}
+\item{responses}{Name of the column holding the responses: 1 where the original stimulus was chosen, -1 where the inverted one was. The column must be numeric with no missing values; the call stops before computing anything otherwise.}
 
 \item{baseimage}{String naming the base image: not its file name, but its key in the \code{base_face_files} list passed to \code{\link{generateStimuli2IFC}}.}
 

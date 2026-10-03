@@ -30,6 +30,7 @@ batchCIs <- function(data, by, stimuli, responses, baseimage, rdata, save_as_png
   data <- data[!is.na(data[[by]]), , drop = FALSE]
   by.levels <- unique(data[[by]]) # nolint: object_name_linter.
   if (!is.null(participants)) requireParticipantIds(data, by, participants)
+  requireBatchResponses(data, by, responses)
 
   # dplyr::progress_estimated() is deprecated; use the base R progress bar
   pb <- txtProgressBar(min = 0, max = length(by.levels), style = 3)
@@ -89,6 +90,27 @@ requireParticipantIds <- function(data, by, participants) {
     stop(sum(missing_ids), ' rows have no participant ID in column ', participants, ' (', by,
          ' ', shown, '). Give every trial an ID, or remove the trials without one.',
          call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+# Checked for the whole table before any CI, naming the groups, rather than
+# stopping inside whichever unit comes first.
+requireBatchResponses <- function(data, by, responses) {
+  values <- data[[responses]]
+  if (is.null(values)) {
+    stop('responses must name one column of data; ', encodeString(responses, quote = "'"),
+         ' is not one.', call. = FALSE)
+  }
+  values <- unlist(values, use.names = FALSE)
+  if (is.factor(values) || !typeof(values) %in% c('integer', 'double')) validateResponses(values)
+  bad <- !is.finite(values)
+  if (any(bad)) {
+    groups <- unique(data[[by]][bad])
+    shown <- paste(utils::head(groups, 5), collapse = ', ')
+    if (length(groups) > 5) shown <- paste0(shown, ', ...')
+    stop(sum(bad), ' rows have no finite response in column ', responses, ' (', by, ' ', shown,
+         '). Give every trial a response, or remove those trials.', call. = FALSE)
   }
   invisible(NULL)
 }
