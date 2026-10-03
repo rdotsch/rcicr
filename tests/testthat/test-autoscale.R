@@ -93,3 +93,17 @@ test_that("autoscale writes no PNG when names cannot name the files", {
   }
   expect_error(autoscale(list(), save_as_pngs = FALSE), "non-empty list")
 })
+
+test_that("a uniquely named list comes back as before, other attributes included", {
+  cis <- autoscale_pair()
+  attr(cis$a, "trial_design") <- list(stimuli = 1:3)
+  attr(cis$b, "scaling") <- list(method = "none", constant = NA_real_, individual = list(method = "none"))
+  out <- autoscale(cis, save_as_pngs = FALSE)
+  expect_identical(names(out), c("a", "b"))
+  expect_identical(attr(out$a, "trial_design"), list(stimuli = 1:3))
+  expect_identical(attr(out$b, "scaling")$individual, list(method = "none"))
+  for (nm in names(cis)) {
+    expect_identical(out[[nm]]$scaled, (cis[[nm]]$ci + 3) / 6)
+    expect_identical(out[[nm]][c("ci", "base")], cis[[nm]][c("ci", "base")])
+  }
+})
