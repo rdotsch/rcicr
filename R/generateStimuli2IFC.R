@@ -62,6 +62,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
     ))
   }
 
+  validateNoiseType(noise_type)
   validateBaseFaceFiles(base_face_files)
 
   # Before the noise basis, which is slow at the default 512px, and before the

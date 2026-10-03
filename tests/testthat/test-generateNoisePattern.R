@@ -80,3 +80,26 @@ test_that("generateStimuli2IFC stops on such a size before writing anything", {
   )
   expect_false(dir.exists(dir))
 })
+
+test_that("an unrecognised noise_type stops instead of producing sinusoid noise (#376)", {
+  for (bad in list("Gabor", "gab", "SINUSOID", NA_character_, c("gabor", "sinusoid"), 1)) {
+    expect_error(generateNoisePattern(16, nscales = 1, noise_type = bad),
+                 'noise_type must be "sinusoid" or "gabor"', fixed = TRUE)
+  }
+  sinusoid <- generateNoisePattern(16, nscales = 2)
+  gabor <- generateNoisePattern(16, nscales = 2, noise_type = "gabor")
+  expect_false(identical(sinusoid$patches, gabor$patches))
+  expect_identical(generateNoisePattern(16, nscales = 2, noise_type = "sinusoid")$patches,
+                   sinusoid$patches)
+})
+
+test_that("generateStimuli2IFC stops on a bad noise_type before writing anything", {
+  dir <- file.path(withr::local_tempdir(), "stimuli")
+  base <- tempfile(fileext = ".png")
+  make_square_png(base, size = 16)
+  expect_error(generateStimuli2IFC(list(face = base), n_trials = 2, img_size = 16,
+                                   stimulus_path = dir, ncores = 1, nscales = 1,
+                                   noise_type = "Gabor"),
+               'noise_type must be "sinusoid" or "gabor"', fixed = TRUE)
+  expect_false(dir.exists(dir))
+})
