@@ -210,7 +210,7 @@ A classification image or InfoVal reported years ago can be reproduced in two wa
 
 ### Run the version that computed it
 
-This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record, and the same BLAS library. Use the version your analysis script or its session info records. `p$generator_version` in the `.Rdata` file (in files from 0.3.3 on) names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
+This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record, and the same BLAS library. For a release, use the version your analysis script or its session info records. A development install from GitHub is identified only by its commit SHA, since snapshots share a version number: install the SHA you recorded, `remotes::install_github("rdotsch/rcicr@<commit-sha>")`, or keep the library it was installed in. `p$generator_version` in the `.Rdata` file (in files from 0.3.3 on) names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
 
 ```{r old-version, eval = FALSE}
 dir.create("rcicr-1.4.1")
