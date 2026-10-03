@@ -368,6 +368,18 @@ setwd(repo)
 tmp <- file.path(dirname(tempdir()), paste0("rcicr-compare-", Sys.getpid()))
 dir.create(tmp, recursive = TRUE, showWarnings = FALSE)
 worktree <- file.path(tmp, "ref-tree")
+
+# Registered before anything that can fail, and as a finalizer: at the top
+# level of a script, on.exit() has no function to act on and never runs (#401).
+# This runs at the end, on quit() and die(), and after an uncaught error.
+cleanup <- function() {
+  if (KEEP) { say("\nkept: ", tmp); return(invisible()) }
+  system2("git", c("worktree", "remove", "--force", shQuote(worktree)),
+          stdout = FALSE, stderr = FALSE)
+  unlink(tmp, recursive = TRUE)
+}
+reg.finalizer(environment(), function(e) cleanup(), onexit = TRUE)
+
 lib_ref  <- file.path(tmp, "lib-ref")
 lib_cur  <- file.path(tmp, "lib-cur")
 lib_deps <- file.path(tmp, "lib-deps")
@@ -380,14 +392,6 @@ for (d in c(lib_ref, lib_cur, lib_deps, basedir))
 harness <- file.path(tmp, "compare-harness.R")
 if (!file.copy(file.path(repo, "tools", "compare-harness.R"), harness, overwrite = TRUE))
   die("could not copy tools/compare-harness.R into ", tmp)
-
-cleanup <- function() {
-  if (KEEP) { say("\nkept: ", tmp); return(invisible()) }
-  system2("git", c("worktree", "remove", "--force", shQuote(worktree)),
-          stdout = FALSE, stderr = FALSE)
-  unlink(tmp, recursive = TRUE)
-}
-on.exit(cleanup(), add = TRUE)
 
 # --- set up both versions ---------------------------------------------------
 
