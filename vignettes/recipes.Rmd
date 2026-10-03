@@ -210,7 +210,7 @@ A classification image or InfoVal reported years ago can be reproduced in two wa
 
 ### Run the version that computed it
 
-This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record, and the same BLAS library. Use the version your analysis script or its session info records. `p$generator_version` in the `.Rdata` file names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
+This reproduces everything the file already stores exactly. A reference the old release has to simulate anew also needs the original session's `RNGkind()`, which files from before `rng_kind` was stored do not record, and the same BLAS library. Use the version your analysis script or its session info records. `p$generator_version` in the `.Rdata` file (in files from 0.3.3 on) names the version that *generated the stimuli*, which need not be the one that analysed them. Install that release into a library of its own, so your current installation stays as it is, and load it in a fresh R session:
 
 ```{r old-version, eval = FALSE}
 dir.create("rcicr-1.4.1")
@@ -228,7 +228,7 @@ Their file names can differ, though, for per-participant images from a GitHub in
 
 An InfoVal depends on the reference distribution stored in the `.Rdata` file:
 
-- **A reference stored by 1.4.0 or later is reused as stored**, so its InfoVal does not change, as long as no older rcicr has since replaced its norms. Such a file holds `reference_norms_source`, or a `source` field in each `reference_norms_by_base` entry when the base images have parameters of their own (see `vignette("stored-data", package = "rcicr")`).
+- **A reference stored by 1.4.0 or later is reused as stored**, so its InfoVal does not change, as long as no older rcicr has since replaced its norms. Such a reference carries a `source` marker; `vignette("stored-data", package = "rcicr")` shows where it sits for each way a reference is stored.
 - **An older reference drawn without a `response_seed` is rebuilt** the first time, with a message that the new InfoVal supersedes earlier ones. By default it is computed through the stimulus Gram matrix, which differs from the calculation of 1.5.0 and earlier only by rounding. `reference_method = "images"` is that earlier calculation, unchanged. A file generated with `seed = NULL` cannot rebuild its reference; the error names the call that stores a reproducible one instead.
 - **A reference rebuilt with `reference_method = "images"` matches the old one exactly** when all of these hold:
     - The old version reconstructed the stimuli correctly. That excludes pre-0.3.0 files; files written before 1.1.0 with a non-default `nscales` (or `sigma`, for Gabor noise), which older versions reconstructed with the defaults; and pre-1.4.0 references for the second and later base images when each base had parameters of its own, which were scored against the first base's reference.
@@ -237,7 +237,7 @@ An InfoVal depends on the reference distribution stored in the `.Rdata` file:
     - R uses the same BLAS library as the original computation. An optimised BLAS adds sums up in a different order, by amounts that have not been measured; `sessionInfo()` names the BLAS in use.
 - **A reference drawn with a `response_seed` is kept as stored**, whichever method you ask for.
 
-To rebuild a reference with the earlier calculation, store it with `generateReferenceDistribution2IFC()`, passing the original `iter` (the length of the stored norms, if the file still holds them); later `computeInfoVal2IFC()` calls reuse it. Here both methods score the same classification image, each on its own copy of the file:
+To rebuild a reference with the earlier calculation, store it with `generateReferenceDistribution2IFC()`, passing the original `iter` (the length of the stored norms, if the file still holds them) and, when the base images have parameters of their own, the classification image's `baseimage`; later `computeInfoVal2IFC()` calls reuse it. Here both methods score the same classification image, each on its own copy of the file:
 
 ```{r reproduce, results = "hide", warning = FALSE}
 ci_all <- generateCI(1:120, choice, "face", rdata_file, save_as_png = FALSE)
