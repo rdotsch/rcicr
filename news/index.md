@@ -128,6 +128,14 @@
   was 1.7 GB while the Gram route ran, against 3.3 GB for the rendered
   route. `ncores` is now used only with `reference_method = "images"`.
   ([\#354](https://github.com/rdotsch/rcicr/issues/354))
+
+- **`dplyr` and `yesno` are no longer dependencies, and `tibble` is only
+  suggested.** All three served a table of precomputed InfoVal
+  references that had been empty since 2018, so every lookup missed and
+  every InfoVal was simulated; it is gone, and no InfoVal changes. The
+  interactive prompt it could have shown never ran.
+  ([\#392](https://github.com/rdotsch/rcicr/issues/392))
+
 - `Matrix`, an R recommended package that rcicr already depended on
   through spatstat, is now a direct import.
 

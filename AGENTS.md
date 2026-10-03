@@ -315,13 +315,6 @@ file”. Read them there; two copies would drift.
 - How CI pixel intensities are scaled (`none`, `constant`, `matched`,
   `independent`) is a key user-facing choice, documented in the roxygen
   header of `generateCI.R`. Read it before changing the scaling logic.
-- [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)’s
-  `ref_lookup` tibble looks like a cache and is not one: **it has been
-  empty since 2018**, because its rows were measured under the
-  pre-erratum infoVal formula. Every lookup misses, and the reference
-  distribution is always simulated. Do not describe it as a working
-  cache; the matching code is kept only so the table can be repopulated
-  cheaply.
 - The `pre_0.3.0` and `generator_version` fields keep `.Rdata` files
   from older versions working (their index counter starts at 0 instead
   of 1). Do not remove them without understanding this.

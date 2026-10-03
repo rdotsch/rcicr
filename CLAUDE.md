@@ -33,13 +33,11 @@ Three things to know before trusting or editing that script:
   not `r-cran-spatstat-explore`. The usual dash convention reports
   MISSING and suggests, wrongly, that CRAN is needed after all.
 - **`yesno` is the one package without a Debian build**, so the script
-  installs a stub.
-  [`computeInfoVal2IFC()`](https://rdotsch.github.io/rcicr/reference/computeInfoVal2IFC.md)
-  only reaches the real one from a single `if (interactive())` branch,
-  behind a `ref_lookup` whose rows have been commented out since 2018,
-  so a batch run can never reach the prompt. The stub raises an error
-  instead of answering, so nothing can quietly come to depend on a
-  stubbed reply.
+  installs a stub. rcicr itself no longer imports it (#392); the gate’s
+  reference versions, v1.0.1 through 1.5.0, still do, and reach it only
+  from a prompt their empty lookup table can never trigger. The stub
+  raises an error instead of answering, so nothing can quietly come to
+  depend on a stubbed reply.
 - **The v1.0.1 reference’s own imports are installed too** (`raster`,
   `sp`, `ggplot2`, `plyr` and the others this package has since
   dropped), so the gate never needs `--install-deps` and never reaches
