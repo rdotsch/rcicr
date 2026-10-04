@@ -17,9 +17,11 @@ library(rcicr)
 ## The stimulus `.Rdata` file
 
 The file is the only link between generating stimuli and analysing
-responses. Nothing about a stimulus set can be recovered without it: not
-from the PNGs, and not from the seed alone. Keep it with your response
-data and with anything you publish.
+responses. Without it, a stimulus set can only be regenerated from the
+seed together with every generation setting;
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+shows how, and how to check the result against the stimulus PNGs. Keep
+it with your response data and with anything you publish.
 
 [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
 writes one file per call, named
@@ -41,7 +43,7 @@ rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE
 ``` r
 
 basename(rdata_file)
-#> [1] "rcic_seed_1_time_Oct_03_2026_20_40.Rdata"
+#> [1] "rcic_seed_1_time_Oct_04_2026_00_32.Rdata"
 stored <- new.env()
 load(rdata_file, envir = stored)
 ls(stored)

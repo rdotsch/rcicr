@@ -76,9 +76,11 @@ package is built, so they describe the version you have installed.</p>
 <h2 id="the-stimulus--rdata-file">The stimulus <code>.Rdata</code> file<a class="anchor" aria-label="anchor" href="#the-stimulus--rdata-file"></a>
 </h2>
 <p>The file is the only link between generating stimuli and analysing
-responses. Nothing about a stimulus set can be recovered without it: not
-from the PNGs, and not from the seed alone. Keep it with your response
-data and with anything you publish.</p>
+responses. Without it, a stimulus set can only be regenerated from the
+seed together with every generation setting;
+<code><a href="../articles/recipes.html">vignette("recipes", package = "rcicr")</a></code> shows how, and how
+to check the result against the stimulus PNGs. Keep it with your
+response data and with anything you publish.</p>
 <p><code><a href="../reference/generateStimuli2IFC.html">generateStimuli2IFC()</a></code> writes one file per call, named
 <code>&lt;label&gt;_seed_&lt;seed&gt;_time_&lt;timestamp&gt;.Rdata</code>.
 A small stimulus set shows what is inside. The base image is synthetic,
@@ -93,7 +95,7 @@ and everything is shrunk so this vignette builds in seconds.</p>
 <span><span class="va">rdata_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">stimulus_path</span>, pattern <span class="op">=</span> <span class="st">"\\.Rdata$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">rdata_file</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "rcic_seed_1_time_Oct_03_2026_20_40.Rdata"</span></span>
+<span><span class="co">#&gt; [1] "rcic_seed_1_time_Oct_04_2026_00_32.Rdata"</span></span>
 <span><span class="va">stored</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="va">rdata_file</span>, envir <span class="op">=</span> <span class="va">stored</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/ls.html" class="external-link">ls</a></span><span class="op">(</span><span class="va">stored</span><span class="op">)</span></span>

@@ -146,8 +146,11 @@ With `save_as_png = TRUE` you get two PNGs per trial per base image,
 
 That file records the noise parameters behind every trial. **It is the
 only link between stimulus generation and analysis.** Nothing else
-records which noise pattern trial 57 actually showed, so without it the
-responses you collect cannot be analysed.
+records which noise pattern trial 57 actually showed. Without it, the
+responses you collect can only be analysed after regenerating the file
+from the seed and every generation setting, as
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+shows.
 
 Back it up with your data. Every analysis function below takes it as
 `rdata`.

@@ -187,8 +187,10 @@ are what participants see.</p>
 </h3>
 <p>That file records the noise parameters behind every trial. <strong>It
 is the only link between stimulus generation and analysis.</strong>
-Nothing else records which noise pattern trial 57 actually showed, so
-without it the responses you collect cannot be analysed.</p>
+Nothing else records which noise pattern trial 57 actually showed.
+Without it, the responses you collect can only be analysed after
+regenerating the file from the seed and every generation setting, as
+<code><a href="../articles/recipes.html">vignette("recipes", package = "rcicr")</a></code> shows.</p>
 <p>Back it up with your data. Every analysis function below takes it as
 <code>rdata</code>.</p>
 </div>

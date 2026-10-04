@@ -388,6 +388,12 @@
   with the calculation of 1.5.0 and earlier, and points to the
   individual-CI filename advisory for per-participant images from GitHub
   installs before 1.3.0.
+- **[`vignette("recipes")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+  shows how to regenerate a lost `.Rdata` file** from the seed and the
+  generation settings, and how to check the result against the stimulus
+  PNGs without the base images. The README, the walkthrough and
+  [`vignette("stored-data")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
+  no longer say the file cannot be recovered.
 - The help pages of
   [`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md),
   [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md),

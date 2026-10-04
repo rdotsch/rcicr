@@ -166,9 +166,11 @@ scores a list of them), and
 shows which regions carry reliable signal.
 
 **The `.Rdata` file is the only link between the two halves.** Without
-it, nothing about your stimuli can be recovered: not from the PNGs, and
-not from the seed alone. Back it up with your response data and keep it
-with anything you publish. Recomputing a classification image years
+it, your stimuli can only be regenerated from the seed together with
+every generation setting, which
+[`vignette("recipes", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+shows how to do and check. Back it up with your response data and keep
+it with anything you publish. Recomputing a classification image years
 later needs this file and nothing else.
 [`vignette("stored-data", package = "rcicr")`](https://rdotsch.github.io/rcicr/articles/stored-data.md)
 lists everything in it, and in the classification image
