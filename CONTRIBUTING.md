@@ -67,8 +67,6 @@ The most useful report gives the `.Rdata` file's `img_size`, `nscales` and `nois
 
 Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes you notice it: it submits as `COMMENTED`, so `gh pr checks` stays green, and `gh pr view --comments` shows only the wrapper, never the findings.
 
-**It must never become something that blocks.** If it is switched off, erroring or not answering, merge on the other checks.
-
 Push everything first; a push never re-triggers the review. **Marking a draft ready cannot be relied on either**: it does not always trigger one. Post the request yourself and keep its timestamp:
 
 ```sh
