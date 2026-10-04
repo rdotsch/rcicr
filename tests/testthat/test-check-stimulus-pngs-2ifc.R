@@ -84,6 +84,17 @@ test_that("legacy PNG byte wrap still matches the recorded noise", {
                                         archive, seed = 7)$share < 0.2))
 })
 
+test_that("a bright decoded pair cannot be mistaken for a legacy byte wrap", {
+  byte_wrap <- 256 / 255
+  # This pair has an ordinary base of 0.5: its sum is 1, so no old pixel
+  # above white could have produced it, even if the difference fits an alias.
+  expect_false(pngDifferenceAgrees(0.6, 0.4, 0.2 + byte_wrap))
+  expect_false(pngDifferenceAgrees(0.4, 0.6, -0.2 - byte_wrap))
+  expect_true(pngDifferenceAgrees(0.6, 0.4, 0.2))
+  expect_true(pngDifferenceAgrees(0.1, 0.3, -0.2 + byte_wrap))
+  expect_true(pngDifferenceAgrees(0.3, 0.1, 0.2 - byte_wrap))
+})
+
 test_that("a candidate with the right settings over a grey base matches every trial", {
   archive <- write_archive("face")
   expect_equal(checkStimulusPNGs2IFC(write_candidate("face"), archive)$share, rep(1, 4))
