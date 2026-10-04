@@ -1,9 +1,9 @@
 # rcicr <img src="man/figures/logo.png" align="right" width="120" alt="" />
 
 [![CRAN status](https://img.shields.io/cran/v/rcicr.svg)](https://CRAN.R-project.org/package=rcicr)
-[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/rcicr)](https://CRAN.R-project.org/package=rcicr)
-[![CRAN downloads last month](https://cranlogs.r-pkg.org/badges/last-month/rcicr)](https://CRAN.R-project.org/package=rcicr)
-[![CRAN downloads last week](https://cranlogs.r-pkg.org/badges/last-week/rcicr)](https://CRAN.R-project.org/package=rcicr)
+[![Total downloads from the Posit CRAN mirror](https://cranlogs.r-pkg.org/badges/grand-total/rcicr)](https://CRAN.R-project.org/package=rcicr)
+[![Downloads from the Posit CRAN mirror last month](https://cranlogs.r-pkg.org/badges/last-month/rcicr)](https://CRAN.R-project.org/package=rcicr)
+[![Downloads from the Posit CRAN mirror last week](https://cranlogs.r-pkg.org/badges/last-week/rcicr)](https://CRAN.R-project.org/package=rcicr)
 [![R-CMD-check](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rdotsch/rcicr/actions/workflows/R-CMD-check.yaml)
 [![Documentation](https://img.shields.io/badge/docs-rdotsch.github.io%2Frcicr-blue)](https://rdotsch.github.io/rcicr/)
 
