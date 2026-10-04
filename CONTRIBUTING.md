@@ -130,6 +130,21 @@ Three rules about this package rather than about R:
 - **Add new names loaded from an `.Rdata` file to `globalVariables()` in `R/zzz.R`**, or `R CMD check` NOTEs about undefined globals.
 - **Check every new function argument against the names saved in the `.Rdata` file**, and every new saved field against existing argument names. `load()` assigns into the calling frame, so a name collision silently overwrites the argument. This has caused three separate bugs, most recently a saved `sigma` replacing `generateCI()`'s z-map blur `sigma`. [`DECISIONS.md`](DECISIONS.md#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names) has the details.
 
+### Where the code lives
+
+`generateCI()` is the usual way in: its body is one call per step (validate, load, select, compute, present, return). Apart from it, everything below is internal.
+
+| file | what is in it |
+|---|---|
+| `R/generateCI.R` | `generateCI()`, plus `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
+| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
+| `R/ci-inputs.R` | arguments to a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
+| `R/ci-compute.R` | `computeParticipantCIs()`: one CI per participant, plus their average |
+| `R/zmap-compute.R` | `computeZmapQuick()`, `computeZmapTTest()` |
+| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
+
+The mask helpers are in `R/generateCI.R` because `plotZmap()` masks a z-map the same way.
+
 ## Larger changes
 
 Known work lives in [GitHub Issues](https://github.com/rdotsch/rcicr/issues), prioritised with the `P0`–`P3` labels: P0 correctness and availability, P1 dependencies and toolchain, P2 usability and maintainability, P3 user-requested features. Each issue carries the evidence behind it. Read the tracker before starting anything substantial, and comment on the issue before you begin so the work is not duplicated.

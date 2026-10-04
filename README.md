@@ -106,23 +106,6 @@ base face image(s) ─┐
 
 **Compare numbers, not figures, across machines.** Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system. The test suite pins them to fixed values, and they hold on Linux and macOS ARM64 alike. The one exception is the PNG that `plotZmap()` writes, because it is the only function here that draws through a graphics device. Devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map gives figures that look identical but are not byte-identical. A z-map image that differs pixel for pixel on a colleague's machine is not a different result. Every other PNG the package writes comes straight from the pixel array via `png::writePNG()`, so this does not apply to them. See `?plotZmap`.
 
-### Where the code lives
-
-This section is for reading the source. Apart from `generateCI()` itself, every function in the table below is **internal**: not exported, so your scripts cannot call it. For the public functions, see the [function reference](https://rdotsch.github.io/rcicr/) or `help(package = "rcicr")`.
-
-The usual starting point is `generateCI()`. Its body is one call per step (validate, load, select, compute, present, return), and the steps live in these files, grouped by concern:
-
-| file | what is in it |
-|---|---|
-| `R/generateCI.R` | `generateCI()` itself, plus the presentation helpers `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
-| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
-| `R/ci-inputs.R` | turning the caller's arguments into a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
-| `R/ci-compute.R` | `computeParticipantCIs()`: one CI per participant, plus their average |
-| `R/zmap-compute.R` | `computeZmapQuick()` and `computeZmapTTest()` |
-| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
-
-The mask helpers live in `R/generateCI.R` rather than in a file of their own because `plotZmap()` uses them too: masking a z-map and masking a CI are the same operation.
-
 ## Citation
 
 `citation("rcicr")` gives the reference for the software. If you use the technique, also cite the method: [Dotsch and Todorov (2012)](https://doi.org/10.1177/1948550611430272), and for a practical primer [Brinkman, Todorov and Dotsch (2017)](https://doi.org/10.1080/10463283.2017.1381469).
