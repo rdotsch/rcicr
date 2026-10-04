@@ -305,9 +305,11 @@ matches <- function(rdata, png_dir, label = "rcic", base = "face", seed = 5) {
   load(rdata, envir = stored)
   params <- stored$stimuli_params[[base]]
   vapply(seq_len(nrow(params)), function(i) {
-    ori_file <- file.path(png_dir, paste(label, base, seed, sprintf("%05d_ori.png", i), sep = "_"))
-    ori <- png::readPNG(ori_file)
-    inv <- png::readPNG(sub("_ori.png", "_inv.png", ori_file, fixed = TRUE))
+    png_file <- function(side) {
+      file.path(png_dir, paste(label, base, seed, sprintf("%05d_%s.png", i, side), sep = "_"))
+    }
+    ori <- png::readPNG(png_file("ori"))
+    inv <- png::readPNG(png_file("inv"))
     if (length(dim(ori)) == 3) {
       ori <- ori[, , 1]
       inv <- inv[, , 1]
