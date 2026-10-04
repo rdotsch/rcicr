@@ -14,8 +14,9 @@
 #'   \code{\link{generateStimuli2IFC}}.
 #' @param png_dir Directory holding the stimulus PNGs. Required; there is no default.
 #' @param label,seed The \code{label} and \code{seed} the PNGs were generated with, which their
-#'   names carry. Default: the values stored in \code{rdata}. Pass the archive's own when
-#'   \code{rdata} is a candidate regenerated with other settings, so the PNGs can be found.
+#'   names carry. When omitted: the values stored in \code{rdata}. Pass the archive's own when
+#'   \code{rdata} is a candidate regenerated with other settings, so the PNGs can be found;
+#'   \code{seed = NULL} for a set generated with \code{seed = NULL}.
 #' @return A data frame with one row per base label and trial: \code{base}, \code{trial},
 #'   \code{share} (the share of compared pixels whose \code{ori - inv} agrees with the file's noise
 #'   divided by 0.6 to within 1/255), \code{compared} (the number of pixels neither image clips) and
@@ -45,17 +46,12 @@ checkStimulusPNGs2IFC <- function(rdata, png_dir, label = NULL, seed = NULL) {
   if (missing(png_dir) || !is.character(png_dir) || length(png_dir) != 1L || !dir.exists(png_dir)) {
     stop('png_dir must be the path of an existing directory of stimulus PNGs.', call. = FALSE)
   }
-  loaded <- loadStimulusParams(rdata, require_img_size = FALSE)
-  if (is.null(label) || is.null(seed)) {
-    stored <- new.env(parent = emptyenv())
-    loadRdata(rdata, stored)
-    if (is.null(label)) label <- get0('label', envir = stored, inherits = FALSE)
-    if (is.null(seed)) seed <- get0('seed', envir = stored, inherits = FALSE)
-    if (is.null(label) || is.null(seed)) {
-      stop('rdata stores no ', if (is.null(label)) 'label' else 'seed',
-           '. Pass the label and seed the PNGs were generated with.', call. = FALSE)
-    }
+  if (missing(label) || missing(seed)) {
+    stored <- storedLabelSeed(rdata)
+    if (missing(label)) label <- stored$label
+    if (missing(seed)) seed <- stored$seed
   }
+  loaded <- loadStimulusParams(rdata, require_img_size = FALSE)
 
   rows <- list()
   checked <- character(0)
@@ -75,7 +71,7 @@ checkStimulusPNGs2IFC <- function(rdata, png_dir, label = NULL, seed = NULL) {
 
   archived <- stimulusPngNames(png_dir, label, seed)
   if (length(archived) == 0L) {
-    stop('No stimulus PNG named for label "', label, '" and seed ', seed, ' in ', png_dir,
+    stop('No stimulus PNG named for label "', label, '" and seed ', format(seed), ' in ', png_dir,
          ' (looked for names such as ', basename(stimulusPngPath(png_dir, label, result$base[1], seed,
                                                                  1L, 'ori')),
          '). label and seed must be the ones the PNGs were generated with.', call. = FALSE)
@@ -88,12 +84,26 @@ checkStimulusPNGs2IFC <- function(rdata, png_dir, label = NULL, seed = NULL) {
 
   unchecked <- setdiff(archived, checked)
   if (length(unchecked) > 0L) {
-    warning(length(unchecked), ' PNG(s) named for label "', label, '" and seed ', seed,
+    warning(length(unchecked), ' PNG(s) named for label "', label, '" and seed ', format(seed),
             ' are outside the trials and base labels rdata holds: ', firstFew(unchecked), '.',
             call. = FALSE)
   }
   attr(result, 'unchecked') <- unchecked
   return(result)
+}
+
+# Read in a frame of its own, so the file's noise basis is not held twice.
+storedLabelSeed <- function(rdata) {
+  stored <- new.env(parent = emptyenv())
+  loadRdata(rdata, stored)
+  # seed = NULL is stored as a NULL seed, which names PNGs with an empty seed.
+  for (name in c('label', 'seed')) {
+    if (!exists(name, envir = stored, inherits = FALSE)) {
+      stop('rdata stores no ', name, '. Pass the label and seed the PNGs were generated with.',
+           call. = FALSE)
+    }
+  }
+  list(label = stored$label, seed = stored$seed)
 }
 
 comparePngPair <- function(ori_file, inv_file, params, p, base, trial) {

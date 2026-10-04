@@ -84,6 +84,16 @@ test_that("PNG names are built as the generator builds them", {
   expect_false(any(checkStimulusPNGs2IFC(rdata_in(odd_label), odd_label)$missing))
 })
 
+test_that("a set generated with seed = NULL is found through its empty seed field", {
+  archive <- write_archive("face", seed = NULL)
+  expect_true(file.exists(file.path(archive, "rcic_face__00001_ori.png")))
+  expect_equal(checkStimulusPNGs2IFC(rdata_in(archive), archive)$share, rep(1, 4))
+  expect_equal(checkStimulusPNGs2IFC(rdata_in(archive), archive, label = "rcic", seed = NULL)$share,
+               rep(1, 4))
+  expect_error(checkStimulusPNGs2IFC(rdata_in(archive), archive, seed = 7),
+               "No stimulus PNG named for label \"rcic\" and seed 7")
+})
+
 test_that("RGB copies of the PNGs give the same shares as grey ones", {
   archive <- write_archive("face")
   grey_shares <- checkStimulusPNGs2IFC(write_candidate("face", nscales = 3), archive)$share

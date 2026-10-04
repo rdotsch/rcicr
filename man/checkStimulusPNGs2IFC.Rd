@@ -13,8 +13,9 @@ checkStimulusPNGs2IFC(rdata, png_dir, label = NULL, seed = NULL)
 \item{png_dir}{Directory holding the stimulus PNGs. Required; there is no default.}
 
 \item{label, seed}{The \code{label} and \code{seed} the PNGs were generated with, which their
-names carry. Default: the values stored in \code{rdata}. Pass the archive's own when
-\code{rdata} is a candidate regenerated with other settings, so the PNGs can be found.}
+names carry. When omitted: the values stored in \code{rdata}. Pass the archive's own when
+\code{rdata} is a candidate regenerated with other settings, so the PNGs can be found;
+\code{seed = NULL} for a set generated with \code{seed = NULL}.}
 }
 \value{
 A data frame with one row per base label and trial: \code{base}, \code{trial},
