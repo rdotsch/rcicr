@@ -73,7 +73,8 @@ checkStimulusPNGs <- function(rdata, png_dir, label = NULL, seed = NULL) {
   }
   result <- do.call(rbind, rows)
 
-  if (!any(file.exists(file.path(png_dir, checked)))) {
+  archived <- stimulusPngNames(png_dir, label, seed)
+  if (length(archived) == 0L) {
     stop('No stimulus PNG named for label "', label, '" and seed ', seed, ' in ', png_dir,
          ' (looked for names such as ', basename(stimulusPngPath(png_dir, label, result$base[1], seed,
                                                                  1L, 'ori')),
@@ -85,7 +86,7 @@ checkStimulusPNGs <- function(rdata, png_dir, label = NULL, seed = NULL) {
             firstFew(paste0(absent$base, ' ', absent$trial)), '.', call. = FALSE)
   }
 
-  unchecked <- setdiff(stimulusPngNames(png_dir, label, seed), checked)
+  unchecked <- setdiff(archived, checked)
   if (length(unchecked) > 0L) {
     warning(length(unchecked), ' PNG(s) named for label "', label, '" and seed ', seed,
             ' are outside the trials and base labels rdata holds: ', firstFew(unchecked), '.',

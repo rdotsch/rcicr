@@ -131,6 +131,15 @@ test_that("archive PNGs a shorter candidate does not cover are reported", {
   expect_true(all(grepl("^rcic_second_", attr(one_base, "unchecked"))))
 })
 
+test_that("a candidate with other base labels is reported, not taken for an empty folder", {
+  archive <- write_archive("face")
+  expect_warning(expect_warning(result <- checkStimulusPNGs(write_candidate("portrait"), archive),
+                                "8 PNG\\(s\\) named for label"),
+                 "4 trial\\(s\\) have no ori or inv PNG")
+  expect_true(all(result$missing))
+  expect_length(attr(result, "unchecked"), 8)
+})
+
 test_that("archive PNGs with a hidden name are scanned too", {
   archive <- write_archive("face", label = ".rcic")
   expect_warning(result <- checkStimulusPNGs(write_candidate("face", n_trials = 3), archive,
