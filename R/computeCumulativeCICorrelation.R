@@ -79,7 +79,7 @@ computeCumulativeCICorrelation <- function(stimuli, responses, baseimage, rdata,
   # Loaded in a frame of its own, so no field of the .Rdata can replace an
   # argument (see loadStimulusParams()). This function never needs img_size.
   loaded <- loadStimulusParams(rdata, require_img_size = FALSE)
-  p <- loaded$p
+  p <- renderingBasis(loaded$p)
   selectBaseImage(loaded$base_faces, baseimage)
   # A one-row matrix for a single stimulus, which the params[1:trial, ] slice
   # in the cumulative loop below needs.

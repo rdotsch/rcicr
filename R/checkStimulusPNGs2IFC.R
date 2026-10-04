@@ -53,6 +53,7 @@ checkStimulusPNGs2IFC <- function(rdata, png_dir, label = NULL, seed = NULL) {
   }
   loaded <- loadStimulusParams(rdata, require_img_size = FALSE)
 
+  basis <- renderingBasis(loaded$p)
   rows <- list()
   checked <- character(0)
   for (base in names(loaded$stimuli_params)) {
@@ -63,7 +64,7 @@ checkStimulusPNGs2IFC <- function(rdata, png_dir, label = NULL, seed = NULL) {
       ori_file <- stimulusPngPath(png_dir, label, base, seed, trial, 'ori')
       inv_file <- stimulusPngPath(png_dir, label, base, seed, trial, 'inv')
       checked <- c(checked, basename(ori_file), basename(inv_file))
-      rows[[length(rows) + 1L]] <- comparePngPair(ori_file, inv_file, params[trial, ], loaded$p, base,
+      rows[[length(rows) + 1L]] <- comparePngPair(ori_file, inv_file, params[trial, ], basis, base,
                                                   trial)
     }
   }

@@ -134,11 +134,14 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   nparams <- sum(6 * 2 * (2^(0:(nscales - 1)))^2)
   stimuli_params <- drawStimulusParams(n_trials, nparams, names(base_faces), use_same_parameters)
 
+  # The file keeps p as built; the loop renders from renderingBasis()'s copy.
+  render_basis <- renderingBasis(p)
+
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
 
   # NULL when ncores == 1: the loop below then runs in this process instead of
   # in a one-worker cluster. See startBackend() in parallel.R.
-  cl <- startBackend(ncores)
+  cl <- startBackend(ncores, n_trials)
   if (!is.null(cl)) {
     # Recorded so an unfinished call can stop a worker mid-trial, before it
     # writes a PNG the cleanup has already removed.
@@ -156,7 +159,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
       # One parameter set is shared by every base face, so any key gives the
       # same values; take the first explicitly rather than relying on `base_face`
       # still holding a value left over from the base-image loop above.
-      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial, ], p)
+      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial, ], render_basis)
     }
 
     # Nothing past the first base face is written when save_as_png is FALSE, and
@@ -168,7 +171,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
     for (base_face in trial_bases) {
       if (!use_same_parameters) {
-        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], p)
+        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], render_basis)
       }
 
       # The frame holds one noise image per trial, so it can carry only the
