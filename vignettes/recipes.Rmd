@@ -257,6 +257,82 @@ c(gram = infoval_gram, images = infoval_images, difference = infoval_images - in
 
 Real references use `iter = 10000`; the smaller one here keeps the slower `"images"` calculation quick.
 
+## When the `.Rdata` file is lost
+
+The `.Rdata` file can be regenerated: `generateStimuli2IFC()` draws the same stimuli again from the same seed and settings. The release gate checks, on every release, that this version draws the same stimulus parameters as 1.0.1, bit for bit, in the configurations it runs; files from earlier versions are not compared. Two kinds of stimulus set cannot be regenerated at all: those generated with `seed = NULL`, which seeds from the clock and stores no seed, and those generated before 0.3.0, which drew 4096 parameters per trial where later versions draw 4092, so every trial after the first comes out different. Both can still be analysed from a surviving `.Rdata` file. Regenerating any other set needs:
+
+- **The seed.** It is in the name of the `.Rdata` file, `<label>_seed_<seed>_time_<timestamp>.Rdata`, and of every stimulus PNG, `<label>_<base label>_<seed>_<trial>_ori.png`.
+- **Every generation setting**: `n_trials`, `img_size`, `nscales`, `noise_type`, `sigma` (for Gabor noise) and `use_same_parameters`. The defaults have been the same since 1.0.1: 770 trials, 512 pixels, 5 scales, sinusoid noise, `sigma = 25`, shared parameters.
+- **The base labels**, the names in `base_face_files`. They are the keys `generateCI(baseimage = )` looks up, so analysis code written for the original file needs them. When each base image had parameters of its own, their order matters too, because each base's parameters are drawn in turn.
+- **The same random number generator.** Stimuli are drawn with `runif()`, so this matters only if the original session changed R's default generator.
+
+`ncores`, `label` and `maximize_baseimage_contrast` do not change the parameters. Some values earlier versions accepted now stop with an error; use the value the old version actually applied. An unrecognised `noise_type` such as `"Gabor"` produced sinusoid noise, and a fractional `n_trials` its whole part, which the number of PNGs confirms. `NEWS.md` lists the input checks added in each release.
+
+The base images are not needed for the classification image's noise (`ci`) or its InfoVal: those depend only on the stimulus parameters and the noise basis, so a uniform grey stand-in gives the same values as the original images would. A uniform image needs `maximize_baseimage_contrast = FALSE`. Everything that involves the base does need it: `base`, `combined`, and `scaled` under `scaling = "matched"`, which maps the CI onto the base image's range.
+
+### Checking the settings against the stimulus PNGs
+
+If you still have the stimulus PNGs, they confirm the settings. The number of `_ori` files per base image gives `n_trials`, and their size `img_size`. And because an original and an inverted stimulus hold the same base, their difference is the trial's noise alone: in PNGs from 1.0.1 on (older ones were not measured), `ori - inv` equals the noise divided by 0.6, up to 8-bit rounding, wherever neither image is clipped at black or white. So a regenerated file can be checked trial by trial without the base image.
+
+Here an archive keeps only its PNGs:
+
+```{r lost, results = "hide"}
+archive <- tempfile("archive")
+generateStimuli2IFC(list(face = base_face), n_trials = 10, img_size = n,
+                    stimulus_path = archive, seed = 5, nscales = 3, ncores = 1)
+unlink(list.files(archive, pattern = "\\.Rdata$", full.names = TRUE))
+```
+
+```{r lost-files}
+head(list.files(archive), 2)
+```
+
+`regenerate()` writes a stimulus file for candidate settings, over a grey stand-in; `matches()` gives, per trial, the share of unclipped pixels whose `ori - inv` agrees with the regenerated noise to within 2/255:
+
+```{r lost-check}
+regenerate <- function(nscales) {
+  grey <- tempfile(fileext = ".png")
+  png::writePNG(matrix(0.5, n, n), grey)
+  path <- tempfile("regenerated")
+  generateStimuli2IFC(list(face = grey), n_trials = 10, img_size = n, stimulus_path = path,
+                      seed = 5, nscales = nscales, ncores = 1, save_as_png = FALSE,
+                      maximize_baseimage_contrast = FALSE)
+  list.files(path, pattern = "\\.Rdata$", full.names = TRUE)
+}
+
+matches <- function(rdata, png_dir, label = "rcic", base = "face", seed = 5) {
+  stored <- new.env()
+  load(rdata, envir = stored)
+  params <- stored$stimuli_params[[base]]
+  vapply(seq_len(nrow(params)), function(i) {
+    png_file <- function(side) {
+      file.path(png_dir, paste(label, base, seed, sprintf("%05d_%s.png", i, side), sep = "_"))
+    }
+    ori <- png::readPNG(png_file("ori"))
+    inv <- png::readPNG(png_file("inv"))
+    if (length(dim(ori)) == 3) {
+      ori <- ori[, , 1]
+      inv <- inv[, , 1]
+    }
+    noise <- generateNoiseImage(params[i, ], stored$p)
+    unclipped <- ori > 0 & ori < 1 & inv > 0 & inv < 1
+    mean(abs(ori - inv - noise / 0.6)[unclipped] <= 2 / 255)
+  }, numeric(1))
+}
+```
+
+```{r lost-scores, results = "hide"}
+candidates <- c(3, 5)
+files <- lapply(candidates, regenerate)
+```
+
+```{r lost-scores-show}
+setNames(vapply(files, function(f) min(matches(f, archive)), numeric(1)),
+         paste("nscales =", candidates))
+```
+
+The right settings match every trial. With several base images, run `matches()` for every base label: the first base's parameters are drawn the same way whether or not `use_same_parameters` is right, so only the later bases show a wrong value. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. With the right settings found, regenerate the file once more with the original base images and `maximize_baseimage_contrast`, and use it as the `.Rdata` file. Its `ci` is the one this version computes from the original file. Compared with a `ci` an earlier version computed, the differences listed under "Reproducibility impact" in `NEWS.md` apply, as in the recipe above; some are rounding of about one unit in the last place. The InfoVal reference stored in the lost file is gone, though: a regenerated file holds none, so the first `computeInfoVal2IFC()` simulates one with the current defaults. To rebuild the reference the original analysis used, pass its settings as in "Reproducing a number from an earlier version" above; if those settings are unknown, the original InfoVal cannot be recovered exactly. Its stored base matches only if this version reads the images as the original one did; `NEWS.md` lists where that changed, such as base images with an alpha channel before 1.4.0. Where it did, regenerate the display data with the original version instead. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
+
 ```{r, include = FALSE}
 par(oldpar)
 ```
