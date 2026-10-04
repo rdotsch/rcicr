@@ -43,7 +43,7 @@ rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE
 ``` r
 
 basename(rdata_file)
-#> [1] "rcic_seed_1_time_Oct_04_2026_06_55.Rdata"
+#> [1] "rcic_seed_1_time_Oct_04_2026_07_21.Rdata"
 stored <- new.env()
 load(rdata_file, envir = stored)
 ls(stored)
