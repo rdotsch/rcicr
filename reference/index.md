@@ -9,6 +9,8 @@ the only link to the analysis half, so keep it.
   : Generates 2IFC stimuli
 - [`simulateNoiseIntensities()`](https://rdotsch.github.io/rcicr/reference/simulateNoiseIntensities.md)
   : Simulate pixel intensity range for noise
+- [`checkStimulusPNGs2IFC()`](https://rdotsch.github.io/rcicr/reference/checkStimulusPNGs2IFC.md)
+  : Check a stimulus file against stimulus PNGs
 
 ## Classification images
 

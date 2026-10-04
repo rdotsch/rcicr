@@ -438,12 +438,11 @@ does need it: `base`, `combined`, and `scaled` under
 
 If you still have the stimulus PNGs, they confirm the settings. The
 number of `_ori` files per base image gives `n_trials`, and their size
-`img_size`. And because an original and an inverted stimulus hold the
-same base, their difference is the trial’s noise alone: in PNGs from
-1.0.1 on (older ones were not measured), `ori - inv` equals the noise
-divided by 0.6, up to 8-bit rounding, wherever neither image is clipped
-at black or white. So a regenerated file can be checked trial by trial
-without the base image.
+`img_size`.
+[`checkStimulusPNGs2IFC()`](https://rdotsch.github.io/rcicr/reference/checkStimulusPNGs2IFC.md)
+checks the rest, trial by trial and without the base images: an original
+and an inverted stimulus hold the same base, so their difference is the
+trial’s noise alone.
 
 Here an archive keeps only its PNGs:
 
@@ -462,9 +461,11 @@ head(list.files(archive), 2)
 ```
 
 `regenerate()` writes a stimulus file for candidate settings, over a
-grey stand-in; `matches()` gives, per trial, the share of unclipped
-pixels whose `ori - inv` agrees with the regenerated noise to within
-2/255:
+grey stand-in.
+[`checkStimulusPNGs2IFC()`](https://rdotsch.github.io/rcicr/reference/checkStimulusPNGs2IFC.md)
+then gives, per trial, the share of unclipped pixels that agree with
+that file’s noise. It needs the archive’s `label` and `seed`, because
+the PNG names carry them:
 
 ``` r
 
@@ -477,26 +478,6 @@ regenerate <- function(nscales) {
                       maximize_baseimage_contrast = FALSE)
   list.files(path, pattern = "\\.Rdata$", full.names = TRUE)
 }
-
-matches <- function(rdata, png_dir, label = "rcic", base = "face", seed = 5) {
-  stored <- new.env()
-  load(rdata, envir = stored)
-  params <- stored$stimuli_params[[base]]
-  vapply(seq_len(nrow(params)), function(i) {
-    png_file <- function(side) {
-      file.path(png_dir, paste(label, base, seed, sprintf("%05d_%s.png", i, side), sep = "_"))
-    }
-    ori <- png::readPNG(png_file("ori"))
-    inv <- png::readPNG(png_file("inv"))
-    if (length(dim(ori)) == 3) {
-      ori <- ori[, , 1]
-      inv <- inv[, , 1]
-    }
-    noise <- generateNoiseImage(params[i, ], stored$p)
-    unclipped <- ori > 0 & ori < 1 & inv > 0 & inv < 1
-    mean(abs(ori - inv - noise / 0.6)[unclipped] <= 2 / 255)
-  }, numeric(1))
-}
 ```
 
 ``` r
@@ -507,21 +488,29 @@ files <- lapply(candidates, regenerate)
 
 ``` r
 
-setNames(vapply(files, function(f) min(matches(f, archive)), numeric(1)),
-         paste("nscales =", candidates))
+lowest_share <- function(rdata) {
+  min(checkStimulusPNGs2IFC(rdata, archive, label = "rcic", seed = 5)$share)
+}
+setNames(vapply(files, lowest_share, numeric(1)), paste("nscales =", candidates))
 #> nscales = 3 nscales = 5 
-#>  1.00000000  0.03930664
+#>  1.00000000  0.02050781
 ```
 
-The right settings match every trial. With several base images, run
-`matches()` for every base label: the first base’s parameters are drawn
+The right settings match every trial. With several base images, look at
+every base label in the result: the first base’s parameters are drawn
 the same way whether or not `use_same_parameters` is right, so only the
-later bases show a wrong value. A wrong setting agrees on a small share
-only: a median of 2% to 18% of pixels per trial for the wrong `nscales`,
-`sigma`, noise type, seed or base order in the cases measured. With the
-right settings found, regenerate the file once more with the original
-base images and `maximize_baseimage_contrast`, and use it as the
-`.Rdata` file. Its `ci` is the one this version computes from the
+later bases show a wrong value. In the configurations
+[measured](https://github.com/rdotsch/rcicr/blob/main/analyses/stimulus-png-residuals.md),
+a wrong `nscales`, seed, noise type, base order or `use_same_parameters`
+agreed on 2.1% to 7.4% of pixels per trial. A Gabor `sigma` of 24 where
+the PNGs used 25, though, agreed on 95% to 99.6%. So compare candidates
+on the same PNGs, and keep the one that scores highest. PNGs written by
+1.5.0 and earlier show a few pixels above white as dark, which lowers
+even the right candidate’s share, to 0.986 in the lowest trial measured.
+
+With the right settings found, regenerate the file once more with the
+original base images and `maximize_baseimage_contrast`, and use it as
+the `.Rdata` file. Its `ci` is the one this version computes from the
 original file. Compared with a `ci` an earlier version computed, the
 differences listed under “Reproducibility impact” in `NEWS.md` apply, as
 in the recipe above; some are rounding of about one unit in the last
@@ -535,7 +524,4 @@ original InfoVal cannot be recovered exactly. Its stored base matches
 only if this version reads the images as the original one did; `NEWS.md`
 lists where that changed, such as base images with an alpha channel
 before 1.4.0. Where it did, regenerate the display data with the
-original version instead. PNGs written by 1.5.0 and earlier show a few
-pixels above white as dark, which cost up to 1.5% of a trial’s pixels in
-the configurations measured, far less than the gap between right and
-wrong settings.
+original version instead.

@@ -454,13 +454,10 @@ image’s range.</p>
 </h3>
 <p>If you still have the stimulus PNGs, they confirm the settings. The
 number of <code>_ori</code> files per base image gives
-<code>n_trials</code>, and their size <code>img_size</code>. And because
-an original and an inverted stimulus hold the same base, their
-difference is the trial’s noise alone: in PNGs from 1.0.1 on (older ones
-were not measured), <code>ori - inv</code> equals the noise divided by
-0.6, up to 8-bit rounding, wherever neither image is clipped at black or
-white. So a regenerated file can be checked trial by trial without the
-base image.</p>
+<code>n_trials</code>, and their size <code>img_size</code>.
+<code><a href="../reference/checkStimulusPNGs2IFC.html">checkStimulusPNGs2IFC()</a></code> checks the rest, trial by trial and
+without the base images: an original and an inverted stimulus hold the
+same base, so their difference is the trial’s noise alone.</p>
 <p>Here an archive keeps only its PNGs:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">archive</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"archive"</span><span class="op">)</span></span>
@@ -471,9 +468,10 @@ base image.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">archive</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "rcic_face_5_00001_inv.png" "rcic_face_5_00001_ori.png"</span></span></code></pre></div>
 <p><code>regenerate()</code> writes a stimulus file for candidate
-settings, over a grey stand-in; <code>matches()</code> gives, per trial,
-the share of unclipped pixels whose <code>ori - inv</code> agrees with
-the regenerated noise to within 2/255:</p>
+settings, over a grey stand-in. <code><a href="../reference/checkStimulusPNGs2IFC.html">checkStimulusPNGs2IFC()</a></code>
+then gives, per trial, the share of unclipped pixels that agree with
+that file’s noise. It needs the archive’s <code>label</code> and
+<code>seed</code>, because the PNG names carry them:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">regenerate</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">nscales</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">grey</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".png"</span><span class="op">)</span></span>
@@ -483,61 +481,45 @@ the regenerated noise to within 2/255:</p>
 <span>                      seed <span class="op">=</span> <span class="fl">5</span>, nscales <span class="op">=</span> <span class="va">nscales</span>, ncores <span class="op">=</span> <span class="fl">1</span>, save_as_png <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                      maximize_baseimage_contrast <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">path</span>, pattern <span class="op">=</span> <span class="st">"\\.Rdata$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">matches</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">rdata</span>, <span class="va">png_dir</span>, <span class="va">label</span> <span class="op">=</span> <span class="st">"rcic"</span>, <span class="va">base</span> <span class="op">=</span> <span class="st">"face"</span>, <span class="va">seed</span> <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">stored</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="va">rdata</span>, envir <span class="op">=</span> <span class="va">stored</span><span class="op">)</span></span>
-<span>  <span class="va">params</span> <span class="op">&lt;-</span> <span class="va">stored</span><span class="op">$</span><span class="va">stimuli_params</span><span class="op">[[</span><span class="va">base</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">png_file</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">side</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">png_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">label</span>, <span class="va">base</span>, <span class="va">seed</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%05d_%s.png"</span>, <span class="va">i</span>, <span class="va">side</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"_"</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
-<span>    <span class="va">ori</span> <span class="op">&lt;-</span> <span class="fu">png</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/png/man/readPNG.html" class="external-link">readPNG</a></span><span class="op">(</span><span class="fu">png_file</span><span class="op">(</span><span class="st">"ori"</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="va">inv</span> <span class="op">&lt;-</span> <span class="fu">png</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/png/man/readPNG.html" class="external-link">readPNG</a></span><span class="op">(</span><span class="fu">png_file</span><span class="op">(</span><span class="st">"inv"</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">ori</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fl">3</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="va">ori</span> <span class="op">&lt;-</span> <span class="va">ori</span><span class="op">[</span>, , <span class="fl">1</span><span class="op">]</span></span>
-<span>      <span class="va">inv</span> <span class="op">&lt;-</span> <span class="va">inv</span><span class="op">[</span>, , <span class="fl">1</span><span class="op">]</span></span>
-<span>    <span class="op">}</span></span>
-<span>    <span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generateNoiseImage.html">generateNoiseImage</a></span><span class="op">(</span><span class="va">params</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span>, <span class="va">stored</span><span class="op">$</span><span class="va">p</span><span class="op">)</span></span>
-<span>    <span class="va">unclipped</span> <span class="op">&lt;-</span> <span class="va">ori</span> <span class="op">&gt;</span> <span class="fl">0</span> <span class="op">&amp;</span> <span class="va">ori</span> <span class="op">&lt;</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">inv</span> <span class="op">&gt;</span> <span class="fl">0</span> <span class="op">&amp;</span> <span class="va">inv</span> <span class="op">&lt;</span> <span class="fl">1</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">ori</span> <span class="op">-</span> <span class="va">inv</span> <span class="op">-</span> <span class="va">noise</span> <span class="op">/</span> <span class="fl">0.6</span><span class="op">)</span><span class="op">[</span><span class="va">unclipped</span><span class="op">]</span> <span class="op">&lt;=</span> <span class="fl">2</span> <span class="op">/</span> <span class="fl">255</span><span class="op">)</span></span>
-<span>  <span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">candidates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">candidates</span>, <span class="va">regenerate</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">files</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">matches</span><span class="op">(</span><span class="va">f</span>, <span class="va">archive</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>         <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"nscales ="</span>, <span class="va">candidates</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">lowest_share</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">rdata</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu"><a href="../reference/checkStimulusPNGs2IFC.html">checkStimulusPNGs2IFC</a></span><span class="op">(</span><span class="va">rdata</span>, <span class="va">archive</span>, label <span class="op">=</span> <span class="st">"rcic"</span>, seed <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">$</span><span class="va">share</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">files</span>, <span class="va">lowest_share</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"nscales ="</span>, <span class="va">candidates</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; nscales = 3 nscales = 5 </span></span>
-<span><span class="co">#&gt;  1.00000000  0.03930664</span></span></code></pre></div>
-<p>The right settings match every trial. With several base images, run
-<code>matches()</code> for every base label: the first base’s parameters
-are drawn the same way whether or not <code>use_same_parameters</code>
-is right, so only the later bases show a wrong value. A wrong setting
-agrees on a small share only: a median of 2% to 18% of pixels per trial
-for the wrong <code>nscales</code>, <code>sigma</code>, noise type, seed
-or base order in the cases measured. With the right settings found,
-regenerate the file once more with the original base images and
-<code>maximize_baseimage_contrast</code>, and use it as the
-<code>.Rdata</code> file. Its <code>ci</code> is the one this version
-computes from the original file. Compared with a <code>ci</code> an
-earlier version computed, the differences listed under “Reproducibility
-impact” in <code>NEWS.md</code> apply, as in the recipe above; some are
-rounding of about one unit in the last place. The InfoVal reference
-stored in the lost file is gone, though: a regenerated file holds none,
-so the first <code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> simulates one with the
-current defaults. To rebuild the reference the original analysis used,
-pass its settings as in “Reproducing a number from an earlier version”
-above; if those settings are unknown, the original InfoVal cannot be
-recovered exactly. Its stored base matches only if this version reads
-the images as the original one did; <code>NEWS.md</code> lists where
-that changed, such as base images with an alpha channel before 1.4.0.
-Where it did, regenerate the display data with the original version
-instead. PNGs written by 1.5.0 and earlier show a few pixels above white
-as dark, which cost up to 1.5% of a trial’s pixels in the configurations
-measured, far less than the gap between right and wrong settings.</p>
+<span><span class="co">#&gt;  1.00000000  0.02050781</span></span></code></pre></div>
+<p>The right settings match every trial. With several base images, look
+at every base label in the result: the first base’s parameters are drawn
+the same way whether or not <code>use_same_parameters</code> is right,
+so only the later bases show a wrong value. In the configurations <a href="https://github.com/rdotsch/rcicr/blob/main/analyses/stimulus-png-residuals.md" class="external-link">measured</a>,
+a wrong <code>nscales</code>, seed, noise type, base order or
+<code>use_same_parameters</code> agreed on 2.1% to 7.4% of pixels per
+trial. A Gabor <code>sigma</code> of 24 where the PNGs used 25, though,
+agreed on 95% to 99.6%. So compare candidates on the same PNGs, and keep
+the one that scores highest. PNGs written by 1.5.0 and earlier show a
+few pixels above white as dark, which lowers even the right candidate’s
+share, to 0.986 in the lowest trial measured.</p>
+<p>With the right settings found, regenerate the file once more with the
+original base images and <code>maximize_baseimage_contrast</code>, and
+use it as the <code>.Rdata</code> file. Its <code>ci</code> is the one
+this version computes from the original file. Compared with a
+<code>ci</code> an earlier version computed, the differences listed
+under “Reproducibility impact” in <code>NEWS.md</code> apply, as in the
+recipe above; some are rounding of about one unit in the last place. The
+InfoVal reference stored in the lost file is gone, though: a regenerated
+file holds none, so the first <code><a href="../reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code>
+simulates one with the current defaults. To rebuild the reference the
+original analysis used, pass its settings as in “Reproducing a number
+from an earlier version” above; if those settings are unknown, the
+original InfoVal cannot be recovered exactly. Its stored base matches
+only if this version reads the images as the original one did;
+<code>NEWS.md</code> lists where that changed, such as base images with
+an alpha channel before 1.4.0. Where it did, regenerate the display data
+with the original version instead.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

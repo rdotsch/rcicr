@@ -254,6 +254,19 @@
   attribute and gets no message. The attribute leaves the list’s fields
   unchanged.
 
+- **[`checkStimulusPNGs2IFC()`](https://rdotsch.github.io/rcicr/reference/checkStimulusPNGs2IFC.md)
+  checks a stimulus `.Rdata` file against stimulus PNGs**, trial by
+  trial, without the base images. It returns the share of each trial’s
+  pixels whose difference between the original and inverted stimulus
+  agrees with the file’s noise, for every base label, and lists PNGs the
+  file does not cover. Use it to confirm the settings of a file
+  regenerated after the original was lost;
+  [`vignette("recipes")`](https://rdotsch.github.io/rcicr/articles/recipes.md)
+  shows how. In the configurations measured in
+  `analyses/stimulus-png-residuals.md`, a nearby Gabor `sigma` agreed on
+  up to 99.6% of a trial’s pixels, so compare candidates rather than
+  reading a share alone.
+
 ### Bug fixes
 
 - **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
