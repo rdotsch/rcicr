@@ -17,7 +17,7 @@ Every parallel loop in rcicr starts worker processes, and each holds its own cop
 2. in parallel, each participant's rows travel with that participant's task;
 3. no more workers start than the loop has tasks.
 
-Each configuration runs once, in a fresh R process. Memory is the peak resident set size summed over every R process, workers included, sampled every 0.1 s; it counts pages shared between processes once per process. The machine and R version are printed below; absolute times and sizes are this machine's.
+Each configuration runs once, in a fresh R process started in a session of its own. Memory is the peak resident set size summed over that session's processes, workers included, sampled every 0.1 s; it counts pages shared between processes once per process. The machine and R version are printed below; absolute times and sizes are this machine's.
 
 ## Two installed versions
 
@@ -87,11 +87,11 @@ sampler <- tempfile(fileext = ".sh")
 writeLines(c(
   '#!/bin/bash',
   'out=$(mktemp)',
-  'Rscript "$@" > "$out" 2>/dev/null &',
+  'setsid Rscript "$@" > "$out" 2>/dev/null &',
   'pid=$!',
   'peak=0',
   'while kill -0 $pid 2>/dev/null; do',
-  '  s=$(ps -C R -C Rscript -o rss= 2>/dev/null | awk \'{t+=$1} END {print int(t/1024)}\')',
+  '  s=$(ps -o rss= --sid $pid 2>/dev/null | awk \'{t+=$1} END {print int(t/1024)}\')',
   '  [ "${s:-0}" -gt "$peak" ] && peak=$s',
   '  sleep 0.1',
   'done',
@@ -197,13 +197,10 @@ The extra peak memory of a run on 4 cores over the same run on 1 core, divided b
 per_worker <- function(rows, by) {
   serial <- rows[rows$cores == 1, ]
   parallel_rows <- rows[rows$cores == 4, ]
-  data.frame(parallel_rows[by], main_MB = round((parallel_rows$main_MB - serial$main_MB) / 3),
-             branch_MB = round((parallel_rows$branch_MB - serial$branch_MB) / 3))
+  data.frame(run = parallel_rows[[by]], main_MB = round((parallel_rows$main_MB - serial$main_MB) / 3),
+             branch_MB = round((parallel_rows$branch_MB - serial$branch_MB) / 3), row.names = NULL)
 }
-knitr::kable(rbind(
-  setNames(per_worker(participant_rows, "participants"), c("run", "main_MB", "branch_MB")),
-  setNames(per_worker(loop_rows, "loop"), c("run", "main_MB", "branch_MB"))
-))
+knitr::kable(rbind(per_worker(participant_rows, "participants"), per_worker(loop_rows, "loop")))
 ```
 
 ## What this shows, and what it does not
