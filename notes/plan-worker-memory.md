@@ -2,13 +2,11 @@
 
 ## What changes
 
-Every `foreach` worker holds its own copy of the noise basis (`patches` 120 MB and `patchIdx` 120 MB at 512 px) plus everything else its loop body names, and each render adds about 250 MB of temporaries. Four changes, none of which moves a number:
+Every `foreach` worker holds its own copy of the noise basis (`patches` 120 MB and `patchIdx` 120 MB at 512 px) plus everything else its loop body names, and each render adds about 250 MB of temporaries. Three changes, none of which moves a number:
 
 1. **`patchIdx` is integer in memory.** A copy of the basis used for rendering gets `storage.mode(patchIdx) <- "integer"`, where the basis is built (`generateStimuli2IFC()`) and where it is loaded (`loadStimulusParams()`, `referenceNoise()`). The basis saved to the `.Rdata` file stays double, so the file contract is unchanged. `params[patchIdx]` selects the same elements with either index type; integer indexing skips the per-element conversion R does for a double index.
 2. **The participant loop sends each participant only its own rows.** `computeParticipantCIs()` iterates over per-participant parameter and response subsets, so they travel with each task instead of the whole `params` matrix going to every worker.
 3. **Never more workers than tasks.** `startBackend()` takes the number of iterations and starts `min(ncores, iterations)` workers. Four participants on eight cores start four.
-4. **Fork workers where R supports them.** On Linux and macOS, outside a GUI, `startBackend()` starts `parallel::makeForkCluster()` instead of a socket cluster. A forked worker shares the parent's memory pages until it writes to them, and the basis is only read, so it exists once rather than once per worker. Windows has no fork and keeps socket workers. R's documentation discourages forking from a GUI, so `.Platform$GUI` other than `"X11"`/`"unknown"` or `RSTUDIO = "1"` keep socket workers too. **This is the decision for review**: it makes memory and speed, never numbers, depend on the platform.
-
 `generateCI()`'s `n_cores` is documented as the z-map's core count; it also runs the participant loop. Its `@param`, and the others' `ncores`, say what a worker costs.
 
 ## Not changed
@@ -16,6 +14,7 @@ Every `foreach` worker holds its own copy of the noise basis (`patches` 120 MB a
 - No numeric output. Workers draw no random numbers (`startBackend()`'s comment), so where a CI is computed cannot change it; every change above is checked with `identical()`.
 - No `.Rdata` field or type, no argument, no default `ncores`.
 - **Not a serial threshold.** Parallel loses with few participants (table below) but wins with many; where they cross depends on the machine, so a fixed threshold would be wrong elsewhere.
+- **Not fork workers.** `doSNOW` cannot drive them: `snow`'s `sendData()` has no method for `parallel`'s fork nodes, so a fork cluster fails on its first `clusterCall()`. Through `doParallel` they run, but every free variable of the loop body is still serialized to each worker, so the basis is copied per worker anyway. Only with the basis kept out of the export, and read from a shared environment instead, did memory fall: 4 workers rendering 40 trials, 733 MB per worker and 3.5 GB in total with socket workers, 589 MB and 2.6 GB with fork workers (`fork2.R`). That needs a new dependency, two forms of every loop body, and gives up the `.options.snow` progress callback `doSNOW` was chosen for (#178).
 - **Not chunked rendering.** Rendering in blocks of pixels is bit-identical and faster, but did not lower peak memory: R's collector lets the blocks' temporaries accumulate. It belongs in an issue of its own, since it changes the code every render runs.
 
 ## Measured
@@ -37,32 +36,34 @@ The prototype's `generateCI()` result is `identical()` to `main`'s for 4, 20 and
 
 Integer `patchIdx`, 20 renders of the file's own trials: `identical()` output; 7.25 s and 7.22 s with double, 5.27 s and 5.34 s with integer.
 
-Fork against socket workers (`fork.R`), 4 workers rendering 40 trials, proportional set size (PSS), which splits shared pages between the processes sharing them:
+Fork against socket workers through `foreach` (`fork2.R`), 4 workers rendering 40 trials, proportional set size (PSS), which splits shared pages between the processes sharing them:
 
 ```
-psock: parent 368 MB PSS, workers 742/742/742/742 MB PSS after renders, total peak 3335 MB, 40 renders 6.4s
-fork : parent 197 MB PSS, workers 341/341/341/341 MB PSS after renders, total peak 1563 MB, 40 renders 3.2s
+psock      : workers 733/733/733/733 MB PSS, total 3465 MB, 40 renders 8.5s, checksum -71.85336191
+fork       : workers 883/883/883/883 MB PSS, total 3759 MB, 40 renders 8.0s, checksum -71.85336191
+fork-shared: workers 589/589/589/589 MB PSS, total 2583 MB, 40 renders 3.6s, checksum -71.85336191
 ```
+
+`psock` registers `doSNOW`; `fork` and `fork-shared` register `doParallel`, since `doSNOW` with a fork cluster stops with `no applicable method for 'sendData' applied to an object of class "c('forknode', 'SOCK0node')"`.
 
 The serial prototype peaks higher than `main` at 20 and 100 participants, because the per-participant subsets are a second copy of `params`. The implementation builds them only when workers run.
 
-The other three loops (`generateStimuli2IFC()`, the t-test z-map, `referenceNoise()`) render one image per trial, hundreds per call, so parallel pays off there; they get changes 1, 3 and 4 and are measured once each, `main` against the branch, in the analysis file.
+The other three loops (`generateStimuli2IFC()`, the t-test z-map, `referenceNoise()`) render one image per trial, hundreds per call, so parallel pays off there; they get changes 1 and 3 and are measured once each, `main` against the branch, in the analysis file.
 
 ## Tests
 
 - `identical()` results serial against parallel, for `generateCI(participants = )`, `generateStimuli2IFC()` parameters, the t-test z-map and an `"images"` reference.
 - The saved `.Rdata` file's `p$patchIdx` is still double.
-- `startBackend()` starts `min(ncores, iterations)` workers, and socket workers when fork is unavailable (forced by a test-only switch, since CI's Windows runner is the only real case).
-- Progress bars still tick with a fork cluster.
+- `startBackend()` starts `min(ncores, iterations)` workers.
 - The golden master unchanged, and the release gate against `main` reports 0 deviations (`tools/compare-release-output.R --ref="$(git rev-parse origin/main)"`).
 
 ## Documentation
 
-`analyses/worker-memory.Rmd`, knitted, with the scripts below and the numbers above re-measured on the branch. `NEWS.md` "Performance and dependencies" gets the speed and memory change; `DECISIONS.md` records fork-where-available and the rejected threshold. `@param n_cores`/`ncores` corrected.
+`analyses/worker-memory.Rmd`, knitted, with the scripts below and the numbers above re-measured on the branch. `NEWS.md` "Performance and dependencies" gets the speed and memory change; `DECISIONS.md` records the rejected fork workers and serial threshold. `@param n_cores`/`ncores` corrected.
 
 ## Most likely to fail
 
-Fork clusters with `doSNOW`'s progress callback, and a forked worker inheriting state that a socket worker never had (open connections, the progress bar). If either misbehaves, change 4 is dropped and the others stand on their own.
+The worker cap and the per-participant iteration in `computeParticipantCIs()` interact with its `on.exit()` cluster teardown and the serial progress bar; both paths need the `identical()` test, and the cap needs a run where `ncores` exceeds the participants.
 
 ## The scripts
 
@@ -115,22 +116,29 @@ rm -f "$out"
 
 The table is `measure.sh <file> <participants> <cores> <saved>` over participants 4, 20, 100, cores 1, 2, 4 and saved 0, 1, twice each, with `R_LIBS` naming a library holding `main` or the prototype.
 
-`fork.R` compares the two cluster types (`Rscript fork.R <dir> psock|fork`):
+`fork2.R` compares the cluster types through `foreach` (`Rscript fork2.R <dir> psock|fork|fork-shared`):
 
 ```r
-suppressMessages(library(rcicr)); a <- commandArgs(TRUE); type <- a[2]
+suppressMessages({library(rcicr); library(foreach)}); a <- commandArgs(TRUE); mode <- a[2]
 e <- new.env(); load(list.files(a[1], "Rdata$", full.names = TRUE), envir = e)
-p <- e$p; storage.mode(p$patchIdx) <- "integer"; par <- e$stimuli_params$face[1:40, ]; rm(e); invisible(gc())
 pss <- function(pids) sum(vapply(pids, function(pid) { l <- readLines(sprintf("/proc/%d/smaps_rollup", pid)); as.numeric(sub("^Pss:\\s+(\\d+).*", "\\1", grep("^Pss:", l, value = TRUE))) / 1024 }, 1))
-cl <- if (type == "fork") parallel::makeForkCluster(4) else parallel::makeCluster(4)
-wp <- unlist(parallel::clusterCall(cl, Sys.getpid))
-if (type == "psock") parallel::clusterExport(cl, c("p"))
-peak <- 0
-mon <- function() peak <<- max(peak, pss(c(Sys.getpid(), wp)))
-t <- system.time({ for (k in 1:10) { res <- parallel::parLapply(cl, ((k - 1) * 4 + 1):(k * 4), function(i, par) { library(rcicr); x <- generateNoiseImage(par[i, ], p); c(Sys.getpid(), sum(x)) }, par = par); mon() } })[["elapsed"]]
-w <- vapply(wp, function(pid) pss(pid), 1)
-cat(sprintf("%-5s: parent %.0f MB PSS, workers %s MB PSS after renders, total peak %.0f MB, 40 renders %.1fs\n", type, pss(Sys.getpid()), paste(round(w), collapse = "/"), peak, t))
-parallel::stopCluster(cl)
+shared <- new.env()
+run <- function() {
+  p <- e$p; storage.mode(p$patchIdx) <- "integer"; par <- e$stimuli_params$face[1:40, ]
+  if (mode == "fork-shared") assign("p", p, envir = shared)
+  cl <- if (mode == "psock") parallel::makeCluster(4) else parallel::makeForkCluster(4)
+  if (mode == "psock") doSNOW::registerDoSNOW(cl) else doParallel::registerDoParallel(cl); wp <- unlist(parallel::clusterCall(cl, Sys.getpid))
+  peak <- 0
+  t <- system.time(if (mode == "fork-shared") {
+    r <- foreach(i = 1:40, .combine = c, .packages = "rcicr", .noexport = "p", .export = character(0)) %dopar% { x <- generateNoiseImage(par[i, ], get("p", envir = shared)); peak <<- 0; sum(x) }
+  } else {
+    r <- foreach(i = 1:40, .combine = c, .packages = "rcicr") %dopar% sum(generateNoiseImage(par[i, ], p))
+  })[["elapsed"]]
+  w <- vapply(wp, pss, 1); tot <- pss(c(Sys.getpid(), wp))
+  parallel::stopCluster(cl)
+  cat(sprintf("%-11s: workers %s MB PSS, total %.0f MB, 40 renders %.1fs, checksum %.10g\n", mode, paste(round(w), collapse = "/"), tot, t, sum(r)))
+}
+run()
 ```
 
 `idx.R` times rendering with either index type (`Rscript idx.R <dir>`):
