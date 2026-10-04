@@ -266,7 +266,7 @@ The `.Rdata` file can be regenerated: `generateStimuli2IFC()` draws the same sti
 - **The base labels**, the names in `base_face_files`. They are the keys `generateCI(baseimage = )` looks up, so analysis code written for the original file needs them. When each base image had parameters of its own, their order matters too, because each base's parameters are drawn in turn.
 - **The same random number generator.** Stimuli are drawn with `runif()`, so this matters only if the original session changed R's default generator.
 
-`ncores`, `label` and `maximize_baseimage_contrast` do not change the parameters.
+`ncores`, `label` and `maximize_baseimage_contrast` do not change the parameters. Some values earlier versions accepted now stop with an error; use the value the old version actually applied. An unrecognised `noise_type` such as `"Gabor"` produced sinusoid noise, and a fractional `n_trials` its whole part, which the number of PNGs confirms. `NEWS.md` lists the input checks added in each release.
 
 The base images are not needed for the classification image's noise (`ci`) or its InfoVal: those depend only on the stimulus parameters and the noise basis, so a uniform grey stand-in gives the same values as the original images would. A uniform image needs `maximize_baseimage_contrast = FALSE`. Everything that involves the base does need it: `base`, `combined`, and `scaled` under `scaling = "matched"`, which maps the CI onto the base image's range.
 
