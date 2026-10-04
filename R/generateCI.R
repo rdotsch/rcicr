@@ -71,7 +71,7 @@
 #' @param sigma Amount of smoothing applied when creating the z-map (default: 3).
 #' @param threshold Threshold z-score (default: 3). Z-scores below it are not drawn on the z-map.
 #' @param zmaptargetpath Directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.
-#' @param n_cores Number of CPU cores used to create the z-map (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param n_cores Number of CPU cores for the per-participant CIs (with \code{participants}) and the \code{'t.test'} z-map (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in \url{https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md}. No more workers start than there are participants or trials.
 #' @return List of pixel matrices: the raw classification noise (\code{ci}), the scaled noise (\code{scaled}), the base image (\code{base}) and the two combined (\code{combined}), plus the z-map (\code{zmap}) when \code{zmap = TRUE}. Its \code{trial_design} attribute records which saved stimuli the CI was built from, so that \code{\link{computeInfoVal2IFC}} can check that its reference matches the CI; its \code{scaling} attribute records how \code{scaled} was made, for the group CI and, with \code{participants}, for the individual CIs. \code{vignette("stored-data", package = "rcicr")} lists the fields of both. To keep them in a file, save the whole result with \code{saveRDS()}.
 #' @seealso \code{vignette("reverse-correlation-walkthrough", package = "rcicr")}, sections "Computing one classification image" and "Scaling"; \code{vignette("recipes", package = "rcicr")} for rating scales as responses and for masked classification images.
 #' @examples
@@ -147,7 +147,8 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   # beside this function's arguments -- see loadStimulusParams() in R/rdata.R for
   # what that prevents.
   loaded <- loadStimulusParams(rdata)
-  p <- loaded$p
+  p <- renderingBasis(loaded$p)
+  loaded$p <- NULL
   base_faces <- loaded$base_faces
   stimuli_params <- loaded$stimuli_params
   img_size <- loaded$img_size

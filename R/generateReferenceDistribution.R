@@ -65,7 +65,7 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @param rdata Path to the \code{.Rdata} file written when the stimuli were generated. It holds the contrast parameters of every stimulus.
 #' @param iter Number of simulated classification images, each built from random responses; the distribution holds one norm per image.
-#' @param ncores Number of CPU cores used to render the saved noise with \code{reference_method = "images"} (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). \code{"gram"} does not use it.
+#' @param ncores Number of CPU cores used to render the saved noise with \code{reference_method = "images"} (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). \code{"gram"} does not use it. Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in \url{https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md}. No more workers start than there are trials.
 #' @param response_seed Optional seed for the simulated random responses. The default,
 #' \code{NULL}, continues from the state the stimulus generator left behind, as described under
 #' Reproducibility; it needs the stimulus seed saved in the file. A number gives an independent

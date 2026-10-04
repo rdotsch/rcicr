@@ -21,7 +21,7 @@ generateReferenceDistribution2IFC(
 
 \item{iter}{Number of simulated classification images, each built from random responses; the distribution holds one norm per image.}
 
-\item{ncores}{Number of CPU cores used to render the saved noise with \code{reference_method = "images"} (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). \code{"gram"} does not use it.}
+\item{ncores}{Number of CPU cores used to render the saved noise with \code{reference_method = "images"} (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). \code{"gram"} does not use it. Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in \url{https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md}. No more workers start than there are trials.}
 
 \item{response_seed}{Optional seed for the simulated random responses. The default,
 \code{NULL}, continues from the state the stimulus generator left behind, as described under

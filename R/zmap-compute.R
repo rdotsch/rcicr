@@ -44,7 +44,7 @@ computeZmapTTest <- function(ci, params, responses, p, pid_cis, img_size,
 
     pb <- txtProgressBar(min = 0, max = n_observations, style = 3)
 
-    cl <- startBackend(n_cores)
+    cl <- startBackend(n_cores, n_observations)
     if (!is.null(cl)) {
       on.exit(stopClusterSafely(cl), add = TRUE)
     }

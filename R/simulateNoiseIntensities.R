@@ -14,7 +14,7 @@
 simulateNoiseIntensities <- function(nrep = 1000, img_size = 512) {
 
   results <- array(0, c(nrep, 2))
-  s <- generateNoisePattern(img_size = img_size)
+  s <- renderingBasis(generateNoisePattern(img_size = img_size))
 
   pb <- txtProgressBar(min = 0, max = nrep, style = 3)
   for (i in 1:nrep) {

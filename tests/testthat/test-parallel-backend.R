@@ -24,7 +24,7 @@ test_that("startBackend starts a cluster under any OutDec and scipen", {
   withr::local_options(OutDec = ",", scipen = -9)
   expect_unparseable_port()
 
-  cl <- rcicr:::startBackend(2L)
+  cl <- rcicr:::startBackend(2L, 2L)
   on.exit(rcicr:::stopClusterSafely(cl), add = TRUE)
 
   expect_false(is.null(cl))
@@ -42,7 +42,7 @@ test_that("startBackend leaves the caller's formatting options alone", {
   # or clamps them differently still tests "unchanged" rather than a literal.
   before <- list(OutDec = getOption("OutDec"), scipen = getOption("scipen"))
 
-  cl <- rcicr:::startBackend(2L)
+  cl <- rcicr:::startBackend(2L, 2L)
   rcicr:::stopClusterSafely(cl)
 
   expect_identical(getOption("OutDec"), before$OutDec)

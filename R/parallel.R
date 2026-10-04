@@ -31,7 +31,10 @@ default_ncores <- function() {
 # doSNOW rather than doParallel because only it honours .options.snow, whose
 # progress callback runs in the *parent*. Ticking a progress bar from inside the
 # loop body updates each worker's private copy, which nobody sees -- issue #178.
-startBackend <- function(ncores) {
+startBackend <- function(ncores, tasks) {
+  # Each worker holds its own copy of the basis, so one without a task is
+  # memory spent for nothing.
+  if (!is.null(ncores) && !is.na(ncores)) ncores <- min(ncores, tasks)
   if (is.null(ncores) || is.na(ncores) || ncores < 2) {
     foreach::registerDoSEQ()
     return(NULL)

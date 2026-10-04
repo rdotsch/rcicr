@@ -23,7 +23,7 @@
 #' @param noise_type Noise pattern type: \code{sinusoid} (default) or \code{gabor}.
 #' @param nscales Number of spatial scales (default: 5). Each additional scale adds a higher spatial frequency. \code{img_size} must be divisible by \code{2^(nscales - 1)}.
 #' @param sigma Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).
-#' @param ncores Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).
+#' @param ncores Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in \url{https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md}. No more workers start than there are trials.
 #' @param return_as_dataframe Boolean: return a data frame with the raw noise of the generated stimuli (default: \code{FALSE}), one row per pixel and one column per trial. With the default \code{use_same_parameters = TRUE} every base image shares the same noise, so that is all of it. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned, because one column per trial cannot hold several. The stimuli are still written for every base image, and \code{save_rdata = TRUE} records every parameter set, so nothing is missing from the files.
 #' @param save_as_png Boolean: write the stimuli to disk as PNG images (default: \code{TRUE}). They are named \code{<label>_<base label>_<seed>_<trial>_ori.png} and \code{_inv.png}, with no time, so a later call into the same folder with the same label, base label and seed would write the same names. Existing PNGs are never overwritten: the call stops before generating or writing anything, and also stops when two base labels name the same file on this file system (for example, labels differing only in case). Use a different \code{label} or \code{stimulus_path}, or, to regenerate a stimulus set on purpose, delete its PNGs and its \code{.Rdata} file first. While PNGs are being written, a second call into the same folder with the same seed stops.
 #' @param save_rdata Boolean: save the \code{.Rdata} file with the stimulus parameters (default: \code{TRUE}). Computing classification images needs that file, so keep this \code{TRUE}; the argument exists mainly for internal use. The file is named \code{<label>_seed_<seed>_time_<month>_<day>_<year>_<hour>_<minute>.Rdata}, for the minute the call started. An existing file of that name is never overwritten: the call stops before generating anything. So does a call into the same folder with the same seed, started in the same minute, while another is still running.
@@ -134,11 +134,14 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
   nparams <- sum(6 * 2 * (2^(0:(nscales - 1)))^2)
   stimuli_params <- drawStimulusParams(n_trials, nparams, names(base_faces), use_same_parameters)
 
+  # The file keeps p as built; the loop renders from renderingBasis()'s copy.
+  render_basis <- renderingBasis(p)
+
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
 
   # NULL when ncores == 1: the loop below then runs in this process instead of
   # in a one-worker cluster. See startBackend() in parallel.R.
-  cl <- startBackend(ncores)
+  cl <- startBackend(ncores, n_trials)
   if (!is.null(cl)) {
     # Recorded so an unfinished call can stop a worker mid-trial, before it
     # writes a PNG the cleanup has already removed.
@@ -156,7 +159,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
       # One parameter set is shared by every base face, so any key gives the
       # same values; take the first explicitly rather than relying on `base_face`
       # still holding a value left over from the base-image loop above.
-      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial, ], p)
+      trial_noise <- generateNoiseImage(stimuli_params[[names(base_faces)[1]]][trial, ], render_basis)
     }
 
     # Nothing past the first base face is written when save_as_png is FALSE, and
@@ -168,7 +171,7 @@ generateStimuli2IFC <- function(base_face_files, n_trials = 770, img_size = 512,
 
     for (base_face in trial_bases) {
       if (!use_same_parameters) {
-        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], p)
+        trial_noise <- generateNoiseImage(stimuli_params[[base_face]][trial, ], render_basis)
       }
 
       # The frame holds one noise image per trial, so it can carry only the

@@ -24,23 +24,39 @@ computeParticipantCIs <- function(params, responses, participants, p, base,
 
   pb <- txtProgressBar(min = 0, max = npids, style = 3)
 
-  cl <- startBackend(n_cores)
+  cl <- startBackend(n_cores, npids)
   if (!is.null(cl)) {
     on.exit(stopClusterSafely(cl), add = TRUE)
   }
 
-  pid.cis <- foreach::foreach(obs = 1:npids, # nolint: object_name_linter.
+  # In parallel each task carries its own participant's rows, so no worker is
+  # sent the whole parameter matrix. Serially the rows are taken in the loop,
+  # so no second copy of the matrix is made.
+  if (is.null(cl)) {
+    pid_params <- pid_responses <- vector('list', npids)
+  } else {
+    pid_params <- lapply(seq_len(npids), function(obs) params[pids == obs, ])
+    pid_responses <- lapply(seq_len(npids), function(obs) responses[pids == obs])
+  }
+
+  pid.cis <- foreach::foreach(obs = seq_len(npids), obs_params = pid_params, # nolint: object_name_linter.
+    obs_responses = pid_responses,
     .combine = 'c',
     .packages = 'rcicr',
+    .noexport = c('params', 'responses', 'pid_params', 'pid_responses'),
     .options.snow = progressOption(pb, cl)
   ) %dopar% {
 
     # Serial path only; in parallel .options.snow ticks the bar in the parent.
     if (is.null(cl)) setTxtProgressBar(pb, obs)
 
-    pid.rows <- pids == obs # nolint: object_name_linter.
+    if (is.null(cl)) {
+      pid.rows <- pids == obs # nolint: object_name_linter.
+      obs_params <- params[pid.rows, ]
+      obs_responses <- responses[pid.rows]
+    }
 
-    ci <- generateCINoise(params[pid.rows, ], responses[pid.rows], p)
+    ci <- generateCINoise(obs_params, obs_responses, p)
 
     if (save_individual_cis) {
       if (hasMask(mask)) {

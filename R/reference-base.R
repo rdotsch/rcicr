@@ -130,9 +130,10 @@ referenceNoise <- function(source, baseimage, ncores, reference_stimuli = NULL, 
   n_trials <- nrow(params)
   p <- if (exists('s', envir = source, inherits = FALSE)) source$s else source$p
   if (is.null(p)) stop('The stimulus file does not contain its saved noise basis (p or s).')
+  p <- renderingBasis(p)
   pb <- txtProgressBar(min = 0, max = n_trials, style = 3)
   on.exit(close(pb), add = TRUE)
-  cl <- startBackend(ncores)
+  cl <- startBackend(ncores, n_trials)
   on.exit(stopClusterSafely(cl), add = TRUE)
   noise <- foreach::foreach(trial = seq_len(n_trials), .combine = 'cbind',
     .packages = 'rcicr', .options.snow = progressOption(pb, cl)

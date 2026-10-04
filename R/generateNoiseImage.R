@@ -41,3 +41,19 @@ generateNoiseImage <- function(params, p) {
   return(noise)
 
 }
+
+# The basis as the render loops use it, with its patch indices held as integer:
+# params[patchIdx] then skips converting every index, which made a 512-pixel
+# render about a quarter faster and halves what each parallel worker is sent
+# (analyses/worker-memory.md). A double index selects as if truncated toward
+# zero, as as.integer() truncates, so any index in integer range selects the
+# same elements either way; range() checks that without a full-size temporary.
+# A working copy only; the .Rdata file keeps the type it was saved with.
+renderingBasis <- function(p) {
+  for (idx in intersect(c('patchIdx', 'sinIdx'), names(p))) {
+    if (is.double(p[[idx]]) && isTRUE(all(abs(range(p[[idx]])) < .Machine$integer.max))) {
+      storage.mode(p[[idx]]) <- 'integer'
+    }
+  }
+  p
+}
