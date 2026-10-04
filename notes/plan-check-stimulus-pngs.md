@@ -58,16 +58,9 @@ Moving the rendering constants without changing a single stimulus pixel. The gol
 
 ## The run behind the tolerance
 
-This becomes `analyses/stimulus-png-residuals.Rmd`, knitted to `.md` beside it, as the other analyses are. These are the scripts that produced the numbers, as run.
+This becomes `analyses/stimulus-png-residuals.Rmd`, knitted to `.md` beside it, as the other analyses are. These are the files that produced the numbers below, as run from an empty directory.
 
-1.0.1 is installed from its tag into a library of its own:
-
-```sh
-git archive v1.0.1 | tar -x -C v101
-R CMD INSTALL --no-test-load -l lib101 v101
-```
-
-`write_archive.R` writes 20 stimuli of a synthetic face, without the `.Rdata` file. It is run once under each version:
+`write_archive.R` writes 20 stimuli of a synthetic face, without the `.Rdata` file:
 
 ```r
 library(rcicr); out <- commandArgs(TRUE)[1]; ns <- as.integer(commandArgs(TRUE)[2]); n <- 128
@@ -77,13 +70,13 @@ dir.create(out); b <- file.path(out, "base.png"); png::writePNG(face, b)
 invisible(capture.output(generateStimuli2IFC(list(face = b), n_trials = 20, img_size = n, stimulus_path = out, seed = 42, nscales = ns, ncores = 1, save_rdata = FALSE)))
 ```
 
-`residuals.R` regenerates the noise with this version over a grey base and compares:
+`residuals.R` regenerates the noise with the version loaded, over a grey base, and compares:
 
 ```r
 library(rcicr); args <- commandArgs(TRUE); archive <- args[1]; ns <- as.integer(args[2]); n <- 128
 q <- function(e) { capture.output(v <- suppressWarnings(suppressMessages(e))); v }
 grey <- tempfile(fileext = ".png"); png::writePNG(matrix(0.5, n, n), grey)
-path <- tempfile(); q(generateStimuli2IFC(list(face = grey), n_trials = 20, img_size = n, seed = 42, nscales = ns, ncores = 1, stimulus_path = path, save_as_png = FALSE, maximize_baseimage_contrast = FALSE))
+path <- tempfile(); invisible(q(generateStimuli2IFC(list(face = grey), n_trials = 20, img_size = n, seed = 42, nscales = ns, ncores = 1, stimulus_path = path, save_as_png = FALSE, maximize_baseimage_contrast = FALSE)))
 e <- new.env(); load(list.files(path, "Rdata$", full.names = TRUE), envir = e)
 res <- unlist(lapply(1:20, function(i) {
   f <- file.path(archive, sprintf("rcic_face_42_%05d_ori.png", i)); ori <- png::readPNG(f); inv <- png::readPNG(sub("_ori", "_inv", f))
@@ -92,17 +85,22 @@ res <- unlist(lapply(1:20, function(i) {
 cat(sprintf("max residual %.3f/255, share <= 1/255 %.5f, share <= 2/255 %.5f, n=%d\n", max(res) * 255, mean(res <= 1/255 + 1e-12), mean(res <= 2/255 + 1e-12), length(res)))
 ```
 
-Driver:
+`run.sh` installs 1.0.1 from its tag into a library of its own, writes one archive per version and `nscales`, and scores each with this version:
 
 ```sh
+# Run from an empty directory holding write_archive.R and residuals.R; REPO is an rcicr checkout.
+mkdir v101 lib101
+git -C "$REPO" archive v1.0.1 | tar -x -C v101
+R CMD INSTALL --no-test-load -l lib101 v101 > /dev/null 2>&1
 for ns in 1 4; do
-  Rscript write_archive.R cur$ns $ns                     # this version
-  R_LIBS=lib101 Rscript write_archive.R arch$ns $ns      # 1.0.1
-  Rscript residuals.R cur$ns $ns; Rscript residuals.R arch$ns $ns
+  Rscript write_archive.R cur$ns $ns > /dev/null 2>&1                  # this version
+  R_LIBS=lib101 Rscript write_archive.R arch$ns $ns > /dev/null 2>&1   # 1.0.1
+  echo "current nscales=$ns: $(Rscript residuals.R cur$ns $ns 2> /dev/null)"
+  echo "v1.0.1  nscales=$ns: $(Rscript residuals.R arch$ns $ns 2> /dev/null)"
 done
 ```
 
-Output:
+`REPO=<checkout> bash run.sh` prints:
 
 ```
 current nscales=1: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/255 1.00000, n=327143
@@ -111,7 +109,13 @@ current nscales=4: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/25
 v1.0.1  nscales=4: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/255 1.00000, n=327680
 ```
 
-For the 1.0.1, `nscales = 1` archive, the residuals above 1/255, from the same script with the last line replaced by a filter on `res > 1/255`:
+For the 1.0.1, `nscales = 1` archive, `residuals.R` with its last line replaced by
+
+```r
+out <- res[res > 1/255 + 1e-12] * 255; cat(sprintf("beyond 1/255: %d pixels, min %.3f/255, max %.3f/255\n", length(out), min(out), max(out)))
+```
+
+prints
 
 ```
 beyond 1/255: 424 pixels, min 255.503/255, max 256.498/255
