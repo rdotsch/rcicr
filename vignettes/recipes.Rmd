@@ -268,7 +268,7 @@ The `.Rdata` file can be regenerated: `generateStimuli2IFC()` draws the same sti
 
 `ncores`, `label` and `maximize_baseimage_contrast` do not change the parameters.
 
-The base images are not needed for the classification image's noise (`ci`) or its InfoVal: those depend only on the stimulus parameters and the noise basis, so a uniform grey stand-in gives the same values. A uniform image needs `maximize_baseimage_contrast = FALSE`. Everything that involves the base does need it: `base`, `combined`, and `scaled` under `scaling = "matched"`, which maps the CI onto the base image's range.
+The base images are not needed for the classification image's noise (`ci`) or its InfoVal: those depend only on the stimulus parameters and the noise basis, so a uniform grey stand-in gives the same values as the original images would. A uniform image needs `maximize_baseimage_contrast = FALSE`. Everything that involves the base does need it: `base`, `combined`, and `scaled` under `scaling = "matched"`, which maps the CI onto the base image's range.
 
 ### Checking the settings against the stimulus PNGs
 
@@ -329,7 +329,7 @@ setNames(vapply(files, function(f) min(matches(f, archive)), numeric(1)),
          paste("nscales =", candidates))
 ```
 
-The right settings match every trial. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. With the right settings found, regenerate the file once more with the original base images and `maximize_baseimage_contrast`, and use it as the `.Rdata` file. Its `ci` and InfoVal match the original. Its stored base matches only if this version reads the images as the original one did; `NEWS.md` lists where that changed, such as base images with an alpha channel before 1.4.0. Where it did, regenerate the display data with the original version instead. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
+The right settings match every trial. A wrong setting agrees on a small share only: a median of 2% to 18% of pixels per trial for the wrong `nscales`, `sigma`, noise type, seed or base order in the cases measured. With the right settings found, regenerate the file once more with the original base images and `maximize_baseimage_contrast`, and use it as the `.Rdata` file. Its `ci` matches the original. The InfoVal reference stored in the lost file is gone, though: a regenerated file holds none, so the first `computeInfoVal2IFC()` simulates one with the current defaults. To rebuild the reference the original analysis used, pass its settings as in "Reproducing a number from an earlier version" above; if those settings are unknown, the original InfoVal cannot be recovered exactly. Its stored base matches only if this version reads the images as the original one did; `NEWS.md` lists where that changed, such as base images with an alpha channel before 1.4.0. Where it did, regenerate the display data with the original version instead. PNGs written by 1.5.0 and earlier show a few pixels above white as dark, which cost up to 1.5% of a trial's pixels in the configurations measured, far less than the gap between right and wrong settings.
 
 ```{r, include = FALSE}
 par(oldpar)
