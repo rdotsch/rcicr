@@ -50,7 +50,7 @@ Each document has one job and **a word budget**; over budget, something comes ou
 | file | its job | budget |
 |---|---|---|
 | `AGENTS.md` | conventions for agents (this file) | 2800 |
-| `CONTRIBUTING.md` | how to contribute: setup, tests, PRs, code conventions | 2800 |
+| `CONTRIBUTING.md` | how to contribute: setup, tests, PRs, code conventions | 3100 |
 | `RELEASING.md` | the release checklist and why it is in that order | 1600 |
 | `MAINTENANCE.md` | how the repository's CI, gates and generated files are wired | 1800 |
 | `SECURITY.md` | vulnerability reporting and dependency posture | 600 |

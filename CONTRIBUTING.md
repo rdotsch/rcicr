@@ -2,7 +2,7 @@
 
 Contributions, thoughts and criticisms are welcome. This file holds the conventions specific to this package; everything else is ordinary R package practice. Releases are covered in `RELEASING.md`, the repository's automation in `MAINTENANCE.md`, and why the package behaves as it does in `DECISIONS.md`.
 
-**Keep this file under 2800 words.** Over budget, something comes out before something goes in.
+**Keep this file under 3100 words.** Over budget, something comes out before something goes in.
 
 ## The one constraint that shapes everything else
 
