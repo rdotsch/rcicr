@@ -298,9 +298,13 @@ drawStimulusParams <- function(n_trials, nparams, labels, same) {
 
 # A stimulus as participants see it: the noise scaled from the range most of
 # it falls in, [-0.3, 0.3] (see simulateNoiseIntensities()), over the base
-# image, clipped for the PNG writer (#371).
+# image, clipped for the PNG writer (#371). checkStimulusPNGs() inverts it with
+# the same constants.
+stimulusNoiseOffset <- 0.3
+stimulusNoiseScale <- 0.6
+
 renderStimulus <- function(noise, base) {
-  clampUnit((((noise + 0.3) / 0.6) + base) / 2)
+  clampUnit((((noise + stimulusNoiseOffset) / stimulusNoiseScale) + base) / 2)
 }
 
 # Which reader a base image needs: 'png', 'jpeg', or NA.
