@@ -40,8 +40,8 @@
 #' generateStimuli2IFC(list(face = base_face), n_trials = 3, img_size = 32,
 #'                     stimulus_path = stimulus_path, seed = 1, ncores = 1, nscales = 2)
 #' rdata <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE)
-#' checkStimulusPNGs(rdata, stimulus_path)
-checkStimulusPNGs <- function(rdata, png_dir, label = NULL, seed = NULL) {
+#' checkStimulusPNGs2IFC(rdata, stimulus_path)
+checkStimulusPNGs2IFC <- function(rdata, png_dir, label = NULL, seed = NULL) {
   if (missing(png_dir) || !is.character(png_dir) || length(png_dir) != 1L || !dir.exists(png_dir)) {
     stop('png_dir must be the path of an existing directory of stimulus PNGs.', call. = FALSE)
   }

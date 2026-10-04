@@ -9,10 +9,11 @@ How well stimulus PNGs identify the settings that made them
 - [What this shows, and what it does
   not](#what-this-shows-and-what-it-does-not)
 
-`checkStimulusPNGs()` compares a stimulus `.Rdata` file with stimulus
-PNGs. An original and an inverted stimulus are rendered over the same
-base image, so wherever neither is clipped, `ori - inv` is the trial’s
-noise divided by 0.6. A pixel agrees when its residual is within 1/255.
+`checkStimulusPNGs2IFC()` compares a stimulus `.Rdata` file with
+stimulus PNGs. An original and an inverted stimulus are rendered over
+the same base image, so wherever neither is clipped, `ori - inv` is the
+trial’s noise divided by 0.6. A pixel agrees when its residual is within
+1/255.
 
 This document measures two things on synthetic stimulus sets written by
 this checkout and by rcicr 1.0.1:
@@ -187,8 +188,8 @@ rejects only the overflow pixels.
 
 ## Shares with right and wrong settings
 
-`checkStimulusPNGs()` is given the archive’s label and seed, so that the
-PNGs are found whatever the candidate holds. Each row summarises the
+`checkStimulusPNGs2IFC()` is given the archive’s label and seed, so that
+the PNGs are found whatever the candidate holds. Each row summarises the
 per-trial shares of one base label.
 
 ``` r
@@ -213,7 +214,7 @@ score <- function(check) {
   bases <- if (is.null(check$bases)) "face" else check$bases
   rdata <- do.call(candidate, c(list(bases = bases), check$args))
   do.call(rbind, lapply(c("current", "v101"), function(version) {
-    result <- checkStimulusPNGs(rdata, archives[[version]][[check$archive]], label = "rcic",
+    result <- checkStimulusPNGs2IFC(rdata, archives[[version]][[check$archive]], label = "rcic",
                                 seed = archive_seed)
     shares <- split(result$share, factor(result$base, unique(result$base)))
     data.frame(archive = check$archive, candidate = check$setting, version = version,
@@ -295,4 +296,4 @@ the bases in the other order, both labels are scored against the other
 base’s noise.
 
 None of these ranges is a bound for other image sizes, base images or
-settings, and `checkStimulusPNGs()` returns shares, not a verdict.
+settings, and `checkStimulusPNGs2IFC()` returns shares, not a verdict.

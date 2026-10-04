@@ -272,7 +272,7 @@ The base images are not needed for the classification image's noise (`ci`) or it
 
 ### Checking the settings against the stimulus PNGs
 
-If you still have the stimulus PNGs, they confirm the settings. The number of `_ori` files per base image gives `n_trials`, and their size `img_size`. `checkStimulusPNGs()` checks the rest, trial by trial and without the base images: an original and an inverted stimulus hold the same base, so their difference is the trial's noise alone.
+If you still have the stimulus PNGs, they confirm the settings. The number of `_ori` files per base image gives `n_trials`, and their size `img_size`. `checkStimulusPNGs2IFC()` checks the rest, trial by trial and without the base images: an original and an inverted stimulus hold the same base, so their difference is the trial's noise alone.
 
 Here an archive keeps only its PNGs:
 
@@ -287,7 +287,7 @@ unlink(list.files(archive, pattern = "\\.Rdata$", full.names = TRUE))
 head(list.files(archive), 2)
 ```
 
-`regenerate()` writes a stimulus file for candidate settings, over a grey stand-in. `checkStimulusPNGs()` then gives, per trial, the share of unclipped pixels that agree with that file's noise. It needs the archive's `label` and `seed`, because the PNG names carry them:
+`regenerate()` writes a stimulus file for candidate settings, over a grey stand-in. `checkStimulusPNGs2IFC()` then gives, per trial, the share of unclipped pixels that agree with that file's noise. It needs the archive's `label` and `seed`, because the PNG names carry them:
 
 ```{r lost-check}
 regenerate <- function(nscales) {
@@ -308,7 +308,7 @@ files <- lapply(candidates, regenerate)
 
 ```{r lost-scores-show}
 lowest_share <- function(rdata) {
-  min(checkStimulusPNGs(rdata, archive, label = "rcic", seed = 5)$share)
+  min(checkStimulusPNGs2IFC(rdata, archive, label = "rcic", seed = 5)$share)
 }
 setNames(vapply(files, lowest_share, numeric(1)), paste("nscales =", candidates))
 ```

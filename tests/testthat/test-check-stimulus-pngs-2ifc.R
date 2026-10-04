@@ -1,4 +1,4 @@
-# checkStimulusPNGs(): a stimulus .Rdata file checked against stimulus PNGs.
+# checkStimulusPNGs2IFC(): a stimulus .Rdata file checked against stimulus PNGs.
 # Archives are written with the original base images; candidates are
 # regenerated over a grey stand-in, as a researcher with a lost file would.
 
@@ -33,7 +33,7 @@ rdata_in <- function(dir) list.files(dir, pattern = "\\.Rdata$", full.names = TR
 
 test_that("the file that wrote the PNGs matches every trial", {
   archive <- write_archive("face")
-  result <- expect_silent(checkStimulusPNGs(rdata_in(archive), archive))
+  result <- expect_silent(checkStimulusPNGs2IFC(rdata_in(archive), archive))
   expect_equal(result$share, rep(1, 4))
   expect_false(any(result$missing))
   expect_true(all(result$compared > 0))
@@ -42,19 +42,19 @@ test_that("the file that wrote the PNGs matches every trial", {
 
 test_that("a candidate with the right settings over a grey base matches every trial", {
   archive <- write_archive("face")
-  expect_equal(checkStimulusPNGs(write_candidate("face"), archive)$share, rep(1, 4))
+  expect_equal(checkStimulusPNGs2IFC(write_candidate("face"), archive)$share, rep(1, 4))
 })
 
 test_that("a wrong nscales matches only a small share", {
   archive <- write_archive("face")
-  expect_true(all(checkStimulusPNGs(write_candidate("face", nscales = 3), archive)$share < 0.2))
+  expect_true(all(checkStimulusPNGs2IFC(write_candidate("face", nscales = 3), archive)$share < 0.2))
 })
 
 test_that("a wrong seed is scored against the archive's seed, and named when it is not passed", {
   archive <- write_archive("face")
   candidate <- write_candidate("face", seed = 8)
-  expect_true(all(checkStimulusPNGs(candidate, archive, seed = 7)$share < 0.2))
-  expect_error(checkStimulusPNGs(candidate, archive), "label and seed must be the ones")
+  expect_true(all(checkStimulusPNGs2IFC(candidate, archive, seed = 7)$share < 0.2))
+  expect_error(checkStimulusPNGs2IFC(candidate, archive), "label and seed must be the ones")
 })
 
 test_that("a 4096-wide pre-0.3.0 parameter matrix is truncated as generateCI() truncates it", {
@@ -66,12 +66,12 @@ test_that("a 4096-wide pre-0.3.0 parameter matrix is truncated as generateCI() t
   stored$stimuli_params$face <- cbind(params, matrix(0, nrow(params), 4))
   wide <- tempfile(fileext = ".Rdata")
   save(list = ls(stored), file = wide, envir = stored)
-  expect_equal(checkStimulusPNGs(wide, archive)$share, rep(1, 4))
+  expect_equal(checkStimulusPNGs2IFC(wide, archive)$share, rep(1, 4))
 })
 
 test_that("every base label is checked, so a wrong use_same_parameters shows after the first", {
   archive <- write_archive(c("first", "second"), use_same_parameters = FALSE)
-  result <- checkStimulusPNGs(write_candidate(c("first", "second"), use_same_parameters = TRUE),
+  result <- checkStimulusPNGs2IFC(write_candidate(c("first", "second"), use_same_parameters = TRUE),
                               archive)
   expect_equal(result$share[result$base == "first"], rep(1, 4))
   expect_true(all(result$share[result$base == "second"] < 0.2))
@@ -79,43 +79,43 @@ test_that("every base label is checked, so a wrong use_same_parameters shows aft
 
 test_that("PNG names are built as the generator builds them", {
   fractional <- write_archive("face", seed = 1.5)
-  expect_false(any(checkStimulusPNGs(rdata_in(fractional), fractional)$missing))
+  expect_false(any(checkStimulusPNGs2IFC(rdata_in(fractional), fractional)$missing))
   odd_label <- write_archive("face", label = "x_ori.png_y")
-  expect_false(any(checkStimulusPNGs(rdata_in(odd_label), odd_label)$missing))
+  expect_false(any(checkStimulusPNGs2IFC(rdata_in(odd_label), odd_label)$missing))
 })
 
 test_that("RGB copies of the PNGs give the same shares as grey ones", {
   archive <- write_archive("face")
-  grey_shares <- checkStimulusPNGs(write_candidate("face", nscales = 3), archive)$share
+  grey_shares <- checkStimulusPNGs2IFC(write_candidate("face", nscales = 3), archive)$share
   for (file in list.files(archive, pattern = "_(ori|inv)\\.png$", full.names = TRUE)) {
     img <- png::readPNG(file)
     png::writePNG(array(img, c(dim(img), 3)), file)
   }
   expect_length(dim(png::readPNG(list.files(archive, "_ori\\.png$", full.names = TRUE)[1])), 3L)
-  expect_identical(checkStimulusPNGs(write_candidate("face", nscales = 3), archive)$share,
+  expect_identical(checkStimulusPNGs2IFC(write_candidate("face", nscales = 3), archive)$share,
                    grey_shares)
 })
 
 test_that("a missing PNG is reported, and no PNG at all is an error", {
   archive <- write_archive("face")
   unlink(file.path(archive, "rcic_face_7_00002_inv.png"))
-  expect_warning(result <- checkStimulusPNGs(rdata_in(archive), archive),
+  expect_warning(result <- checkStimulusPNGs2IFC(rdata_in(archive), archive),
                  "1 trial\\(s\\) have no ori or inv PNG: face 2")
   expect_identical(result$missing, c(FALSE, TRUE, FALSE, FALSE))
   expect_true(is.na(result$share[2]))
   unlink(list.files(archive, pattern = "_inv\\.png$", full.names = TRUE))
-  expect_warning(result <- checkStimulusPNGs(rdata_in(archive), archive),
+  expect_warning(result <- checkStimulusPNGs2IFC(rdata_in(archive), archive),
                  "4 trial\\(s\\) have no ori or inv PNG")
   expect_true(all(result$missing))
   unlink(list.files(archive, pattern = "\\.png$", full.names = TRUE))
-  expect_error(checkStimulusPNGs(rdata_in(archive), archive), "No stimulus PNG named for label")
+  expect_error(checkStimulusPNGs2IFC(rdata_in(archive), archive), "No stimulus PNG named for label")
 })
 
 test_that("archive PNGs a shorter candidate does not cover are reported", {
   # Shared parameters: a shorter draw is the first rows of the longer one, so
   # every row checked matches and only the unchecked PNGs show the shortfall.
   shared <- write_archive(c("first", "second"))
-  expect_warning(fewer <- checkStimulusPNGs(write_candidate(c("first", "second"), n_trials = 3),
+  expect_warning(fewer <- checkStimulusPNGs2IFC(write_candidate(c("first", "second"), n_trials = 3),
                                             shared),
                  "4 PNG\\(s\\) named for label")
   expect_equal(fewer$share, rep(1, 6))
@@ -123,7 +123,7 @@ test_that("archive PNGs a shorter candidate does not cover are reported", {
                   c("rcic_first_7_00004_ori.png", "rcic_first_7_00004_inv.png",
                     "rcic_second_7_00004_ori.png", "rcic_second_7_00004_inv.png"))
   own <- write_archive(c("first", "second"), use_same_parameters = FALSE)
-  expect_warning(one_base <- checkStimulusPNGs(write_candidate("first",
+  expect_warning(one_base <- checkStimulusPNGs2IFC(write_candidate("first",
                                                                use_same_parameters = FALSE),
                                                own),
                  "8 PNG\\(s\\) named for label")
@@ -133,7 +133,7 @@ test_that("archive PNGs a shorter candidate does not cover are reported", {
 
 test_that("a candidate with other base labels is reported, not taken for an empty folder", {
   archive <- write_archive("face")
-  expect_warning(expect_warning(result <- checkStimulusPNGs(write_candidate("portrait"), archive),
+  expect_warning(expect_warning(result <- checkStimulusPNGs2IFC(write_candidate("portrait"), archive),
                                 "8 PNG\\(s\\) named for label"),
                  "4 trial\\(s\\) have no ori or inv PNG")
   expect_true(all(result$missing))
@@ -142,7 +142,7 @@ test_that("a candidate with other base labels is reported, not taken for an empt
 
 test_that("archive PNGs with a hidden name are scanned too", {
   archive <- write_archive("face", label = ".rcic")
-  expect_warning(result <- checkStimulusPNGs(write_candidate("face", n_trials = 3), archive,
+  expect_warning(result <- checkStimulusPNGs2IFC(write_candidate("face", n_trials = 3), archive,
                                              label = ".rcic"),
                  "2 PNG\\(s\\) named for label")
   expect_equal(result$share, rep(1, 3))
@@ -154,12 +154,12 @@ test_that("trial numbers of more than five digits are recognised", {
   archive <- write_archive("face")
   file.copy(file.path(archive, "rcic_face_7_00001_ori.png"),
             file.path(archive, "rcic_face_7_100000_ori.png"))
-  expect_warning(result <- checkStimulusPNGs(rdata_in(archive), archive), "1 PNG\\(s\\)")
+  expect_warning(result <- checkStimulusPNGs2IFC(rdata_in(archive), archive), "1 PNG\\(s\\)")
   expect_identical(attr(result, "unchecked"), "rcic_face_7_100000_ori.png")
 })
 
 test_that("png_dir is required and must exist", {
   archive <- write_archive("face")
-  expect_error(checkStimulusPNGs(rdata_in(archive)), "png_dir must be")
-  expect_error(checkStimulusPNGs(rdata_in(archive), file.path(archive, "nope")), "png_dir must be")
+  expect_error(checkStimulusPNGs2IFC(rdata_in(archive)), "png_dir must be")
+  expect_error(checkStimulusPNGs2IFC(rdata_in(archive), file.path(archive, "nope")), "png_dir must be")
 })

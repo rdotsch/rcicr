@@ -298,7 +298,7 @@ drawStimulusParams <- function(n_trials, nparams, labels, same) {
 
 # A stimulus as participants see it: the noise scaled from the range most of
 # it falls in, [-0.3, 0.3] (see simulateNoiseIntensities()), over the base
-# image, clipped for the PNG writer (#371). checkStimulusPNGs() inverts it with
+# image, clipped for the PNG writer (#371). checkStimulusPNGs2IFC() inverts it with
 # the same constants.
 stimulusNoiseOffset <- 0.3
 stimulusNoiseScale <- 0.6
