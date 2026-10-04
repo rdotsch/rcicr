@@ -103,6 +103,10 @@ test_that("a missing PNG is reported, and no PNG at all is an error", {
                  "1 trial\\(s\\) have no ori or inv PNG: face 2")
   expect_identical(result$missing, c(FALSE, TRUE, FALSE, FALSE))
   expect_true(is.na(result$share[2]))
+  unlink(list.files(archive, pattern = "_inv\\.png$", full.names = TRUE))
+  expect_warning(result <- checkStimulusPNGs(rdata_in(archive), archive),
+                 "4 trial\\(s\\) have no ori or inv PNG")
+  expect_true(all(result$missing))
   unlink(list.files(archive, pattern = "\\.png$", full.names = TRUE))
   expect_error(checkStimulusPNGs(rdata_in(archive), archive), "No stimulus PNG named for label")
 })
@@ -125,6 +129,16 @@ test_that("archive PNGs a shorter candidate does not cover are reported", {
                  "8 PNG\\(s\\) named for label")
   expect_equal(one_base$share, rep(1, 4))
   expect_true(all(grepl("^rcic_second_", attr(one_base, "unchecked"))))
+})
+
+test_that("archive PNGs with a hidden name are scanned too", {
+  archive <- write_archive("face", label = ".rcic")
+  expect_warning(result <- checkStimulusPNGs(write_candidate("face", n_trials = 3), archive,
+                                             label = ".rcic"),
+                 "2 PNG\\(s\\) named for label")
+  expect_equal(result$share, rep(1, 3))
+  expect_setequal(attr(result, "unchecked"),
+                  c(".rcic_face_7_00004_ori.png", ".rcic_face_7_00004_inv.png"))
 })
 
 test_that("trial numbers of more than five digits are recognised", {

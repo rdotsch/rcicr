@@ -73,7 +73,7 @@ checkStimulusPNGs <- function(rdata, png_dir, label = NULL, seed = NULL) {
   }
   result <- do.call(rbind, rows)
 
-  if (all(result$missing)) {
+  if (!any(file.exists(file.path(png_dir, checked)))) {
     stop('No stimulus PNG named for label "', label, '" and seed ', seed, ' in ', png_dir,
          ' (looked for names such as ', basename(stimulusPngPath(png_dir, label, result$base[1], seed,
                                                                  1L, 'ori')),
@@ -117,7 +117,7 @@ firstChannel <- function(img) {
 # label may contain underscores, so the name is matched by its prefix and suffix; %05d is a minimum
 # width, so the trial has five or more digits.
 stimulusPngNames <- function(png_dir, label, seed) {
-  files <- list.files(png_dir)
+  files <- list.files(png_dir, all.files = TRUE)
   suffix <- paste0('_', escapeRegex(paste(seed)), '_[0-9]{5,}_(ori|inv)\\.png$')
   files[startsWith(files, paste0(label, '_')) & grepl(suffix, files)]
 }
