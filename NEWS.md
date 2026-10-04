@@ -47,20 +47,9 @@
 
   `generateCI()` now records which stimuli it used, whether any was repeated, and how many participants it averaged, as a `trial_design` attribute. `computeInfoVal2IFC()` reads it and prints a message when a CI is scored against a reference over different stimuli, giving the call that matches them: `reference_stimuli = attr(ci, "trial_design")$stimuli`. For a CI that averages repeated presentations or several participants, the message says instead that no reference is defined for that design, and suggests an InfoVal for each participant's CI. The message never changes the number returned. A CI from an older version has no attribute and gets no message. The attribute leaves the list's fields unchanged.
 
-- **`checkStimulusPNGs2IFC()` checks a stimulus `.Rdata` file against stimulus PNGs**, trial by trial, without the base images. It returns the share of each trial's pixels whose difference between the original and inverted stimulus agrees with the file's noise, for every base label, and lists PNGs the file does not cover. Use it to confirm the settings of a file regenerated after the original was lost; `vignette("recipes")` shows how. In the configurations measured in `analyses/stimulus-png-residuals.md`, a nearby Gabor `sigma` agreed on up to 99.6% of a trial's pixels, so compare candidates rather than reading a share alone.
+- **`checkStimulusPNGs2IFC()` checks a stimulus `.Rdata` file against stimulus PNGs**, trial by trial, without the base images. It returns the share of each trial's pixels whose difference between the original and inverted stimulus agrees with the file's noise, for every base label, and lists PNGs the file does not cover. Use it to confirm the settings of a file regenerated after the original was lost; `vignette("recipes")` shows how. It also handles PNGs generated before 1.6.0, when stimulus values above white could wrap into dark 8-bit pixels: a matching one-byte offset is accepted only when the decoded pair could have wrapped. Pixels decoded as exactly black or white are excluded. This check cannot change stimuli participants saw. In the configurations measured in `analyses/stimulus-png-residuals.md`, a nearby Gabor `sigma` agreed on up to 99.6% of a trial's pixels, so compare candidates rather than reading a share alone. (#419)
 
 ## Bug fixes
-
-- **`checkStimulusPNGs2IFC()` recognizes the byte wrap in older stimulus PNGs.** Before
-  1.6.0, an original or inverted stimulus above white was encoded by `png::writePNG()`
-  as an 8-bit byte that wrapped into the image, while the checker treated that decoded
-  pixel as an ordinary interior value. It could therefore report a low agreement share
-  for the correct saved noise. The check now accepts the direct difference or the one
-  256/255 difference made by that historical wrap, only when the decoded pair is
-  dark enough to permit it. Pixels decoded as exactly black or
-  white remain excluded, and a matching share is still evidence to assess across all
-  trials and against other candidate settings; the images participants saw cannot be
-  changed by this check. Current clamped PNGs and saved stimulus data are unchanged. (#419)
 
 - **`generateStimuli2IFC()` never overwrites stimulus PNGs.** PNG names carry no time, so a call in a later minute into the same folder, with the same label, base label and seed, overwrote the earlier PNGs. The earlier `.Rdata` survived and no longer described them, and a shorter rerun left old and new PNGs mixed. Now every PNG the call would write is reserved before anything is generated. If any exists, the call stops with nothing changed. It also stops when two base labels name the same file on this file system, such as `face` and `Face` where case is ignored, and while another same-seed call is writing PNGs into the folder. A call that fails part-way, or that you abort with Esc or Ctrl-C, first stops its parallel workers and then removes the files it created. Only if R itself is killed can empty placeholder PNGs remain; the next call's message says the files it found are empty, as such placeholders would be, so they can be checked and deleted. To regenerate a stimulus set on purpose, delete its PNGs and its `.Rdata` first, or use a different `label` or `stimulus_path`. (#350)
 
