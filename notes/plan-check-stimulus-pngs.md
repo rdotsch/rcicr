@@ -24,7 +24,7 @@ It returns a data frame with one row per base label and trial: `base`, `trial`, 
 ## Behaviour
 
 - **Comparison.** `ori - inv` equals the noise divided by 0.6 wherever neither image is clipped at 0 or 1, because both hold the same base. A pixel agrees when `abs(ori - inv - noise / 0.6) <= 1 / 255`.
-- **Why 1/255.** Measured over 20 trials at 128 px (run and output below), the largest residual on unclipped pixels was 0.5/255. That held for PNGs written by this version and by 1.0.1, at `nscales = 1` and `4`. Pixels that 1.0.1 wrote dark when they overflowed differ by about 256/255; they are 0.13% of pixels at `nscales = 1`. The vignette's 2/255 was looser than needed.
+- **Why 1/255.** Measured over 20 trials at 128 px (run and output below), on PNGs written by this version and by 1.0.1 at `nscales = 1` and `4`: every unclipped pixel's residual was at most 0.5/255, the 8-bit rounding, except the pixels 1.0.1 wrote dark on overflow. Those 424 pixels (0.13%, all at `nscales = 1` from 1.0.1) are off by 255.5/255 to 256.5/255. No residual fell between the two. The vignette's 2/255 was looser than needed.
 - **Parameters.** Read through `loadStimulusParams()`, which converts legacy `s` files, then each base through `selectStimulusParams()`, which truncates pre-0.3.0 4096-wide matrices to 4092, as `generateCI()` does. `loadStimulusParams()` alone does not truncate, and `generateNoiseImage()` rejects a 4096-element row. Noise is rendered with `generateNoiseImage()`.
 - **Missing PNGs.** A row with `missing = TRUE` and `share = NA`, plus one warning naming the first few missing files (`firstFew()`). No PNG found at all stops with an error naming the pattern looked for, and saying that `label` and `seed` must be the archive's.
 - **No verdict.** It returns shares, not `TRUE`/`FALSE`. The measured gap between right and wrong settings (at least 98.6% against a median of 2% to 18%) is documented in `@return` and the recipe.
@@ -58,19 +58,48 @@ Moving the rendering constants without changing a single stimulus pixel. The gol
 
 ## The run behind the tolerance
 
-This becomes `analyses/stimulus-png-residuals.Rmd`, knitted to `.md` beside it, as the other analyses are. 1.0.1 is installed from its tag into a library of its own, as the release gate does. Per archive: a synthetic face at 128 px, `seed = 42`, 20 trials, written with `save_rdata = FALSE`. The noise is regenerated with this version over a grey base. Residuals are `abs(ori - inv - noise / 0.6)` over pixels where neither image is 0 or 1. The script that produced the numbers:
+This becomes `analyses/stimulus-png-residuals.Rmd`, knitted to `.md` beside it, as the other analyses are. These are the scripts that produced the numbers, as run.
+
+1.0.1 is installed from its tag into a library of its own:
+
+```sh
+git archive v1.0.1 | tar -x -C v101
+R CMD INSTALL --no-test-load -l lib101 v101
+```
+
+`write_archive.R` writes 20 stimuli of a synthetic face, without the `.Rdata` file. It is run once under each version:
 
 ```r
+library(rcicr); out <- commandArgs(TRUE)[1]; ns <- as.integer(commandArgs(TRUE)[2]); n <- 128
+x <- matrix(seq(-1, 1, length.out = n), n, n, byrow = TRUE); y <- -matrix(seq(-1, 1, length.out = n), n, n)
+face <- exp(-(x^2 / 0.45 + y^2 / 0.75)); face <- (face - min(face)) / diff(range(face))
+dir.create(out); b <- file.path(out, "base.png"); png::writePNG(face, b)
+invisible(capture.output(generateStimuli2IFC(list(face = b), n_trials = 20, img_size = n, stimulus_path = out, seed = 42, nscales = ns, ncores = 1, save_rdata = FALSE)))
+```
+
+`residuals.R` regenerates the noise with this version over a grey base and compares:
+
+```r
+library(rcicr); args <- commandArgs(TRUE); archive <- args[1]; ns <- as.integer(args[2]); n <- 128
+q <- function(e) { capture.output(v <- suppressWarnings(suppressMessages(e))); v }
 grey <- tempfile(fileext = ".png"); png::writePNG(matrix(0.5, n, n), grey)
-generateStimuli2IFC(list(face = grey), n_trials = 20, img_size = n, seed = 42, nscales = ns,
-                    ncores = 1, stimulus_path = path, save_as_png = FALSE,
-                    maximize_baseimage_contrast = FALSE)
+path <- tempfile(); q(generateStimuli2IFC(list(face = grey), n_trials = 20, img_size = n, seed = 42, nscales = ns, ncores = 1, stimulus_path = path, save_as_png = FALSE, maximize_baseimage_contrast = FALSE))
+e <- new.env(); load(list.files(path, "Rdata$", full.names = TRUE), envir = e)
 res <- unlist(lapply(1:20, function(i) {
-  ori <- png::readPNG(sprintf("%s/rcic_face_42_%05d_ori.png", archive, i))
-  inv <- png::readPNG(sprintf("%s/rcic_face_42_%05d_inv.png", archive, i))
-  r <- abs(ori - inv - generateNoiseImage(e$stimuli_params$face[i, ], e$p) / 0.6)
-  r[ori > 0 & ori < 1 & inv > 0 & inv < 1]
-}))
+  f <- file.path(archive, sprintf("rcic_face_42_%05d_ori.png", i)); ori <- png::readPNG(f); inv <- png::readPNG(sub("_ori", "_inv", f))
+  if (length(dim(ori)) == 3) { ori <- ori[, , 1]; inv <- inv[, , 1] }
+  r <- abs(ori - inv - generateNoiseImage(e$stimuli_params$face[i, ], e$p) / 0.6); u <- ori > 0 & ori < 1 & inv > 0 & inv < 1; r[u] }))
+cat(sprintf("max residual %.3f/255, share <= 1/255 %.5f, share <= 2/255 %.5f, n=%d\n", max(res) * 255, mean(res <= 1/255 + 1e-12), mean(res <= 2/255 + 1e-12), length(res)))
+```
+
+Driver:
+
+```sh
+for ns in 1 4; do
+  Rscript write_archive.R cur$ns $ns                     # this version
+  R_LIBS=lib101 Rscript write_archive.R arch$ns $ns      # 1.0.1
+  Rscript residuals.R cur$ns $ns; Rscript residuals.R arch$ns $ns
+done
 ```
 
 Output:
@@ -82,4 +111,10 @@ current nscales=4: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/25
 v1.0.1  nscales=4: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/255 1.00000, n=327680
 ```
 
-The 0.13% of 1.0.1's pixels outside 1/255 are off by about 256/255: pixels above white that 1.0.1 wrote as dark, which this development version writes white (`NEWS.md`, "Pixels above white"). The analysis file will state the configurations measured and no others; `@return` cites it rather than restating the numbers.
+For the 1.0.1, `nscales = 1` archive, the residuals above 1/255, from the same script with the last line replaced by a filter on `res > 1/255`:
+
+```
+beyond 1/255: 424 pixels, min 255.503/255, max 256.498/255
+```
+
+Those are pixels above white that 1.0.1 wrote as dark, and that this development version writes white (`NEWS.md`, "Pixels above white"). The analysis file will state the configurations measured and no others; `@return` cites it rather than restating the numbers.
