@@ -61,7 +61,7 @@ test_that("legacy PNG byte wrap still matches the recorded noise", {
     decoded_ori <- png::readPNG(ori_path)
     decoded_inv <- png::readPNG(inv_path)
     overflow <- overflow + sum(ori > 1 & decoded_ori > 0 & decoded_ori < 1 &
-                               decoded_inv > 0 & decoded_inv < 1)
+                                 decoded_inv > 0 & decoded_inv < 1)
   }
   expect_gt(overflow, 0L)
   result <- checkStimulusPNGs2IFC(rdata_in(archive), archive)
