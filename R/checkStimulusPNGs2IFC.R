@@ -118,16 +118,23 @@ comparePngPair <- function(ori_file, inv_file, params, p, base, trial) {
   inv <- firstChannel(png::readPNG(inv_file))
   noise <- generateNoiseImage(params, p)
   compared <- ori > 0 & ori < 1 & inv > 0 & inv < 1
-  # Before clipping was added to renderStimulus(), png::writePNG() rounded a value
-  # above 1 to an 8-bit byte, wrapping it by 256 levels. The decoded difference
-  # then moves by 256/255. Check only that one-byte alias in either direction.
-  # Values encoded as 0 or 1 remain excluded by the endpoint filter.
-  residual <- (ori - inv - noise / stimulusNoiseScale)[compared]
-  byte_wrap <- 256 / 255
-  agrees <- pmin(abs(residual), abs(residual - byte_wrap),
-                 abs(residual + byte_wrap)) <= 1 / 255
+  agrees <- pngDifferenceAgrees(ori[compared], inv[compared],
+                                (noise / stimulusNoiseScale)[compared])
   data.frame(base = base, trial = trial, share = if (any(compared)) mean(agrees) else NA_real_,
              compared = sum(compared), missing = FALSE)
+}
+
+# Before clipping was added to renderStimulus(), png::writePNG() rounded a
+# value above 1 to an 8-bit byte, wrapping it by 256 levels. That shifts the
+# decoded difference by 256/255 and the pair's sum below 0.5: before encoding,
+# ori + inv = base + 0.5, with base in [0, 1]. Rounding can raise the wrapped
+# sum to at most 0.5. A brighter pair cannot have wrapped.
+pngDifferenceAgrees <- function(ori, inv, expected) {
+  residual <- ori - inv - expected
+  byte_wrap <- 256 / 255
+  abs(residual) <= 1 / 255 |
+    ((ori + inv) <= 0.5 &
+       pmin(abs(residual - byte_wrap), abs(residual + byte_wrap)) <= 1 / 255)
 }
 
 # Stimulus PNGs are written grey; an RGB(A) copy holds the grey in each colour channel.
