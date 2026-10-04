@@ -10,7 +10,7 @@ quiet <- function(expr) {
 write_archive <- function(bases, ..., seed = 7, nscales = 2, n_trials = 4, label = "rcic") {
   dir <- withr::local_tempdir(.local_envir = parent.frame())
   files <- lapply(seq_along(bases), function(i) {
-    make_square_png(file.path(dir, paste0("base", i, ".png")), size = 32, seed = i)
+    make_square_png(file.path(dir, paste0("base", i, ".png")), size = 32, seed = i) # nolint: object_usage_linter.
   })
   names(files) <- bases
   quiet(generateStimuli2IFC(files, n_trials = n_trials, img_size = 32, stimulus_path = dir,
