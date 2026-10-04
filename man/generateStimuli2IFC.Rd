@@ -45,7 +45,7 @@ generateStimuli2IFC(
 
 \item{sigma}{Sigma of the Gabor patches when \code{noise_type = 'gabor'} (default: 25).}
 
-\item{ncores}{Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).}
+\item{ncores}{Number of CPU cores to use (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in \url{https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md}. No more workers start than there are trials.}
 
 \item{return_as_dataframe}{Boolean: return a data frame with the raw noise of the generated stimuli (default: \code{FALSE}), one row per pixel and one column per trial. With the default \code{use_same_parameters = TRUE} every base image shares the same noise, so that is all of it. With \code{use_same_parameters = FALSE} and more than one base image, only the first base image's noise is returned, because one column per trial cannot hold several. The stimuli are still written for every base image, and \code{save_rdata = TRUE} records every parameter set, so nothing is missing from the files.}
 

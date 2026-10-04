@@ -71,7 +71,7 @@ generateCI(
 
 \item{zmaptargetpath}{Directory to save z-map PNGs to. Required when \code{zmap = TRUE}; there is no default. The directory is created if it does not exist; to just try the function out, use \code{tempdir()}.}
 
-\item{n_cores}{Number of CPU cores used to create the z-map (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy).}
+\item{n_cores}{Number of CPU cores for the per-participant CIs (with \code{participants}) and the \code{'t.test'} z-map (default: \code{detectCores() - 1}; 2 under \code{R CMD check}, per CRAN policy). Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in \url{https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md}. No more workers start than there are participants or trials.}
 
 \item{mask}{Optional mask for the CI: a 2D matrix (0 = masked, 1 = kept) or the path to a greyscale PNG image (black = masked, white = kept). Default: \code{NA}, no mask. Documentation up to and including 1.1.0 described the matrix the wrong way round (1 = masked); the code has always masked where the matrix is 0.}
 
