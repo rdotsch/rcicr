@@ -3,9 +3,11 @@
 Compares the noise a stimulus `.Rdata` file records with the stimulus
 PNGs in a folder, trial by trial. An original and an inverted stimulus
 hold the same base image, so their difference is the trial's noise
-alone: `ori - inv` equals the noise divided by 0.6 wherever neither
-image is clipped at black or white. The base images are therefore not
-needed.
+alone: `ori - inv` equals the noise divided by 0.6 for ordinary interior
+pixels. Older PNGs can wrap a value above white into the interior; their
+difference is compared with the corresponding 8-bit byte-wrap offset
+too. The base images are therefore not needed. A wrapped pixel encoded
+as an endpoint is excluded.
 
 ## Usage
 
@@ -36,11 +38,12 @@ checkStimulusPNGs2IFC(rdata, png_dir, label = NULL, seed = NULL)
 
 A data frame with one row per base label and trial: `base`, `trial`,
 `share` (the share of compared pixels whose `ori - inv` agrees with the
-file's noise divided by 0.6 to within 1/255), `compared` (the number of
-pixels neither image clips) and `missing` (`TRUE` when either PNG is
-absent, with `share` `NA`). Its `unchecked` attribute lists PNGs in
-`png_dir` that carry `label` and `seed` but belong to no row, such as
-trials beyond the file's `n_trials`.
+file's noise divided by 0.6, directly or after a feasible historical
+8-bit byte wrap, to within 1/255), `compared` (the number of pixels with
+both decoded PNG values strictly between 0 and 1) and `missing` (`TRUE`
+when either PNG is absent, with `share` `NA`). Its `unchecked` attribute
+lists PNGs in `png_dir` that carry `label` and `seed` but belong to no
+row, such as trials beyond the file's `n_trials`.
 
 No verdict is returned. In the configurations measured in
 <https://github.com/rdotsch/rcicr/blob/main/analyses/stimulus-png-residuals.md>,

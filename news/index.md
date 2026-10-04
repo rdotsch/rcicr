@@ -284,6 +284,21 @@
 
 ### Bug fixes
 
+- **[`checkStimulusPNGs2IFC()`](https://rdotsch.github.io/rcicr/reference/checkStimulusPNGs2IFC.md)
+  recognizes the byte wrap in older stimulus PNGs.** Before 1.6.0, an
+  original or inverted stimulus above white was encoded by
+  [`png::writePNG()`](https://rdrr.io/pkg/png/man/writePNG.html) as an
+  8-bit byte that wrapped into the image, while the checker treated that
+  decoded pixel as an ordinary interior value. It could therefore report
+  a low agreement share for the correct saved noise. The check now
+  accepts the direct difference or the one 256/255 difference made by
+  that historical wrap, only when the decoded pair is dark enough to
+  permit it. Pixels decoded as exactly black or white remain excluded,
+  and a matching share is still evidence to assess across all trials and
+  against other candidate settings; the images participants saw cannot
+  be changed by this check. Current clamped PNGs and saved stimulus data
+  are unchanged. ([\#419](https://github.com/rdotsch/rcicr/issues/419))
+
 - **[`generateStimuli2IFC()`](https://rdotsch.github.io/rcicr/reference/generateStimuli2IFC.md)
   never overwrites stimulus PNGs.** PNG names carry no time, so a call
   in a later minute into the same folder, with the same label, base
