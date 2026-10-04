@@ -72,7 +72,7 @@ test_that("a 4096-wide pre-0.3.0 parameter matrix is truncated as generateCI() t
 test_that("every base label is checked, so a wrong use_same_parameters shows after the first", {
   archive <- write_archive(c("first", "second"), use_same_parameters = FALSE)
   result <- checkStimulusPNGs2IFC(write_candidate(c("first", "second"), use_same_parameters = TRUE),
-                              archive)
+                                  archive)
   expect_equal(result$share[result$base == "first"], rep(1, 4))
   expect_true(all(result$share[result$base == "second"] < 0.2))
 })
@@ -116,7 +116,7 @@ test_that("archive PNGs a shorter candidate does not cover are reported", {
   # every row checked matches and only the unchecked PNGs show the shortfall.
   shared <- write_archive(c("first", "second"))
   expect_warning(fewer <- checkStimulusPNGs2IFC(write_candidate(c("first", "second"), n_trials = 3),
-                                            shared),
+                                                shared),
                  "4 PNG\\(s\\) named for label")
   expect_equal(fewer$share, rep(1, 6))
   expect_setequal(attr(fewer, "unchecked"),
@@ -124,8 +124,8 @@ test_that("archive PNGs a shorter candidate does not cover are reported", {
                     "rcic_second_7_00004_ori.png", "rcic_second_7_00004_inv.png"))
   own <- write_archive(c("first", "second"), use_same_parameters = FALSE)
   expect_warning(one_base <- checkStimulusPNGs2IFC(write_candidate("first",
-                                                               use_same_parameters = FALSE),
-                                               own),
+                                                                   use_same_parameters = FALSE),
+                                                   own),
                  "8 PNG\\(s\\) named for label")
   expect_equal(one_base$share, rep(1, 4))
   expect_true(all(grepl("^rcic_second_", attr(one_base, "unchecked"))))
@@ -143,7 +143,7 @@ test_that("a candidate with other base labels is reported, not taken for an empt
 test_that("archive PNGs with a hidden name are scanned too", {
   archive <- write_archive("face", label = ".rcic")
   expect_warning(result <- checkStimulusPNGs2IFC(write_candidate("face", n_trials = 3), archive,
-                                             label = ".rcic"),
+                                                 label = ".rcic"),
                  "2 PNG\\(s\\) named for label")
   expect_equal(result$share, rep(1, 3))
   expect_setequal(attr(result, "unchecked"),

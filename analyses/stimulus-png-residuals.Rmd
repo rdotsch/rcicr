@@ -176,7 +176,7 @@ score <- function(check) {
   rdata <- do.call(candidate, c(list(bases = bases), check$args))
   do.call(rbind, lapply(c("current", "v101"), function(version) {
     result <- checkStimulusPNGs2IFC(rdata, archives[[version]][[check$archive]], label = "rcic",
-                                seed = archive_seed)
+                                    seed = archive_seed)
     shares <- split(result$share, factor(result$base, unique(result$base)))
     data.frame(archive = check$archive, candidate = check$setting, version = version,
                base = names(shares),
