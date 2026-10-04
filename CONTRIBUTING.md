@@ -35,10 +35,9 @@ the default pipeline’s output. **If your change turns it red, your
 change alters researchers’ results.** Document it; do not update the
 baseline to match.
 
-`tools/compare-release-output.R` asks the same question from outside. It
-installs a released version of the package from its own commit, runs
-both versions over a battery of configurations, and compares the
-results. Every release has to pass it; see `RELEASING.md`.
+`tools/compare-release-output.R` asks the same question of an installed
+release, running both versions and comparing every output. Every release
+has to pass it; see `RELEASING.md`.
 
 ## Getting set up
 
@@ -76,10 +75,8 @@ _R_CHECK_CRAN_INCOMING_=TRUE _R_CHECK_CRAN_INCOMING_REMOTE_=TRUE \
   R CMD check --as-cran rcicr_X.Y.Z.tar.gz
 ```
 
-Without that toolchain, a run reported 1 ERROR, 1 WARNING and 4 NOTEs
-that all came from the environment; installing it brought the result
-down to 2 NOTEs. **Do not use `--no-manual` to make the manual checks go
-away**: it skips them rather than passing them. A clean run shows
+**Do not use `--no-manual` to make the manual checks go away**: it skips
+them rather than passing them. A clean run shows
 `checking PDF version of manual ... OK` and its HTML equivalent; without
 those two lines, the manual has not been checked.
 
@@ -114,8 +111,7 @@ attaching a real face photo:
   file/directory found at top level”. The file holds `^`-anchored
   *regular expressions*, not globs.
 - **Run `git diff --stat main...HEAD` before opening the PR.**
-  `R CMD check` leaves a full copy of the package behind, and one has
-  been committed by accident.
+  `R CMD check` leaves a full copy of the package behind.
 - PRs are **squash-merged** to `main`, so put what a future reader needs
   (measurements, rejected alternatives, reproducibility impact) in the
   PR description or `NEWS.md`, not only in branch commits.
@@ -137,11 +133,10 @@ attaching a real face photo:
   opposite of what you need to know.
 - **When mutating the code repeatedly, keep backups with `cp` in a
   scratch directory, and never restore with `git checkout <file>`.**
-  That discards unstaged work, and it has destroyed an in-progress
-  implementation here. `git stash push -- R/` is right for proving a
-  single fix; it is the restore that bites. Guard each mutation with a
-  `grep -q MUTANT` check too: a mutation that silently failed to apply
-  looks like a surviving mutant.
+  That discards unstaged work. `git stash push -- R/` is right for
+  proving a single fix; it is the restore that bites. Guard each
+  mutation with a `grep -q MUTANT` check too: a mutation that silently
+  failed to apply looks like a surviving mutant.
 - **When a test reads pixels back from a graphics device, assert only
   relationships between renders.** Every absolute property of those
   pixels belongs to the device: the channel count (cairo writes RGB,
@@ -167,13 +162,9 @@ the merge path makes you notice it: it submits as `COMMENTED`, so
 `gh pr checks` stays green, and `gh pr view --comments` shows only the
 wrapper, never the findings.
 
-**It must never become something that blocks.** If it is switched off,
-erroring or not answering, merge on the other checks.
-
 Push everything first; a push never re-triggers the review. **Marking a
-draft ready cannot be relied on either**: once it triggered a review
-within four minutes, and once not at all in thirty-five. Post the
-request yourself and keep its timestamp:
+draft ready cannot be relied on either**: it does not always trigger
+one. Post the request yourself and keep its timestamp:
 
 ``` sh
 trig=$(gh api repos/rdotsch/rcicr/issues/<n>/comments -f body='@codex review' --jq '.created_at')
@@ -204,11 +195,10 @@ Two conditions clear a squash:
     `required_review_thread_resolution`, so an unresolved thread blocks
     the squash.
 
-Do not work out “is this safe to merge” on the client side. Earlier
-attempts derived it from review objects and `commit_id` and were wrong
-in six ways, each of which let a merge through. The reaction is the one
-signal Codex sets on purpose, and thread resolution is GitHub’s to
-enforce.
+Do not work out “is this safe to merge” from review objects and
+`commit_id`; every such attempt here let a merge through. The reaction
+is the one signal Codex sets on purpose, and thread resolution is
+GitHub’s to enforce.
 
 ## Code conventions
 
@@ -239,12 +229,12 @@ because nothing outside the package can call them.
 | Internal helpers | camelCase, like the exported functions | All but `default_ncores()` follow this; new helpers follow the majority. |
 | Strings | single quotes | Mixed today; not worth the churn to unify, but write new code with single quotes. |
 | Indentation | 2 spaces, no tabs | Already consistent. |
-| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` can be reassigned. Inside the package they resolve through the namespace, so this is style rather than a hazard, but it costs nothing and settles the question. |
+| Booleans | `TRUE`/`FALSE`, never `T`/`F` | `T` and `F` can be reassigned. |
 | Sequences | [`seq_len()`](https://rdrr.io/r/base/seq.html)/[`seq_along()`](https://rdrr.io/r/base/seq.html), not `1:n` | `1:0` counts *backwards*, so `1:length(x)` on an empty vector runs twice. |
 | Returns | explicit [`return()`](https://rdrr.io/r/base/function.html) at the end of exported functions | The existing style throughout. |
 | Files | one file per exported function, named after it | `R/generateCI.R` holds [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md); `zzz.R` holds the [`globalVariables()`](https://rdrr.io/r/utils/globalVariables.html) declarations. |
 | Roxygen | exported functions only | `man/` holds exactly the exports plus the package page. Internal helpers use plain `#` comments, even when they share a file with an export: roxygen on an unexported function either publishes a page no user can reach or needs `@noRd`. |
-| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import matlab` once masked [`base::sum()`](https://rdrr.io/r/base/sum.html) with MATLAB semantics across six files (#182). `matlab` is no longer a dependency (#208). |
+| Namespacing | `pkg::fn()` or `@importFrom pkg fn`, not `@import pkg` | `@import` once masked [`base::sum()`](https://rdrr.io/r/base/sum.html) across six files (#182). |
 
 Line length is not enforced, and some lines in `R/` exceed 100
 characters. Wrap new code at something reasonable instead of reflowing
@@ -279,13 +269,12 @@ Three rules about this package rather than about R:
   `\code{}`) for a package the docs only *mention*.** The pkgdown site
   resolves such a link by loading that package, and a package that is
   installed but cannot load takes the whole site build down. After
-  `raster` was dropped in \#186, the CI runners kept it in their cached
-  library but stopped installing its GDAL/PROJ system libraries, and the
-  build died with `libproj.so.25: cannot open shared object file`: once
-  from the roxygen, and again from the `NEWS.md` entry describing the
-  change. Name it in prose instead: “the raster package’s plot method”.
-  A package that is simply absent is fine. `README.md`, `NEWS.md`,
-  `DECISIONS.md`, this file and the vignettes are all rendered.
+  `raster` was dropped (#186), the runners’ cached copy could no longer
+  load, and the build died with
+  `libproj.so.25: cannot open shared object file`. Name it in prose
+  instead: “the raster package’s plot method”. A package that is simply
+  absent is fine. `README.md`, `NEWS.md`, `DECISIONS.md`, this file and
+  the vignettes are all rendered.
 - **Add new names loaded from an `.Rdata` file to
   [`globalVariables()`](https://rdrr.io/r/utils/globalVariables.html) in
   `R/zzz.R`**, or `R CMD check` NOTEs about undefined globals.
@@ -293,8 +282,7 @@ Three rules about this package rather than about R:
   `.Rdata` file**, and every new saved field against existing argument
   names. [`load()`](https://rdrr.io/r/base/load.html) assigns into the
   calling frame, so a name collision silently overwrites the argument.
-  This has caused three separate bugs, most recently a saved `sigma`
-  replacing
+  This has caused three bugs, one a saved `sigma` replacing
   [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
   z-map blur `sigma`.
   [`DECISIONS.md`](https://rdotsch.github.io/rcicr/DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names)

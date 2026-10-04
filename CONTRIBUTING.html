@@ -43,7 +43,7 @@
 <li>Treat the <code>.Rdata</code> file’s contents as <strong>append-only</strong>: add fields, never rename them or change their meaning. <code><a href="articles/stored-data.html">vignette("stored-data")</a></code> documents its layout, and its build fails on a field without a row, so add the row in the same PR.</li>
 <li>A change that <em>does</em> alter numeric output is not automatically wrong, but it must be deliberate and described in <code>NEWS.md</code> under a “Reproducibility impact” heading: who is affected, and what they should do.</li>
 </ul><p><code>tests/testthat/test-regression-baseline.R</code> is a golden master that pins the default pipeline’s output. <strong>If your change turns it red, your change alters researchers’ results.</strong> Document it; do not update the baseline to match.</p>
-<p><code>tools/compare-release-output.R</code> asks the same question from outside. It installs a released version of the package from its own commit, runs both versions over a battery of configurations, and compares the results. Every release has to pass it; see <code>RELEASING.md</code>.</p>
+<p><code>tools/compare-release-output.R</code> asks the same question of an installed release, running both versions and comparing every output. Every release has to pass it; see <code>RELEASING.md</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="getting-set-up">Getting set up<a class="anchor" aria-label="anchor" href="#getting-set-up"></a></h2>
@@ -58,7 +58,7 @@
 <p><strong>An <code>--as-cran</code> run needs a complete check environment, or it reports failures the package does not have.</strong> Install <code>texlive</code> and <code>tidy</code>, and set both incoming variables:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="va">_R_CHECK_CRAN_INCOMING_</span><span class="op">=</span>TRUE <span class="va">_R_CHECK_CRAN_INCOMING_REMOTE_</span><span class="op">=</span>TRUE <span class="dt">\</span></span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="ex">R</span> CMD check <span class="at">--as-cran</span> rcicr_X.Y.Z.tar.gz</span></code></pre></div>
-<p>Without that toolchain, a run reported 1 ERROR, 1 WARNING and 4 NOTEs that all came from the environment; installing it brought the result down to 2 NOTEs. <strong>Do not use <code>--no-manual</code> to make the manual checks go away</strong>: it skips them rather than passing them. A clean run shows <code>checking PDF version of manual ... OK</code> and its HTML equivalent; without those two lines, the manual has not been checked.</p>
+<p><strong>Do not use <code>--no-manual</code> to make the manual checks go away</strong>: it skips them rather than passing them. A clean run shows <code>checking PDF version of manual ... OK</code> and its HTML equivalent; without those two lines, the manual has not been checked.</p>
 </div>
 <div class="section level2">
 <h2 id="reporting-a-bug">Reporting a bug<a class="anchor" aria-label="anchor" href="#reporting-a-bug"></a></h2>
@@ -77,7 +77,7 @@
 <li>
 <strong>Add every new top-level file to <code>.Rbuildignore</code></strong> unless it belongs in the built package, or <code>R CMD check</code> NOTEs “non-standard file/directory found at top level”. The file holds <code>^</code>-anchored <em>regular expressions</em>, not globs.</li>
 <li>
-<strong>Run <code>git diff --stat main...HEAD</code> before opening the PR.</strong> <code>R CMD check</code> leaves a full copy of the package behind, and one has been committed by accident.</li>
+<strong>Run <code>git diff --stat main...HEAD</code> before opening the PR.</strong> <code>R CMD check</code> leaves a full copy of the package behind.</li>
 <li>PRs are <strong>squash-merged</strong> to <code>main</code>, so put what a future reader needs (measurements, rejected alternatives, reproducibility impact) in the PR description or <code>NEWS.md</code>, not only in branch commits.</li>
 <li>
 <strong>Write for the state the change ends in, not the route you took.</strong> Commit messages, PR descriptions and code comments say what the change is and why it is right. How many attempts it took, and what each got wrong, disappears in the squash and cannot be seen in the merged code. Keep a rejected alternative only when someone would otherwise try it again, and give it one line.</li>
@@ -86,7 +86,7 @@
 <ul><li>
 <strong><code>skip_if_not_installed()</code> is for <code>Suggests</code> packages only.</strong> <code>withr</code> may genuinely be absent, so skipping on it is honest. A package in <code>Imports</code> (<code>png</code>, <code>jpeg</code>, <code>Matrix</code>) cannot be absent, because the package will not load without it. Such a skip never fires for a real reason, and if it somehow did, it would hide the test instead of failing it. At a glance a skip reads as “passed”, which is the opposite of what you need to know.</li>
 <li>
-<strong>When mutating the code repeatedly, keep backups with <code>cp</code> in a scratch directory, and never restore with <code>git checkout &lt;file&gt;</code>.</strong> That discards unstaged work, and it has destroyed an in-progress implementation here. <code>git stash push -- R/</code> is right for proving a single fix; it is the restore that bites. Guard each mutation with a <code>grep -q MUTANT</code> check too: a mutation that silently failed to apply looks like a surviving mutant.</li>
+<strong>When mutating the code repeatedly, keep backups with <code>cp</code> in a scratch directory, and never restore with <code>git checkout &lt;file&gt;</code>.</strong> That discards unstaged work. <code>git stash push -- R/</code> is right for proving a single fix; it is the restore that bites. Guard each mutation with a <code>grep -q MUTANT</code> check too: a mutation that silently failed to apply looks like a surviving mutant.</li>
 <li>
 <strong>When a test reads pixels back from a graphics device, assert only relationships between renders.</strong> Every absolute property of those pixels belongs to the device: the channel count (cairo writes RGB, macOS quartz RGBA) and the values (quartz renders a 0.5 background at about 0.573 where cairo gives 0.502). Render onto a <em>uniform</em> background, so “drew nothing” becomes “the image is one flat value”; count distinct values over the colour channels only; and compare two renders instead of pinning a number. <a href="DECISIONS.html#pixel-assertions-have-measured-the-graphics-device-twice"><code>DECISIONS.md</code></a> has the two failures behind this rule.</li>
 <li>
@@ -97,8 +97,7 @@
 <div class="section level3">
 <h3 id="the-codex-review">The Codex review<a class="anchor" aria-label="anchor" href="#the-codex-review"></a></h3>
 <p>Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes you notice it: it submits as <code>COMMENTED</code>, so <code>gh pr checks</code> stays green, and <code>gh pr view --comments</code> shows only the wrapper, never the findings.</p>
-<p><strong>It must never become something that blocks.</strong> If it is switched off, erroring or not answering, merge on the other checks.</p>
-<p>Push everything first; a push never re-triggers the review. <strong>Marking a draft ready cannot be relied on either</strong>: once it triggered a review within four minutes, and once not at all in thirty-five. Post the request yourself and keep its timestamp:</p>
+<p>Push everything first; a push never re-triggers the review. <strong>Marking a draft ready cannot be relied on either</strong>: it does not always trigger one. Post the request yourself and keep its timestamp:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="va">trig</span><span class="op">=</span><span class="va">$(</span><span class="ex">gh</span> api repos/rdotsch/rcicr/issues/<span class="op">&lt;</span>n<span class="op">&gt;</span>/comments <span class="at">-f</span> body=<span class="st">'@codex review'</span> <span class="at">--jq</span> <span class="st">'.created_at'</span><span class="va">)</span></span></code></pre></div>
 <p>Two conditions clear a squash:</p>
 <ol style="list-style-type: decimal"><li>
@@ -109,7 +108,7 @@
 <div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">gh</span> api <span class="at">--paginate</span> repos/rdotsch/rcicr/pulls/<span class="op">&lt;</span>n<span class="op">&gt;</span>/comments <span class="at">--jq</span> <span class="st">'.[] | "\(.path): \(.body)"'</span></span></code></pre></div>
 </li>
 <li><p><strong>Every answered thread resolved</strong>, with the <code>resolveReviewThread</code> mutation. GitHub <strong>enforces</strong> this half: the <code>main</code> ruleset sets <code>required_review_thread_resolution</code>, so an unresolved thread blocks the squash.</p></li>
-</ol><p>Do not work out “is this safe to merge” on the client side. Earlier attempts derived it from review objects and <code>commit_id</code> and were wrong in six ways, each of which let a merge through. The reaction is the one signal Codex sets on purpose, and thread resolution is GitHub’s to enforce.</p>
+</ol><p>Do not work out “is this safe to merge” from review objects and <code>commit_id</code>; every such attempt here let a merge through. The reaction is the one signal Codex sets on purpose, and thread resolution is GitHub’s to enforce.</p>
 </div>
 </div>
 <div class="section level2">
@@ -143,7 +142,7 @@
 <code>TRUE</code>/<code>FALSE</code>, never <code>T</code>/<code>F</code>
 </td>
 <td>
-<code>T</code> and <code>F</code> can be reassigned. Inside the package they resolve through the namespace, so this is style rather than a hazard, but it costs nothing and settles the question.</td>
+<code>T</code> and <code>F</code> can be reassigned.</td>
 </tr><tr><td>Sequences</td>
 <td>
 <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len()</a></code>/<code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along()</a></code>, not <code>1:n</code>
@@ -166,7 +165,7 @@
 <code>pkg::fn()</code> or <code>@importFrom pkg fn</code>, not <code>@import pkg</code>
 </td>
 <td>
-<code>@import matlab</code> once masked <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> with MATLAB semantics across six files (#182). <code>matlab</code> is no longer a dependency (#208).</td>
+<code>@import</code> once masked <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">base::sum()</a></code> across six files (#182).</td>
 </tr></tbody></table><p>Line length is not enforced, and some lines in <code>R/</code> exceed 100 characters. Wrap new code at something reasonable instead of reflowing what is there.</p>
 <p><strong>Do not line-wrap Markdown prose: write one line per paragraph and let the reader’s editor wrap it. Avoid em dashes</strong>; use a full stop, comma, colon or parentheses instead.</p>
 <p><strong>Show why something matters; never just say that it does.</strong> Cut “It is worth …”, “it matters because”, “in ways that matter” and similar, and state the consequence. Not “worth running first” but “a <code>TRUE</code> ends the matter”.</p>
@@ -174,11 +173,11 @@
 <p><strong>If the package is ever run through <code>styler</code>, that is a commit of its own</strong>, never a side effect of other work, so <code>git blame</code> stays useful. <code>MAINTENANCE.md</code> explains why <code>styler</code> is not a pre-commit hook.</p>
 <p>Three rules about this package rather than about R:</p>
 <ul><li>
-<strong>Do not write a package-qualified call as code (in backticks or <code>\code{}</code>) for a package the docs only <em>mention</em>.</strong> The pkgdown site resolves such a link by loading that package, and a package that is installed but cannot load takes the whole site build down. After <code>raster</code> was dropped in #186, the CI runners kept it in their cached library but stopped installing its GDAL/PROJ system libraries, and the build died with <code>libproj.so.25: cannot open shared object file</code>: once from the roxygen, and again from the <code>NEWS.md</code> entry describing the change. Name it in prose instead: “the raster package’s plot method”. A package that is simply absent is fine. <code>README.md</code>, <code>NEWS.md</code>, <code>DECISIONS.md</code>, this file and the vignettes are all rendered.</li>
+<strong>Do not write a package-qualified call as code (in backticks or <code>\code{}</code>) for a package the docs only <em>mention</em>.</strong> The pkgdown site resolves such a link by loading that package, and a package that is installed but cannot load takes the whole site build down. After <code>raster</code> was dropped (#186), the runners’ cached copy could no longer load, and the build died with <code>libproj.so.25: cannot open shared object file</code>. Name it in prose instead: “the raster package’s plot method”. A package that is simply absent is fine. <code>README.md</code>, <code>NEWS.md</code>, <code>DECISIONS.md</code>, this file and the vignettes are all rendered.</li>
 <li>
 <strong>Add new names loaded from an <code>.Rdata</code> file to <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code> in <code>R/zzz.R</code></strong>, or <code>R CMD check</code> NOTEs about undefined globals.</li>
 <li>
-<strong>Check every new function argument against the names saved in the <code>.Rdata</code> file</strong>, and every new saved field against existing argument names. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> assigns into the calling frame, so a name collision silently overwrites the argument. This has caused three separate bugs, most recently a saved <code>sigma</code> replacing <code><a href="reference/generateCI.html">generateCI()</a></code>’s z-map blur <code>sigma</code>. <a href="DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names"><code>DECISIONS.md</code></a> has the details.</li>
+<strong>Check every new function argument against the names saved in the <code>.Rdata</code> file</strong>, and every new saved field against existing argument names. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> assigns into the calling frame, so a name collision silently overwrites the argument. This has caused three bugs, one a saved <code>sigma</code> replacing <code><a href="reference/generateCI.html">generateCI()</a></code>’s z-map blur <code>sigma</code>. <a href="DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names"><code>DECISIONS.md</code></a> has the details.</li>
 </ul><div class="section level3">
 <h3 id="where-the-code-lives">Where the code lives<a class="anchor" aria-label="anchor" href="#where-the-code-lives"></a></h3>
 <p><code><a href="reference/generateCI.html">generateCI()</a></code> is the usual way in: its body is one call per step (validate, load, select, compute, present, return). Apart from it, everything below is internal.</p>
