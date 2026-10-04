@@ -3,7 +3,9 @@
 #' Compares the noise a stimulus \code{.Rdata} file records with the stimulus PNGs in a folder,
 #' trial by trial. An original and an inverted stimulus hold the same base image, so their
 #' difference is the trial's noise alone: \code{ori - inv} equals the noise divided by 0.6
-#' wherever neither image is clipped at black or white. The base images are therefore not needed.
+#' for ordinary interior pixels. Older PNGs can wrap a value above white into the interior;
+#' their difference is compared with the corresponding 8-bit byte-wrap offset too. The base
+#' images are therefore not needed. A wrapped pixel encoded as an endpoint is excluded.
 #'
 #' Use it to confirm that a regenerated \code{.Rdata} file matches an archive of stimulus PNGs whose
 #' original file was lost; \code{vignette("recipes", package = "rcicr")}, "When the
@@ -19,7 +21,8 @@
 #'   \code{seed = NULL} for a set generated with \code{seed = NULL}.
 #' @return A data frame with one row per base label and trial: \code{base}, \code{trial},
 #'   \code{share} (the share of compared pixels whose \code{ori - inv} agrees with the file's noise
-#'   divided by 0.6 to within 1/255), \code{compared} (the number of pixels neither image clips) and
+#'   divided by 0.6, directly or after a feasible historical 8-bit byte wrap, to within 1/255),
+#'   \code{compared} (the number of pixels with both decoded PNG values strictly between 0 and 1) and
 #'   \code{missing} (\code{TRUE} when either PNG is absent, with \code{share} \code{NA}). Its
 #'   \code{unchecked} attribute lists PNGs in \code{png_dir} that carry \code{label} and
 #'   \code{seed} but belong to no row, such as trials beyond the file's \code{n_trials}.
@@ -115,9 +118,23 @@ comparePngPair <- function(ori_file, inv_file, params, p, base, trial) {
   inv <- firstChannel(png::readPNG(inv_file))
   noise <- generateNoiseImage(params, p)
   compared <- ori > 0 & ori < 1 & inv > 0 & inv < 1
-  agrees <- abs(ori - inv - noise / stimulusNoiseScale)[compared] <= 1 / 255
+  agrees <- pngDifferenceAgrees(ori[compared], inv[compared],
+                                (noise / stimulusNoiseScale)[compared])
   data.frame(base = base, trial = trial, share = if (any(compared)) mean(agrees) else NA_real_,
              compared = sum(compared), missing = FALSE)
+}
+
+# Before clipping was added to renderStimulus(), png::writePNG() rounded a
+# value above 1 to an 8-bit byte, wrapping it by 256 levels. That shifts the
+# decoded difference by 256/255 and the pair's sum below 0.5: before encoding,
+# ori + inv = base + 0.5, with base in [0, 1]. Rounding can raise the wrapped
+# sum to at most 0.5. A brighter pair cannot have wrapped.
+pngDifferenceAgrees <- function(ori, inv, expected) {
+  residual <- ori - inv - expected
+  byte_wrap <- 256 / 255
+  abs(residual) <= 1 / 255 |
+    ((ori + inv) <= 0.5 &
+       pmin(abs(residual - byte_wrap), abs(residual + byte_wrap)) <= 1 / 255)
 }
 
 # Stimulus PNGs are written grey; an RGB(A) copy holds the grey in each colour channel.

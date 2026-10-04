@@ -51,6 +51,17 @@
 
 ## Bug fixes
 
+- **`checkStimulusPNGs2IFC()` recognizes the byte wrap in older stimulus PNGs.** Before
+  1.6.0, an original or inverted stimulus above white was encoded by `png::writePNG()`
+  as an 8-bit byte that wrapped into the image, while the checker treated that decoded
+  pixel as an ordinary interior value. It could therefore report a low agreement share
+  for the correct saved noise. The check now accepts the direct difference or the one
+  256/255 difference made by that historical wrap, only when the decoded pair is
+  dark enough to permit it. Pixels decoded as exactly black or
+  white remain excluded, and a matching share is still evidence to assess across all
+  trials and against other candidate settings; the images participants saw cannot be
+  changed by this check. Current clamped PNGs and saved stimulus data are unchanged. (#419)
+
 - **`generateStimuli2IFC()` never overwrites stimulus PNGs.** PNG names carry no time, so a call in a later minute into the same folder, with the same label, base label and seed, overwrote the earlier PNGs. The earlier `.Rdata` survived and no longer described them, and a shorter rerun left old and new PNGs mixed. Now every PNG the call would write is reserved before anything is generated. If any exists, the call stops with nothing changed. It also stops when two base labels name the same file on this file system, such as `face` and `Face` where case is ignored, and while another same-seed call is writing PNGs into the folder. A call that fails part-way, or that you abort with Esc or Ctrl-C, first stops its parallel workers and then removes the files it created. Only if R itself is killed can empty placeholder PNGs remain; the next call's message says the files it found are empty, as such placeholders would be, so they can be checked and deleted. To regenerate a stimulus set on purpose, delete its PNGs and its `.Rdata` first, or use a different `label` or `stimulus_path`. (#350)
 
 - **`generateCI(zmap = TRUE)` no longer stops with `color intensity ... not in [0,1]` under `scaling = "none"` or an out-of-range `"constant"`.** The z-map is drawn over the combined image, which then leaves [0, 1]: under `"none"`, wherever the base is black and the CI negative, and contrast maximization always makes one base pixel black. The background is now clipped to [0, 1] where it is drawn, in `plotZmap()` too. (#373)

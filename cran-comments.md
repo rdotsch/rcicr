@@ -23,4 +23,4 @@ Recheck reverse dependencies against the current CRAN index before submission.
 
 ## Notes
 
-The release review is tracking the historical-PNG checker finding in #419. Resolve or document its effect before release. Do not carry the check results from 1.5.0 into this submission.
+The historical-PNG checker finding in #419 was fixed and reviewed in #421 before this release tree was built. Do not carry the check results from 1.5.0 into this submission.

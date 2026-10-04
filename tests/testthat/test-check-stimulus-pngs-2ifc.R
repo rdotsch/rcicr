@@ -40,6 +40,61 @@ test_that("the file that wrote the PNGs matches every trial", {
   expect_identical(attr(result, "unchecked"), character(0))
 })
 
+test_that("legacy PNG byte wrap still matches the recorded noise", {
+  archive <- withr::local_tempdir()
+  base <- file.path(archive, "white.png")
+  png::writePNG(matrix(1, 32, 32), base)
+  quiet(generateStimuli2IFC(
+    list(face = base), n_trials = 8, img_size = 32, stimulus_path = archive,
+    seed = 7, nscales = 1, ncores = 1, maximize_baseimage_contrast = FALSE,
+    save_as_png = FALSE
+  ))
+  stored <- new.env()
+  rdata <- rdata_in(archive)
+  load(rdata, envir = stored)
+  # Pick one pixel and align every patch's contrast with its sign there.
+  # The saved parameters, rendered noise and legacy PNGs then describe the same trial.
+  strongest <- which.max(rowMeans(abs(stored$p$patches), dims = 2))
+  pixel <- arrayInd(strongest, dim(stored$p$patches)[1:2])
+  params <- numeric(ncol(stored$stimuli_params$face))
+  params[stored$p$patchIdx[pixel[1], pixel[2], ]] <-
+    sign(stored$p$patches[pixel[1], pixel[2], ])
+  stored$stimuli_params$face[1, ] <- params
+  save(list = ls(stored), file = rdata, envir = stored)
+
+  overflow <- 0L
+  for (trial in seq_len(nrow(stored$stimuli_params$face))) {
+    trial_noise <- generateNoiseImage(stored$stimuli_params$face[trial, ], stored$p)
+    ori <- (((trial_noise + 0.3) / 0.6) + 1) / 2
+    inv <- (((-trial_noise + 0.3) / 0.6) + 1) / 2
+    ori_path <- file.path(archive, sprintf("rcic_face_7_%05d_ori.png", trial))
+    inv_path <- file.path(archive, sprintf("rcic_face_7_%05d_inv.png", trial))
+    png::writePNG(ori, ori_path)
+    png::writePNG(inv, inv_path)
+    decoded_ori <- png::readPNG(ori_path)
+    decoded_inv <- png::readPNG(inv_path)
+    overflow <- overflow + sum(ori > 1 & decoded_ori > 0 & decoded_ori < 1 &
+                                 decoded_inv > 0 & decoded_inv < 1)
+  }
+  expect_gt(overflow, 0L)
+  result <- checkStimulusPNGs2IFC(rdata_in(archive), archive)
+  expect_equal(result$share, rep(1, 8))
+  expect_true(all(result$compared > 0))
+  expect_true(all(checkStimulusPNGs2IFC(write_candidate("face", seed = 8, n_trials = 8),
+                                        archive, seed = 7)$share < 0.2))
+})
+
+test_that("a bright decoded pair cannot be mistaken for a legacy byte wrap", {
+  byte_wrap <- 256 / 255
+  # This pair has an ordinary base of 0.5: its sum is 1, so no old pixel
+  # above white could have produced it, even if the difference fits an alias.
+  expect_false(pngDifferenceAgrees(0.6, 0.4, 0.2 + byte_wrap))
+  expect_false(pngDifferenceAgrees(0.4, 0.6, -0.2 - byte_wrap))
+  expect_true(pngDifferenceAgrees(0.6, 0.4, 0.2))
+  expect_true(pngDifferenceAgrees(0.1, 0.3, -0.2 + byte_wrap))
+  expect_true(pngDifferenceAgrees(0.3, 0.1, 0.2 - byte_wrap))
+})
+
 test_that("a candidate with the right settings over a grey base matches every trial", {
   archive <- write_archive("face")
   expect_equal(checkStimulusPNGs2IFC(write_candidate("face"), archive)$share, rep(1, 4))
