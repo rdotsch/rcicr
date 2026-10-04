@@ -150,8 +150,13 @@ generateCI(
 
 - n_cores:
 
-  Number of CPU cores used to create the z-map (default:
-  `detectCores() - 1`; 2 under `R CMD check`, per CRAN policy).
+  Number of CPU cores for the per-participant CIs (with `participants`)
+  and the `'t.test'` z-map (default: `detectCores() - 1`; 2 under
+  `R CMD check`, per CRAN policy). Each core runs a worker holding its
+  own copy of the noise basis and a render's working memory: 0.8 to 1 GB
+  per worker at 512 pixels in
+  <https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md>.
+  No more workers start than there are participants or trials.
 
 - mask:
 

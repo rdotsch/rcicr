@@ -236,6 +236,12 @@
 <div class="section level3">
 <h3 id="memory-issue-12-was-solved-by-deletion-not-by-chunking">Memory: issue #12 was solved by deletion, not by chunking<a class="anchor" aria-label="anchor" href="#memory-issue-12-was-solved-by-deletion-not-by-chunking"></a></h3>
 <p>The issue proposed spreading stimulus matrices over several <code>.RData</code> files. The real cause was a preallocated <code>zeros(img_size, img_size, n_trials)</code> array, about 1.5 GB at the defaults, living in the parent environment. <code>foreach</code> therefore exported a full copy to <em>every</em> worker, each of which wrote one slice and discarded the rest. Each iteration now allocates only its own trial’s noise.</p>
+</div>
+<div class="section level3">
+<h3 id="a-workers-cost-is-cut-not-its-count-no-fork-workers-no-serial-threshold">A worker’s cost is cut, not its count: no fork workers, no serial threshold<a class="anchor" aria-label="anchor" href="#a-workers-cost-is-cut-not-its-count-no-fork-workers-no-serial-threshold"></a></h3>
+<p>Each worker holds its own basis plus a render’s working memory (<a href="https://github.com/rdotsch/rcicr/issues/405" class="external-link">#405</a>). Renders use the basis with integer patch indices (the file keeps it as saved), each participant’s rows travel with that participant’s task, and no more workers start than a loop has tasks; <a href="analyses/worker-memory.html"><code>analyses/worker-memory.md</code></a> measures each, every result <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to before.</p>
+<p><strong>Rejected: fork workers.</strong> <code>doSNOW</code> cannot drive them (<code>snow</code> has no <code>sendData()</code> method for <code>parallel</code>’s fork nodes), and through <code>doParallel</code> the basis is still serialized to each worker. Kept out of the export and read from a shared environment, 4 workers took 2.6 GB against 3.5 GB, at the price of a dependency, two forms of every loop body and the <code>.options.snow</code> progress callback (#178); measured in #417.</p>
+<p><strong>Rejected: going serial below a participant count.</strong> Parallel lost with 4 participants and won with 100; where they cross depends on the machine, so <code>n_cores</code> stays the caller’s choice, and its documentation says what a worker costs.</p>
 <hr></div>
 </div>
 <div class="section level2">

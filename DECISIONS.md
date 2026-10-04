@@ -595,6 +595,30 @@ a full copy to *every* worker, each of which wrote one slice and
 discarded the rest. Each iteration now allocates only its own trial’s
 noise.
 
+### A worker’s cost is cut, not its count: no fork workers, no serial threshold
+
+Each worker holds its own basis plus a render’s working memory
+([\#405](https://github.com/rdotsch/rcicr/issues/405)). Renders use the
+basis with integer patch indices (the file keeps it as saved), each
+participant’s rows travel with that participant’s task, and no more
+workers start than a loop has tasks;
+[`analyses/worker-memory.md`](https://rdotsch.github.io/rcicr/analyses/worker-memory.md)
+measures each, every result
+[`identical()`](https://rdrr.io/r/base/identical.html) to before.
+
+**Rejected: fork workers.** `doSNOW` cannot drive them (`snow` has no
+`sendData()` method for `parallel`’s fork nodes), and through
+`doParallel` the basis is still serialized to each worker. Kept out of
+the export and read from a shared environment, 4 workers took 2.6 GB
+against 3.5 GB, at the price of a dependency, two forms of every loop
+body and the `.options.snow` progress callback (#178); measured in
+\#417.
+
+**Rejected: going serial below a participant count.** Parallel lost with
+4 participants and won with 100; where they cross depends on the
+machine, so `n_cores` stays the caller’s choice, and its documentation
+says what a worker costs.
+
 ------------------------------------------------------------------------
 
 ## Arguments and internal guards

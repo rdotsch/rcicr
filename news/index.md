@@ -156,6 +156,21 @@
   route. `ncores` is now used only with `reference_method = "images"`.
   ([\#354](https://github.com/rdotsch/rcicr/issues/354))
 
+- **Rendering noise takes less time and each parallel worker less
+  memory, with identical results.** Every render now indexes the noise
+  basis with integer patch indices; the `.Rdata` file keeps the basis as
+  saved. With `participants`, each participant’s rows go only to the
+  worker computing that participant, and no loop starts more workers
+  than it has participants or trials. On 512-pixel stimuli in
+  `analyses/worker-memory.md`, generating stimuli, the t-test z-map and
+  an `"images"` reference took 23% to 29% less time on one core and 13%
+  to 24% less on four, and each worker took 0.8 to 1 GB instead of 0.9
+  to 1.2 GB. `n_cores` and `ncores` now document what a worker costs,
+  and
+  [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)’s
+  that it also runs the per-participant CIs.
+  ([\#405](https://github.com/rdotsch/rcicr/issues/405))
+
 - **`dplyr` and `yesno` are no longer dependencies, and `tibble` is only
   suggested.** All three served a table of precomputed InfoVal
   references that had been empty since 2018, so every lookup missed and

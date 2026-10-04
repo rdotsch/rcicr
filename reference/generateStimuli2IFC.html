@@ -107,7 +107,7 @@
 
 
 <dt id="arg-ncores">ncores<a class="anchor" aria-label="anchor" href="#arg-ncores"></a></dt>
-<dd><p>Number of CPU cores to use (default: <code>detectCores() - 1</code>; 2 under <code>R CMD check</code>, per CRAN policy).</p></dd>
+<dd><p>Number of CPU cores to use (default: <code>detectCores() - 1</code>; 2 under <code>R CMD check</code>, per CRAN policy). Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in <a href="https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md" class="external-link">https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md</a>. No more workers start than there are trials.</p></dd>
 
 
 <dt id="arg-return-as-dataframe">return_as_dataframe<a class="anchor" aria-label="anchor" href="#arg-return-as-dataframe"></a></dt>

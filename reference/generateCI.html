@@ -151,7 +151,7 @@
 
 
 <dt id="arg-n-cores">n_cores<a class="anchor" aria-label="anchor" href="#arg-n-cores"></a></dt>
-<dd><p>Number of CPU cores used to create the z-map (default: <code>detectCores() - 1</code>; 2 under <code>R CMD check</code>, per CRAN policy).</p></dd>
+<dd><p>Number of CPU cores for the per-participant CIs (with <code>participants</code>) and the <code>'t.test'</code> z-map (default: <code>detectCores() - 1</code>; 2 under <code>R CMD check</code>, per CRAN policy). Each core runs a worker holding its own copy of the noise basis and a render's working memory: 0.8 to 1 GB per worker at 512 pixels in <a href="https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md" class="external-link">https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md</a>. No more workers start than there are participants or trials.</p></dd>
 
 
 <dt id="arg-mask">mask<a class="anchor" aria-label="anchor" href="#arg-mask"></a></dt>

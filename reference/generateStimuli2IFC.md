@@ -101,7 +101,11 @@ generateStimuli2IFC(
 - ncores:
 
   Number of CPU cores to use (default: `detectCores() - 1`; 2 under
-  `R CMD check`, per CRAN policy).
+  `R CMD check`, per CRAN policy). Each core runs a worker holding its
+  own copy of the noise basis and a render's working memory: 0.8 to 1 GB
+  per worker at 512 pixels in
+  <https://github.com/rdotsch/rcicr/blob/main/analyses/worker-memory.md>.
+  No more workers start than there are trials.
 
 - return_as_dataframe:
 
