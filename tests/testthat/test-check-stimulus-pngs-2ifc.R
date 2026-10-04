@@ -44,14 +44,27 @@ test_that("legacy PNG byte wrap still matches the recorded noise", {
   archive <- withr::local_tempdir()
   base <- file.path(archive, "white.png")
   png::writePNG(matrix(1, 32, 32), base)
-  noise <- quiet(generateStimuli2IFC(
+  quiet(generateStimuli2IFC(
     list(face = base), n_trials = 8, img_size = 32, stimulus_path = archive,
-    seed = 7, nscales = 2, ncores = 1, maximize_baseimage_contrast = FALSE,
-    save_as_png = FALSE, return_as_dataframe = TRUE
+    seed = 7, nscales = 1, ncores = 1, maximize_baseimage_contrast = FALSE,
+    save_as_png = FALSE
   ))
+  stored <- new.env()
+  rdata <- rdata_in(archive)
+  load(rdata, envir = stored)
+  # Pick one pixel and align every patch's contrast with its sign there.
+  # The saved parameters, rendered noise and legacy PNGs then describe the same trial.
+  strongest <- which.max(rowMeans(abs(stored$p$patches), dims = 2))
+  pixel <- arrayInd(strongest, dim(stored$p$patches)[1:2])
+  params <- numeric(ncol(stored$stimuli_params$face))
+  params[stored$p$patchIdx[pixel[1], pixel[2], ]] <-
+    sign(stored$p$patches[pixel[1], pixel[2], ])
+  stored$stimuli_params$face[1, ] <- params
+  save(list = ls(stored), file = rdata, envir = stored)
+
   overflow <- 0L
-  for (trial in seq_len(ncol(noise))) {
-    trial_noise <- matrix(noise[[trial]], 32, 32)
+  for (trial in seq_len(nrow(stored$stimuli_params$face))) {
+    trial_noise <- generateNoiseImage(stored$stimuli_params$face[trial, ], stored$p)
     ori <- (((trial_noise + 0.3) / 0.6) + 1) / 2
     inv <- (((-trial_noise + 0.3) / 0.6) + 1) / 2
     ori_path <- file.path(archive, sprintf("rcic_face_7_%05d_ori.png", trial))
