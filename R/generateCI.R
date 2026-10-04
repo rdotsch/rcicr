@@ -148,6 +148,7 @@ generateCI <- function(stimuli, responses, baseimage, rdata, participants = NA,
   # what that prevents.
   loaded <- loadStimulusParams(rdata)
   p <- renderingBasis(loaded$p)
+  loaded$p <- NULL
   base_faces <- loaded$base_faces
   stimuli_params <- loaded$stimuli_params
   img_size <- loaded$img_size

@@ -15,9 +15,11 @@ test_that("renderingBasis() holds patch indices as integer and renders identical
   legacy <- list(sinusoids = p$patches, sinIdx = p$patchIdx)
   expect_type(rcicr:::renderingBasis(legacy)$sinIdx, "integer")
 
+  # A double index selects as if truncated, so a fractional one renders the same.
   fractional <- p
   fractional$patchIdx[1] <- 1.5
-  expect_type(rcicr:::renderingBasis(fractional)$patchIdx, "double")
+  expect_identical(generateNoiseImage(params, rcicr:::renderingBasis(fractional)),
+                   generateNoiseImage(params, fractional))
 })
 
 test_that("the stimulus file keeps the basis as it was built", {
