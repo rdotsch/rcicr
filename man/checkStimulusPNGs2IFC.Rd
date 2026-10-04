@@ -20,7 +20,7 @@ names carry. When omitted: the values stored in \code{rdata}. Pass the archive's
 \value{
 A data frame with one row per base label and trial: \code{base}, \code{trial},
   \code{share} (the share of compared pixels whose \code{ori - inv} agrees with the file's noise
-  divided by 0.6, directly or after one historical 8-bit byte wrap, to within 1/255),
+  divided by 0.6, directly or after a feasible historical 8-bit byte wrap, to within 1/255),
   \code{compared} (the number of pixels with both decoded PNG values strictly between 0 and 1) and
   \code{missing} (\code{TRUE} when either PNG is absent, with \code{share} \code{NA}). Its
   \code{unchecked} attribute lists PNGs in \code{png_dir} that carry \code{label} and
