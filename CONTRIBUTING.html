@@ -179,7 +179,34 @@
 <strong>Add new names loaded from an <code>.Rdata</code> file to <code><a href="https://rdrr.io/r/utils/globalVariables.html" class="external-link">globalVariables()</a></code> in <code>R/zzz.R</code></strong>, or <code>R CMD check</code> NOTEs about undefined globals.</li>
 <li>
 <strong>Check every new function argument against the names saved in the <code>.Rdata</code> file</strong>, and every new saved field against existing argument names. <code><a href="https://rdrr.io/r/base/load.html" class="external-link">load()</a></code> assigns into the calling frame, so a name collision silently overwrites the argument. This has caused three separate bugs, most recently a saved <code>sigma</code> replacing <code><a href="reference/generateCI.html">generateCI()</a></code>’s z-map blur <code>sigma</code>. <a href="DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names"><code>DECISIONS.md</code></a> has the details.</li>
-</ul></div>
+</ul><div class="section level3">
+<h3 id="where-the-code-lives">Where the code lives<a class="anchor" aria-label="anchor" href="#where-the-code-lives"></a></h3>
+<p><code><a href="reference/generateCI.html">generateCI()</a></code> is the usual way in: its body is one call per step (validate, load, select, compute, present, return). Apart from it, everything below is internal.</p>
+<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>file</th>
+<th>what is in it</th>
+</tr></thead><tbody><tr><td><code>R/generateCI.R</code></td>
+<td>
+<code><a href="reference/generateCI.html">generateCI()</a></code>, plus <code>hasMask()</code>, <code>applyMask()</code>, <code>applyScaling()</code>, <code>combine()</code>, <code>saveToImage()</code>
+</td>
+</tr><tr><td><code>R/rdata.R</code></td>
+<td>reading and guarding <code>.Rdata</code> files: <code>loadStimulusParams()</code>, <code>captureArgs()</code>, <code>rdataWriterNote()</code>
+</td>
+</tr><tr><td><code>R/ci-inputs.R</code></td>
+<td>arguments to a parameter matrix: <code>coerceTrialVectors()</code>, <code>selectBaseImage()</code>, <code>aggregateResponses()</code>, <code>selectStimulusParams()</code>
+</td>
+</tr><tr><td><code>R/ci-compute.R</code></td>
+<td>
+<code>computeParticipantCIs()</code>: one CI per participant, plus their average</td>
+</tr><tr><td><code>R/zmap-compute.R</code></td>
+<td>
+<code>computeZmapQuick()</code>, <code>computeZmapTTest()</code>
+</td>
+</tr><tr><td><code>R/parallel.R</code></td>
+<td>the <code>foreach</code> backend: <code>default_ncores()</code>, <code>startBackend()</code>, <code>progressOption()</code>, <code>stopClusterSafely()</code>
+</td>
+</tr></tbody></table><p>The mask helpers are in <code>R/generateCI.R</code> because <code><a href="reference/plotZmap.html">plotZmap()</a></code> masks a z-map the same way.</p>
+</div>
+</div>
 <div class="section level2">
 <h2 id="larger-changes">Larger changes<a class="anchor" aria-label="anchor" href="#larger-changes"></a></h2>
 <p>Known work lives in <a href="https://github.com/rdotsch/rcicr/issues" class="external-link">GitHub Issues</a>, prioritised with the <code>P0</code>–<code>P3</code> labels: P0 correctness and availability, P1 dependencies and toolchain, P2 usability and maintainability, P3 user-requested features. Each issue carries the evidence behind it. Read the tracker before starting anything substantial, and comment on the issue before you begin so the work is not duplicated.</p>

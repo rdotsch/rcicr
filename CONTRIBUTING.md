@@ -300,6 +300,26 @@ Three rules about this package rather than about R:
   [`DECISIONS.md`](https://rdotsch.github.io/rcicr/DECISIONS.html#load-assigns-into-the-calling-frame--check-every-new-argument-against-saved-names)
   has the details.
 
+### Where the code lives
+
+[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
+is the usual way in: its body is one call per step (validate, load,
+select, compute, present, return). Apart from it, everything below is
+internal.
+
+| file | what is in it |
+|----|----|
+| `R/generateCI.R` | [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md), plus `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
+| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
+| `R/ci-inputs.R` | arguments to a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
+| `R/ci-compute.R` | `computeParticipantCIs()`: one CI per participant, plus their average |
+| `R/zmap-compute.R` | `computeZmapQuick()`, `computeZmapTTest()` |
+| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
+
+The mask helpers are in `R/generateCI.R` because
+[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
+masks a z-map the same way.
+
 ## Larger changes
 
 Known work lives in [GitHub

@@ -143,57 +143,6 @@
 <p><strong>2. Analysis.</strong> <code><a href="reference/generateCI.html">generateCI()</a></code> loads the stimulus file and looks up the parameters of the stimuli a participant saw. It weights each by the response (<code>1</code> = original chosen, <code>-1</code> = inverted chosen) and averages them into one image: the classification image. After that, <code><a href="reference/autoscale.html">autoscale()</a></code> puts a batch of CIs on one scale so they can be compared by eye, <code><a href="reference/computeInfoVal2IFC.html">computeInfoVal2IFC()</a></code> scores a CI against a simulated null distribution (<code><a href="reference/batchComputeInfoVal2IFC.html">batchComputeInfoVal2IFC()</a></code> scores a list of them), and <code><a href="reference/plotZmap.html">plotZmap()</a></code> shows which regions carry reliable signal.</p>
 <p><strong>The <code>.Rdata</code> file is the only link between the two halves.</strong> Without it, your stimuli can only be regenerated from the seed together with every generation setting, which <code><a href="articles/recipes.html">vignette("recipes", package = "rcicr")</a></code> shows how to do and check. Back it up with your response data and keep it with anything you publish. Recomputing a classification image years later needs this file and nothing else. <code><a href="articles/stored-data.html">vignette("stored-data", package = "rcicr")</a></code> lists everything in it, and in the classification image <code><a href="reference/generateCI.html">generateCI()</a></code> returns.</p>
 <p><strong>Compare numbers, not figures, across machines.</strong> Classification images, scaling, informational value and z-scores are ordinary R arithmetic and do not depend on your operating system. The test suite pins them to fixed values, and they hold on Linux and macOS ARM64 alike. The one exception is the PNG that <code><a href="reference/plotZmap.html">plotZmap()</a></code> writes, because it is the only function here that draws through a graphics device. Devices differ between platforms in colour management and in whether they write an alpha channel, so the same z-map gives figures that look identical but are not byte-identical. A z-map image that differs pixel for pixel on a colleague’s machine is not a different result. Every other PNG the package writes comes straight from the pixel array via <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code>, so this does not apply to them. See <code><a href="reference/plotZmap.html">?plotZmap</a></code>.</p>
-<div class="section level3">
-<h3 id="where-the-code-lives">Where the code lives<a class="anchor" aria-label="anchor" href="#where-the-code-lives"></a>
-</h3>
-<p>This section is for reading the source. Apart from <code><a href="reference/generateCI.html">generateCI()</a></code> itself, every function in the table below is <strong>internal</strong>: not exported, so your scripts cannot call it. For the public functions, see the <a href="https://rdotsch.github.io/rcicr/">function reference</a> or <code><a href="https://rdotsch.github.io/rcicr/reference">help(package = "rcicr")</a></code>.</p>
-<p>The usual starting point is <code><a href="reference/generateCI.html">generateCI()</a></code>. Its body is one call per step (validate, load, select, compute, present, return), and the steps live in these files, grouped by concern:</p>
-<table class="table">
-<colgroup>
-<col width="50%">
-<col width="50%">
-</colgroup>
-<thead><tr>
-<th>file</th>
-<th>what is in it</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><code>R/generateCI.R</code></td>
-<td>
-<code><a href="reference/generateCI.html">generateCI()</a></code> itself, plus the presentation helpers <code>hasMask()</code>, <code>applyMask()</code>, <code>applyScaling()</code>, <code>combine()</code>, <code>saveToImage()</code>
-</td>
-</tr>
-<tr>
-<td><code>R/rdata.R</code></td>
-<td>reading and guarding <code>.Rdata</code> files: <code>loadStimulusParams()</code>, <code>captureArgs()</code>, <code>rdataWriterNote()</code>
-</td>
-</tr>
-<tr>
-<td><code>R/ci-inputs.R</code></td>
-<td>turning the caller’s arguments into a parameter matrix: <code>coerceTrialVectors()</code>, <code>selectBaseImage()</code>, <code>aggregateResponses()</code>, <code>selectStimulusParams()</code>
-</td>
-</tr>
-<tr>
-<td><code>R/ci-compute.R</code></td>
-<td>
-<code>computeParticipantCIs()</code>: one CI per participant, plus their average</td>
-</tr>
-<tr>
-<td><code>R/zmap-compute.R</code></td>
-<td>
-<code>computeZmapQuick()</code> and <code>computeZmapTTest()</code>
-</td>
-</tr>
-<tr>
-<td><code>R/parallel.R</code></td>
-<td>the <code>foreach</code> backend: <code>default_ncores()</code>, <code>startBackend()</code>, <code>progressOption()</code>, <code>stopClusterSafely()</code>
-</td>
-</tr>
-</tbody>
-</table>
-<p>The mask helpers live in <code>R/generateCI.R</code> rather than in a file of their own because <code><a href="reference/plotZmap.html">plotZmap()</a></code> uses them too: masking a z-map and masking a CI are the same operation.</p>
-</div>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>

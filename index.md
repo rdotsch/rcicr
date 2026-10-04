@@ -194,34 +194,6 @@ array via
 does not apply to them. See
 [`?plotZmap`](https://rdotsch.github.io/rcicr/reference/plotZmap.md).
 
-### Where the code lives
-
-This section is for reading the source. Apart from
-[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
-itself, every function in the table below is **internal**: not exported,
-so your scripts cannot call it. For the public functions, see the
-[function reference](https://rdotsch.github.io/rcicr/) or
-[`help(package = "rcicr")`](https://rdotsch.github.io/rcicr/reference).
-
-The usual starting point is
-[`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md).
-Its body is one call per step (validate, load, select, compute, present,
-return), and the steps live in these files, grouped by concern:
-
-| file | what is in it |
-|----|----|
-| `R/generateCI.R` | [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md) itself, plus the presentation helpers `hasMask()`, `applyMask()`, `applyScaling()`, `combine()`, `saveToImage()` |
-| `R/rdata.R` | reading and guarding `.Rdata` files: `loadStimulusParams()`, `captureArgs()`, `rdataWriterNote()` |
-| `R/ci-inputs.R` | turning the caller’s arguments into a parameter matrix: `coerceTrialVectors()`, `selectBaseImage()`, `aggregateResponses()`, `selectStimulusParams()` |
-| `R/ci-compute.R` | `computeParticipantCIs()`: one CI per participant, plus their average |
-| `R/zmap-compute.R` | `computeZmapQuick()` and `computeZmapTTest()` |
-| `R/parallel.R` | the `foreach` backend: `default_ncores()`, `startBackend()`, `progressOption()`, `stopClusterSafely()` |
-
-The mask helpers live in `R/generateCI.R` rather than in a file of their
-own because
-[`plotZmap()`](https://rdotsch.github.io/rcicr/reference/plotZmap.md)
-uses them too: masking a z-map and masking a CI are the same operation.
-
 ## Citation
 
 `citation("rcicr")` gives the reference for the software. If you use the
