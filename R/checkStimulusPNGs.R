@@ -24,9 +24,11 @@
 #'   \code{seed} but belong to no row, such as trials beyond the file's \code{n_trials}.
 #'
 #'   No verdict is returned. In the configurations measured in
-#'   \code{analyses/stimulus-png-residuals.md} in the source repository, the right settings matched
-#'   every pixel 8-bit rounding leaves alone and a wrong one only a small share; check every base
-#'   label, since with several bases a wrong \code{use_same_parameters} shows only after the first.
+#'   \url{https://github.com/rdotsch/rcicr/blob/main/analyses/stimulus-png-residuals.md}, a wrong
+#'   \code{nscales}, seed, noise type, base order or \code{use_same_parameters} agreed on 2.1\% to
+#'   7.4\% of pixels per trial, but a Gabor \code{sigma} of 24 where the PNGs used 25 on 95\% to
+#'   99.6\%: compare candidates against the same PNGs. Check every base label, since with several bases a
+#'   wrong \code{use_same_parameters} shows only after the first.
 #'
 #'   Warns about missing and unchecked PNGs, and stops if no PNG named for \code{label} and
 #'   \code{seed} exists.
