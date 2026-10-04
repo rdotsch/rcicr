@@ -85,31 +85,36 @@ res <- unlist(lapply(1:20, function(i) {
 cat(sprintf("max residual %.3f/255, share <= 1/255 %.5f, share <= 2/255 %.5f, n=%d\n", max(res) * 255, mean(res <= 1/255 + 1e-12), mean(res <= 2/255 + 1e-12), length(res)))
 ```
 
-`run.sh` installs 1.0.1 from its tag into a library of its own, writes one archive per version and `nscales`, and scores each with this version:
+`run.sh` installs 1.0.1 from its tag and the checkout under test each into a library of its own, selects them explicitly with `R_LIBS`, writes one archive per version and `nscales`, and scores each with the checkout:
 
 ```sh
-# Run from an empty directory holding write_archive.R and residuals.R; REPO is an rcicr checkout.
-mkdir v101 lib101
+# Run from an empty directory holding write_archive.R and residuals.R; REPO is the rcicr checkout to measure.
+mkdir v101 lib101 libcur
 git -C "$REPO" archive v1.0.1 | tar -x -C v101
 R CMD INSTALL --no-test-load -l lib101 v101 > /dev/null 2>&1
+R CMD INSTALL --no-test-load -l libcur "$REPO" > /dev/null 2>&1
+echo "current: $(R_LIBS=libcur Rscript -e 'cat(format(packageVersion("rcicr")))')"
+echo "v1.0.1:  $(R_LIBS=lib101 Rscript -e 'cat(format(packageVersion("rcicr")))')"
 for ns in 1 4; do
-  Rscript write_archive.R cur$ns $ns > /dev/null 2>&1                  # this version
-  R_LIBS=lib101 Rscript write_archive.R arch$ns $ns > /dev/null 2>&1   # 1.0.1
-  echo "current nscales=$ns: $(Rscript residuals.R cur$ns $ns 2> /dev/null)"
-  echo "v1.0.1  nscales=$ns: $(Rscript residuals.R arch$ns $ns 2> /dev/null)"
+  R_LIBS=libcur Rscript write_archive.R cur$ns $ns > /dev/null 2>&1
+  R_LIBS=lib101 Rscript write_archive.R arch$ns $ns > /dev/null 2>&1
+  echo "current nscales=$ns: $(R_LIBS=libcur Rscript residuals.R cur$ns $ns 2> /dev/null)"
+  echo "v1.0.1  nscales=$ns: $(R_LIBS=libcur Rscript residuals.R arch$ns $ns 2> /dev/null)"
 done
 ```
 
 `REPO=<checkout> bash run.sh` prints:
 
 ```
+current: 1.5.0.9000
+v1.0.1:  1.0.1
 current nscales=1: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/255 1.00000, n=327143
 v1.0.1  nscales=1: max residual 256.498/255, share <= 1/255 0.99871, share <= 2/255 0.99871, n=327567
 current nscales=4: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/255 1.00000, n=327680
 v1.0.1  nscales=4: max residual 0.500/255, share <= 1/255 1.00000, share <= 2/255 1.00000, n=327680
 ```
 
-For the 1.0.1, `nscales = 1` archive, `residuals.R` with its last line replaced by
+For the 1.0.1, `nscales = 1` archive, `R_LIBS=libcur Rscript` on `residuals.R` with its last line replaced by
 
 ```r
 out <- res[res > 1/255 + 1e-12] * 255; cat(sprintf("beyond 1/255: %d pixels, min %.3f/255, max %.3f/255\n", length(out), min(out), max(out)))
