@@ -1,4 +1,4 @@
-# rcicr (development version)
+# rcicr 1.6.0 (2026-10-04)
 
 ## Reproducibility impact
 
