@@ -6,7 +6,7 @@ Update of rcicr 1.5.0, published on CRAN on 2026-09-27. The maintainer address i
 
 ## What changed
 
-NEWS.md describes the user-facing changes and their reproducibility impact. This release adds references matched to the stimuli and pixels of a classification image, a Gram-matrix method for computing reference norms, batch InfoVal, trial and scaling metadata, stimulus PNG checking, and more explicit validation. Existing stored references remain reusable. The NEWS.md reproducibility section explains when newly computed values or PNG pixels differ.
+NEWS.md describes the user-facing changes and their reproducibility impact. This release adds references matched to the stimuli and pixels of a classification image, a Gram-matrix method for computing reference norms, batch InfoVal, trial and scaling metadata, stimulus PNG checking, and more explicit validation. A reference stored by 1.4.0 or later, or drawn with a `response_seed`, is reused as stored; other stored references are rebuilt once, with a message. The NEWS.md reproducibility section explains when newly computed values or PNG pixels differ.
 
 ## Test environments and R CMD check results
 
@@ -20,7 +20,3 @@ Pending release-branch checks. Record the exact release commit, R versions, plat
 ## Downstream dependencies
 
 Recheck reverse dependencies against the current CRAN index before submission.
-
-## Notes
-
-The historical-PNG checker finding in #419 was fixed and reviewed in #421 before this release tree was built. Do not carry the check results from 1.5.0 into this submission.
