@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Build an R toolchain able to run the test suite and the release gate inside a
+# Build an R toolchain able to run the test suite, the release gate and
+# `R CMD check --as-cran` (PDF manual included) inside a
 # Claude Code container. Idempotent; safe to re-run.
 #
 #   bash tools/setup-container-r.sh            # toolchain + rcicr installed
@@ -54,6 +55,14 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
   r-cran-abind r-cran-tensor r-cran-dbi r-cran-assertthat r-cran-munsell \
   r-cran-plyr r-cran-ggplot2 r-cran-gridextra r-cran-purrr \
   r-cran-testthat r-cran-withr r-cran-knitr r-cran-covr
+
+# For `R CMD check --as-cran`: the PDF manual needs LaTeX and inconsolata
+# (texlive-fonts-extra), the check sets LC_CTYPE to en_US.UTF-8 itself, and
+# qpdf and tidy are --as-cran's PDF and HTML checks.
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+  texlive-latex-base texlive-latex-recommended texlive-fonts-recommended \
+  texlive-fonts-extra qpdf tidy locales
+locale -a | grep -qi '^en_US\.utf8$' || locale-gen en_US.UTF-8
 
 # --- the yesno stub -------------------------------------------------------
 if ! Rscript -e 'quit(status = !requireNamespace("yesno", quietly = TRUE))'; then
