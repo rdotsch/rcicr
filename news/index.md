@@ -2081,8 +2081,7 @@ applies to you too — it is where the bulk of the bug fixes are.
   neighbourhood.
 - `Imports` shrank from 27 packages to 15; none of the removed ones were
   used.
-- Deprecated calls replaced:
-  [`dplyr::progress_estimated()`](https://dplyr.tidyverse.org/reference/progress_estimated.html),
+- Deprecated calls replaced: `dplyr::progress_estimated()`,
   [`purrr::rbernoulli()`](https://purrr.tidyverse.org/reference/rbernoulli.html),
   and
   [`citEntry()`](https://rdrr.io/r/utils/citEntry.html)/[`personList()`](https://rdrr.io/r/utils/personList.html)

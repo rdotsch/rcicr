@@ -21,8 +21,11 @@ except one:
 bash tools/setup-container-r.sh      # toolchain + rcicr; safe to re-run
 ```
 
-After that the ordinary workflow applies, including the release gate.
-Measured here:
+After that the ordinary workflow applies, including the release gate and
+`R CMD check --as-cran` with the PDF manual. That check leaves two NOTEs
+only this sandbox gives: `unable to verify current time`, and
+`Uses the superseded package: 'doSNOW'`, from a list hard-coded in R
+4.3.3 that win-builder’s R did not flag for 1.5.0. Measured here:
 [`testthat::test_local()`](https://testthat.r-lib.org/reference/test_package.html)
 gives 2069 passing and 1 skip, as uid 1000. The skip is the test that
 needs a case-insensitive file system.
