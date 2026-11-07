@@ -1,4 +1,4 @@
-# rcicr 1.6.0 (2026-10-09)
+# rcicr 1.6.0 (2026-11-07)
 
 ## Reproducibility impact
 
@@ -46,7 +46,7 @@
 
   `generateCI()` records the trial design, and scoring prints a message when it does not match the reference. For a CI without repeated presentations or participant averaging, the suggested call is `reference_stimuli = attr(ci, "trial_design")$stimuli`. For repeated presentations or a CI averaged over participants, no calibrated reference is defined; score each participant separately where appropriate. The message does not change the score. Older CI objects lack this metadata and receive no design message.
 
-- **The new `checkStimulusPNGs2IFC()` compares a stimulus `.Rdata` file with archived PNGs without the base images.** It reports pixel agreement for every trial and base label, and PNGs the file does not cover. It supports older PNGs with wrapped bright pixels and excludes pixels decoded as black or white. Use it to check a regenerated file after the original was lost. A high agreement share alone is not a verdict: nearby settings can also agree closely. Compare candidates as shown in `vignette("recipes")`; measurements are in `analyses/stimulus-png-residuals.md`. (#419)
+- **The new `checkStimulusPNGs2IFC()` compares a stimulus `.Rdata` file with archived PNGs without the base images.** It reports pixel agreement for every trial and base label, and PNGs the file does not cover. It supports older PNGs with wrapped bright pixels and excludes pixels decoded as black or white. Use it to check a regenerated file after the original was lost. A high agreement share alone is not a verdict: nearby settings can also agree closely. Compare candidates as shown in `vignette("recipes")`; measurements are in `analyses/stimulus-png-residuals.md`. (#413, #419)
 
 ## Bug fixes
 
