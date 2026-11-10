@@ -44,6 +44,12 @@ jobs:
           R CMD build --no-build-vignettes .
           R CMD check --no-manual --ignore-vignettes rcicr_*.tar.gz
 
-      - name: Test output
-        if: always()
-        run: cat rcicr.Rcheck/tests/testthat.Rout* 2>/dev/null | tail -300 || true
+      - name: Failed tests
+        if: failure()
+        run: grep -E "^── (Failure|Error)" rcicr.Rcheck/tests/testthat.Rout.fail || true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: mkl-testthat-output
+          path: rcicr.Rcheck/tests/testthat.Rout.fail
