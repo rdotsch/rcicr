@@ -93,7 +93,7 @@ test_that("an .Rdata file predating noise_type is scored without consulting it",
   intact <- suppressWarnings(generateReferenceDistribution2IFC(
     fresh, iter = 3, ncores = 1, save_rdata = FALSE
   ))
-  expect_identical(after$reference_norms, intact)
+  expect_same_arithmetic(after$reference_norms, intact)
 })
 
 test_that("the reference distribution is fixed by the stimulus file, not the caller's RNG state", {
@@ -294,7 +294,6 @@ test_that('the reference keeps the legacy norms to rounding, and the RNG and sav
       ))
       actual_rng <- .Random.seed
       expect_equal(actual, expected, tolerance = 1e-12)
-      expect_false(identical(actual, expected))
       expect_identical(actual_rng, expected_rng)
       expect_gt(length(unique(actual)), 1)
 
@@ -309,6 +308,7 @@ test_that('the reference keeps the legacy norms to rounding, and the RNG and sav
       }
       expect_identical(saved$reference_norms, actual)
       expect_identical(saved$reference_norms_seed, response_seed)
+      expect_identical(saved$reference_norms_method, 'gram')
     }
   }
 })

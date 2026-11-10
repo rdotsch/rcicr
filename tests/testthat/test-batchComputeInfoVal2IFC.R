@@ -55,7 +55,7 @@ test_that("the result is identical to a named computeInfoVal2IFC() loop", {
     expected <- do.call(loop_oracle, c(list(cases[[k]]$cis, for_loop, iter = 30), cases[[k]]$args))
     actual <- quietly(do.call(batchComputeInfoVal2IFC,
                               c(list(cases[[k]]$cis, for_batch, iter = 30), cases[[k]]$args)))
-    expect_identical(actual, expected, info = k)
+    expect_same_arithmetic(actual, expected, info = k)
     expect_gt(length(unique(actual)), 1)
   }
 })
@@ -67,7 +67,7 @@ test_that("an independent-base file is scored per base, as the loop scores it", 
   })
   # Full-set and subset references for the same base, in one call.
   mixed <- list(NULL, 1:9)
-  expect_identical(
+  expect_same_arithmetic(
     quietly(batchComputeInfoVal2IFC(c(cis, cis), copy_of(rdata), iter = 30, baseimage = "second",
                                     reference_stimuli = c(mixed, mixed))),
     loop_oracle(c(cis, cis), copy_of(rdata), reference_stimuli = c(mixed, mixed), iter = 30,
@@ -78,7 +78,7 @@ test_that("an independent-base file is scored per base, as the loop scores it", 
                             baseimage = "second")
     actual <- quietly(batchComputeInfoVal2IFC(cis, copy_of(rdata), iter = 30, baseimage = "second",
                                               reference_stimuli = stimuli))
-    expect_identical(actual, expected)
+    expect_same_arithmetic(actual, expected)
   }
 })
 
@@ -98,7 +98,7 @@ test_that("a reference that cannot be stored is simulated once per distinct stim
   batch <- quietly(batchComputeInfoVal2IFC(cis, rdata, iter = 30, reference_stimuli = stimuli))
   expect_identical(calls, 2)
   calls <- 0
-  expect_identical(batch, loop_oracle(cis, rdata, reference_stimuli = stimuli, iter = 30))
+  expect_same_arithmetic(batch, loop_oracle(cis, rdata, reference_stimuli = stimuli, iter = 30))
   expect_identical(calls, 5)
 })
 
@@ -167,6 +167,6 @@ test_that("a single CI, a malformed batch and a mismatched reference_stimuli are
 
   # A batch may name an element ci.
   named_ci <- list(ci = ci, control = ci)
-  expect_identical(quietly(batchComputeInfoVal2IFC(named_ci, rdata, iter = 30)),
-                   loop_oracle(named_ci, rdata, iter = 30))
+  expect_same_arithmetic(quietly(batchComputeInfoVal2IFC(named_ci, rdata, iter = 30)),
+                         loop_oracle(named_ci, rdata, iter = 30))
 })

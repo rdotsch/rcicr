@@ -142,8 +142,8 @@ test_that("a file without nscales is scored from its saved basis, whatever nscal
   expect_false(any(grepl("does not contain `noise_type`", fallback$warnings, fixed = TRUE)))
 
   # The saved basis governs: injecting a right or a wrong nscales changes nothing.
-  expect_identical(fallback$norms, explicit_5$norms)
-  expect_identical(fallback$norms, explicit_3$norms)
+  expect_same_arithmetic(fallback$norms, explicit_5$norms)
+  expect_same_arithmetic(fallback$norms, explicit_3$norms)
   expect_length(fallback$norms, 3)
   expect_false(anyNA(fallback$norms))
 })
@@ -188,8 +188,8 @@ test_that("a gabor file without sigma is scored from its saved basis", {
   expect_false(warned(sinusoidal))
 
   # The saved basis governs: injecting either sigma changes nothing.
-  expect_identical(fallback$norms, explicit_25$norms)
-  expect_identical(fallback$norms, explicit_10$norms)
+  expect_same_arithmetic(fallback$norms, explicit_25$norms)
+  expect_same_arithmetic(fallback$norms, explicit_10$norms)
   expect_length(fallback$norms, 3)
   expect_false(anyNA(fallback$norms))
 })
@@ -217,8 +217,8 @@ test_that("a 1.1.0 file is scored from its basis, not from its recorded nscales"
   as_5 <- reference_norms_for(as_5)
 
   expect_false(any(grepl("does not contain `nscales`", saved$warnings, fixed = TRUE)))
-  expect_identical(saved$norms, as_1$norms)
-  expect_identical(saved$norms, as_5$norms)
+  expect_same_arithmetic(saved$norms, as_1$norms)
+  expect_same_arithmetic(saved$norms, as_5$norms)
 })
 
 test_that("the writing version is read from p, not from the field that says 0.4.0", {

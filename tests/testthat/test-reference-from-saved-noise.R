@@ -339,8 +339,26 @@ test_that("a refresh that changes nothing is silent, and survives warn = 2", {
   # It was refreshed and marked, and came back identical, so nothing is said.
   after <- new.env()
   load(rdata, envir = after)
-  expect_identical(after$reference_norms, genuine)
+  expect_same_arithmetic(after$reference_norms, genuine)
   expect_identical(after$reference_norms_source, "saved_noise")
+
+  # A cache that differs from the rebuild in the last bit, as one rebuilt under
+  # MKL can, has not changed either.
+  e1 <- new.env()
+  load(rdata, envir = e1)
+  e1$reference_norms <- genuine * (1 + .Machine$double.eps)
+  expect_false(identical(e1$reference_norms, genuine))
+  rm("reference_norms_source", envir = e1)
+  save(list = ls(e1, all.names = TRUE), file = rdata, envir = e1)
+  rounded <- character()
+  withCallingHandlers(
+    utils::capture.output(computeInfoVal2IFC(ci, rdata)),
+    message = function(cond) {
+      rounded <<- c(rounded, conditionMessage(cond))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_false(any(grepl("gave different values", rounded, fixed = TRUE)))
 
   # The discriminating case: a cache that really is different does warn.
   e2 <- new.env()
@@ -439,7 +457,7 @@ test_that("an automatic refresh keeps the cache's own iteration count", {
   after <- new.env()
   load(rdata, envir = after)
   expect_length(after$reference_norms, 40)
-  expect_identical(after$reference_norms, genuine)
+  expect_same_arithmetic(after$reference_norms, genuine)
 
   # Naming iter does not change that. On a call that finds a cache, iter has
   # never reached the simulation, so an old script carrying one is not asking
@@ -451,7 +469,7 @@ test_that("an automatic refresh keeps the cache's own iteration count", {
   asked <- new.env()
   load(rdata, envir = asked)
   expect_length(asked$reference_norms, 40)
-  expect_identical(asked$reference_norms, genuine)
+  expect_same_arithmetic(asked$reference_norms, genuine)
 })
 
 test_that("a regeneration the caller asked for gets the documented default", {
@@ -812,12 +830,12 @@ test_that("a refresh of a file without rng_kind reproduces the cache only under 
     y$reference_norms
   }
 
-  expect_identical(refresh_under("Mersenne-Twister"), cached)
+  expect_same_arithmetic(refresh_under("Mersenne-Twister"), cached)
   expect_false(identical(refresh_under("L'Ecuyer-CMRG"), cached))
 
   # A file that records its kind refreshes identically under either (#315).
   mutate_rdata(rdata, rng_kind = c("Mersenne-Twister", "Inversion", "Rejection"))
-  expect_identical(refresh_under("L'Ecuyer-CMRG"), cached)
+  expect_same_arithmetic(refresh_under("L'Ecuyer-CMRG"), cached)
 })
 
 test_that("a kind-changed refresh of a file without rng_kind reports that its values superseded the cache", {
@@ -909,7 +927,7 @@ test_that("an independent-base cache is refreshed on the same terms", {
 
   after <- new.env()
   load(rdata, envir = after)
-  expect_identical(after$reference_norms_by_base[["second"]]$norms, genuine)
+  expect_same_arithmetic(after$reference_norms_by_base[["second"]]$norms, genuine)
   expect_equal(second, first)
   expect_true(any(grepl("gave different values", messages_seen, fixed = TRUE)))
 })
@@ -987,7 +1005,7 @@ test_that("a read-only refresh under warn = 2 is scoreable every time", {
     out
   })
   expect_true(all(is.finite(results)))
-  expect_identical(results[[1]], results[[2]])
+  expect_same_arithmetic(results[[1]], results[[2]])
 })
 
 test_that("an independent-base refresh under warn = 2 returns its value too", {

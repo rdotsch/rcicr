@@ -82,7 +82,8 @@
 #' for random responses to give distinct norms (one stimulus, and usually two) is refused, since
 #' its MAD is 0 and the InfoVal would not be a number. See "Matching the reference to the classification image" below.
 #' @param reference_method \code{"gram"} (the default) or \code{"images"}: how the reference is
-#' computed, when it has to be. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit; a
+#' computed, when it has to be. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit,
+#' with the same BLAS and LAPACK; a
 #' reference already stored in \code{rdata} is reused whichever is given. See "Reference method" in
 #' \code{\link{generateReferenceDistribution2IFC}}.
 #' @return The Informational Value, a z-score.

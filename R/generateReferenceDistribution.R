@@ -43,7 +43,8 @@
 #' block of image columns at a time, so no full-size copy of it, or of the noise, is held.
 #' \code{"images"} is the calculation of rcicr 1.5.0 and earlier: every noise image rendered, in
 #' parallel over \code{ncores}, and multiplied for every draw. It reproduces references from those
-#' versions bit for bit.
+#' versions bit for bit with the same BLAS and LAPACK. A library such as MKL, which does not
+#' promise the same last bits on every run, reproduces them only to rounding.
 #'
 #' The two agree to rounding. No configuration measured was bit-identical, and none differed by
 #' more than a relative 5e-14 in a single norm (reference BLAS; see
@@ -86,7 +87,8 @@
 #' default, so the reference is reproducible from the file. Passing every saved stimulus is the
 #' same as the default, \code{NULL}.
 #' @param reference_method \code{"gram"} (the default) or \code{"images"}: how the reference
-#' norms are computed. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit. See
+#' norms are computed. \code{"images"} reproduces rcicr 1.5.0 and earlier bit for bit, with the
+#' same BLAS and LAPACK. See
 #' "Reference method" below.
 #' @param mask Optional mask, in any form \code{\link{generateCI}} accepts: a 0/1 matrix or the
 #' path to a PNG, black (0) where masked. The reference is then built over the unmasked pixels

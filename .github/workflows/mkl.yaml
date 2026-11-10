@@ -1,0 +1,70 @@
+# R CMD check with Intel MKL as the BLAS and LAPACK, as in CRAN's additional
+# "MKL" check (Brian Ripley's tests-MKL). MKL does not promise bitwise
+# reproducible results between runs, so a test that compares two computations
+# with expect_identical() can fail there and nowhere else. 1.5.0 did.
+#
+# Not a required check. Ubuntu's R links the system BLAS through
+# update-alternatives, so swapping in MKL needs no rebuild; R from
+# r-lib/actions/setup-r would not pick it up.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+name: mkl
+
+permissions: read-all
+
+jobs:
+  mkl:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    # R's OpenMP is GNU's; MKL defaults to Intel's. With both loaded in one
+    # process, Ubuntu's intel-mkl returns wrong products: a %*% b came out
+    # doubled in almost every column, and tcrossprod() wrong.
+    env:
+      MKL_THREADING_LAYER: GNU
+    steps:
+      - uses: actions/checkout@v7
+
+      # A stalled mirror hung apt-get update silently for the job's whole
+      # limit, so the lists are fetched first, visibly and with retries.
+      - name: Ubuntu package lists
+        timeout-minutes: 8
+        run: |
+          for attempt in 1 2 3; do
+            sudo timeout 150 apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+          done
+
+      - name: R and dependencies from Ubuntu
+        timeout-minutes: 15
+        run: sudo bash tools/setup-container-r.sh --no-rcicr
+
+      - name: Intel MKL as the system BLAS and LAPACK
+        run: |
+          echo 'libmkl-rt libmkl-rt/use-as-default-blas-lapack boolean true' | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq intel-mkl
+          update-alternatives --display libblas.so.3-x86_64-linux-gnu
+          update-alternatives --display liblapack.so.3-x86_64-linux-gnu
+
+      - name: Show that R uses MKL
+        run: |
+          Rscript -e 'print(sessionInfo()); print(extSoftVersion()["BLAS"]); print(La_library())'
+          Rscript -e 'quit(status = !grepl("mkl", extSoftVersion()[["BLAS"]], ignore.case = TRUE))'
+
+      - name: R CMD check
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: false
+        run: |
+          R CMD build --no-build-vignettes .
+          R CMD check --no-manual --ignore-vignettes rcicr_*.tar.gz
+
+      - name: Failed tests
+        if: failure()
+        run: grep -E "^── (Failure|Error)" rcicr.Rcheck/tests/testthat.Rout.fail || true
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: mkl-testthat-output
+          path: rcicr.Rcheck/tests/testthat.Rout.fail
