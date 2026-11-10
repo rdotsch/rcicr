@@ -35,7 +35,33 @@ set, and the rebuilt-reference message above.
 
 ## Test environments and R CMD check results
 
-To be completed from the checks on the release branch.
+The checks below used commit `8f42128`, which the release matches in package
+files.
+
+* win-builder, R 4.6.2 (2026-10-29 ucrt) and R-devel (2026-11-07 r90850
+  ucrt): Status: OK on both. CRAN incoming feasibility and the PDF and HTML
+  manuals passed.
+* R-hub, R-devel on Linux (x86_64, 2026-11-09 r90865), Windows (x86_64 ucrt,
+  2026-11-09 r90865) and macOS (x86_64, 2026-11-09 r90864)
+  ([run 42864865139](https://github.com/rdotsch/rcicr/actions/runs/42864865139)):
+  Status: OK on all three; `--no-manual`.
+* GitHub Actions ([run 42864817788](https://github.com/rdotsch/rcicr/actions/runs/42864817788)):
+  R 4.6.2 on Ubuntu 24.04.5 LTS, Windows Server 2022 and macOS Tahoe
+  (aarch64), and R-devel on Ubuntu: Status: OK on all four; `--no-manual`.
+* Intel MKL 2020.4 as BLAS and LAPACK, R 4.3.3 on Ubuntu 24.04 (x86_64),
+  `MKL_THREADING_LAYER=GNU`
+  ([run 42864817618](https://github.com/rdotsch/rcicr/actions/runs/42864817618)):
+  `R CMD check` passed with no test failure; `--no-manual`.
+* Local: R 4.5.2, Ubuntu 26.04 LTS, aarch64. `R CMD check --as-cran`, PDF and
+  HTML manuals included: 0 errors, 0 warnings, 1 NOTE. The NOTE is local: this
+  environment could not verify the current time.
+
+The full reproducibility gate also passed
+([run 42864817604](https://github.com/rdotsch/rcicr/actions/runs/42864817604)).
+Against the published v1.0.1 baseline, 211 checks were identical within
+tolerance, 22 documented expected deviations fired, and there were 0
+unexpected deviations. Against v1.6.0, 369 checks were identical within
+tolerance, with 0 expected and 0 unexpected deviations.
 
 ## Downstream dependencies
 
