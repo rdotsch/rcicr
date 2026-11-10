@@ -3,9 +3,9 @@
 ## Submission type
 
 Update of rcicr 1.5.0, published on CRAN on 2026-09-27. It replaces 1.6.0,
-submitted on 2026-11-10, whose auto-check flagged the MKL additional issue of
-1.5.0; 1.6.0 would not have passed that check. The maintainer address is
-unchanged.
+submitted on 2026-11-10 and cancelled at my request the same day because its
+tests would also have failed the MKL additional check of 1.5.0. The maintainer
+address is unchanged.
 
 ## The MKL additional issue
 
