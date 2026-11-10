@@ -54,6 +54,7 @@ jobs:
 
       - name: Attach probe (temporary)
         run: |
+          lscpu | grep -E "Model name|^CPU\(s\)"
           env -u MKL_THREADING_LAYER Rscript notes/mkl-attach-probe.R
           Rscript notes/mkl-attach-probe.R
 
@@ -64,17 +65,24 @@ jobs:
           R CMD build --no-build-vignettes .
           R CMD check --no-manual --ignore-vignettes rcicr_*.tar.gz
 
-      # Temporary (#425): the attach check fires under the broken threading
-      # setup and stays silent under GNU threading.
+      # Temporary (#425): how often the attach check fires under the broken
+      # threading setup, in fresh R processes, and that it stays silent under
+      # GNU threading.
       - name: Attach check
         run: |
+          lscpu | grep -E "Model name|^CPU\(s\)"
           probe='.libPaths(c("rcicr.Rcheck", .libPaths())); library(rcicr)'
-          env -u MKL_THREADING_LAYER Rscript -e "$probe" 2> broken.txt || true
-          echo "--- without MKL_THREADING_LAYER:"; cat broken.txt
-          Rscript -e "$probe" 2> gnu.txt
-          echo "--- with MKL_THREADING_LAYER=GNU:"; cat gnu.txt
-          grep -q "MKL_THREADING_LAYER=GNU" broken.txt
-          ! grep -q "MKL_THREADING_LAYER" gnu.txt
+          fired=0
+          for i in $(seq 40); do
+            env -u MKL_THREADING_LAYER Rscript -e "$probe" 2>&1 | grep -q "MKL_THREADING_LAYER=GNU" && fired=$((fired + 1))
+          done
+          echo "without MKL_THREADING_LAYER: fired in $fired of 40 processes"
+          quiet=0
+          for i in $(seq 10); do
+            Rscript -e "$probe" 2>&1 | grep -q "MKL_THREADING_LAYER" || quiet=$((quiet + 1))
+          done
+          echo "with MKL_THREADING_LAYER=GNU: silent in $quiet of 10 processes"
+          test "$quiet" -eq 10
 
       - name: Failed tests
         if: failure()
