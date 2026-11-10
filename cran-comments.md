@@ -10,26 +10,30 @@ NEWS.md describes the user-facing changes and their reproducibility impact. This
 
 ## Test environments and R CMD check results
 
-The checks below used commit `670a3b41e1`.
+The checks below used commit `5366261493`.
 
-* Local: R 4.3.3, Ubuntu 24.04.5 LTS, x86_64. `R CMD check --as-cran`: 0 errors,
-  0 warnings, 2 NOTEs, PDF and HTML manuals included. Both NOTEs are local:
-  this environment could not verify the current time, and R 4.3.3's
-  hard-coded list of superseded packages names `doSNOW`, which win-builder did
-  not report for 1.5.0.
-* GitHub Actions ([run 42373720852](https://github.com/rdotsch/rcicr/actions/runs/42373720852)):
-  R release on Ubuntu 24.04.5 LTS, Windows and macOS, and R-devel on Ubuntu;
-  all four jobs passed; `--no-manual`.
-* win-builder R-release and R-devel: pending.
-* R-hub: pending.
+* win-builder, R 4.6.2 (2026-10-29 ucrt) and R-devel (2026-11-07 r90850
+  ucrt): Status: OK on both. CRAN incoming feasibility and the PDF and HTML
+  manuals passed.
+* R-hub, R-devel on Linux (x86_64, 2026-11-08 r90859), Windows (x86_64 ucrt,
+  2026-11-09 r90865) and macOS (x86_64, 2026-11-09 r90864)
+  ([run 42778203633](https://github.com/rdotsch/rcicr/actions/runs/42778203633)):
+  Status: OK on all three; `--no-manual`.
+* GitHub Actions ([run 42778195324](https://github.com/rdotsch/rcicr/actions/runs/42778195324)):
+  R 4.6.2 on Ubuntu 24.04.5 LTS, Windows Server 2022 and macOS Tahoe
+  (aarch64), and R-devel on Ubuntu: Status: OK on all four; `--no-manual`.
+* Local: R 4.5.2, Ubuntu 26.04 LTS, aarch64. `R CMD check --as-cran`, PDF and
+  HTML manuals included: 0 errors, 0 warnings, 1 NOTE. The NOTE is local: this
+  environment could not verify the current time.
 
-The full reproducibility gate also passed. Against the published v1.0.1
-baseline (run locally), 211 checks were identical within tolerance, 22
-documented expected deviations fired, and there were 0 unexpected deviations.
-Against v1.5.0 ([run 42373720808](https://github.com/rdotsch/rcicr/actions/runs/42373720808)),
-255 checks were identical within tolerance, with 0 expected and 0 unexpected
-deviations.
+The full reproducibility gate also passed
+([run 42778195278](https://github.com/rdotsch/rcicr/actions/runs/42778195278)).
+Against the published v1.0.1 baseline, 211 checks were identical within
+tolerance, 22 documented expected deviations fired, and there were 0
+unexpected deviations. Against v1.5.0, 255 checks were identical within
+tolerance, with 0 expected and 0 unexpected deviations.
 
 ## Downstream dependencies
 
-Pending: recheck reverse dependencies against the current CRAN index before submission.
+There are no reverse dependencies on CRAN: `tools::package_dependencies()`
+over the current CRAN index, all dependency types, recursive, returns none.
