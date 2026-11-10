@@ -43,9 +43,6 @@ jobs:
           Rscript -e 'print(sessionInfo()); print(extSoftVersion()["BLAS"]); print(La_library())'
           Rscript -e 'quit(status = !grepl("mkl", extSoftVersion()[["BLAS"]], ignore.case = TRUE))'
 
-      - name: dgemm probe (temporary)
-        run: Rscript notes/mkl-dgemm-probe.R
-
       - name: R CMD check
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
@@ -62,3 +59,36 @@ jobs:
         with:
           name: mkl-testthat-output
           path: rcicr.Rcheck/tests/testthat.Rout.fail
+
+  # Temporary (#425): can run-to-run variation be made to appear here?
+  variation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { threads: "1", dynamic: "TRUE" }
+          - { threads: "4", dynamic: "TRUE" }
+          - { threads: "4", dynamic: "FALSE" }
+          - { threads: "16", dynamic: "FALSE" }
+    name: variation (threads ${{ matrix.threads }}, dynamic ${{ matrix.dynamic }})
+    env:
+      MKL_THREADING_LAYER: GNU
+      MKL_NUM_THREADS: ${{ matrix.threads }}
+      MKL_DYNAMIC: ${{ matrix.dynamic }}
+      PROBE_REPS: "3"
+    steps:
+      - uses: actions/checkout@v7
+      - name: R and dependencies from Ubuntu
+        timeout-minutes: 15
+        run: sudo bash tools/setup-container-r.sh --no-rcicr
+      - name: Intel MKL as the system BLAS and LAPACK
+        run: |
+          echo 'libmkl-rt libmkl-rt/use-as-default-blas-lapack boolean true' | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq intel-mkl
+          Rscript -e 'quit(status = !grepl("mkl", extSoftVersion()[["BLAS"]], ignore.case = TRUE))'
+      - name: Install rcicr
+        run: sudo R CMD INSTALL --no-docs .
+      - name: Repeat the tests from CRAN's MKL log
+        run: Rscript notes/mkl-variation-probe.R
