@@ -1,0 +1,49 @@
+# R CMD check with Intel MKL as the BLAS and LAPACK, as in CRAN's additional
+# "MKL" check (Brian Ripley's tests-MKL). MKL does not promise bitwise
+# reproducible results between runs, so a test that compares two computations
+# with expect_identical() can fail there and nowhere else. 1.5.0 did.
+#
+# Not a required check. Ubuntu's R links the system BLAS through
+# update-alternatives, so swapping in MKL needs no rebuild; R from
+# r-lib/actions/setup-r would not pick it up.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+name: mkl
+
+permissions: read-all
+
+jobs:
+  mkl:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: R and dependencies from Ubuntu
+        run: sudo bash tools/setup-container-r.sh --no-rcicr
+
+      - name: Intel MKL as the system BLAS and LAPACK
+        run: |
+          echo 'libmkl-rt libmkl-rt/use-as-default-blas-lapack boolean true' | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq intel-mkl
+          update-alternatives --display libblas.so.3-x86_64-linux-gnu
+          update-alternatives --display liblapack.so.3-x86_64-linux-gnu
+
+      - name: Show that R uses MKL
+        run: |
+          Rscript -e 'print(sessionInfo()); print(extSoftVersion()["BLAS"]); print(La_library())'
+          Rscript -e 'quit(status = !grepl("mkl", extSoftVersion()[["BLAS"]], ignore.case = TRUE))'
+
+      - name: R CMD check
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: false
+        run: |
+          R CMD build --no-build-vignettes .
+          R CMD check --no-manual --ignore-vignettes rcicr_*.tar.gz
+
+      - name: Test output
+        if: always()
+        run: cat rcicr.Rcheck/tests/testthat.Rout* 2>/dev/null | tail -300 || true
