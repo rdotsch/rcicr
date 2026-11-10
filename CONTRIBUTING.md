@@ -158,9 +158,8 @@ attaching a real face photo:
 ### The Codex review
 
 Codex reviews pull requests here and has caught real errors. Nothing in
-the merge path makes you notice it: it submits as `COMMENTED`, so
-`gh pr checks` stays green, and `gh pr view --comments` shows only the
-wrapper, never the findings.
+the merge path makes you notice it: it is not a check, so `gh pr checks`
+stays green whatever it finds.
 
 Push everything first; a push never re-triggers the review. **Marking a
 draft ready cannot be relied on either**: it does not always trigger
@@ -172,33 +171,41 @@ trig=$(gh api repos/rdotsch/rcicr/issues/<n>/comments -f body='@codex review' --
 
 Two conditions clear a squash:
 
-1.  **A 👍 newer than `$trig`.** Codex’s reaction tracks its latest run:
-    👀 while running, 👍 when clean, none when it has findings. Filter
-    on the numeric account id: anyone with read access can add
-    reactions, and an id survives a rename.
+1.  **A clean verdict on the PR’s head commit, newer than `$trig`.**
+    Codex gives it in one of two forms: a 👍 on the PR body, or a
+    comment reading “Codex Review: Didn’t find any major issues” whose
+    **Reviewed commit** is the head. A clean run does not always leave
+    the 👍 (on \#425, the run on `91fe0c7` left only the comment), so
+    look for both. While it runs, the reaction is 👀. Filter on the
+    numeric account id: anyone with read access can add reactions or
+    comments, and an id survives a rename.
 
     ``` sh
     gh api repos/rdotsch/rcicr/issues/<n>/reactions \
       --jq '.[] | select(.user.id == 199175422) | "\(.content) \(.created_at)"'
+    gh api --paginate "repos/rdotsch/rcicr/issues/<n>/comments?since=$trig" \
+      --jq '.[] | select(.user.id == 199175422) | .body'
     ```
 
-    Anything else (👀, nothing, an older `+1`) means: read the findings
-    and answer each one. Use `--paginate`: the endpoint pages at 30 and
-    truncates silently.
+    The second command also shows findings and a status comment that
+    Codex edits in place. Use `--paginate`: the endpoints page at 30 and
+    truncate silently.
+
+2.  **Every finding answered.** Findings arrive as ordinary PR comments
+    (marked `codex-code-review-finding`), which nothing in the merge
+    path blocks on, or as inline review threads. Answer each one;
+    resolve each thread with the `resolveReviewThread` mutation. GitHub
+    **enforces** only the threads: the `main` ruleset sets
+    `required_review_thread_resolution`.
 
     ``` sh
     gh api --paginate repos/rdotsch/rcicr/pulls/<n>/comments --jq '.[] | "\(.path): \(.body)"'
     ```
 
-2.  **Every answered thread resolved**, with the `resolveReviewThread`
-    mutation. GitHub **enforces** this half: the `main` ruleset sets
-    `required_review_thread_resolution`, so an unresolved thread blocks
-    the squash.
-
 Do not work out “is this safe to merge” from review objects and
-`commit_id`; every such attempt here let a merge through. The reaction
-is the one signal Codex sets on purpose, and thread resolution is
-GitHub’s to enforce.
+`commit_id`; every such attempt here let a merge through. The 👍 and the
+“Didn’t find any major issues” comment are the signals Codex sets on
+purpose.
 
 ## Code conventions
 

@@ -214,12 +214,13 @@ maintained somewhere else entirely?
   alternatives and reproducibility impact go in the squash message or in
   `NEWS.md`, not only in branch commits.
 - **Read the Codex review before squashing, and answer it.** It is easy
-  to merge past: it never blocks (not a required check, submitted as
-  `COMMENTED`), and neither `gh pr checks` nor `gh pr view --comments`
-  shows its findings. Two things clear a squash: a 👍 on the PR body
-  dated after your own `@codex review` comment, and no unresolved review
-  threads. `CONTRIBUTING.md` → “The Codex review” has one command for
-  each.
+  to merge past: it is not a check, so `gh pr checks` stays green
+  whatever it finds, and a finding posted as a plain comment blocks
+  nothing. Two things clear a squash: a clean verdict on the head commit
+  dated after your own `@codex review` comment (a 👍, or a “Didn’t find
+  any major issues” comment naming that commit), and every finding
+  answered, whether a comment or a thread. `CONTRIBUTING.md` → “The
+  Codex review” has the commands.
 - Delete merged branches: `--delete-branch` on `gh pr merge` does it,
   and `git fetch --prune` clears stale remote refs locally.
 

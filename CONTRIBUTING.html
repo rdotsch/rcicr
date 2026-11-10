@@ -96,19 +96,23 @@
 </ul></div>
 <div class="section level3">
 <h3 id="the-codex-review">The Codex review<a class="anchor" aria-label="anchor" href="#the-codex-review"></a></h3>
-<p>Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes you notice it: it submits as <code>COMMENTED</code>, so <code>gh pr checks</code> stays green, and <code>gh pr view --comments</code> shows only the wrapper, never the findings.</p>
+<p>Codex reviews pull requests here and has caught real errors. Nothing in the merge path makes you notice it: it is not a check, so <code>gh pr checks</code> stays green whatever it finds.</p>
 <p>Push everything first; a push never re-triggers the review. <strong>Marking a draft ready cannot be relied on either</strong>: it does not always trigger one. Post the request yourself and keep its timestamp:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="va">trig</span><span class="op">=</span><span class="va">$(</span><span class="ex">gh</span> api repos/rdotsch/rcicr/issues/<span class="op">&lt;</span>n<span class="op">&gt;</span>/comments <span class="at">-f</span> body=<span class="st">'@codex review'</span> <span class="at">--jq</span> <span class="st">'.created_at'</span><span class="va">)</span></span></code></pre></div>
 <p>Two conditions clear a squash:</p>
 <ol style="list-style-type: decimal"><li>
-<p><strong>A 👍 newer than <code>$trig</code>.</strong> Codex’s reaction tracks its latest run: 👀 while running, 👍 when clean, none when it has findings. Filter on the numeric account id: anyone with read access can add reactions, and an id survives a rename.</p>
+<p><strong>A clean verdict on the PR’s head commit, newer than <code>$trig</code>.</strong> Codex gives it in one of two forms: a 👍 on the PR body, or a comment reading “Codex Review: Didn’t find any major issues” whose <strong>Reviewed commit</strong> is the head. A clean run does not always leave the 👍 (on #425, the run on <code>91fe0c7</code> left only the comment), so look for both. While it runs, the reaction is 👀. Filter on the numeric account id: anyone with read access can add reactions or comments, and an id survives a rename.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">gh</span> api repos/rdotsch/rcicr/issues/<span class="op">&lt;</span>n<span class="op">&gt;</span>/reactions <span class="dt">\</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">--jq</span> <span class="st">'.[] | select(.user.id == 199175422) | "\(.content) \(.created_at)"'</span></span></code></pre></div>
-<p>Anything else (👀, nothing, an older <code>+1</code>) means: read the findings and answer each one. Use <code>--paginate</code>: the endpoint pages at 30 and truncates silently.</p>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">--jq</span> <span class="st">'.[] | select(.user.id == 199175422) | "\(.content) \(.created_at)"'</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">gh</span> api <span class="at">--paginate</span> <span class="st">"repos/rdotsch/rcicr/issues/&lt;n&gt;/comments?since=</span><span class="va">$trig</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">--jq</span> <span class="st">'.[] | select(.user.id == 199175422) | .body'</span></span></code></pre></div>
+<p>The second command also shows findings and a status comment that Codex edits in place. Use <code>--paginate</code>: the endpoints page at 30 and truncate silently.</p>
+</li>
+<li>
+<p><strong>Every finding answered.</strong> Findings arrive as ordinary PR comments (marked <code>codex-code-review-finding</code>), which nothing in the merge path blocks on, or as inline review threads. Answer each one; resolve each thread with the <code>resolveReviewThread</code> mutation. GitHub <strong>enforces</strong> only the threads: the <code>main</code> ruleset sets <code>required_review_thread_resolution</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">gh</span> api <span class="at">--paginate</span> repos/rdotsch/rcicr/pulls/<span class="op">&lt;</span>n<span class="op">&gt;</span>/comments <span class="at">--jq</span> <span class="st">'.[] | "\(.path): \(.body)"'</span></span></code></pre></div>
 </li>
-<li><p><strong>Every answered thread resolved</strong>, with the <code>resolveReviewThread</code> mutation. GitHub <strong>enforces</strong> this half: the <code>main</code> ruleset sets <code>required_review_thread_resolution</code>, so an unresolved thread blocks the squash.</p></li>
-</ol><p>Do not work out “is this safe to merge” from review objects and <code>commit_id</code>; every such attempt here let a merge through. The reaction is the one signal Codex sets on purpose, and thread resolution is GitHub’s to enforce.</p>
+</ol><p>Do not work out “is this safe to merge” from review objects and <code>commit_id</code>; every such attempt here let a merge through. The 👍 and the “Didn’t find any major issues” comment are the signals Codex sets on purpose.</p>
 </div>
 </div>
 <div class="section level2">
