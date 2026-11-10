@@ -81,3 +81,22 @@ make_independent_fixture <- function(dir, nscales = 1) {
   ))
   list.files(dir, pattern = "\\.Rdata$", full.names = TRUE)[1]
 }
+
+# Exact under R's own or the netlib reference BLAS and LAPACK; to 1e-12 under
+# any other. Norms and InfoVal pass through BLAS (reference-base.R) and LAPACK
+# (norm()), and MKL does not promise the same last bits on two runs, so a
+# bit-for-bit claim can only be checked where the library keeps it. An
+# unrecognised library gets the tolerance.
+reference_blas <- function() {
+  blas <- extSoftVersion()[["BLAS"]]
+  lapack <- La_library()
+  grepl("Rblas|/blas/libblas", blas) && grepl("Rlapack|/lapack/liblapack", lapack)
+}
+
+expect_same_arithmetic <- function(actual, expected, ...) {
+  if (reference_blas()) {
+    expect_identical(actual, expected, ...)
+  } else {
+    expect_equal(actual, expected, tolerance = 1e-12, ...)
+  }
+}

@@ -70,9 +70,11 @@ resolveReferenceNorms <- function(entry, rdata, iter, force_gen_ref_dist,
     )
   }
   norms <- if (automatic) preserveRandomStream(simulate()) else simulate()
+  # Not identical(): a BLAS such as MKL can return different last bits on a
+  # rebuild, which is not a change the message may claim.
   reportSimulatedReference(readonly, save_rdata, rdata, baseimage, response_seed,
                            superseded = stale && is.null(response_seed) &&
-                             !identical(norms, entry$norms))
+                             !isTRUE(all.equal(norms, entry$norms, tolerance = 1e-12)))
   norms
 }
 

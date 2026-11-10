@@ -38,9 +38,9 @@ test_that("a reference is the same whichever kind the scoring session runs", {
               images = reference(rdata, reference_method = "images"))
 
   RNGkind("Mersenne-Twister")
-  expect_identical(reference(rdata), own$default)
-  expect_identical(reference(rdata, response_seed = 3), own$seeded)
-  expect_identical(reference(rdata, reference_method = "images"), own$images)
+  expect_same_arithmetic(reference(rdata), own$default)
+  expect_same_arithmetic(reference(rdata, response_seed = 3), own$seeded)
+  expect_same_arithmetic(reference(rdata, reference_method = "images"), own$images)
 
   # Without the record, the session's kind decides, as it did for every older file.
   mutate_rdata(rdata, .remove = "rng_kind")
@@ -56,8 +56,8 @@ test_that("subset and independent-base references replay under the recorded kind
   by_base <- reference(independent, baseimage = "second")
 
   RNGkind("Mersenne-Twister")
-  expect_identical(reference(rdata, reference_stimuli = 1:5), subset)
-  expect_identical(reference(independent, baseimage = "second"), by_base)
+  expect_same_arithmetic(reference(rdata, reference_stimuli = 1:5), subset)
+  expect_same_arithmetic(reference(independent, baseimage = "second"), by_base)
 })
 
 test_that("a cross-kind reference leaves the caller's kind and position alone", {

@@ -95,7 +95,7 @@ test_that("the call the error gives runs as written and makes the file reproduci
 
     first <- messages_of(computeInfoVal2IFC(target(), rd, iter = 3, baseimage = base))
     second <- messages_of(computeInfoVal2IFC(target(), rd, iter = 3, baseimage = base))
-    expect_identical(first$value, second$value)
+    expect_same_arithmetic(first$value, second$value)
     expect_false(any(grepl("cannot be regenerated", first$messages)))
   }
 })
@@ -107,7 +107,7 @@ test_that("a read-only seedless file is scored reproducibly with response_seed, 
   local_mocked_bindings(writableFile = function(path) FALSE)
   a <- quietly(computeInfoVal2IFC(target(), rd, iter = 3, response_seed = 5))
   b <- quietly(computeInfoVal2IFC(target(), rd, iter = 3, response_seed = 5))
-  expect_identical(a, b)
+  expect_same_arithmetic(a, b)
   expect_identical(tools::md5sum(rd), before)
 })
 
@@ -120,11 +120,11 @@ test_that("a vouched stored reference on a seedless file is used unchanged, with
 
   edit_rdata(rd, function(e) e$seed <- NULL)
   without <- messages_of(computeInfoVal2IFC(target(), rd, iter = 5))
-  expect_identical(without$value, with_seed$value)
+  expect_same_arithmetic(without$value, with_seed$value)
   expect_true(any(grepl("cannot be regenerated", without$messages)))
 
   # Not quietly(): suppressWarnings() would hide a warning before warn = 2 made it an error.
   withr::local_options(warn = 2)
   utils::capture.output(strict <- suppressMessages(computeInfoVal2IFC(target(), rd, iter = 5)))
-  expect_identical(strict, with_seed$value)
+  expect_same_arithmetic(strict, with_seed$value)
 })

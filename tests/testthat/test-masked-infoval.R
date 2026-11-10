@@ -65,7 +65,7 @@ test_that("a masked CI gets a finite InfoVal from its own pixels and reference",
                                                      response_seed = 3, save_rdata = FALSE,
                                                      mask = top_mask()))
   ci_norm <- norm(matrix(f$ci$ci[!is.na(f$ci$ci)]), "f")
-  expect_identical(value, (ci_norm - median(norms)) / mad(norms))
+  expect_same_arithmetic(value, (ci_norm - median(norms)) / mad(norms))
 })
 
 test_that("each mask is stored once and reused, apart from the default reference", {
@@ -84,7 +84,7 @@ test_that("each mask is stored once and reused, apart from the default reference
   expect_false(identical(e$reference_norms_by_stimuli[[1]]$mask, e$reference_norms_by_stimuli[[2]]$mask))
 
   local_mocked_bindings(referenceNorms = function(...) stop("simulated again"))
-  expect_identical(quietly(computeInfoVal2IFC(f$ci, f$rdata, iter = 20)), first)
+  expect_same_arithmetic(quietly(computeInfoVal2IFC(f$ci, f$rdata, iter = 20)), first)
 })
 
 test_that("a reference stored with generateReferenceDistribution2IFC(mask =) is the one reused", {
@@ -93,7 +93,7 @@ test_that("a reference stored with generateReferenceDistribution2IFC(mask =) is 
                                                       response_seed = 9, mask = top_mask()))
   local_mocked_bindings(referenceNorms = function(...) stop("simulated again"))
   ci_norm <- norm(matrix(f$ci$ci[!is.na(f$ci$ci)]), "f")
-  expect_identical(quietly(computeInfoVal2IFC(f$ci, f$rdata)),
+  expect_same_arithmetic(quietly(computeInfoVal2IFC(f$ci, f$rdata)),
                    (ci_norm - median(stored)) / mad(stored))
 })
 
@@ -125,8 +125,8 @@ test_that("the batch scores masked and unmasked CIs as the single function does"
   single <- vapply(cis, function(ci) {
     quietly(computeInfoVal2IFC(ci, f$rdata, iter = 20, response_seed = 4))
   }, numeric(1))
-  expect_identical(batch, single)
-  expect_identical(batch[["masked"]], batch[["again"]])
+  expect_same_arithmetic(batch, single)
+  expect_same_arithmetic(batch[["masked"]], batch[["again"]])
 })
 
 test_that("a mask that covers everything, or the wrong size, stops", {

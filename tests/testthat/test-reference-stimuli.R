@@ -60,7 +60,7 @@ test_that("an explicit full set, in any order and storage mode, is the default r
   default <- reference_of(rdata, response_seed = 3, save_rdata = FALSE)
   explicit <- reference_of(rdata, response_seed = 3, save_rdata = FALSE,
                            reference_stimuli = as.numeric(c(8, 1:7)))
-  expect_identical(explicit, default)
+  expect_same_arithmetic(explicit, default)
 
   # The default path re-saves its frame, so neither the argument nor anything
   # bound while deciding on the path may reach the file, omitted or not.
@@ -72,7 +72,7 @@ test_that("an explicit full set, in any order and storage mode, is the default r
   other <- make_fixture_rdata(withr::local_tempdir(), n_trials = 8)
   reference_of(other, reference_stimuli = 1:8)
   expect_setequal(setdiff(names(saved(other)), fresh), added)
-  expect_identical(saved(other)$reference_norms, saved(rdata)$reference_norms)
+  expect_same_arithmetic(saved(other)$reference_norms, saved(rdata)$reference_norms)
 })
 
 test_that("a subset reference is the default arithmetic over those stimuli", {
@@ -162,7 +162,7 @@ test_that("a file's own reference_stimuli object survives both save paths", {
   # The default path re-saves its frame; the argument must neither be
   # overridden by the file's object nor replace it.
   explicit <- reference_of(rdata, response_seed = 2, save_rdata = FALSE, reference_stimuli = 1:6)
-  expect_identical(explicit, reference_of(rdata, response_seed = 2, save_rdata = FALSE))
+  expect_same_arithmetic(explicit, reference_of(rdata, response_seed = 2, save_rdata = FALSE))
   reference_of(rdata, reference_stimuli = 1:6)
   expect_identical(saved(rdata)$reference_stimuli, planted)
 

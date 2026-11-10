@@ -37,7 +37,7 @@ test_that("a stored default reference that is not finite, or has a MAD of 0, sto
   expect_error(quietly(computeInfoVal2IFC(ci, rdata)), "has a MAD of 0")
   plant(c(1, 2, 3, 4, 5))
   norm_ci <- norm(matrix(ci$ci), "f")
-  expect_identical(quietly(computeInfoVal2IFC(ci, rdata)), (norm_ci - 3) / mad(1:5))
+  expect_same_arithmetic(quietly(computeInfoVal2IFC(ci, rdata)), (norm_ci - 3) / mad(1:5))
 })
 
 test_that("a per-base reference with a MAD of 0 stops instead of giving Inf", {
