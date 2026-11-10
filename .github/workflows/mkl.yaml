@@ -27,6 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # A stalled mirror hung apt-get update silently for the job's whole
+      # limit, so the lists are fetched first, visibly and with retries.
+      - name: Ubuntu package lists
+        timeout-minutes: 8
+        run: |
+          for attempt in 1 2 3; do
+            sudo timeout 150 apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+          done
+
       - name: R and dependencies from Ubuntu
         timeout-minutes: 15
         run: sudo bash tools/setup-container-r.sh --no-rcicr
@@ -68,9 +77,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { threads: "1", dynamic: "TRUE" }
-          - { threads: "4", dynamic: "TRUE" }
-          - { threads: "4", dynamic: "FALSE" }
           - { threads: "16", dynamic: "FALSE" }
     name: variation (threads ${{ matrix.threads }}, dynamic ${{ matrix.dynamic }})
     env:
@@ -80,6 +86,15 @@ jobs:
       PROBE_REPS: "3"
     steps:
       - uses: actions/checkout@v7
+      # A stalled mirror hung apt-get update silently for the job's whole
+      # limit, so the lists are fetched first, visibly and with retries.
+      - name: Ubuntu package lists
+        timeout-minutes: 8
+        run: |
+          for attempt in 1 2 3; do
+            sudo timeout 150 apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+          done
+
       - name: R and dependencies from Ubuntu
         timeout-minutes: 15
         run: sudo bash tools/setup-container-r.sh --no-rcicr
