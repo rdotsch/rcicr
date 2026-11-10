@@ -21,15 +21,15 @@ look for CLAUDE.md under "Memory files".
 
 ## Getting R in a Claude Code container
 
-A fresh container has **no R at all**, and the egress proxy refuses every CRAN mirror and every GitHub tarball host: `403` on `CONNECT` to `cloud.r-project.org`, `cran.r-project.org`, `cran.rstudio.com`, `packagemanager.posit.co`, `github.com` and `codeload.github.com`. So `install.packages()` and `remotes::install_github()` are both dead ends. That is an organization egress policy, not a fault: report it, do not route around it, and never disable TLS verification or unset `HTTPS_PROXY`.
+A fresh container has **no R at all**. The egress proxy allows or refuses each host separately, and the list changes, so **test a host before relying on it** (`curl -sS -o /dev/null -w '%{http_code}\n' https://<host>/`). On 2026-11-10, `cloud.r-project.org`, `cran.r-project.org` and `github.com` answered and `download.packages()` from `cloud.r-project.org` worked; `cran.rstudio.com`, `packagemanager.posit.co` and `bioconductor.org` returned `403`. A `403` is an organization egress policy, not a fault: report it, do not route around it, and never disable TLS verification or unset `HTTPS_PROXY`.
 
-Ubuntu's `universe` pocket *is* reachable. It has a Debian build of every dependency this package and its pinned v1.0.1 gate reference need, except one:
+The setup script needs none of those hosts. Ubuntu's `universe` pocket has a Debian build of every dependency this package and its pinned v1.0.1 gate reference need, except one:
 
 ```sh
-bash tools/setup-container-r.sh      # toolchain + rcicr; safe to re-run
+sudo bash tools/setup-container-r.sh   # toolchain + rcicr; safe to re-run; apt needs root
 ```
 
-After that the ordinary workflow applies, including the release gate and `R CMD check --as-cran` with the PDF manual. That check leaves two NOTEs only this sandbox gives: `unable to verify current time`, and `Uses the superseded package: 'doSNOW'`, from a list hard-coded in R 4.3.3 that win-builder's R did not flag for 1.5.0. Measured here: `testthat::test_local()` gives 2069 passing and 1 skip, as uid 1000. The skip is the test that needs a case-insensitive file system.
+After that the ordinary workflow applies, including the release gate and `R CMD check --as-cran` with the PDF manual. With R 4.5.2 on Ubuntu 26.04 that check leaves one NOTE only this sandbox gives, `unable to verify current time`. R 4.3.3 also NOTEd `Uses the superseded package: 'doSNOW'`, from a hard-coded list that win-builder's R did not flag for 1.5.0. Because `bioconductor.org` is refused, the CRAN incoming feasibility check does not run (`NB: need Internet access to use CRAN incoming checks`); win-builder covers it. Measured here: `testthat::test_local()` gives 2069 passing and 1 skip, as uid 1000. The skip is the test that needs a case-insensitive file system.
 
 Three things to know before trusting or editing that script:
 
