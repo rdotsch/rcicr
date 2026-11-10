@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: R and dependencies from Ubuntu
+        timeout-minutes: 15
         run: sudo bash tools/setup-container-r.sh --no-rcicr
 
       - name: Intel MKL as the system BLAS and LAPACK
