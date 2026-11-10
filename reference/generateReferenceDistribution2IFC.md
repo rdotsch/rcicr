@@ -81,8 +81,8 @@ generateReferenceDistribution2IFC(
 - reference_method:
 
   `"gram"` (the default) or `"images"`: how the reference norms are
-  computed. `"images"` reproduces rcicr 1.5.0 and earlier bit for bit.
-  See "Reference method" below.
+  computed. `"images"` reproduces rcicr 1.5.0 and earlier bit for bit,
+  with the same BLAS and LAPACK. See "Reference method" below.
 
 - mask:
 
@@ -168,7 +168,9 @@ basis is built a block of image columns at a time, so no full-size copy
 of it, or of the noise, is held. `"images"` is the calculation of rcicr
 1.5.0 and earlier: every noise image rendered, in parallel over
 `ncores`, and multiplied for every draw. It reproduces references from
-those versions bit for bit.
+those versions bit for bit with the same BLAS and LAPACK. A library such
+as MKL, which does not promise the same last bits on every run,
+reproduces them only to rounding.
 
 The two agree to rounding. No configuration measured was bit-identical,
 and none differed by more than a relative 5e-14 in a single norm

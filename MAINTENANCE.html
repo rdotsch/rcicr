@@ -51,6 +51,9 @@
 <td>Builds the site on every PR and deploys it on push to <code>main</code>.</td>
 </tr><tr><td><code>rhub.yaml</code></td>
 <td>Stock R-hub v2, <code>workflow_dispatch</code> only.</td>
+</tr><tr><td><code>mkl.yaml</code></td>
+<td>
+<code>R CMD check</code> under Ubuntu’s Intel MKL, like CRAN’s MKL check. Not required; its setup sometimes stalls.</td>
 </tr><tr><td><code>lint.yaml</code></td>
 <td>
 <code><a href="https://lintr.r-lib.org/reference/lint.html" class="external-link">lintr::lint_package()</a></code>, which must come back clean; <code>.lintr</code> holds the config and an empty <code>exclusions:</code>. A required check (below), with <code>lintr</code> pinned; <code>tools/regenerate-lintr-baseline.R</code> rebuilds <code>exclusions:</code> if that is ever needed.</td>

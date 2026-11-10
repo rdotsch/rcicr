@@ -84,8 +84,8 @@ computeInfoVal2IFC(
 
   `"gram"` (the default) or `"images"`: how the reference is computed,
   when it has to be. `"images"` reproduces rcicr 1.5.0 and earlier bit
-  for bit; a reference already stored in `rdata` is reused whichever is
-  given. See "Reference method" in
+  for bit, with the same BLAS and LAPACK; a reference already stored in
+  `rdata` is reused whichever is given. See "Reference method" in
   [`generateReferenceDistribution2IFC`](https://rdotsch.github.io/rcicr/reference/generateReferenceDistribution2IFC.md).
 
 ## Value

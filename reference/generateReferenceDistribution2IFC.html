@@ -101,7 +101,8 @@ same as the default, <code>NULL</code>.</p></dd>
 
 <dt id="arg-reference-method">reference_method<a class="anchor" aria-label="anchor" href="#arg-reference-method"></a></dt>
 <dd><p><code>"gram"</code> (the default) or <code>"images"</code>: how the reference
-norms are computed. <code>"images"</code> reproduces rcicr 1.5.0 and earlier bit for bit. See
+norms are computed. <code>"images"</code> reproduces rcicr 1.5.0 and earlier bit for bit, with the
+same BLAS and LAPACK. See
 "Reference method" below.</p></dd>
 
 
@@ -170,7 +171,8 @@ basis; otherwise from the basis's cross-product, kept sparse. Either way the bas
 block of image columns at a time, so no full-size copy of it, or of the noise, is held.
 <code>"images"</code> is the calculation of rcicr 1.5.0 and earlier: every noise image rendered, in
 parallel over <code>ncores</code>, and multiplied for every draw. It reproduces references from those
-versions bit for bit.</p>
+versions bit for bit with the same BLAS and LAPACK. A library such as MKL, which does not
+promise the same last bits on every run, reproduces them only to rounding.</p>
 <p>The two agree to rounding. No configuration measured was bit-identical, and none differed by
 more than a relative 5e-14 in a single norm (reference BLAS; see
 <a href="https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md" class="external-link">https://github.com/rdotsch/rcicr/blob/main/analyses/gram-reference-accuracy.md</a>).</p>

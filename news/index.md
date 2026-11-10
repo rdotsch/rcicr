@@ -2,6 +2,37 @@
 
 ## rcicr (development version)
 
+### Bug fixes
+
+- **A rebuilt reference that differs only by rounding no longer reports
+  that its values changed.** When rcicr rebuilds a reference stored by
+  an older version, it says so if the rebuild “gave different values”
+  and that the InfoVal it returns supersedes earlier ones. It compared
+  exactly, so under a BLAS such as Intel MKL, which can return different
+  last bits on every run, it could say that of a reference that had not
+  changed. It now says so only for differences larger than a relative
+  1e-12. No returned or stored value changes.
+
+- **The tests pass under Intel MKL.** CRAN’s additional MKL check failed
+  12 tests of rcicr 1.5.0. Each compared reference norms or InfoVals
+  from two computations exactly, and MKL does not promise the same last
+  bits on two runs. Those comparisons, and the others like them, are now
+  exact under R’s own or the reference BLAS and to a relative 1e-12
+  under any other. No computed value changes. The help pages now say
+  that `reference_method = "images"` reproduces earlier references bit
+  for bit with the same BLAS and LAPACK.
+
+- **rcicr now warns when attached if R’s matrix products are wrong.**
+  With Ubuntu 24.04’s `intel-mkl` package and without the environment
+  variable `MKL_THREADING_LAYER=GNU`, MKL’s threads conflicted with R’s,
+  and base R’s own matrix products came out wrong, mostly doubled, so
+  rcicr’s reference norms and InfoVals would be wrong too.
+  [`library(rcicr)`](https://rdotsch.github.io/rcicr/) now checks one
+  small product against plain R arithmetic and, if it is wrong, says so
+  and suggests that setting. Nothing is printed otherwise, and no
+  computation changes. If you use Intel MKL with R from Debian or
+  Ubuntu, set `MKL_THREADING_LAYER=GNU` before starting R.
+
 ## rcicr 1.6.0 (2026-11-10)
 
 ### Reproducibility impact
