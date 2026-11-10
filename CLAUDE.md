@@ -4,6 +4,11 @@
 
 ## Getting R in a Claude Code container
 
+This section is about the containers the Claude app starts. **A Docker
+`sbx` sandbox on the maintainer’s own machine is a different
+environment** with its own network policy: see “In an `sbx` sandbox”
+below, and do not carry facts from one to the other.
+
 A fresh container has **no R at all**, and the egress proxy refuses
 every CRAN mirror and every GitHub tarball host: `403` on `CONNECT` to
 `cloud.r-project.org`, `cran.r-project.org`, `cran.rstudio.com`,
@@ -55,6 +60,22 @@ plus about 1.5 GB of RAM at 512px, so prefer running it in CI: a
 `workflow_dispatch` of `reproducibility.yaml` runs the **full** battery
 against both references, because the `--quick` choice depends on a
 `pull_request` event.
+
+### In an `sbx` sandbox
+
+The maintainer’s own Docker sandbox runs as uid 1000 with `sudo`, so the
+script needs `sudo bash tools/setup-container-r.sh`. Its network policy
+is the maintainer’s to change, through `sbx policy` on the host; a `403`
+that says `Approval required` is a request for them to answer, not a
+block to work around. Measured on 2026-11-10 (Ubuntu 26.04, aarch64, R
+4.5.2): `cloud.r-project.org`, `cran.r-project.org` and `github.com`
+answered, while `cran.rstudio.com`, `packagemanager.posit.co` and
+`bioconductor.org` returned `403`. There, `R CMD check --as-cran` with
+the PDF manual left one sandbox-only NOTE,
+`unable to verify current time`. The CRAN incoming feasibility check did
+not run, because the Bioconductor index was refused
+(`NB: need Internet access to use CRAN incoming checks`); win-builder
+covers it.
 
 ### Isolating one change from what its base branch already carries
 
