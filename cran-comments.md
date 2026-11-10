@@ -10,7 +10,8 @@ NEWS.md describes the user-facing changes and their reproducibility impact. This
 
 ## Test environments and R CMD check results
 
-The checks below used commit `5366261493`.
+The checks below used commit `5366261493`. The release differs from it in
+package files only by the date in the `NEWS.md` heading.
 
 * win-builder, R 4.6.2 (2026-10-29 ucrt) and R-devel (2026-11-07 r90850
   ucrt): Status: OK on both. CRAN incoming feasibility and the PDF and HTML
