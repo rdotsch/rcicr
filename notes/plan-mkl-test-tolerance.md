@@ -20,6 +20,29 @@ So the runner does not reproduce CRAN's failure: on 4 cores MKL returned the sam
 5. **Wording.** NEWS for 1.6.1: the test change, that no computed number changes, and that MKL users of R from Debian or Ubuntu need `MKL_THREADING_LAYER=GNU` (base R's products are wrong without it, so rcicr's are too). Where NEWS or help promises a reference "bit for bit", qualify it as holding with the same BLAS.
 6. Version 1.6.1, `cran-comments.md` answering the MKL issue, the release gate (expect 0 unexpected against v1.0.1 and v1.6.0), and the release steps as for 1.6.0. Delete this plan before marking the PR ready.
 
+## Inventory and two amendments
+
+**What can move.** In `R/`, BLAS is reached only in `R/reference-base.R` (the reference norms, both methods) and LAPACK through `norm(x, "f")` (`reference-base.R:220`, `reference-stimuli.R:78`): reference norms and every InfoVal. Classification images, z-maps, stimuli and correlations do not touch either.
+
+**The 40 assertions to change**, each an exact comparison of two computations of norms or an InfoVal (an InfoVal always recomputes the CI's norm, so it is never a stored value):
+
+- `test-generateReferenceDistribution2IFC.R:96`
+- `test-legacy-rdata.R:145, 146, 191, 192, 220, 221`
+- `test-seedless-reference.R:98, 110, 123, 129`
+- `test-reference-from-saved-noise.R:342, 442, 454, 815, 820, 912, 990`
+- `test-batchComputeInfoVal2IFC.R:58, 70, 81, 101, 170`
+- `test-reference-checks.R:40`
+- `test-gram-reference.R:102, 119, 132`
+- `test-reference-stimuli.R:63, 75, 165`
+- `test-rng-kind.R:41, 42, 43, 59, 60`
+- `test-masked-infoval.R:68, 87, 96, 128, 129`
+
+Every other `expect_identical()` in the suite compares a stored value, a file, RNG state, a message, a count or a CI, and stays. `expect_false(identical(...))` assertions stay (BLAS noise only widens a difference), except `test-generateReferenceDistribution2IFC.R:297`, which asserts that two routes differ by rounding; it becomes a check of the saved `reference_norms_method`.
+
+**Amendment 1: a helper, not a blanket tolerance.** `expect_same_arithmetic(actual, expected)` in `helper-fixtures.R` is `expect_identical()` when R runs its reference BLAS, and `expect_equal(tolerance = 1e-12)` otherwise, decided from `extSoftVersion()[["BLAS"]]`; anything it does not recognise as the reference BLAS gets the tolerance. CI and every machine with the reference BLAS keep checking the "images reproduces the arithmetic bit for bit" promise exactly; only a BLAS that cannot keep it relaxes.
+
+**Amendment 2: one line of `R/`.** `R/reference-base.R:75` decides whether to tell the user that a rebuilt reference "gave different values" and supersedes earlier InfoVals with `!identical(norms, entry$norms)`. Under MKL a rebuild differing in the last bits gets that message, which is untrue, and `test-reference-from-saved-noise.R:342` ("a refresh that changes nothing is silent") fails on it under any test tolerance. It becomes `!isTRUE(all.equal(norms, entry$norms, tolerance = 1e-12))`. Only the message changes; no returned or stored value does. It goes in NEWS.
+
 ## Main risk
 
 Missing an exact comparison that MKL can move, and CRAN failing 1.6.1 for it. Reading cannot prove completeness. Step 3 is the only way to measure it here; if it does not reproduce the variation, the guard is the sorting rule itself: every `expect_identical()` left on a numeric value must be one that is stored and read back, and the PR lists each that stays, with why.
