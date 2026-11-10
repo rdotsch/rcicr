@@ -94,10 +94,9 @@ results.
 **Why the results can go into the commit they describe:**
 `cran-comments.md` is `.Rbuildignore`d and absent from the tarball, so
 editing it changes no package source. It is not a package file at all,
-but the text pasted into the submission form. (Two fresh builds are not
-byte-identical anyway: packaging timestamps and metadata differ.)
-Running these checks after tagging instead would leave the tag with no
-evidence that the tree it names passed anything.
+but the text pasted into the submission form. Running these checks after
+tagging instead would leave the tag with no evidence that the tree it
+names passed anything.
 
 Neither check is run casually: win-builder emails the maintainer, and
 both put the tarball in front of a third party.
@@ -160,16 +159,18 @@ R CMD check --as-cran rcicr_X.Y.Z.tar.gz
 git switch -
 ```
 
-Building from the tag keeps the development suffix out of the submitted
-version: `Version contains large components` only blocks when the
-*tarball* carries it.
-
 Submit at <https://cran.r-project.org/submit.html>, pasting the body of
 `cran-comments.md` into the “Optional comment” field. The file is
 `.Rbuildignore`d, so this is the only way it reaches CRAN. **Paste the
-tag’s copy** (`git show vX.Y.Z:cran-comments.md`): submission can trail
-tagging by weeks while `main` moves on, and `main`’s copy would then
-describe checks on a tree that is not the tarball.
+tag’s copy** (`git show vX.Y.Z:cran-comments.md`); `main`’s describes a
+later tree.
+
+**Submit about two months after the last accepted version**, sooner only
+for a fix that changes users’ results. A release inside that window is
+tagged and released on GitHub now, and submitted later. Then rerun
+win-builder R-devel on this tarball, paste that result in place of the
+tag’s, and keep what was sent in
+`notes/cran-review-X.Y.Z-submission.md`.
 
 **An agent may upload; only Ron confirms.** Nothing reaches CRAN until
 the maintainer clicks the link CRAN emails him.

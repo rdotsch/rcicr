@@ -43,7 +43,7 @@ rdata_file <- list.files(stimulus_path, pattern = "\\.Rdata$", full.names = TRUE
 ``` r
 
 basename(rdata_file)
-#> [1] "rcic_seed_1_time_Nov_10_2026_09_00.Rdata"
+#> [1] "rcic_seed_1_time_Nov_10_2026_09_18.Rdata"
 stored <- new.env()
 load(rdata_file, envir = stored)
 ls(stored)
@@ -68,7 +68,7 @@ ls(stored)
 | `sigma` | Width of the Gabor patches, used when `noise_type` is `"gabor"`. Added in 1.1.0. |
 | `noise_type` | `"sinusoid"` or `"gabor"`. |
 | `seed` | The RNG seed. Regenerating the stimuli from it also needs the same generation settings and the same [`RNGkind()`](https://rdrr.io/r/base/Random.html). |
-| `rng_kind` | [`RNGkind()`](https://rdrr.io/r/base/Random.html) when the stimuli were drawn. InfoVal references replay the seed’s stream under it, so they do not depend on the kind of the session that computes them. Files without it replay under the session’s kind. Added in the development version. |
+| `rng_kind` | [`RNGkind()`](https://rdrr.io/r/base/Random.html) when the stimuli were drawn. InfoVal references replay the seed’s stream under it, so they do not depend on the kind of the session that computes them. Files without it replay under the session’s kind. Added in 1.6.0. |
 | `use_same_parameters` | Whether every base image shared one parameter matrix (`TRUE`) or each got its own. |
 | `label` | The label the stimulus files were named with. |
 | `stimulus_path` | The directory the files were written to. |
@@ -121,9 +121,9 @@ parameter matrix, and on which stimuli the classification image used:
 | `reference_norms_seed` | The `response_seed` those norms were drawn with, or `NULL` for the default stream. Added in 1.2.0. |
 | `reference_norms_source` | What `reference_norms` was built from: `"saved_noise"` means the file’s own saved parameters and basis. A default-stream reference without this marker and a matching `reference_norms_fingerprint` is rebuilt and, if the file is writable, saved. A reference drawn with a `response_seed` is kept; if it was built from an incorrect reconstruction, regenerate it yourself before recomputing InfoVal. Added in 1.4.0. |
 | `reference_norms_fingerprint` | A full copy of the norms, as `list(norms = ...)`, compared with [`identical()`](https://rdrr.io/r/base/identical.html). An older rcicr can keep the marker while replacing the norms; if the copy no longer matches, a default-stream reference is rebuilt. About 80 KB for 10,000 norms before compression. Added in 1.4.0. |
-| `reference_norms_method` | How the norms were computed: `"gram"` (the default) or `"images"`. References from 1.5.0 and earlier, which lack this field, were computed with `"images"`; pass `reference_method = "images"` to reproduce them. Added in the development version. |
+| `reference_norms_method` | How the norms were computed: `"gram"` (the default) or `"images"`. References from 1.5.0 and earlier, which lack this field, were computed with `"images"`; pass `reference_method = "images"` to reproduce them. Added in 1.6.0. |
 | `reference_norms_by_base` | Written instead of the fields above when the base images have *different* parameter matrices, because each base then needs a null built from its own saved noise. A list named by base label, one entry each; the entries are described below. A `reference_norms` already in such a file is left in place and ignored. Added in 1.4.0. |
-| `reference_norms_by_stimuli` | References for a classification image that did not use every saved stimulus (`reference_stimuli`) or that is masked. A list with one entry per stimulus set and mask, described below. The default reference is never read or written for these. Added in the development version. |
+| `reference_norms_by_stimuli` | References for a classification image that did not use every saved stimulus (`reference_stimuli`) or that is masked. A list with one entry per stimulus set and mask, described below. The default reference is never read or written for these. Added in 1.6.0. |
 
 Each entry of `reference_norms_by_base` and `reference_norms_by_stimuli`
 holds:
@@ -134,10 +134,10 @@ holds:
 | `response_seed` | As `reference_norms_seed`. |
 | `source` | As `reference_norms_source`. |
 | `fingerprint` | As `reference_norms_fingerprint`. |
-| `method` | As `reference_norms_method`. Added in the development version. |
+| `method` | As `reference_norms_method`. Added in 1.6.0. |
 | `reference_stimuli` | `reference_norms_by_stimuli` only: the stimulus numbers the reference was built over. |
 | `baseimage` | `reference_norms_by_stimuli` only: the base label, or `NULL` when the bases share one parameter matrix. |
-| `mask` | `reference_norms_by_stimuli` only: the run-length encoding of the mask the classification image was scored under, or `NULL` when it was not masked. Added in the development version. |
+| `mask` | `reference_norms_by_stimuli` only: the run-length encoding of the mask the classification image was scored under, or `NULL` when it was not masked. Added in 1.6.0. |
 
 ### Attributes
 

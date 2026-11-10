@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rcicr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,7 @@
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-T</span> rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-devel/</span>
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-T</span> rcicr_X.Y.Z.tar.gz ftp://win-builder.r-project.org/R-release/</span></code></pre></div>
 <p>Then trigger R-hub from the Actions tab against the release branch. Record each check’s actual errors, warnings and NOTEs, with its R version and platform. Do not carry the archived-package reinstatement NOTE into a routine update, and report sandbox-only NOTEs as local results.</p>
-<p><strong>Why the results can go into the commit they describe:</strong> <code>cran-comments.md</code> is <code>.Rbuildignore</code>d and absent from the tarball, so editing it changes no package source. It is not a package file at all, but the text pasted into the submission form. (Two fresh builds are not byte-identical anyway: packaging timestamps and metadata differ.) Running these checks after tagging instead would leave the tag with no evidence that the tree it names passed anything.</p>
+<p><strong>Why the results can go into the commit they describe:</strong> <code>cran-comments.md</code> is <code>.Rbuildignore</code>d and absent from the tarball, so editing it changes no package source. It is not a package file at all, but the text pasted into the submission form. Running these checks after tagging instead would leave the tag with no evidence that the tree it names passed anything.</p>
 <p>Neither check is run casually: win-builder emails the maintainer, and both put the tarball in front of a third party.</p>
 <ul><li>
 <strong>win-builder</strong>: <code>226</code> means the transfer completed. The server <strong>will not overwrite an existing upload</strong>, so a second attempt at the same filename fails with a bare <code>550</code>, meaning “already queued”, not “rejected”. Confirm with <code>curl --list-only ftp://win-builder.r-project.org/R-devel/</code> before uploading again. The email carries a result URL; <code>curl -s https://win-builder.r-project.org/&lt;key&gt;/00check.log</code> fetches the full log. Pages expire after about 72 hours, so <code>cran-comments.md</code> is the lasting copy.</li>
@@ -93,8 +93,8 @@
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="ex">R</span> CMD build .</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">R</span> CMD check <span class="at">--as-cran</span> rcicr_X.Y.Z.tar.gz</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">git</span> switch <span class="at">-</span></span></code></pre></div>
-<p>Building from the tag keeps the development suffix out of the submitted version: <code>Version contains large components</code> only blocks when the <em>tarball</em> carries it.</p>
-<p>Submit at <a href="https://cran.r-project.org/submit.html" class="external-link uri">https://cran.r-project.org/submit.html</a>, pasting the body of <code>cran-comments.md</code> into the “Optional comment” field. The file is <code>.Rbuildignore</code>d, so this is the only way it reaches CRAN. <strong>Paste the tag’s copy</strong> (<code>git show vX.Y.Z:cran-comments.md</code>): submission can trail tagging by weeks while <code>main</code> moves on, and <code>main</code>’s copy would then describe checks on a tree that is not the tarball.</p>
+<p>Submit at <a href="https://cran.r-project.org/submit.html" class="external-link uri">https://cran.r-project.org/submit.html</a>, pasting the body of <code>cran-comments.md</code> into the “Optional comment” field. The file is <code>.Rbuildignore</code>d, so this is the only way it reaches CRAN. <strong>Paste the tag’s copy</strong> (<code>git show vX.Y.Z:cran-comments.md</code>); <code>main</code>’s describes a later tree.</p>
+<p><strong>Submit about two months after the last accepted version</strong>, sooner only for a fix that changes users’ results. A release inside that window is tagged and released on GitHub now, and submitted later. Then rerun win-builder R-devel on this tarball, paste that result in place of the tag’s, and keep what was sent in <code>notes/cran-review-X.Y.Z-submission.md</code>.</p>
 <p><strong>An agent may upload; only Ron confirms.</strong> Nothing reaches CRAN until the maintainer clicks the link CRAN emails him.</p>
 <div class="section level3">
 <h3 id="answering-a-review">Answering a review<a class="anchor" aria-label="anchor" href="#answering-a-review"></a></h3>
