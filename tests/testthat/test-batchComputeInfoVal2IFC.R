@@ -168,5 +168,5 @@ test_that("a single CI, a malformed batch and a mismatched reference_stimuli are
   # A batch may name an element ci.
   named_ci <- list(ci = ci, control = ci)
   expect_same_arithmetic(quietly(batchComputeInfoVal2IFC(named_ci, rdata, iter = 30)),
-                   loop_oracle(named_ci, rdata, iter = 30))
+                         loop_oracle(named_ci, rdata, iter = 30))
 })

@@ -95,8 +95,8 @@ reference_blas <- function() {
 
 expect_same_arithmetic <- function(actual, expected, ...) {
   if (reference_blas()) {
-    expect_identical(actual, expected, ...)
+    testthat::expect_identical(actual, expected, ...)
   } else {
-    expect_equal(actual, expected, tolerance = 1e-12, ...)
+    testthat::expect_equal(actual, expected, tolerance = 1e-12, ...)
   }
 }

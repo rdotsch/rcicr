@@ -94,7 +94,7 @@ test_that("a reference stored with generateReferenceDistribution2IFC(mask =) is 
   local_mocked_bindings(referenceNorms = function(...) stop("simulated again"))
   ci_norm <- norm(matrix(f$ci$ci[!is.na(f$ci$ci)]), "f")
   expect_same_arithmetic(quietly(computeInfoVal2IFC(f$ci, f$rdata)),
-                   (ci_norm - median(stored)) / mad(stored))
+                         (ci_norm - median(stored)) / mad(stored))
 })
 
 test_that("a mask object the file already holds is saved back unchanged", {

@@ -52,6 +52,11 @@ jobs:
           Rscript -e 'print(sessionInfo()); print(extSoftVersion()["BLAS"]); print(La_library())'
           Rscript -e 'quit(status = !grepl("mkl", extSoftVersion()[["BLAS"]], ignore.case = TRUE))'
 
+      - name: Attach probe (temporary)
+        run: |
+          env -u MKL_THREADING_LAYER Rscript notes/mkl-attach-probe.R
+          Rscript notes/mkl-attach-probe.R
+
       - name: R CMD check
         env:
           _R_CHECK_FORCE_SUGGESTS_: false

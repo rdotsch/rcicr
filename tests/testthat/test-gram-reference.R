@@ -100,7 +100,7 @@ test_that("images reproduces the rendered arithmetic exactly, and gram matches i
   for (n_trials in c(100, 64, 20)) {
     rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 8, n_trials = n_trials, nscales = 1)
     expect_same_arithmetic(reference_of(rdata, reference_method = "images"), rendered_arithmetic(rdata),
-                     info = n_trials)
+                           info = n_trials)
     expect_equal(reference_of(rdata), rendered_arithmetic(rdata), tolerance = 1e-12, info = n_trials)
   }
 })
@@ -117,7 +117,7 @@ test_that("G is built from whichever of the rendered noise and the cross-product
 test_that("images reproduces the rendered arithmetic on the subset and independent-base paths", {
   rdata <- make_fixture_rdata(withr::local_tempdir(), img_size = 8, n_trials = 100, nscales = 1)
   expect_same_arithmetic(reference_of(rdata, reference_stimuli = 1:70, reference_method = "images"),
-                   rendered_arithmetic(rdata, ids = 1:70))
+                         rendered_arithmetic(rdata, ids = 1:70))
 
   dir <- withr::local_tempdir()
   base <- make_square_png(file.path(dir, "base.png"), size = 8)
@@ -130,7 +130,7 @@ test_that("images reproduces the rendered arithmetic on the subset and independe
   )
   independent <- list.files(dir, pattern = "\\.Rdata$", full.names = TRUE)[1]
   expect_same_arithmetic(reference_of(independent, baseimage = "second", reference_method = "images"),
-                   rendered_arithmetic(independent, base = "second"))
+                         rendered_arithmetic(independent, base = "second"))
 })
 
 test_that("computing with gram gives the notice, and images gives none", {
