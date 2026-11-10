@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rcicr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,9 +33,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="rcicr-development-version">rcicr (development version)<a class="anchor" aria-label="anchor" href="#rcicr-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.6.1" id="rcicr-161-2026-11-10">rcicr 1.6.1 (2026-11-10)<a class="anchor" aria-label="anchor" href="#rcicr-161-2026-11-10"></a></h2>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-1-6-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-6-1"></a></h3>
 <ul><li><p><strong>A rebuilt reference that differs only by rounding no longer reports that its values changed.</strong> When rcicr rebuilds a reference stored by an older version, it says so if the rebuild “gave different values” and that the InfoVal it returns supersedes earlier ones. It compared exactly, so under a BLAS such as Intel MKL, which can return different last bits on every run, it could say that of a reference that had not changed. It now says so only for differences larger than a relative 1e-12. No returned or stored value changes.</p></li>
 <li><p><strong>The tests pass under Intel MKL.</strong> CRAN’s additional MKL check failed 12 tests of rcicr 1.5.0. Each compared reference norms or InfoVals from two computations exactly, and MKL does not promise the same last bits on two runs. Those comparisons, and the others like them, are now exact under R’s own or the reference BLAS and to a relative 1e-12 under any other. No computed value changes. The help pages now say that <code>reference_method = "images"</code> reproduces earlier references bit for bit with the same BLAS and LAPACK.</p></li>
 <li><p><strong>rcicr now warns when attached if R’s matrix products are wrong.</strong> With Ubuntu 24.04’s <code>intel-mkl</code> package and without the environment variable <code>MKL_THREADING_LAYER=GNU</code>, MKL’s threads conflicted with R’s, and base R’s own matrix products came out wrong, mostly doubled, so rcicr’s reference norms and InfoVals would be wrong too. <code><a href="https://rdotsch.github.io/rcicr/">library(rcicr)</a></code> now checks one small product against plain R arithmetic and, if it is wrong, says so and suggests that setting. Nothing is printed otherwise, and no computation changes. If you use Intel MKL with R from Debian or Ubuntu, set <code>MKL_THREADING_LAYER=GNU</code> before starting R.</p></li>
