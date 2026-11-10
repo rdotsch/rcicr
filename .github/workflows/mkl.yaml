@@ -80,4 +80,3 @@ jobs:
         with:
           name: mkl-testthat-output
           path: rcicr.Rcheck/tests/testthat.Rout.fail
-
