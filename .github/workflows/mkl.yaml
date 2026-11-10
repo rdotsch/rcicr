@@ -37,6 +37,9 @@ jobs:
           Rscript -e 'print(sessionInfo()); print(extSoftVersion()["BLAS"]); print(La_library())'
           Rscript -e 'quit(status = !grepl("mkl", extSoftVersion()[["BLAS"]], ignore.case = TRUE))'
 
+      - name: dgemm probe (temporary)
+        run: Rscript notes/mkl-dgemm-probe.R
+
       - name: R CMD check
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
