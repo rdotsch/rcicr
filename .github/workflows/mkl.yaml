@@ -19,6 +19,11 @@ jobs:
   mkl:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    # R's OpenMP is GNU's; MKL defaults to Intel's. With both loaded in one
+    # process, Ubuntu's intel-mkl returns wrong products: a %*% b came out
+    # doubled in almost every column, and tcrossprod() wrong.
+    env:
+      MKL_THREADING_LAYER: GNU
     steps:
       - uses: actions/checkout@v7
 
