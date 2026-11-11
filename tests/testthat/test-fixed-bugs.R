@@ -609,9 +609,9 @@ test_that("a t.test z-map over fewer than two images stops with a message that s
 })
 
 test_that("a masked quick z-map is NA where masked and standardised over the kept pixels", {
-  # Issue #429. blur() returns 0 where the CI is masked, and those zeros entered
-  # scale(): the SD shrank and every kept z value grew by about
-  # 1 / sqrt(share of pixels kept).
+  # Issue #429. The blur returns zeros where the CI is masked, and the
+  # standardisation counted them, so the SD shrank and every kept z value grew
+  # by a factor of about one over the square root of the share of pixels kept.
   tmp <- withr::local_tempdir()
   rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1)
   mask <- matrix(0, 32, 32)
