@@ -607,3 +607,31 @@ test_that("a t.test z-map over fewer than two images stops with a message that s
   two <- zmap_ci(stimuli = 1:6, responses = rep(c(1, -1), 3), participants = rep(c("a", "b"), 3))
   expect_equal(dim(two$zmap), c(32, 32))
 })
+
+test_that("a masked quick z-map is NA where masked and standardised over the kept pixels", {
+  # Issue #429. blur() returns 0 where the CI is masked, and those zeros entered
+  # scale(): the SD shrank and every kept z value grew by about
+  # 1 / sqrt(share of pixels kept).
+  tmp <- withr::local_tempdir()
+  rdata <- make_fixture_rdata(tmp, img_size = 32, n_trials = 6, nscales = 1)
+  mask <- matrix(0, 32, 32)
+  mask[9:24, 9:24] <- 1
+  kept <- mask == 1
+
+  ci <- generateCI(stimuli = 1:6, responses = c(1, -1, -1, 1, 1, -1), baseimage = "base",
+                   rdata = rdata, save_as_png = FALSE, n_cores = 1, mask = mask,
+                   zmap = TRUE, zmapmethod = "quick", sigma = 1, threshold = 0,
+                   zmapdecoration = FALSE, zmaptargetpath = withr::local_tempdir())
+  z <- ci$zmap
+
+  expect_true(all(is.na(z[!kept])))
+  expect_false(anyNA(z[kept]))
+  expect_equal(mean(z[kept]), 0, tolerance = 1e-12)
+  expect_equal(sd(z[kept]), 1, tolerance = 1e-12)
+
+  blurred <- as.matrix(spatstat.explore::blur(spatstat.geom::as.im(ci$ci), sigma = 1))
+  expect_equal(z[kept], as.vector(scale(blurred[kept])), tolerance = 1e-12)
+  # The all-pixel standardisation the fix replaced gives clearly different values.
+  over_all <- matrix(scale(as.vector(blurred)), 32, 32)[kept]
+  expect_gt(sd(over_all), 1.5)
+})
