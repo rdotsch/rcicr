@@ -5,6 +5,9 @@
 # threshold.
 computeZmapQuick <- function(ci, sigma, threshold, img_size) {
   zmap <- as.matrix(blur(as.im(ci), sigma = sigma))
+  # blur() returns 0, not NA, where the CI is masked. Left in, those zeros
+  # shrink the SD and inflate every kept z value (#429).
+  zmap[is.na(ci)] <- NA
   zmap <- matrix(scale(as.vector(zmap)), img_size, img_size)
 
   zmap[zmap > -threshold & zmap < threshold] <- NA
