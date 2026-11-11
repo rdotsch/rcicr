@@ -382,7 +382,7 @@ infoval_images <- computeInfoVal2IFC(ci_all, images_file, iter = 1000)
 
 c(gram = infoval_gram, images = infoval_images, difference = infoval_images - infoval_gram)
 #>         gram       images   difference 
-#> 2.725105e+00 2.725105e+00 5.329071e-15
+#> 2.725105e+00 2.725105e+00 1.065814e-14
 ```
 
 Real references use `iter = 10000`; the smaller one here keeps the
