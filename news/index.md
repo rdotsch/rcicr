@@ -2,7 +2,25 @@
 
 ## rcicr (development version)
 
+### Reproducibility impact
+
+- **A masked quick z-map is no longer inflated.**
+  `generateCI(mask = , zmap = TRUE)` with the default
+  `zmapmethod = "quick"` standardised the blurred classification image
+  over all pixels, counting the masked ones as 0. That made every z
+  value in the kept region larger by about 1 / sqrt(share of pixels
+  kept), twice as large when a quarter of the image is kept, so pure
+  noise could cross the threshold. It now standardises over the kept
+  pixels only, and masked pixels are `NA` in `$zmap`, as they are in
+  `$ci` and in the t-test z-map. If you made masked quick z-maps with
+  rcicr 1.6.1 or earlier, compute them again; expect fewer pixels above
+  the threshold. Unmasked z-maps, t-test z-maps and classification
+  images do not change.
+  ([\#429](https://github.com/rdotsch/rcicr/issues/429))
+
 ## rcicr 1.6.1 (2026-11-10)
+
+CRAN release: 2026-11-11
 
 ### Bug fixes
 

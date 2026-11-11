@@ -34,9 +34,14 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="rcicr-development-version">rcicr (development version)<a class="anchor" aria-label="anchor" href="#rcicr-development-version"></a></h2>
+<div class="section level3">
+<h3 id="reproducibility-impact-development-version">Reproducibility impact<a class="anchor" aria-label="anchor" href="#reproducibility-impact-development-version"></a></h3>
+<ul><li>
+<strong>A masked quick z-map is no longer inflated.</strong> <code>generateCI(mask = , zmap = TRUE)</code> with the default <code>zmapmethod = "quick"</code> standardised the blurred classification image over all pixels, counting the masked ones as 0. That made every z value in the kept region larger by about 1 / sqrt(share of pixels kept), twice as large when a quarter of the image is kept, so pure noise could cross the threshold. It now standardises over the kept pixels only, and masked pixels are <code>NA</code> in <code>$zmap</code>, as they are in <code>$ci</code> and in the t-test z-map. If you made masked quick z-maps with rcicr 1.6.1 or earlier, compute them again; expect fewer pixels above the threshold. Unmasked z-maps, t-test z-maps and classification images do not change. (<a href="https://github.com/rdotsch/rcicr/issues/429" class="external-link">#429</a>)</li>
+</ul></div>
 </div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.6.1" id="rcicr-161-2026-11-10">rcicr 1.6.1 (2026-11-10)<a class="anchor" aria-label="anchor" href="#rcicr-161-2026-11-10"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.6.1" id="rcicr-161-2026-11-10">rcicr 1.6.1 (2026-11-10)<a class="anchor" aria-label="anchor" href="#rcicr-161-2026-11-10"></a></h2><p class="text-muted">CRAN release: 2026-11-11</p>
 <div class="section level3">
 <h3 id="bug-fixes-1-6-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-6-1"></a></h3>
 <ul><li><p><strong>A rebuilt reference that differs only by rounding no longer reports that its values changed.</strong> When rcicr rebuilds a reference stored by an older version, it says so if the rebuild “gave different values” and that the InfoVal it returns supersedes earlier ones. It compared exactly, so under a BLAS such as Intel MKL, which can return different last bits on every run, it could say that of a reference that had not changed. It now says so only for differences larger than a relative 1e-12. No returned or stored value changes.</p></li>

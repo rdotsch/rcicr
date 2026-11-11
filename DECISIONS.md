@@ -316,6 +316,20 @@ the mask’s run-length encoding, which is exact under
 [`identical()`](https://rdrr.io/r/base/identical.html) and small for a
 drawn shape. An unmasked CI takes the unchanged default path.
 
+### A masked quick z-map is standardised over its kept pixels; the mask edge is left alone
+
+`blur()` returns 0, not `NA`, where the CI is masked, and the quick
+z-map used to standardise over every pixel. The zeros shrank the SD, so
+every kept z value grew by about 1 / sqrt(share kept) and noise alone
+crossed the threshold
+([\#429](https://github.com/rdotsch/rcicr/issues/429)). Masked pixels
+are now `NA` before [`scale()`](https://rdrr.io/r/base/scale.html), as
+they already were in `$ci` and in the t-test z-map. Kept pixels next to
+the mask are still blurred against those zeros, as pixels at the image
+border always have been; on pure noise that leaves core z values about
+4% above the unmasked ones. Correcting it would need an edge-normalised
+blur, which would also change every unmasked z-map.
+
 ### `computeCumulativeCICorrelation()` does not aggregate repeated stimuli, and its curve ends at 1 by construction
 
 [`generateCI()`](https://rdotsch.github.io/rcicr/reference/generateCI.md)
